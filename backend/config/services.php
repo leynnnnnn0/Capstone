@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'unisms' => [
+        'secret_key' => env('UNISMS_SECRET_KEY'),
+    ],
 
 ];

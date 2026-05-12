@@ -15,9 +15,13 @@ class LoginResponse implements LoginResponseContract
         $expiresAt = $remember ? now()->addHours(2) : now()->addHour();
 
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
+        $response = ['user' => $user->only('id', 'username', 'email')];
+        if (env('APP_ENV') !== 'production') {
+            $response['token'] = $token;
+        }
 
         return response()
-            ->json(['user' => $user->only('id', 'name', 'email')])
+            ->json($response)
             ->cookie(
                 'auth_token',
                 $token,
