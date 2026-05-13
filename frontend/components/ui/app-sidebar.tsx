@@ -1,18 +1,11 @@
 'use client';
 
 import {
-  BookOpen,
-  Calendar,
-  DoorClosed,
-  FolderGit2,
   GitGraphIcon,
   LayoutGrid,
-  List,
-  ListCheck,
+  Package,
   User2Icon,
-  Wrench,
 } from "lucide-react";
-import AppLogo from "./AppLogo";
 import { NavFooter } from "@/components/ui/nav-footer";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -38,6 +31,11 @@ const mainNavItems: NavItem[] = [
     title: "Users",
     href: "/users",
     icon: User2Icon,
+  },
+  {
+    title: "Products",
+    href: "/dashboard/products",
+    icon: Package,
   },
 ];
 

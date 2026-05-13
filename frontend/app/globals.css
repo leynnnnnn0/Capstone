@@ -112,11 +112,11 @@
 
     --popover-foreground: oklch(0.145 0 0);
 
-    --primary: oklch(0.205 0 0);
+    --primary: #608db9;
 
     --primary-foreground: oklch(0.985 0 0);
 
-    --secondary: oklch(0.97 0 0);
+    --secondary: #f5b811;
 
     --secondary-foreground: oklch(0.205 0 0);
 
@@ -167,6 +167,36 @@
     --background: oklch(1 0 0);
 
     --foreground: oklch(0.145 0 0);
+}
+
+@keyframes landing-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes landing-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.55;
+        transform: scale(1.25);
+    }
+}
+
+.landing-float {
+    animation: landing-float 3.5s ease-in-out infinite;
+}
+
+.landing-pulse-dot {
+    animation: landing-pulse 1.6s ease-in-out infinite;
 }
 
 .dark {

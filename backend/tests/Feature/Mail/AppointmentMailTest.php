@@ -37,7 +37,7 @@ $appointmentPayload = fn() => [
 // ── Booked ────────────────────────────────────────────────────────
 
 it('queues confirmation email when appointment is booked', function () use ($appointmentPayload) {
-    $response = $this->postJson('/api/appointments', [
+    $response = $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'email' => 'juan@gmail.com'
         ]);
@@ -60,7 +60,7 @@ it('queues confirmation email when appointment is confirmed', function () use ($
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
             'appointment_time_from'  => '09:00',
             'appointment_time_until' => '11:00',
@@ -84,7 +84,7 @@ it('queues email when appointment is rescheduled', function () use ($appointment
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/reschedule", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/reschedule", [
             'appointment_date'       => now()->addDays(5)->format('Y-m-d'),
             'appointment_time_from'  => '10:00',
             'appointment_time_until' => '12:00',
@@ -107,7 +107,7 @@ it('sends email when appointment is cancelled', function () use ($appointmentPay
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", [
             'reason' => 'Customer requested cancellation.',
         ]);
 
@@ -126,7 +126,7 @@ it('does not send any mail when appointment has no email', function () use ($app
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
             'appointment_time_from'  => '09:00',
             'appointment_time_until' => '11:00',

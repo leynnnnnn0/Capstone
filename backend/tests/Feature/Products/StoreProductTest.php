@@ -141,6 +141,44 @@ it('creates a complete product with everything', function () use ($validPayload)
     expect($product->product_option_groups)->toHaveCount(1);
 });
 
+it('lists products with images, variant images, and option groups', function () use ($validPayload) {
+    $this->actingAs($this->admin)
+        ->postJson('/api/v1/products', [
+            ...$validPayload(),
+            'images' => [
+                UploadedFile::fake()->image('product.jpg'),
+            ],
+            'variants' => [
+                [
+                    'width' => 1.0,
+                    'height' => 1.2,
+                    'price' => 1800.00,
+                    'images' => [
+                        UploadedFile::fake()->image('variant.jpg'),
+                    ],
+                ],
+            ],
+            'option_groups' => [
+                [
+                    'name' => 'Glass Type',
+                    'is_required' => true,
+                    'sort_order' => 0,
+                    'options' => [
+                        ['name' => 'Clear Glass', 'price_modifier' => 0, 'sort_order' => 0],
+                    ],
+                ],
+            ],
+        ])
+        ->assertStatus(201);
+
+    $this->actingAs($this->admin)
+        ->getJson('/api/v1/products?per_page=1')
+        ->assertOk()
+        ->assertJsonPath('0.images.0.id', Product::first()->product_images->first()->id)
+        ->assertJsonPath('0.variants.0.images.0.id', Product::first()->product_variants->first()->product_variant_images->first()->id)
+        ->assertJsonPath('0.option_groups.0.options.0.name', 'Clear Glass');
+});
+
 // ── Validation ────────────────────────────────────────────────────
 
 it('returns 422 when required fields are missing', function () {
@@ -184,4 +222,3 @@ it('returns 422 when category does not exist', function () use ($validPayload) {
         ->assertStatus(422)
         ->assertJsonValidationErrors(['category_ids.0']);
 });
-

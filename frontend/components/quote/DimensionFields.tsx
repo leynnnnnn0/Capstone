@@ -1,0 +1,83 @@
+"use client";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { Product } from "@/features/products/types";
+import { parseNumber } from "@/features/quotes/quote-utils";
+
+type Dims = {
+  width: string;
+  height: string;
+  thickness: string;
+};
+
+export default function DimensionFields({
+  product,
+  value,
+  onChange,
+}: {
+  product: Product;
+  value: Dims;
+  onChange: (value: Dims) => void;
+}) {
+  if (product.unit === "piece" || product.unit === "set") {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] text-slate-500">
+        Priced per <strong>{product.unit}</strong>. Adjust pieces below.
+      </div>
+    );
+  }
+
+  const area = parseNumber(value.width) * parseNumber(value.height);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-end gap-3">
+        <NumberField label={product.unit === "meter" ? "Length (m)" : "Width (m)"} value={value.width} onChange={(width) => onChange({ ...value, width })} />
+        {product.unit === "sqm" && (
+          <>
+            <span className="pb-2 font-bold text-slate-400">x</span>
+            <NumberField label="Height (m)" value={value.height} onChange={(height) => onChange({ ...value, height })} />
+            {area > 0 && (
+              <div className="rounded-xl bg-blue-50 px-4 py-2.5 text-center">
+                <p className="text-[10px] text-slate-500">Area</p>
+                <p className="text-[13px] font-extrabold text-primary">{area.toFixed(2)} sqm</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="max-w-[220px]">
+        <NumberField label="Thickness (mm)" value={value.thickness} onChange={(thickness) => onChange({ ...value, thickness })} optional />
+      </div>
+    </div>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+  optional,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  optional?: boolean;
+}) {
+  return (
+    <div className="flex-1">
+      <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
+        {label} {optional && <span className="font-normal normal-case text-slate-400">optional</span>}
+      </Label>
+      <Input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        placeholder="0.00"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}

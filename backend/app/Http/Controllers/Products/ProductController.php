@@ -23,7 +23,12 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $products = Product::query()
-            ->with(['categories', 'product_images'])
+            ->with([
+                'categories',
+                'product_images',
+                'product_variants.product_variant_images',
+                'product_option_groups.product_options',
+            ])
             ->when(
                 $request->search,
                 fn($q) =>
@@ -90,9 +95,19 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
         try {
+            $data = $request->validated();
+            $data['deleted_image_ids'] = $request->input('deleted_image_ids', []);
+
+            foreach ($request->input('variants', []) as $index => $variant) {
+                if (isset($variant['deleted_image_ids'])) {
+                    $data['variants'][$index]['deleted_image_ids'] = $variant['deleted_image_ids'];
+                }
+            }
+
             $product = $this->productService->update(
                 $product,
-                $request->validated()
+                $data,
+                $request->allFiles()
             );
 
             return response()->json([

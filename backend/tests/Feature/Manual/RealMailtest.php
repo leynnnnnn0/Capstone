@@ -27,7 +27,7 @@ it('actually sends confirmation email and sms to real inbox', function () {
 
 
     $response = $this->actingAs($admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
             'appointment_time_from'  => '09:00',
             'appointment_time_until' => '11:00',

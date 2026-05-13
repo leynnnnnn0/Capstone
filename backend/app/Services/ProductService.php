@@ -91,9 +91,9 @@ class ProductService
         });
     }
 
-    public function update(Product $product, array $data): Product
+    public function update(Product $product, array $data, array $files = []): Product
     {
-        return DB::transaction(function () use ($product, $data) {
+        return DB::transaction(function () use ($product, $data, $files) {
             $product->update(array_filter([
                 'name'           => $data['name'] ?? null,
                 'description'    => $data['description'] ?? null,
@@ -106,6 +106,27 @@ class ProductService
                 $product->categories()->sync($data['category_ids']);
             }
 
+            if (!empty($files['images'])) {
+                foreach ($files['images'] as $image) {
+                    $path = $image->store("products/{$product->id}", 'public');
+                    $product->product_images()->create(['image_path' => $path]);
+                }
+            }
+
+            if (!empty($data['deleted_image_ids'])) {
+                foreach ($data['deleted_image_ids'] as $imageId) {
+                    $this->deleteImage($product->id, $imageId);
+                }
+            }
+
+            if (array_key_exists('variants', $data)) {
+                $this->syncVariants($product, $data['variants'] ?? [], $files['variants'] ?? []);
+            }
+
+            if (array_key_exists('option_groups', $data)) {
+                $this->syncOptionGroups($product, $data['option_groups'] ?? []);
+            }
+
             return $product->load([
                 'categories',
                 'product_images',
@@ -113,6 +134,118 @@ class ProductService
                 'product_option_groups.product_options',
             ]);
         });
+    }
+
+    private function syncVariants(Product $product, array $variants, array $variantFiles = []): void
+    {
+        $keptIds = collect($variants)
+            ->pluck('id')
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $variantsToDelete = $product->product_variants()
+            ->when($keptIds, fn($query) => $query->whereNotIn('id', $keptIds))
+            ->with('product_variant_images')
+            ->get();
+
+        foreach ($variantsToDelete as $variant) {
+            foreach ($variant->product_variant_images as $image) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+            $variant->delete();
+        }
+
+        foreach ($variants as $index => $variantData) {
+            $variant = isset($variantData['id'])
+                ? $product->product_variants()->whereKey($variantData['id'])->firstOrFail()
+                : $product->product_variants()->make();
+
+            $variant->fill([
+                'width'     => $variantData['width'],
+                'height'    => $variantData['height'],
+                'price'     => $variantData['price'],
+                'is_active' => $variantData['is_active'] ?? true,
+            ]);
+            $variant->save();
+
+            if (!empty($variantData['deleted_image_ids'])) {
+                $imagesToDelete = $variant->product_variant_images()
+                    ->whereIn('id', $variantData['deleted_image_ids'])
+                    ->get();
+
+                foreach ($imagesToDelete as $image) {
+                    Storage::disk('public')->delete($image->image_path);
+                    $image->delete();
+                }
+            }
+
+            if (!empty($variantFiles[$index]['images'])) {
+                foreach ($variantFiles[$index]['images'] as $image) {
+                    $path = $image->store(
+                        "products/{$product->id}/variants/{$variant->id}",
+                        'public'
+                    );
+                    $variant->product_variant_images()->create([
+                        'image_path' => $path,
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function syncOptionGroups(Product $product, array $optionGroups): void
+    {
+        $keptGroupIds = collect($optionGroups)
+            ->pluck('id')
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $product->product_option_groups()
+            ->when($keptGroupIds, fn($query) => $query->whereNotIn('id', $keptGroupIds))
+            ->delete();
+
+        foreach ($optionGroups as $groupData) {
+            $group = isset($groupData['id'])
+                ? $product->product_option_groups()->whereKey($groupData['id'])->firstOrFail()
+                : $product->product_option_groups()->make();
+
+            $group->fill([
+                'name'        => $groupData['name'],
+                'is_required' => $groupData['is_required'] ?? false,
+                'sort_order'  => $groupData['sort_order'] ?? 0,
+            ]);
+            $group->save();
+
+            $options = $groupData['options'] ?? [];
+            $keptOptionIds = collect($options)
+                ->pluck('id')
+                ->filter()
+                ->map(fn($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $group->product_options()
+                ->when($keptOptionIds, fn($query) => $query->whereNotIn('id', $keptOptionIds))
+                ->delete();
+
+            foreach ($options as $option) {
+                $productOption = isset($option['id'])
+                    ? $group->product_options()->whereKey($option['id'])->firstOrFail()
+                    : $group->product_options()->make();
+
+                $productOption->fill([
+                    'name'           => $option['name'],
+                    'price_modifier' => $option['price_modifier'],
+                    'sort_order'     => $option['sort_order'] ?? 0,
+                    'is_active'      => $option['is_active'] ?? true,
+                ]);
+                $productOption->save();
+            }
+        }
     }
 
     public function addImages(Product $product, array $images): Product

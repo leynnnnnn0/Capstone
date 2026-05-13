@@ -34,7 +34,7 @@ it('returns 422 when appointment cannot be confirmed', function () use ($validPa
     ]);
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             ...$validPayload(),
             'appointment_date' => '2026-04-04',
             'worker_ids' => $this->workers->pluck('id')->toArray(),
@@ -48,7 +48,7 @@ it('creates a remark when confirming an appointment', function () use ($validPay
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             ...$validPayload(),
             'worker_ids' => $this->workers->pluck('id')->toArray(), 
             'remarks'    => 'Customer requested for a specific time slot.',
@@ -64,7 +64,7 @@ it('assigns workers when confirming an appointment', function () use ($validPayl
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/confirm", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
             ...$validPayload(),
             'worker_ids' => $this->workers->pluck('id')->toArray(),
         ]);

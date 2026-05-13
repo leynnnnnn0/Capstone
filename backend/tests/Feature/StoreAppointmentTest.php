@@ -18,7 +18,7 @@ $validPayload = fn() => [
 
 
 it('creates appointment successfully', function () use ($validPayload) {
-    $this->postJson('/api/appointments', $validPayload())
+    $this->postJson('/api/v1/appointments', $validPayload())
         ->assertStatus(201)
         ->assertJsonStructure([
             'message',
@@ -34,14 +34,14 @@ it('creates appointment successfully', function () use ($validPayload) {
 });
 
 it('appointment number follows expected format', function () use ($validPayload) {
-    $response = $this->postJson('/api/appointments', $validPayload());
+    $response = $this->postJson('/api/v1/appointments', $validPayload());
 
     expect($response->json('data.appointment_number'))
         ->toMatch('/^APT-\d{6}-\d{8}$/');
 });
 
 it('stamps consent_given_at server side', function () use ($validPayload) {
-    $this->postJson('/api/appointments', $validPayload());
+    $this->postJson('/api/v1/appointments', $validPayload());
 
     expect(Appointment::first()->consent_given_at)->not->toBeNull();
 });
@@ -49,7 +49,7 @@ it('stamps consent_given_at server side', function () use ($validPayload) {
 // ── Business Logic ────────────────────────────────────────────────
 
 it('cannot book appointment in the past', function () use ($validPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'preferred_date' => '2020-01-01',
     ])->assertStatus(422)
@@ -57,7 +57,7 @@ it('cannot book appointment in the past', function () use ($validPayload) {
 });
 
 it('requires description when service type is other', function () use ($validPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'service_type'       => 'other',
         'service_type_other' => null,
@@ -66,7 +66,7 @@ it('requires description when service type is other', function () use ($validPay
 });
 
 it('requires consent to be accepted', function () use ($validPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'consent' => false,
     ])->assertStatus(422)
@@ -74,7 +74,7 @@ it('requires consent to be accepted', function () use ($validPayload) {
 });
 
 it('appointment time until must be after time from', function () use ($validPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
         'appointment_time_from'  => '14:00',
@@ -91,7 +91,7 @@ it('still allows booking afternoon when morning is full', function () use($valid
         'preferred_time' => 'morning',
     ]);
 
-    $response = $this->postJson('/api/appointments', [
+    $response = $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'preferred_date' => '2026-06-01',
         'preferred_time' => 'afternoon',
@@ -103,7 +103,7 @@ it('still allows booking afternoon when morning is full', function () use($valid
 // ── Failure Handling ──────────────────────────────────────────────
 
 it('returns 422 when required fields are missing', function () {
-    $this->postJson('/api/appointments', [])
+    $this->postJson('/api/v1/appointments', [])
         ->assertStatus(422)
         ->assertJsonValidationErrors([
             'first_name',
@@ -126,7 +126,7 @@ it('rejects booking when morning slot is full', function () use ($validPayload) 
     ]);
 
     // Act — 11th booking attempt
-    $response = $this->postJson('/api/appointments', [
+    $response = $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
         'preferred_date' => '2026-06-01',
         'preferred_time' => 'morning',

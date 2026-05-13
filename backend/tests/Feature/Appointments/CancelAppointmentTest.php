@@ -27,7 +27,7 @@ it('cancels a pending appointment', function () use ($appointmentPayload) {
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", [
             'reason' => 'Customer requested cancellation.',
         ]);
 
@@ -44,7 +44,7 @@ it('cancels a confirmed appointment', function () use ($appointmentPayload) {
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", [
             'reason' => 'Admin cancelled.',
         ])
         ->assertStatus(200);
@@ -54,7 +54,7 @@ it('creates a remark when cancelling', function () use ($appointmentPayload) {
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", [
             'reason' => 'Customer requested cancellation.',
         ]);
 
@@ -68,7 +68,7 @@ it('cannot cancel a completed appointment', function () use ($appointmentPayload
     ]);
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", [
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", [
             'reason' => 'Too late.',
         ]);
 
@@ -80,7 +80,7 @@ it('requires a reason to cancel', function () use ($appointmentPayload) {
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $response = $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/cancel", []);
+        ->patchJson("/api/v1/appointments/{$appointment->id}/cancel", []);
 
 
      $response->assertStatus(422)

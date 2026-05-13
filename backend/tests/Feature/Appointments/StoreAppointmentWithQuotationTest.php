@@ -43,7 +43,7 @@ $appointmentPayload = fn() => [
 // ── Happy Path ────────────────────────────────────────────────────
 
 it('creates appointment without items', function () use ($appointmentPayload) {
-    $this->postJson('/api/appointments', $appointmentPayload())
+    $this->postJson('/api/v1/appointments', $appointmentPayload())
         ->assertStatus(201)
         ->assertJsonPath('data.has_quotation', false);
 
@@ -51,7 +51,7 @@ it('creates appointment without items', function () use ($appointmentPayload) {
 });
 
 it('creates appointment with quotation items', function () use ($appointmentPayload) {
-    $response = $this->postJson('/api/appointments', [
+    $response = $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'items' => [
             [
@@ -86,7 +86,7 @@ it('creates appointment with quotation items', function () use ($appointmentPayl
 });
 
 it('creates appointment with items and selected options snapshots them', function () use ($appointmentPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'items' => [
             [
@@ -120,7 +120,7 @@ it('creates appointment with items and selected options snapshots them', functio
 it('creates appointment with multiple items', function () use ($appointmentPayload) {
     $product2 = Product::factory()->create();
 
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'items' => [
             [
@@ -154,7 +154,7 @@ it('creates appointment with multiple items', function () use ($appointmentPaylo
 // ── Validation ────────────────────────────────────────────────────
 
 it('returns 422 when item product does not exist', function () use ($appointmentPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'items' => [
             [
@@ -172,7 +172,7 @@ it('returns 422 when item product does not exist', function () use ($appointment
 });
 
 it('returns 422 when items array is empty', function () use ($appointmentPayload) {
-    $this->postJson('/api/appointments', [
+    $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
         'items' => [], // empty array should fail min:1
     ])

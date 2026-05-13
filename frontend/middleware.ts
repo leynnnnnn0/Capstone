@@ -1,8 +1,8 @@
-
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/products", "/get-quote", "/track"];
+const AUTH_ROUTES = ["/login", "/register", "/forgot-password"];
 
 export default function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
@@ -16,7 +16,9 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (token && isPublic) {
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+
+  if (token && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -24,5 +26,7 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api|images|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };

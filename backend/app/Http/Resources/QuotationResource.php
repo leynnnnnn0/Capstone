@@ -1,5 +1,4 @@
 <?php
-// app/Http/Resources/QuotationResource.php
 
 namespace App\Http\Resources;
 
@@ -10,8 +9,7 @@ class QuotationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        // ✅ Check if it's actually a collection, not MissingValue
-        $items    = $this->relationLoaded('quotation_items')
+        $items = $this->relationLoaded('quotation_items')
             ? $this->quotation_items
             : collect();
 

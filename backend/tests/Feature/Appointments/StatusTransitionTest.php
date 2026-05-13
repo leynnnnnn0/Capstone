@@ -33,7 +33,7 @@ it('marks confirmed appointment as on the way', function () use ($appointmentPay
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/on-the-way")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/on-the-way")
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'on_the_way');
 
@@ -44,7 +44,7 @@ it('cannot mark pending appointment as on the way', function () use ($appointmen
     $appointment = Appointment::factory()->create($appointmentPayload());
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/on-the-way")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/on-the-way")
         ->assertStatus(422);
 });
 
@@ -55,7 +55,7 @@ it('creates a remark when marked on the way', function () use ($appointmentPaylo
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/on-the-way");
+        ->patchJson("/api/v1/appointments/{$appointment->id}/on-the-way");
 
     expect($appointment->fresh()->remarks)->toHaveCount(1);
 });
@@ -69,7 +69,7 @@ it('marks on the way appointment as in progress', function () use ($appointmentP
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/in-progress")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/in-progress")
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'in_progress');
 
@@ -83,7 +83,7 @@ it('cannot mark confirmed appointment as in progress', function () use ($appoint
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/in-progress")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/in-progress")
         ->assertStatus(422);
 });
 
@@ -94,7 +94,7 @@ it('creates a remark when marked in progress', function () use ($appointmentPayl
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/in-progress");
+        ->patchJson("/api/v1/appointments/{$appointment->id}/in-progress");
 
     expect($appointment->fresh()->remarks)->toHaveCount(1);
 });
@@ -108,7 +108,7 @@ it('marks in progress appointment as completed', function () use ($appointmentPa
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/complete")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/complete")
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'completed');
 
@@ -122,7 +122,7 @@ it('cannot mark confirmed appointment as completed', function () use ($appointme
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/complete")
+        ->patchJson("/api/v1/appointments/{$appointment->id}/complete")
         ->assertStatus(422);
 });
 
@@ -133,7 +133,7 @@ it('creates a remark when marked completed', function () use ($appointmentPayloa
     ]);
 
     $this->actingAs($this->admin)
-        ->patchJson("/api/appointments/{$appointment->id}/complete");
+        ->patchJson("/api/v1/appointments/{$appointment->id}/complete");
 
     expect($appointment->fresh()->remarks)->toHaveCount(1);
 });
