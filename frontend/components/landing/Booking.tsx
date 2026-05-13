@@ -85,7 +85,7 @@ export default function Booking() {
     setErrors({});
 
     try {
-      await api("/api/appointments", {
+      await api("/api/v1/appointments", {
         method: "POST",
         skipAuth: true,
         body: JSON.stringify(parsed.data),
@@ -93,6 +93,7 @@ export default function Booking() {
       setSuccess("Appointment booked successfully. We will contact you soon.");
       setData(createInitialBookingForm());
     } catch (error) {
+      console.log(error)
       if (error instanceof ApiError) {
         setErrors(flattenServerErrors(error));
       } else {

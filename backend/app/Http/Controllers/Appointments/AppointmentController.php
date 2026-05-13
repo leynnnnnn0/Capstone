@@ -48,7 +48,7 @@ class AppointmentController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Something went wrong while creating your appointment.',
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

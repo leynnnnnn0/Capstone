@@ -1,4 +1,6 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
+  .replace(/\/+$/, "")
+  .replace(/\/(?:api\/v1|v1\/api|api|v1)$/, "");
 
 type ApiOptions = RequestInit & { skipAuth?: boolean };
 
@@ -21,10 +23,11 @@ export async function api<T = unknown>(
   options: ApiOptions = {},
 ): Promise<T> {
   const { skipAuth, ...requestOptions } = options;
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const isFormData =
     typeof FormData !== "undefined" && requestOptions.body instanceof FormData;
 
-  const res = await fetch(`${BASE}${endpoint}`, {
+  const res = await fetch(`${API_BASE}${normalizedEndpoint}`, {
     ...requestOptions,
     credentials: "include", // CRITICAL: sends the httpOnly cookie
     headers: {
