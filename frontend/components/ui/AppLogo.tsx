@@ -8,7 +8,10 @@ export default function AppLogo() {
     return (
       <Link href="/" className="cursor-pointer">
         <span className="text-sm text-center font-bold">
-          Next.js / Laravel Starter Kit
+          <Image src="/images/sog-logo.png"
+            width={50}
+            height={50}
+                alt="SOG Logo"/>
         </span>
       </Link>
     );

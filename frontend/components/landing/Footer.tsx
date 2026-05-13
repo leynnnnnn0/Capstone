@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 const footerColumns = [
   {
@@ -63,7 +64,12 @@ export default function Footer() {
         <span className="text-center text-xs text-white/30 md:text-left">
           © 2026 SOG Glass & Aluminum Services. All rights reserved.
         </span>
-        <span className="text-xs text-white/30">Made in the Philippines</span>
+        <div className="flex items-center gap-4 text-xs text-white/30">
+          <Link href="/staff/login" className="transition-colors hover:text-white/70">
+            Staff Login
+          </Link>
+          <span>Made in the Philippines</span>
+        </div>
       </div>
     </footer>
   );

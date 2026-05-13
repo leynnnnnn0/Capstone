@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
         }),
       });
         
-      router.push("/login?reset=true");
+      router.push("/staff/login?reset=true");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {

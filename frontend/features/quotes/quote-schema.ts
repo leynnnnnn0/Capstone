@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { allowsMorning, minimumBookingDate } from "@/features/booking/booking-utils";
 import type { QuoteCheckoutForm, QuoteFormErrors } from "./types";
 
 export const quoteCheckoutSchema = z.object({
@@ -14,14 +15,20 @@ export const quoteCheckoutSchema = z.object({
   preferred_date: z
     .string()
     .min(1, "Preferred date is required.")
-    .refine((value) => new Date(value) >= new Date(new Date().toDateString()), {
-      message: "Date cannot be in the past.",
-    }),
+    .refine((value) => value >= minimumBookingDate(), "Date cannot be in the past."),
   preferred_time: z.enum(["morning", "afternoon"], {
     message: "Preferred time is required.",
   }),
   additional_notes: z.string().max(2000).optional(),
   consent: z.boolean().refine(Boolean, "You must agree to be contacted."),
+}).superRefine((data, context) => {
+  if (data.preferred_time === "morning" && !allowsMorning(data.preferred_date)) {
+    context.addIssue({
+      code: "custom",
+      path: ["preferred_time"],
+      message: "Morning is no longer available for this date.",
+    });
+  }
 });
 
 export function validateQuoteCheckout(data: QuoteCheckoutForm): QuoteFormErrors {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { BookingForm, BookingFormErrors } from "./types";
-import { minimumBookingDate } from "./booking-utils";
+import { allowsMorning, minimumBookingDate } from "./booking-utils";
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]{2,50}$/;
 const phoneRegex = /^[0-9+\s().-]{10,20}$/;
@@ -48,6 +48,14 @@ export const bookingSchema = z.object({
   consent: z.literal(true, {
     message: "You must agree to be contacted.",
   }),
+}).superRefine((data, context) => {
+  if (data.preferred_time === "morning" && !allowsMorning(data.preferred_date)) {
+    context.addIssue({
+      code: "custom",
+      path: ["preferred_time"],
+      message: "Morning is no longer available for this date.",
+    });
+  }
 });
 
 export function validateBookingForm(data: BookingForm) {

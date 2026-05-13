@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
+import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import FormSelect from "@/components/form/FormSelect";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,9 +17,6 @@ import {
 import {
   createInitialBookingForm,
   flattenServerErrors,
-  getAvailableTimeOptions,
-  minimumBookingDate,
-  resolvePreferredTimeForDate,
 } from "@/features/booking/booking-utils";
 import type {
   BookingForm,
@@ -33,10 +30,6 @@ export default function Booking() {
   const [errors, setErrors] = useState<BookingFormErrors>({});
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState("");
-
-  const availableTimeOptions = useMemo(() => {
-    return getAvailableTimeOptions(data.preferred_date);
-  }, [data.preferred_date]);
 
   const setField = <K extends keyof BookingForm>(
     field: K,
@@ -251,49 +244,27 @@ export default function Booking() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="preferred_date">Preferred Date</Label>
-                <Input
-                  id="preferred_date"
-                  type="date"
-                  min={minimumBookingDate()}
-                  value={data.preferred_date}
-                  onChange={(event) => {
-                    const nextDate = event.target.value;
-                    setData((current) => ({
-                      ...current,
-                      preferred_date: nextDate,
-                      preferred_time: resolvePreferredTimeForDate(
-                        nextDate,
-                        current.preferred_time,
-                      ),
-                    }));
-                    setErrors((current) => {
-                      const next = { ...current };
-                      delete next.preferred_date;
-                      delete next.preferred_time;
-                      delete next.form;
-                      return next;
-                    });
-                  }}
-                />
-                {fieldError("preferred_date") && (
-                  <span className="text-xs text-red-500">
-                    {fieldError("preferred_date")}
-                  </span>
-                )}
-              </div>
-              <FormSelect
-                id="preferred_time"
-                label="Preferred Time"
-                value={data.preferred_time}
-                options={availableTimeOptions}
-                placeholder="Select time"
-                error={fieldError("preferred_time")}
-                onValueChange={(value) => setField("preferred_time", value)}
-              />
-            </div>
+            <BookingScheduleFields
+              preferredDate={data.preferred_date}
+              preferredTime={data.preferred_time}
+              dateError={fieldError("preferred_date")}
+              timeError={fieldError("preferred_time")}
+              onPreferredDateChange={(preferredDate, preferredTime) => {
+                setData((current) => ({
+                  ...current,
+                  preferred_date: preferredDate,
+                  preferred_time: preferredTime,
+                }));
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.preferred_date;
+                  delete next.preferred_time;
+                  delete next.form;
+                  return next;
+                });
+              }}
+              onPreferredTimeChange={(value) => setField("preferred_time", value)}
+            />
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="additional_notes">Additional Notes</Label>

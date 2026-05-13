@@ -3,24 +3,18 @@
 import { useState } from "react";
 import type React from "react";
 
+import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
 import LocationPicker from "@/components/landing/LocationPicker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
+import { minimumBookingDate } from "@/features/booking/booking-utils";
 import { submitQuoteRequest } from "@/features/quotes/quote-api";
 import { validateQuoteCheckout } from "@/features/quotes/quote-schema";
 import type {
   AppointmentQuoteResponse,
-  PreferredTime,
   QuoteCartItem,
   QuoteCheckoutForm as QuoteCheckoutFields,
   QuoteFormErrors,
@@ -33,20 +27,22 @@ import {
   variantLabel,
 } from "@/features/quotes/quote-utils";
 
-const defaultForm: QuoteCheckoutFields = {
-  first_name: "",
-  last_name: "",
-  phone_number: "",
-  email: "",
-  address: "",
-  address_pinned: "",
-  address_lat: "",
-  address_lng: "",
-  preferred_date: "",
-  preferred_time: "morning",
-  additional_notes: "",
-  consent: false,
-};
+function createDefaultForm(): QuoteCheckoutFields {
+  return {
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    email: "",
+    address: "",
+    address_pinned: "",
+    address_lat: "",
+    address_lng: "",
+    preferred_date: minimumBookingDate(),
+    preferred_time: "afternoon",
+    additional_notes: "",
+    consent: false,
+  };
+}
 
 export default function QuoteCheckoutForm({
   cart,
@@ -57,7 +53,7 @@ export default function QuoteCheckoutForm({
   onBack: () => void;
   onSuccess: () => void;
 }) {
-  const [data, setData] = useState<QuoteCheckoutFields>(defaultForm);
+  const [data, setData] = useState<QuoteCheckoutFields>(() => createDefaultForm());
   const [errors, setErrors] = useState<QuoteFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<AppointmentQuoteResponse | null>(null);
@@ -176,22 +172,28 @@ export default function QuoteCheckoutForm({
               <Input type="email" value={data.email} onChange={(event) => setField("email", event.target.value)} placeholder="juan@example.com" />
             </FormField>
 
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <FormField label="Preferred Date" error={errors.preferred_date}>
-                <Input type="date" value={data.preferred_date} onChange={(event) => setField("preferred_date", event.target.value)} />
-              </FormField>
-              <FormField label="Preferred Time" error={errors.preferred_time}>
-                <Select value={data.preferred_time} onValueChange={(value) => setField("preferred_time", value as PreferredTime)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Morning</SelectItem>
-                    <SelectItem value="afternoon">Afternoon</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormField>
-            </div>
+            <BookingScheduleFields
+              className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2"
+              preferredDate={data.preferred_date}
+              preferredTime={data.preferred_time}
+              dateError={errors.preferred_date}
+              timeError={errors.preferred_time}
+              onPreferredDateChange={(preferredDate, preferredTime) => {
+                setData((current) => ({
+                  ...current,
+                  preferred_date: preferredDate,
+                  preferred_time: preferredTime,
+                }));
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.preferred_date;
+                  delete next.preferred_time;
+                  delete next.form;
+                  return next;
+                });
+              }}
+              onPreferredTimeChange={(value) => setField("preferred_time", value)}
+            />
 
             <div className="mb-4">
               <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
