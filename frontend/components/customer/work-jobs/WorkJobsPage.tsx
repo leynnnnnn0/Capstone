@@ -20,8 +20,8 @@ export default function WorkJobsPage() {
   return (
     <CustomerShell>
       <div className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-widest text-primary">Work Jobs</p>
-        <h1 className="mt-2 text-3xl font-black text-slate-950">Installation and service jobs</h1>
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Work Jobs</p>
+        <h1 className="mt-2 text-base font-medium text-slate-950">Installation and service jobs</h1>
         <p className="mt-1 text-sm text-slate-500">
           Work jobs are created by the SOG team after your appointment or quote is approved.
         </p>
@@ -35,7 +35,7 @@ export default function WorkJobsPage() {
 
       {!loading && workJobs.length === 0 && (
         <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="font-bold text-slate-900">No work jobs yet</p>
+          <p className="font-medium text-slate-900">No work jobs yet</p>
           <p className="mt-1 text-sm text-slate-500">
             Your work jobs will appear here when our team schedules installation or service.
           </p>

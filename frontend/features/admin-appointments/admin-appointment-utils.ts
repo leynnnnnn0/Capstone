@@ -9,6 +9,7 @@ export const adminStatusMeta: Record<AdminAppointmentStatus, { label: string; cl
   in_progress: { label: "In Progress", className: "bg-violet-50 text-violet-700 border-violet-200" },
   completed: { label: "Completed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   cancelled: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
+  reopened: { label: "Reopened", className: "bg-sky-50 text-sky-700 border-sky-200" },
   no_show: { label: "No Show", className: "bg-red-50 text-red-700 border-red-200" },
 };
 

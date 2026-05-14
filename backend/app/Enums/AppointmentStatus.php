@@ -11,6 +11,7 @@ enum AppointmentStatus: string
     case InProgress  = 'in_progress';
     case Completed   = 'completed';
     case Cancelled   = 'cancelled';
+    case Reopened    = 'reopened';
     case NoShow      = 'no_show';
 
     public function label(): string
@@ -23,6 +24,7 @@ enum AppointmentStatus: string
             self::InProgress  => 'In Progress',
             self::Completed   => 'Completed',
             self::Cancelled   => 'Cancelled',
+            self::Reopened    => 'Reopened',
             self::NoShow      => 'No Show',
         };
     }
@@ -31,12 +33,13 @@ enum AppointmentStatus: string
     {
         return match ($this) {
             self::Pending     => in_array($next, [self::Confirmed, self::Cancelled]),
-            self::Confirmed   => in_array($next, [self::Rescheduled, self::OnTheWay, self::Cancelled]),
-            self::Rescheduled => in_array($next, [self::Confirmed, self::Cancelled]),
-            self::OnTheWay    => in_array($next, [self::InProgress, self::Cancelled]),
+            self::Confirmed   => in_array($next, [self::Rescheduled, self::OnTheWay, self::Cancelled, self::NoShow]),
+            self::Rescheduled => in_array($next, [self::Confirmed, self::Cancelled, self::NoShow]),
+            self::OnTheWay    => in_array($next, [self::InProgress, self::Cancelled, self::NoShow]),
             self::InProgress  => in_array($next, [self::Completed]),
+            self::Cancelled   => in_array($next, [self::Reopened]),
+            self::Reopened    => in_array($next, [self::Confirmed, self::Cancelled]),
             self::Completed,
-            self::Cancelled,
             self::NoShow => false
         };
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Appointments;
 use App\Exceptions\SlotFullException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAppointmentRequest;
+use App\Http\Requests\UpdateAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Services\AppointmentService;
@@ -88,6 +89,30 @@ class AppointmentController extends Controller
                 'error'   => $e->getMessage(),
                 'user_id' => $request->input('user_id'),
                 'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
+    {
+        try {
+            $appointment = $this->appointmentService->update($appointment, $request->validated(), $request->user());
+
+            $appointment->load(self::RELATIONS);
+
+            return response()->json([
+                'message' => 'Appointment successfully updated.',
+                'data'    => new AppointmentResource($appointment),
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Failed to update appointment', [
+                'appointment_id' => $appointment->id,
+                'error'          => $e->getMessage(),
+                'trace'          => $e->getTraceAsString(),
             ]);
 
             return response()->json([

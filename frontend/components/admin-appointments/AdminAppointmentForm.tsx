@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Loader2, Package, Plus, StickyNote, Users } from "lucide-react";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
@@ -26,16 +26,20 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   createAdminAppointment,
+  fetchAdminAppointment,
   fetchAdminAppointments,
   fetchAvailableWorkers,
   fetchWorkers,
+  updateAdminAppointment,
 } from "@/features/admin-appointments/admin-appointment-api";
 import {
+  adminStatusMeta,
   adminServiceOptions,
   createAdminAppointmentForm,
 } from "@/features/admin-appointments/admin-appointment-utils";
 import {
   fmtPeso,
+  customerItemToLineItem,
   lineItemToPayload,
   makeAdminLineItem,
   validateLineItems,
@@ -51,10 +55,20 @@ type FieldErrors = Partial<Record<keyof AdminAppointmentFormState | "items" | "f
 const statusOptions = [
   { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
+  { value: "rescheduled", label: "Rescheduled" },
+  { value: "on_the_way", label: "On the Way" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "reopened", label: "Reopened" },
+  { value: "no_show", label: "No Show" },
 ] as const;
 
-export default function AdminAppointmentForm() {
+export default function AdminAppointmentForm({ appointmentId }: { appointmentId?: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rebookId = searchParams.get("rebook");
+  const isEdit = Boolean(appointmentId);
   const [data, setData] = useState<AdminAppointmentFormState>(() => createAdminAppointmentForm());
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -74,14 +88,44 @@ export default function AdminAppointmentForm() {
       fetchProducts({ is_active: "1", per_page: "100" }),
       fetchWorkers(),
       fetchAdminAppointments({ per_page: "100" }),
+      appointmentId ? fetchAdminAppointment(appointmentId) : rebookId ? fetchAdminAppointment(rebookId) : Promise.resolve(null),
     ])
-      .then(([productResponse, workerResponse, appointmentResponse]) => {
+      .then(([productResponse, workerResponse, appointmentResponse, rebookResponse]) => {
         setProducts(productResponse.data);
         setAvailableWorkers(workerResponse.data);
         setAppointments(appointmentResponse.data);
+        if (rebookResponse) {
+          const source = rebookResponse.data;
+          setData({
+            first_name: source.first_name,
+            last_name: source.last_name,
+            phone_number: source.phone_number,
+            email: source.email ?? "",
+            address: source.address,
+            address_pinned: source.address_pinned ?? "",
+            address_lat: source.address_lat ?? "",
+            address_lng: source.address_lng ?? "",
+            preferred_date: source.appointment_date ?? source.preferred_date,
+            preferred_time: source.preferred_time,
+            service_type: source.service_type,
+            service_type_other: source.service_type_other ?? "",
+            additional_notes: source.additional_notes ?? "",
+            consent: true,
+            status: appointmentId ? source.status : "pending",
+            appointment_date: source.appointment_date ?? source.preferred_date,
+            appointment_time_from: source.appointment_time_from ?? "09:00",
+            appointment_time_until: source.appointment_time_until ?? "11:00",
+            worker_ids: source.workers.map((worker) => worker.id),
+            quotation_notes: source.quotation?.notes ?? "",
+          });
+          if (source.quotation?.items.length) {
+            setItems(source.quotation.items.map(customerItemToLineItem));
+            setHasQuotation(true);
+          }
+        }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [appointmentId, rebookId]);
 
   useEffect(() => {
     if (!data.appointment_date || !data.appointment_time_from || !data.appointment_time_until) return;
@@ -142,12 +186,15 @@ export default function AdminAppointmentForm() {
     }
 
     try {
-      const response = await createAdminAppointment({
+      const payload: AdminAppointmentFormState = {
         ...data,
         preferred_date: data.appointment_date,
         preferred_time: data.appointment_time_from < "12:00" ? "morning" : "afternoon",
         ...(hasQuotation ? { items: items.map(lineItemToPayload) } : {}),
-      });
+      };
+      const response = appointmentId
+        ? await updateAdminAppointment(appointmentId, payload)
+        : await createAdminAppointment(payload);
       router.push(`/dashboard/appointments/${response.data.id}`);
     } catch (error) {
       setErrors(toFieldErrors(error));
@@ -161,14 +208,17 @@ export default function AdminAppointmentForm() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            Create Appointment
+            {appointmentId ? "Edit Appointment" : rebookId ? "Rebook Appointment" : "Create Appointment"}
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight">
-            New appointment
+            {appointmentId ? "Edit appointment" : rebookId ? "New appointment from cancelled booking" : "New appointment"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create the appointment, set the slot, and attach a quotation when
-            needed.
+            {rebookId
+              ? "Review the copied details, set the new slot, and save it as a separate appointment."
+              : appointmentId
+                ? "Update the appointment details, schedule, workers, and quotation."
+              : "Create the appointment, set the slot, and attach a quotation when needed."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -236,6 +286,12 @@ export default function AdminAppointmentForm() {
               <Label className="mb-1.5 block">Service Address</Label>
               <LocationPicker
                 error={errors.address}
+                initialValue={{
+                  address: data.address,
+                  pinned: data.address_pinned,
+                  lat: data.address_lat ? Number(data.address_lat) : null,
+                  lng: data.address_lng ? Number(data.address_lng) : null,
+                }}
                 onLocationChange={({ address, pinned, lat, lng }) => {
                   setData((current) => ({
                     ...current,
@@ -267,14 +323,26 @@ export default function AdminAppointmentForm() {
                 error={errors.service_type}
                 onValueChange={(value) => setField("service_type", value)}
               />
-              <FormSelect
-                id="status"
-                label="Status"
-                value={data.status}
-                options={[...statusOptions]}
-                error={errors.status}
-                onValueChange={(value) => setField("status", value)}
-              />
+              {isEdit ? (
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3">
+                    <Badge variant="outline" className={adminStatusMeta[data.status]?.className}>
+                      {adminStatusMeta[data.status]?.label ?? data.status}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Use the status actions on the appointment page for workflow changes.</p>
+                </div>
+              ) : (
+                <FormSelect
+                  id="status"
+                  label="Status"
+                  value={data.status}
+                  options={statusOptions.filter((option) => ["pending", "confirmed"].includes(option.value))}
+                  error={errors.status}
+                  onValueChange={(value) => setField("status", value)}
+                />
+              )}
               {data.service_type === "other" && (
                 <TextField
                   label="Describe Service"
@@ -360,7 +428,7 @@ export default function AdminAppointmentForm() {
           <div className="rounded-lg border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black">Create Appointment</p>
+                <p className="text-sm font-black">{appointmentId ? "Update Appointment" : "Create Appointment"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Review schedule, status, and quotation before saving.
                 </p>
@@ -402,8 +470,8 @@ export default function AdminAppointmentForm() {
               className="mt-5 h-11 w-full"
               disabled={saving}
             >
-              {saving ? "Creating..." : "Create Appointment"}
-            </Button>
+                {saving ? (appointmentId ? "Updating..." : "Creating...") : appointmentId ? "Update Appointment" : "Create Appointment"}
+              </Button>
           </div>
         </aside>
       </form>

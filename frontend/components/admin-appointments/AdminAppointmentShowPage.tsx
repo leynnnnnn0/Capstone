@@ -35,16 +35,32 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
 
   return (
     <div className="space-y-6">
-      <AdminAppointmentHeader appointment={appointment} onOpenQuotation={() => setQuotationOpen(true)} />
+      <AdminAppointmentHeader
+        appointment={appointment}
+        onOpenQuotation={() => setQuotationOpen(true)}
+      />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <AdminAppointmentDetailsCard appointment={appointment} />
-          <CustomerLocationCard address={appointment.address} addressLat={appointment.address_lat} addressLng={appointment.address_lng} compact />
+          <CustomerLocationCard
+            address={appointment.address}
+            addressLat={appointment.address_lat}
+            addressLng={appointment.address_lng}
+            compact
+          />
         </div>
         <div className="space-y-6">
-          <AdminStatusActions appointment={appointment} onUpdated={setAppointment} />
-          <AdminScheduleForm appointment={appointment} workers={workers} onUpdated={setAppointment} />
           <AdminProceedToWorkJob appointment={appointment} />
+          <AdminStatusActions
+            appointment={appointment}
+            onUpdated={setAppointment}
+          />
+          <AdminScheduleForm
+            appointment={appointment}
+            workers={workers}
+            onUpdated={setAppointment}
+          />
+
           <AdminQuotationDetails quotation={appointment.quotation} />
           <AdminActivityLog remarks={appointment.remarks} />
         </div>

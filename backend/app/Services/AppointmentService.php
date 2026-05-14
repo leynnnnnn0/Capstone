@@ -7,6 +7,7 @@ use App\Events\AppointmentBooked;
 use App\Events\AppointmentCancelled;
 use App\Events\AppointmentConfirmed;
 use App\Events\AppointmentRescheduled;
+use App\Events\AppointmentStatusChanged;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Exceptions\SlotFullException;
 use App\Models\Appointment;
@@ -56,6 +57,56 @@ class AppointmentService
         AppointmentBooked::dispatch($appointment);
 
         return $appointment;
+    }
+
+    public function update(Appointment $appointment, array $validated, User $actor): Appointment
+    {
+        $originalStatus = $appointment->status;
+
+        $updated = DB::transaction(function () use ($appointment, $validated, $actor, $originalStatus) {
+            $appointment->update([
+                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes']),
+            ]);
+
+            if (array_key_exists('worker_ids', $validated)) {
+                $appointment->workers()->sync($validated['worker_ids'] ?? []);
+            }
+
+            if (!empty($validated['items'])) {
+                if ($appointment->quotation) {
+                    $this->quotationService->update($appointment->quotation, [
+                        'items' => $validated['items'],
+                        'notes' => $validated['quotation_notes'] ?? null,
+                    ]);
+                } else {
+                    $this->quotationService->create([
+                        'appointment_id' => $appointment->id,
+                        'items' => $validated['items'],
+                        'notes' => $validated['quotation_notes'] ?? null,
+                    ]);
+                }
+            }
+
+            if ($appointment->fresh()->status !== $originalStatus) {
+                $appointment->remarks()->create([
+                    'user_id' => $actor->id,
+                    'action' => $appointment->fresh()->status->value,
+                    'message' => "Appointment status changed to {$appointment->fresh()->status->label()}.",
+                ]);
+            }
+
+            return $appointment->fresh();
+        });
+
+        if ($updated->status !== $originalStatus) {
+            AppointmentStatusChanged::dispatch(
+                $updated,
+                $updated->status,
+                "Appointment status changed to {$updated->status->label()}."
+            );
+        }
+
+        return $updated;
     }
 
     private function ensureSlotAvailable(string $date, string $time): void
@@ -125,6 +176,31 @@ class AppointmentService
         return $appointment->fresh();
     }
 
+    public function reopen(Appointment $appointment, array $data, User $actor): Appointment
+    {
+        $this->ensureCanTransition($appointment, AppointmentStatus::Reopened);
+
+        DB::transaction(function () use ($appointment, $data, $actor) {
+            $message = $data['remarks'] ?? 'Appointment reopened.';
+
+            $appointment->update(['status' => AppointmentStatus::Reopened]);
+
+            $appointment->remarks()->create([
+                'user_id' => $actor->id,
+                'action'  => AppointmentStatus::Reopened->value,
+                'message' => $message,
+            ]);
+        });
+
+        AppointmentStatusChanged::dispatch(
+            $appointment->fresh(),
+            AppointmentStatus::Reopened,
+            $data['remarks'] ?? 'Appointment reopened.'
+        );
+
+        return $appointment->fresh();
+    }
+
     public function reschedule(Appointment $appointment, array $data, User $actor): Appointment
     {
         $this->ensureCanTransition($appointment, AppointmentStatus::Rescheduled);
@@ -167,6 +243,12 @@ class AppointmentService
             ]);
         });
 
+        AppointmentStatusChanged::dispatch(
+            $appointment->fresh(),
+            AppointmentStatus::OnTheWay,
+            'Worker is on the way.'
+        );
+
         return $appointment->fresh();
     }
 
@@ -184,6 +266,12 @@ class AppointmentService
             ]);
         });
 
+        AppointmentStatusChanged::dispatch(
+            $appointment->fresh(),
+            AppointmentStatus::InProgress,
+            'Job is now in progress.'
+        );
+
         return $appointment->fresh();
     }
 
@@ -200,6 +288,37 @@ class AppointmentService
                 'message' => 'Appointment completed.',
             ]);
         });
+
+        AppointmentStatusChanged::dispatch(
+            $appointment->fresh(),
+            AppointmentStatus::Completed,
+            'Appointment completed.'
+        );
+
+        return $appointment->fresh();
+    }
+
+    public function markNoShow(Appointment $appointment, array $data, User $actor): Appointment
+    {
+        $this->ensureCanTransition($appointment, AppointmentStatus::NoShow);
+
+        $message = $data['remarks'] ?? 'Customer marked as no show.';
+
+        DB::transaction(function () use ($appointment, $actor, $message) {
+            $appointment->update(['status' => AppointmentStatus::NoShow]);
+
+            $appointment->remarks()->create([
+                'user_id' => $actor->id,
+                'action'  => AppointmentStatus::NoShow->value,
+                'message' => $message,
+            ]);
+        });
+
+        AppointmentStatusChanged::dispatch(
+            $appointment->fresh(),
+            AppointmentStatus::NoShow,
+            $message
+        );
 
         return $appointment->fresh();
     }

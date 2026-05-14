@@ -50,8 +50,9 @@ export default function AdminScheduleForm({
   const [saving, setSaving] = useState(false);
 
   const canReschedule = ["confirmed", "on_the_way", "in_progress"].includes(appointment.status);
-  const canSchedule = appointment.status === "pending" || appointment.status === "rescheduled" || canReschedule;
-  const scheduleButtonLabel = appointment.status === "pending" || appointment.status === "rescheduled" ? "Set Schedule" : "Reschedule";
+  const canSetSchedule = ["pending", "rescheduled", "reopened"].includes(appointment.status);
+  const canSchedule = canSetSchedule || canReschedule;
+  const scheduleButtonLabel = canSetSchedule ? "Set Schedule" : "Reschedule";
   const selectedWorkerNames = useMemo(
     () => data.worker_ids.map((id) => workers.find((worker) => worker.id === id)?.full_name).filter(Boolean).join(", "),
     [data.worker_ids, workers],
@@ -108,7 +109,7 @@ export default function AdminScheduleForm({
 
     try {
       const response =
-        appointment.status === "pending" || appointment.status === "rescheduled"
+        canSetSchedule
           ? await confirmAppointment(appointment.id, data)
           : await rescheduleAppointment(appointment.id, data);
 
@@ -158,7 +159,7 @@ export default function AdminScheduleForm({
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{appointment.status === "pending" || appointment.status === "rescheduled" ? "Set appointment schedule" : "Reschedule appointment"}</DialogTitle>
+            <DialogTitle>{canSetSchedule ? "Set appointment schedule" : "Reschedule appointment"}</DialogTitle>
             <DialogDescription>Set the inspection date, time range, and assigned workers.</DialogDescription>
           </DialogHeader>
 
@@ -216,7 +217,7 @@ export default function AdminScheduleForm({
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{appointment.status === "pending" || appointment.status === "rescheduled" ? "Confirm appointment slot" : "Reschedule appointment"}</DialogTitle>
+            <DialogTitle>{canSetSchedule ? "Confirm appointment slot" : "Reschedule appointment"}</DialogTitle>
             <DialogDescription>Review the slot details before saving.</DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border text-sm">
@@ -226,7 +227,7 @@ export default function AdminScheduleForm({
             <ModalRow label="Workers" value={selectedWorkerNames || "-"} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="schedule_remarks">{appointment.status === "pending" || appointment.status === "rescheduled" ? "Remarks" : "Reason"}</Label>
+            <Label htmlFor="schedule_remarks">{canSetSchedule ? "Remarks" : "Reason"}</Label>
             <Textarea id="schedule_remarks" value={data.remarks ?? ""} onChange={(event) => setField("remarks", event.target.value)} className="resize-none" />
           </div>
           <DialogFooter>

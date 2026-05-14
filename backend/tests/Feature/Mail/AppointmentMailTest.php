@@ -10,6 +10,7 @@ use App\Events\AppointmentConfirmed;
 use App\Mail\Appointments\AppointmentBookedMail;
 use App\Mail\Appointments\AppointmentCancelledMail;
 use App\Mail\Appointments\AppointmentRescheduledMail;
+use App\Mail\Appointments\AppointmentStatusChangedMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -134,4 +135,24 @@ it('does not send any mail when appointment has no email', function () use ($app
         ]);
 
     Mail::assertNothingSent();
+});
+
+it('queues status email when appointment is marked no show', function () use ($appointmentPayload) {
+    $appointment = Appointment::factory()->create([
+        ...$appointmentPayload(),
+        'email'  => 'juan@example.com',
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/appointments/{$appointment->id}/no-show", [
+            'remarks' => 'Customer did not arrive.',
+        ])
+        ->assertStatus(200);
+
+    Mail::assertQueued(AppointmentStatusChangedMail::class, function ($mail) use ($appointment) {
+        return $mail->hasTo('juan@example.com')
+            && $mail->appointment->id === $appointment->id
+            && $mail->status === AppointmentStatus::NoShow;
+    });
 });

@@ -38,6 +38,13 @@ export function createAdminAppointment(payload: AdminAppointmentForm) {
   });
 }
 
+export function updateAdminAppointment(id: string | number, payload: AdminAppointmentForm) {
+  return api<ResourceResponse<AdminAppointment>>(`/api/v1/appointments/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function fetchWorkers() {
   return api<CollectionResponse<AdminWorker>>("/api/v1/workers");
 }
@@ -75,6 +82,13 @@ export function cancelAppointment(id: number, reason: string) {
   });
 }
 
+export function reopenAppointment(id: number, remarks?: string) {
+  return api<ResourceResponse<AdminAppointment>>(`/api/v1/appointments/${id}/reopen`, {
+    method: "PATCH",
+    body: JSON.stringify({ remarks }),
+  });
+}
+
 export function markAppointmentOnTheWay(id: number) {
   return api<ResourceResponse<AdminAppointment>>(`/api/v1/appointments/${id}/on-the-way`, {
     method: "PATCH",
@@ -84,6 +98,13 @@ export function markAppointmentOnTheWay(id: number) {
 export function markAppointmentInProgress(id: number) {
   return api<ResourceResponse<AdminAppointment>>(`/api/v1/appointments/${id}/in-progress`, {
     method: "PATCH",
+  });
+}
+
+export function markAppointmentNoShow(id: number, remarks?: string) {
+  return api<ResourceResponse<AdminAppointment>>(`/api/v1/appointments/${id}/no-show`, {
+    method: "PATCH",
+    body: JSON.stringify({ remarks }),
   });
 }
 
@@ -125,6 +146,14 @@ export function deleteQuotationItemImage(imageId: number) {
   return api(`/api/v1/quotation-item-images/${imageId}`, {
     method: "DELETE",
   });
+}
+
+export function quotationPdfUrl(quotationId: number) {
+  const base = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
+    .replace(/\/+$/, "")
+    .replace(/\/(?:api\/v1|v1\/api|api|v1)$/, "");
+
+  return `${base}/api/v1/quotations/${quotationId}/pdf`;
 }
 
 export function createWorkJobFromAppointment(appointmentId: number) {

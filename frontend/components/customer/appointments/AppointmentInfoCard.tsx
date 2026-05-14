@@ -27,10 +27,10 @@ export default function AppointmentInfoCard({ appointment }: { appointment: Cust
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-5 text-sm font-black uppercase tracking-widest text-primary">
+      <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
         Appointment Details
       </h2>
-      <div className="grid gap-x-10 gap-y-7 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Info icon={User} label="Customer" value={appointment.full_name} />
         <Info icon={Phone} label="Phone" value={appointment.phone_number} />
         <Info icon={Mail} label="Email" value={appointment.email ?? "-"} />
@@ -82,11 +82,11 @@ function Info({
 }) {
   return (
     <div className={wide ? "md:col-span-2" : ""}>
-      <div className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-wide text-slate-500">
-        <Icon className="size-4 text-slate-500" />
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        <Icon className="size-3.5 text-slate-500" />
         {label}
       </div>
-      <p className="text-base font-medium leading-relaxed text-slate-950">{value}</p>
+      <p className="mt-1 text-sm font-normal leading-relaxed text-slate-950">{value}</p>
     </div>
   );
 }

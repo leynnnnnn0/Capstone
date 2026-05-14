@@ -6,7 +6,7 @@ export default function CustomerStatusBadge({ status }: { status: CustomerStatus
   const meta = customerStatusMeta[status] ?? customerStatusMeta.pending;
 
   return (
-    <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-xs font-bold", meta.className)}>
+    <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-xs font-medium", meta.className)}>
       {meta.label}
     </span>
   );

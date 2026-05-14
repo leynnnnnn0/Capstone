@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { updateQuotationItemStatus } from "@/features/admin-appointments/admin-appointment-api";
+import { quotationPdfUrl, updateQuotationItemStatus } from "@/features/admin-appointments/admin-appointment-api";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 
@@ -94,9 +94,11 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
               <CardTitle className="text-base">Quotation</CardTitle>
             </div>
             <div className="flex items-center gap-1.5">
-              <Button type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={() => window.print()}>
-                <Download className="h-3 w-3" />
-                PDF
+              <Button asChild variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+                <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
+                  <Download className="h-3 w-3" />
+                  PDF
+                </a>
               </Button>
               {approvedItems.length > 0 && (
                 <Badge className="bg-green-600 text-[10px] text-white hover:bg-green-700">

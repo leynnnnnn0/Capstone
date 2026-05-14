@@ -19,10 +19,10 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
             {appointment.appointment_number}
           </p>
-          <h3 className="mt-1 text-lg font-black text-slate-950">
+          <h3 className="mt-1 text-base font-medium text-slate-950">
             {appointment.service_type === "other" ? appointment.service_type_other : appointment.service_type}
           </h3>
         </div>
@@ -41,10 +41,10 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-        <span className="text-xs font-semibold text-slate-400">
+        <span className="text-xs font-medium text-slate-400">
           {appointment.quotation ? `${appointment.quotation.items.length} quote item(s)` : "No quote yet"}
         </span>
-        <span className="text-sm font-black text-primary">
+        <span className="text-sm font-semibold text-primary">
           {appointment.quotation ? formatPeso(quotationTotal(appointment.quotation)) : "View"}
         </span>
       </div>

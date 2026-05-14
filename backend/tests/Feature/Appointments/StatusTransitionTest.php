@@ -138,3 +138,63 @@ it('creates a remark when marked completed', function () use ($appointmentPayloa
     expect($appointment->fresh()->remarks)->toHaveCount(1);
 });
 
+// ── reopened ──────────────────────────────────────────────────────
+
+it('reopens a cancelled appointment as an admin correction', function () use ($appointmentPayload) {
+    $appointment = Appointment::factory()->create([
+        ...$appointmentPayload(),
+        'status' => AppointmentStatus::Cancelled,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/appointments/{$appointment->id}/reopen", [
+            'remarks' => 'Cancelled by mistake.',
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'reopened');
+
+    expect($appointment->fresh()->status)->toBe(AppointmentStatus::Reopened)
+        ->and($appointment->fresh()->remarks)->toHaveCount(1);
+});
+
+it('cannot reopen an appointment that is not cancelled', function () use ($appointmentPayload) {
+    $appointment = Appointment::factory()->create([
+        ...$appointmentPayload(),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/appointments/{$appointment->id}/reopen", [
+            'remarks' => 'Correction.',
+        ])
+        ->assertStatus(422);
+});
+
+// ── no_show ──────────────────────────────────────────────────────
+
+it('marks confirmed appointment as no show', function () use ($appointmentPayload) {
+    $appointment = Appointment::factory()->create([
+        ...$appointmentPayload(),
+        'status' => AppointmentStatus::Confirmed,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/appointments/{$appointment->id}/no-show", [
+            'remarks' => 'Customer did not arrive.',
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'no_show');
+
+    expect($appointment->fresh()->status)->toBe(AppointmentStatus::NoShow)
+        ->and($appointment->fresh()->remarks)->toHaveCount(1);
+});
+
+it('cannot mark pending appointment as no show', function () use ($appointmentPayload) {
+    $appointment = Appointment::factory()->create($appointmentPayload());
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/appointments/{$appointment->id}/no-show", [
+            'remarks' => 'Customer did not arrive.',
+        ])
+        ->assertStatus(422);
+});

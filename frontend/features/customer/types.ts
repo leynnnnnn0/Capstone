@@ -6,6 +6,7 @@ export type CustomerStatus =
   | "in_progress"
   | "completed"
   | "cancelled"
+  | "reopened"
   | "no_show";
 
 export type CustomerWorker = {

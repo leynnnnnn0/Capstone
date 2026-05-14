@@ -18,6 +18,7 @@ export const customerStatusMeta: Record<CustomerStatus, { label: string; classNa
   in_progress: { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
   completed: { label: "Completed", className: "bg-slate-100 text-slate-700 border-slate-200" },
   cancelled: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
+  reopened: { label: "Reopened", className: "bg-sky-50 text-sky-700 border-sky-200" },
   no_show: { label: "No Show", className: "bg-red-50 text-red-700 border-red-200" },
 };
 

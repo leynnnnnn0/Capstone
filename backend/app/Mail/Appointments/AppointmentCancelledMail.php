@@ -37,7 +37,7 @@ class AppointmentCancelledMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'email.appointments.cancelled',
+            view: 'emails.appointments.cancelled',
         );
     }
 

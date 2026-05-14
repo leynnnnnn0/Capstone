@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
-import CustomerProgress from "@/components/customer/shared/CustomerProgress";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerShell from "@/components/customer/shared/CustomerShell";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
@@ -34,32 +34,26 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
     <CustomerShell>
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <button onClick={() => router.back()} className="mb-3 text-sm font-bold text-primary hover:underline">
+          <button onClick={() => router.back()} className="mb-3 text-sm font-medium text-primary hover:underline">
             Back
           </button>
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
             {workJob.work_job_number}
           </p>
-          <h1 className="mt-1 text-3xl font-black text-slate-950">Work Job Details</h1>
+          <h1 className="mt-1 text-base font-medium text-slate-950">Work Job Details</h1>
         </div>
         <CustomerStatusBadge status={workJob.status} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="space-y-5">
-          <CustomerProgress
-            status={workJob.status}
-            type="work_job"
-            reference={workJob.work_job_number}
-            createdAt={workJob.created_at}
-            scheduledDate={workJob.scheduled_date}
-            timeFrom={workJob.scheduled_time_from}
-            timeUntil={workJob.scheduled_time_until}
+          <CustomerActivityLog
             remarks={workJob.remarks}
+            emptyDescription="Updates from this work job will appear here."
           />
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 text-lg font-black text-slate-950">Schedule</h2>
+            <h2 className="mb-4 text-base font-semibold text-slate-950">Schedule</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <Info label="Scheduled Date" value={formatCustomerSchedule(workJob.scheduled_date, workJob.scheduled_time_from, workJob.scheduled_time_until)} />
               <Info label="Service Type" value={workJob.service_type === "other" ? workJob.service_type_other ?? "Other" : workJob.service_type} />
@@ -82,7 +76,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         </section>
 
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-black text-slate-950">Work Job Rules</p>
+          <p className="text-sm font-semibold text-slate-950">Work Job Rules</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             Work jobs are managed by the SOG team. Customers can track progress and view quote details here,
             but creation and status changes are handled internally.
@@ -96,8 +90,8 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 function Info({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div className={wide ? "sm:col-span-2" : ""}>
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-sm font-normal text-slate-800">{value}</p>
     </div>
   );
 }

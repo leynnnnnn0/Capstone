@@ -30,18 +30,18 @@ class SendAppointmentConfirmedNotification implements ShouldQueue
             ]);
         }
 
-        try {
-            if ($appointment->phone_number) {
-                $this->sms->send(
-                    $appointment->phone_number,
-                    "Hi {$appointment->first_name}, your appointment (Ref: {$appointment->appointment_number}) has been confirmed for {$appointment->appointment_date}, from {$appointment->appointment_time_from} to {$appointment->appointment_time_until}. Please contact us if you need to make any changes. Thank you!"
-                );
-            }
-        } catch (Throwable $e) {
-            Log::warning('Failed to send appointment confirmation SMS.', [
-                'appointment_id' => $appointment->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // try {
+        //     if ($appointment->phone_number) {
+        //         $this->sms->send(
+        //             $appointment->phone_number,
+        //             "Hi {$appointment->first_name}, your appointment (Ref: {$appointment->appointment_number}) has been confirmed for {$appointment->appointment_date}, from {$appointment->appointment_time_from} to {$appointment->appointment_time_until}. Please contact us if you need to make any changes. Thank you!"
+        //         );
+        //     }
+        // } catch (Throwable $e) {
+        //     Log::warning('Failed to send appointment confirmation SMS.', [
+        //         'appointment_id' => $appointment->id,
+        //         'error' => $e->getMessage(),
+        //     ]);
+        // }
     }
 }

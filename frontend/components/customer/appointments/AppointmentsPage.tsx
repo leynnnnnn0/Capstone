@@ -22,13 +22,13 @@ export default function AppointmentsPage() {
     <CustomerShell>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Appointments</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950">Your inspection requests</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Appointments</p>
+          <h1 className="mt-2 text-base font-medium text-slate-950">Your inspection requests</h1>
           <p className="mt-1 text-sm text-slate-500">
             Create, review, edit pending requests, or cancel appointments.
           </p>
         </div>
-        <Link href="/account/appointments/new" className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-white">
+        <Link href="/account/appointments/new" className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white">
           New Appointment
         </Link>
       </div>
@@ -41,7 +41,7 @@ export default function AppointmentsPage() {
 
       {!loading && appointments.length === 0 && (
         <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="font-bold text-slate-900">No appointments yet</p>
+          <p className="font-medium text-slate-900">No appointments yet</p>
           <p className="mt-1 text-sm text-slate-500">Start by creating your first inspection request.</p>
         </div>
       )}

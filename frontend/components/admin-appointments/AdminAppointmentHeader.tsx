@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, FileText, PlusCircle } from "lucide-react";
+import { CalendarDays, FilePenLine, FileText, PlusCircle } from "lucide-react";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
 import AdminAppointmentStatusBadge from "@/components/admin-appointments/AdminAppointmentStatusBadge";
@@ -27,6 +27,7 @@ export default function AdminAppointmentHeader({
 }) {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const isLocked = ["cancelled", "no_show"].includes(appointment.status);
 
   useEffect(() => {
     if (!calendarOpen) return;
@@ -45,6 +46,14 @@ export default function AdminAppointmentHeader({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <AdminAppointmentStatusBadge status={appointment.status} />
+        {!isLocked && (
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link href={`/dashboard/appointments/${appointment.id}/edit`}>
+              <FilePenLine className="size-3.5" />
+              Edit Appointment
+            </Link>
+          </Button>
+        )}
         <Sheet open={calendarOpen} onOpenChange={setCalendarOpen}>
           <SheetTrigger asChild>
             <Button type="button" variant="outline" size="sm" className="gap-1.5">
@@ -66,10 +75,12 @@ export default function AdminAppointmentHeader({
             </div>
           </SheetContent>
         </Sheet>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onOpenQuotation}>
-          {appointment.quotation ? <FileText className="size-3.5" /> : <PlusCircle className="size-3.5" />}
-          {appointment.quotation ? "Edit Quotation" : "Create Quotation"}
-        </Button>
+        {!isLocked && (
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onOpenQuotation}>
+            {appointment.quotation ? <FileText className="size-3.5" /> : <PlusCircle className="size-3.5" />}
+            {appointment.quotation ? "Edit Quotation" : "Create Quotation"}
+          </Button>
+        )}
       </div>
     </div>
   );

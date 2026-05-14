@@ -22,7 +22,6 @@ export default function CustomerDashboard() {
   useEffect(() => {
     Promise.all([getCustomerAppointments(), getCustomerWorkJobs()])
       .then(([appointmentResponse, workJobResponse]) => {
-        console.log(appointmentResponse)
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
       })
@@ -42,15 +41,15 @@ export default function CustomerDashboard() {
     <CustomerShell>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Customer Dashboard</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950">Welcome back</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Customer Dashboard</p>
+          <h1 className="mt-2 text-base font-medium text-slate-950">Welcome back</h1>
           <p className="mt-1 text-sm text-slate-500">
             Manage your inspections and installation progress from one place.
           </p>
         </div>
         <Link
           href="/account/appointments/new"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm hover:bg-primary/90"
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white shadow-sm hover:bg-primary/90"
         >
           New Appointment
         </Link>
@@ -63,8 +62,8 @@ export default function CustomerDashboard() {
           return (
             <div key={stat.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
               <Icon className="mb-3 size-5 text-primary" />
-              <p className="text-2xl font-black text-slate-950">{loading ? "-" : stat.value}</p>
-              <p className="text-sm font-semibold text-slate-500">{stat.label}</p>
+              <p className="text-base font-medium text-slate-950">{loading ? "-" : stat.value}</p>
+              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
             </div>
           );
         })}
@@ -73,8 +72,8 @@ export default function CustomerDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-950">Recent Appointments</h2>
-            <Link href="/account/appointments" className="text-sm font-bold text-primary hover:underline">
+            <h2 className="text-base font-semibold text-slate-950">Recent Appointments</h2>
+            <Link href="/account/appointments" className="text-sm font-medium text-primary hover:underline">
               View all
             </Link>
           </div>
@@ -88,8 +87,8 @@ export default function CustomerDashboard() {
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-950">Active Work Jobs</h2>
-            <Link href="/account/work-jobs" className="text-sm font-bold text-primary hover:underline">
+            <h2 className="text-base font-semibold text-slate-950">Active Work Jobs</h2>
+            <Link href="/account/work-jobs" className="text-sm font-medium text-primary hover:underline">
               View all
             </Link>
           </div>
@@ -107,7 +106,7 @@ export default function CustomerDashboard() {
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-sm font-semibold text-slate-500">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-white p-6 text-center text-sm font-medium text-slate-500">
       {label}
     </div>
   );

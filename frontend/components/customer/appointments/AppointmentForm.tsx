@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
@@ -27,7 +28,8 @@ import {
 import { fetchProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 import type { QuoteCartItem } from "@/features/quotes/types";
-import { cartItemToPayload } from "@/features/quotes/quote-utils";
+import { cartItemToPayload, quoteTotal } from "@/features/quotes/quote-utils";
+import { formatCurrency, productCover } from "@/features/products/product-utils";
 import type {
   CustomerAppointment,
   CustomerAppointmentForm,
@@ -48,26 +50,29 @@ function fieldError(error: unknown, fallback: string): FieldErrors {
 
 export default function AppointmentForm({
   appointment,
+  prefillAppointment,
 }: {
   appointment?: CustomerAppointment;
+  prefillAppointment?: CustomerAppointment;
 }) {
   const router = useRouter();
+  const sourceAppointment = appointment ?? prefillAppointment;
   const [data, setData] = useState<CustomerAppointmentForm>(() =>
-    appointment
+    sourceAppointment
       ? {
-          first_name: appointment.first_name,
-          last_name: appointment.last_name,
-          phone_number: appointment.phone_number,
-          email: appointment.email ?? "",
-          address: appointment.address,
-          address_pinned: appointment.address_pinned ?? "",
-          address_lat: appointment.address_lat ?? "",
-          address_lng: appointment.address_lng ?? "",
-          preferred_date: appointment.preferred_date,
-          preferred_time: appointment.preferred_time,
-          service_type: appointment.service_type,
-          service_type_other: appointment.service_type_other ?? "",
-          additional_notes: appointment.additional_notes ?? "",
+          first_name: sourceAppointment.first_name,
+          last_name: sourceAppointment.last_name,
+          phone_number: sourceAppointment.phone_number,
+          email: sourceAppointment.email ?? "",
+          address: sourceAppointment.address,
+          address_pinned: sourceAppointment.address_pinned ?? "",
+          address_lat: sourceAppointment.address_lat ?? "",
+          address_lng: sourceAppointment.address_lng ?? "",
+          preferred_date: sourceAppointment.preferred_date,
+          preferred_time: sourceAppointment.preferred_time,
+          service_type: sourceAppointment.service_type,
+          service_type_other: sourceAppointment.service_type_other ?? "",
+          additional_notes: sourceAppointment.additional_notes ?? "",
           consent: true,
         }
       : createCustomerAppointmentForm(),
@@ -77,9 +82,12 @@ export default function AppointmentForm({
   const [products, setProducts] = useState<Product[]>([]);
   const [quoteCart, setQuoteCart] = useState<QuoteCartItem[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [productsLoading, setProductsLoading] = useState(true);
   const editingItem = editingIndex !== null ? quoteCart[editingIndex] ?? null : null;
-  const showQuoteItems = data.service_type === "quotation" || Boolean(appointment?.quotation) || quoteCart.length > 0;
+  const sourceQuotation = sourceAppointment?.quotation;
+  const showQuoteItems =
+    data.service_type === "quotation" || Boolean(sourceQuotation) || quoteCart.length > 0;
 
   useEffect(() => {
     let mounted = true;
@@ -89,7 +97,7 @@ export default function AppointmentForm({
         if (!mounted) return;
 
         setProducts(response.data);
-        setQuoteCart(customerQuotationToCart(appointment?.quotation, response.data));
+        setQuoteCart(customerQuotationToCart(sourceQuotation, response.data));
       })
       .finally(() => {
         if (mounted) setProductsLoading(false);
@@ -98,7 +106,7 @@ export default function AppointmentForm({
     return () => {
       mounted = false;
     };
-  }, [appointment?.quotation]);
+  }, [sourceQuotation]);
 
   const setField = <K extends keyof CustomerAppointmentForm>(
     field: K,
@@ -114,7 +122,7 @@ export default function AppointmentForm({
     setErrors({});
 
     try {
-      if (showQuoteItems && appointment?.quotation && quoteCart.length === 0) {
+      if (showQuoteItems && sourceQuotation && quoteCart.length === 0) {
         setErrors({ items: "Keep at least one quote item, or contact SOG to remove the quote." });
         setSaving(false);
         return;
@@ -219,39 +227,53 @@ export default function AppointmentForm({
         {showQuoteItems && (
           <div className="mt-6 border-t border-slate-100 pt-6">
             <div className="mb-4">
-              <p className="text-sm font-black text-slate-950">Quote Items</p>
+              <p className="text-sm font-semibold text-slate-950">Quote Items</p>
               <p className="mt-1 text-sm text-slate-500">
-                Add, edit, or remove the product selections attached to this pending appointment.
+                Add product selections to help us prepare a clearer estimate before inspection.
               </p>
             </div>
             {productsLoading ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
                 Loading quote products...
               </div>
             ) : (
-              <div className="flex flex-col items-start gap-5 xl:flex-row">
-                <ProductConfigurator
+              <div className="space-y-5">
+                <SuggestedProducts
                   products={products}
-                  preSelectedProductId={null}
-                  preSelectedVariantId={null}
-                  editingItem={editingItem}
-                  onAdd={(item) => setQuoteCart((current) => [...current, item])}
-                  onUpdate={(item) => {
-                    setQuoteCart((current) =>
-                      current.map((cartItem, index) => (index === editingIndex ? item : cartItem)),
-                    );
+                  selectedProductId={selectedProductId}
+                  onSelect={(productId) => {
+                    setSelectedProductId(productId);
                     setEditingIndex(null);
                   }}
-                  onCancelEdit={() => setEditingIndex(null)}
                 />
-                <QuoteCart
-                  cart={quoteCart}
-                  onEdit={setEditingIndex}
-                  onRemove={(indexToRemove) => {
-                    setQuoteCart((current) => current.filter((_, index) => index !== indexToRemove));
-                    if (editingIndex === indexToRemove) setEditingIndex(null);
-                  }}
-                />
+                <div className="flex flex-col items-start gap-5 xl:flex-row">
+                  <ProductConfigurator
+                    products={products}
+                    preSelectedProductId={selectedProductId}
+                    preSelectedVariantId={null}
+                    editingItem={editingItem}
+                    onAdd={(item) => {
+                      setQuoteCart((current) => [...current, item]);
+                      setSelectedProductId(null);
+                    }}
+                    onUpdate={(item) => {
+                      setQuoteCart((current) =>
+                        current.map((cartItem, index) => (index === editingIndex ? item : cartItem)),
+                      );
+                      setEditingIndex(null);
+                      setSelectedProductId(null);
+                    }}
+                    onCancelEdit={() => setEditingIndex(null)}
+                  />
+                  <QuoteCart
+                    cart={quoteCart}
+                    onEdit={setEditingIndex}
+                    onRemove={(indexToRemove) => {
+                      setQuoteCart((current) => current.filter((_, index) => index !== indexToRemove));
+                      if (editingIndex === indexToRemove) setEditingIndex(null);
+                    }}
+                  />
+                </div>
               </div>
             )}
             {errors.items && <p className="mt-3 text-xs text-red-500">{errors.items}</p>}
@@ -260,19 +282,98 @@ export default function AppointmentForm({
       </div>
 
       <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-black text-slate-950">
-          {appointment ? "Update Appointment" : "Create Appointment"}
+        <p className="text-sm font-semibold text-slate-950">
+          {appointment ? "Update Appointment" : prefillAppointment ? "Rebook Appointment" : "Create Appointment"}
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           You can edit this appointment while it is still pending. Once confirmed,
           our team will manage schedule changes with you directly.
         </p>
         {errors.form && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
+        {quoteCart.length > 0 && (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-500">Quote items</span>
+              <span className="font-medium text-slate-900">{quoteCart.length}</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <span className="text-slate-500">Estimated total</span>
+              <span className="font-medium text-primary">{formatCurrency(quoteTotal(quoteCart))}</span>
+            </div>
+          </div>
+        )}
         <Button type="submit" className="mt-5 h-11 w-full" disabled={saving}>
-          {saving ? "Saving..." : appointment ? "Save Changes" : "Create Appointment"}
+          {saving
+            ? "Saving..."
+            : appointment
+              ? "Save Changes"
+              : prefillAppointment
+                ? "Create Rebooked Appointment"
+                : "Create Appointment"}
         </Button>
       </aside>
     </form>
+  );
+}
+
+function SuggestedProducts({
+  products,
+  selectedProductId,
+  onSelect,
+}: {
+  products: Product[];
+  selectedProductId: number | null;
+  onSelect: (productId: number) => void;
+}) {
+  const suggested = products.slice(0, 4);
+
+  if (suggested.length === 0) return null;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-slate-950">Suggested items</p>
+          <p className="text-xs text-slate-500">Pick a product to start building your quote.</p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {suggested.map((product) => {
+          const image = productCover(product);
+          const selected = selectedProductId === product.id;
+
+          return (
+            <button
+              key={product.id}
+              type="button"
+              onClick={() => onSelect(product.id)}
+              className={`overflow-hidden rounded-lg border bg-white text-left transition hover:border-primary/50 hover:shadow-sm ${
+                selected ? "border-primary ring-2 ring-primary/15" : "border-slate-200"
+              }`}
+            >
+              <div className="relative h-28 bg-slate-100">
+                {image ? (
+                  <Image src={image} alt={product.name} fill unoptimized className="object-cover" />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                    No image
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="line-clamp-1 text-sm font-medium text-slate-950">{product.name}</p>
+                <p className="mt-1 line-clamp-2 min-h-8 text-xs text-slate-500">
+                  {product.description || "Custom glass and aluminum item"}
+                </p>
+                <p className="mt-2 text-sm font-medium text-primary">
+                  {formatCurrency(product.price_per_unit)}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

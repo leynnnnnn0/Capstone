@@ -49,6 +49,11 @@ const mainNavItems: NavItem[] = [
     href: "/dashboard/work-jobs",
     icon: BriefcaseBusiness,
   },
+  {
+    title: "Calendar",
+    href: "/dashboard/calendar",
+    icon: CalendarDays,
+  },
 ];
 
 const footerNavItems: NavItem[] = [
