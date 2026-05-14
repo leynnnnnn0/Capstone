@@ -15,6 +15,7 @@ const AUTH_ROUTES = ["/login", "/staff/login", "/register", "/forgot-password"];
 
 export default function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
+  const role = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
   const isPublic =
@@ -28,7 +29,8 @@ export default function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
 
   if (token && isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const destination = role === "customer" ? "/account" : "/dashboard";
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return NextResponse.next();

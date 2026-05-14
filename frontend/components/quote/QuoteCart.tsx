@@ -15,11 +15,13 @@ export default function QuoteCart({
   onEdit,
   onRemove,
   onCheckout,
+  actionLabel = "Request Inspection →",
 }: {
   cart: QuoteCartItem[];
   onEdit: (index: number) => void;
   onRemove: (index: number) => void;
-  onCheckout: () => void;
+  onCheckout?: () => void;
+  actionLabel?: string;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const total = quoteTotal(cart);
@@ -89,13 +91,15 @@ export default function QuoteCart({
               {formatCurrency(Math.round(total))}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => { onCheckout(); setMobileOpen(false); }}
-            className="w-full rounded-xl bg-primary py-3.5 text-[13px] font-bold text-white hover:opacity-90"
-          >
-            Request Inspection →
-          </button>
+          {onCheckout && (
+            <button
+              type="button"
+              onClick={() => { onCheckout(); setMobileOpen(false); }}
+              className="w-full rounded-xl bg-primary py-3.5 text-[13px] font-bold text-white hover:opacity-90"
+            >
+              {actionLabel}
+            </button>
+          )}
           <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-400">
             Final price confirmed after free on-site visit.
           </p>

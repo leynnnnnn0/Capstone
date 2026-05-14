@@ -3,11 +3,14 @@
 import { FormEvent, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Mail, Phone, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, CheckCircle2, Mail, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { requestCustomerOtp, verifyCustomerOtp } from "@/features/customer-auth/customer-auth-api";
+import { ApiError } from "@/lib/api";
 
 type LoginStep = "contact" | "verify" | "success";
 
@@ -19,12 +22,24 @@ function isPhone(value: string) {
   return /^[+0-9\s().-]{10,20}$/.test(value);
 }
 
+function apiFieldError(error: ApiError, fields: string[]) {
+  for (const field of fields) {
+    const message = error.errors?.[field];
+    if (Array.isArray(message)) return message[0];
+    if (message) return message;
+  }
+
+  return error.message;
+}
+
 export default function LoginPage() {
+  const router = useRouter();
   const [step, setStep] = useState<LoginStep>("contact");
   const [contact, setContact] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(false);
   const cleanedContact = contact.trim();
 
   const contactType = useMemo(() => {
@@ -33,7 +48,7 @@ export default function LoginPage() {
     return "contact";
   }, [cleanedContact]);
 
-  function handleRequestOtp(event: FormEvent<HTMLFormElement>) {
+  async function handleRequestOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -43,10 +58,22 @@ export default function LoginPage() {
       return;
     }
 
-    setStep("verify");
+    setLoading(true);
+    try {
+      await requestCustomerOtp(cleanedContact);
+      setStep("verify");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? apiFieldError(err, ["contact"])
+          : "Unable to send your code. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
+  async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -56,7 +83,39 @@ export default function LoginPage() {
       return;
     }
 
-    setStep("success");
+    setLoading(true);
+    try {
+      await verifyCustomerOtp(cleanedContact, otp);
+      setStep("success");
+      router.push("/account");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? apiFieldError(err, ["code", "contact"])
+          : "Unable to verify your code. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resendCode() {
+    setError("");
+    setNotice("");
+    setLoading(true);
+
+    try {
+      await requestCustomerOtp(cleanedContact);
+      setNotice("A new code has been sent.");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? apiFieldError(err, ["contact"])
+          : "Unable to resend your code. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -145,8 +204,8 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <Button type="submit" className="h-11 w-full">
-                  Send OTP
+                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                  {loading ? "Sending..." : "Send OTP"}
                 </Button>
               </form>
             </>
@@ -206,16 +265,14 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <Button type="submit" className="h-11 w-full">
-                  Verify and continue
+                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                  {loading ? "Verifying..." : "Verify and continue"}
                 </Button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setError("");
-                    setNotice("A new code has been sent.");
-                  }}
+                  onClick={resendCode}
+                  disabled={loading}
                   className="w-full text-center text-sm font-medium text-primary hover:underline"
                 >
                   Resend code

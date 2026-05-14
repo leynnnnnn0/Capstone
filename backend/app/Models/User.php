@@ -13,9 +13,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory;
 
     protected $fillable = [
+        'username',
         'first_name',
         'last_name',
         'email',
+        'phone_number',
+        'email_verified_at',
         'password',
         'role',
     ];
@@ -55,5 +58,10 @@ class User extends Authenticatable
     public function isWorker(): bool
     {
         return $this->role === 'worker';
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === 'customer';
     }
 }

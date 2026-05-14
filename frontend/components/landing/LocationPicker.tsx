@@ -12,6 +12,12 @@ type LocationValue = {
 type LocationPickerProps = {
   onLocationChange: (location: LocationValue) => void;
   error?: string;
+  initialValue?: {
+    address?: string | null;
+    pinned?: string | null;
+    lat?: number | null;
+    lng?: number | null;
+  } | null;
 };
 
 type GoogleWindow = Window &
@@ -110,12 +116,27 @@ function loadGoogleMapsScript(): Promise<void> {
 export default function LocationPicker({
   onLocationChange,
   error,
+  initialValue,
 }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const [pinned, setPinned] = useState<LocationValue | null>(null);
+  const onLocationChangeRef = useRef(onLocationChange);
+  const [pinned, setPinned] = useState<LocationValue | null>(() =>
+    initialValue?.address
+      ? {
+          address: initialValue.address,
+          pinned: initialValue.pinned ?? initialValue.address,
+          lat: initialValue.lat ?? 0,
+          lng: initialValue.lng ?? 0,
+        }
+      : null,
+  );
   const [loading, setLoading] = useState(Boolean(mapsApiKey));
   const [loadError, setLoadError] = useState(!mapsApiKey);
+
+  useEffect(() => {
+    onLocationChangeRef.current = onLocationChange;
+  }, [onLocationChange]);
 
   const updateManualAddress = (event: ChangeEvent<HTMLInputElement>) => {
     const address = event.target.value;
@@ -127,7 +148,7 @@ export default function LocationPicker({
     };
 
     setPinned(address ? location : null);
-    onLocationChange(location);
+    onLocationChangeRef.current(location);
   };
 
   useEffect(() => {
@@ -141,10 +162,13 @@ export default function LocationPicker({
 
         const googleMaps = (window as GoogleWindow).google?.maps;
         if (!googleMaps) return;
-        const defaultCenter = { lat: 14.5995, lng: 120.9842 };
+        const defaultCenter =
+          initialValue?.lat && initialValue?.lng
+            ? { lat: initialValue.lat, lng: initialValue.lng }
+            : { lat: 14.5995, lng: 120.9842 };
         const map = new googleMaps.Map(mapRef.current, {
           center: defaultCenter,
-          zoom: 13,
+          zoom: initialValue?.lat && initialValue?.lng ? 16 : 13,
           disableDefaultUI: true,
           zoomControl: true,
         });
@@ -155,6 +179,10 @@ export default function LocationPicker({
           animation: googleMaps.Animation.DROP,
         });
         const geocoder = new googleMaps.Geocoder();
+
+        if (initialValue?.address && searchRef.current) {
+          searchRef.current.value = initialValue.address;
+        }
 
         const reverseGeocode = (latLng: GoogleLatLng) => {
           geocoder.geocode({ location: latLng }, (results, status) => {
@@ -178,7 +206,7 @@ export default function LocationPicker({
               lng,
             };
             setPinned(location);
-            onLocationChange(location);
+            onLocationChangeRef.current(location);
           });
         };
 
@@ -216,7 +244,7 @@ export default function LocationPicker({
 
           const location = { address, pinned: pinnedLabel, lat, lng };
           setPinned(location);
-          onLocationChange(location);
+          onLocationChangeRef.current(location);
         });
 
         setLoading(false);
@@ -229,7 +257,7 @@ export default function LocationPicker({
     return () => {
       mounted = false;
     };
-  }, [onLocationChange]);
+  }, [initialValue?.address, initialValue?.lat, initialValue?.lng]);
 
   return (
     <div
@@ -241,6 +269,7 @@ export default function LocationPicker({
         <input
           ref={searchRef}
           type="text"
+          defaultValue={initialValue?.address ?? ""}
           placeholder="Enter your address..."
           className="w-full border-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
           onChange={updateManualAddress}

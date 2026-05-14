@@ -23,7 +23,13 @@ class MarkCompletedController extends Controller
             $appointment = $this->appointmentService->markCompleted(
                 $appointment,
                 $request->user()
-            );
+            )->load([
+                'quotation.quotation_items.options',
+                'quotation.quotation_items.before_images',
+                'quotation.quotation_items.after_images',
+                'workers',
+                'remarks.user',
+            ]);
 
             return response()->json([
                 'message' => 'Appointment marked as completed.',

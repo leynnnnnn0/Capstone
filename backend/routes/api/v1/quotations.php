@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Quotations\QuotationController;
+use App\Http\Controllers\Quotations\QuotationItemImageController;
 use App\Http\Controllers\Quotations\QuotationItemStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -12,3 +13,6 @@ Route::patch(
     'quotation-items/{quotationItem}/status',
     QuotationItemStatusController::class
 );
+
+Route::post('quotation-items/{quotationItem}/images', [QuotationItemImageController::class, 'store']);
+Route::delete('quotation-item-images/{quotationItemImage}', [QuotationItemImageController::class, 'destroy']);

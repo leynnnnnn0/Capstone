@@ -23,7 +23,13 @@ class MarkOnTheWayController extends Controller
             $appointment = $this->appointmentService->markOnTheWay(
                 $appointment,
                 $request->user()
-            );
+            )->load([
+                'quotation.quotation_items.options',
+                'quotation.quotation_items.before_images',
+                'quotation.quotation_items.after_images',
+                'workers',
+                'remarks.user',
+            ]);
 
             return response()->json([
                 'message' => 'Appointment marked as on the way.',

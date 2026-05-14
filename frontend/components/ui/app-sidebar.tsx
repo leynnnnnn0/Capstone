@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  CalendarDays,
   GitGraphIcon,
   LayoutGrid,
   Package,
@@ -36,6 +37,11 @@ const mainNavItems: NavItem[] = [
     title: "Products",
     href: "/dashboard/products",
     icon: Package,
+  },
+  {
+    title: "Appointments",
+    href: "/dashboard/appointments",
+    icon: CalendarDays,
   },
 ];
 

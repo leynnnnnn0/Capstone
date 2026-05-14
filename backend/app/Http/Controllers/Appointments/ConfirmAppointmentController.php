@@ -26,7 +26,13 @@ class ConfirmAppointmentController extends Controller
                 $appointment,
                 $request->validated(),
                 $request->user()
-            );
+            )->load([
+                'quotation.quotation_items.options',
+                'quotation.quotation_items.before_images',
+                'quotation.quotation_items.after_images',
+                'workers',
+                'remarks.user',
+            ]);
 
             return response()->json([
                 'message' => 'Appointment successfully confirmed.',

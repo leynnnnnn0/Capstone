@@ -15,7 +15,7 @@ class LoginResponse implements LoginResponseContract
         $expiresAt = $remember ? now()->addHours(2) : now()->addHour();
 
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
-        $response = ['user' => $user->only('id', 'username', 'email')];
+        $response = ['user' => $user->only('id', 'username', 'email', 'role')];
         if (env('APP_ENV') !== 'production') {
             $response['token'] = $token;
         }
@@ -30,6 +30,17 @@ class LoginResponse implements LoginResponseContract
                 env('SESSION_DOMAIN', ''),
                 env('APP_ENV') === 'production',
                 true,
+                false,
+                'Lax'
+            )
+            ->cookie(
+                'user_role',
+                $user->role,
+                $minutes,
+                '/',
+                env('SESSION_DOMAIN', ''),
+                env('APP_ENV') === 'production',
+                false,
                 false,
                 'Lax'
             );

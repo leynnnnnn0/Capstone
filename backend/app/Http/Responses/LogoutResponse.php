@@ -22,6 +22,17 @@ class LogoutResponse implements LogoutResponseContract
                 true,
                 false,
                 'Lax'
+            )
+            ->cookie(
+                'user_role',
+                '',
+                -1,
+                '/',
+                env('SESSION_DOMAIN', 'localhost'),
+                env('APP_ENV') === 'production',
+                false,
+                false,
+                'Lax'
             );
     }
 }
