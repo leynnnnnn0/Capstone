@@ -13,6 +13,7 @@ class CustomerWorkJobController extends Controller
 {
     private const WORK_JOB_RELATIONS = [
         'workers',
+        'remarks.user',
         'appointment.workers',
         'appointment.remarks.user',
         'appointment.quotation.quotation_items.options',

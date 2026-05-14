@@ -7,6 +7,7 @@ use App\Http\Resources\WorkJobResource;
 use App\Models\WorkJob;
 use App\Services\WorkJobService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -16,10 +17,18 @@ class CancelWorkJobController extends Controller
         private readonly WorkJobService $workJobService
     ) {}
 
-    public function __invoke(WorkJob $workJob): JsonResponse
+    public function __invoke(Request $request, WorkJob $workJob): JsonResponse
     {
         try {
-            $workJob = $this->workJobService->cancel($workJob);
+            $validated = $request->validate([
+                'remarks' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $workJob = $this->workJobService->cancel(
+                $workJob,
+                $request->user(),
+                $validated['remarks'] ?? null
+            );
 
             return response()->json([
                 'message' => 'Work job cancelled.',

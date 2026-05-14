@@ -7,14 +7,17 @@ use App\Http\Controllers\WorkJobs\WorkJobController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('work-jobs', [WorkJobController::class, 'index']);
-Route::post('work-jobs', [WorkJobController::class, 'store']);
 Route::get('work-jobs/{workJob}', [WorkJobController::class, 'show']);
 
-Route::post(
-    'appointments/{appointment}/work-job',
-    [WorkJobController::class, 'createFromAppointment']
-);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('work-jobs', [WorkJobController::class, 'store']);
 
-Route::patch('work-jobs/{workJob}/in-progress', MarkInProgressController::class);
-Route::patch('work-jobs/{workJob}/complete', CompleteWorkJobController::class);
-Route::patch('work-jobs/{workJob}/cancel', CancelWorkJobController::class);
+    Route::post(
+        'appointments/{appointment}/work-job',
+        [WorkJobController::class, 'createFromAppointment']
+    );
+
+    Route::patch('work-jobs/{workJob}/in-progress', MarkInProgressController::class);
+    Route::patch('work-jobs/{workJob}/complete', CompleteWorkJobController::class);
+    Route::patch('work-jobs/{workJob}/cancel', CancelWorkJobController::class);
+});

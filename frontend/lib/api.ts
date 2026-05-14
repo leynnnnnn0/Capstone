@@ -47,7 +47,8 @@ export async function api<T = unknown>(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
-    throw new ApiError(error.message ?? "API error", res.status, error.errors);
+    const fallback = res.status === 413 ? "The uploaded file is too large." : `API error (${res.status})`;
+    throw new ApiError(error.message ?? fallback, res.status, error.errors);
   }
 
   return res.json();

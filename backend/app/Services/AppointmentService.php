@@ -29,18 +29,24 @@ class AppointmentService
         );
 
         $appointment = DB::transaction(function () use ($validated) {
+            $status = AppointmentStatus::tryFrom($validated['status'] ?? AppointmentStatus::Pending->value) ?? AppointmentStatus::Pending;
 
             $appointment = Appointment::create([
-                ...Arr::except($validated, ['items']),
-                'status'           => AppointmentStatus::Pending,
+                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes']),
+                'status'           => $status,
                 'consent_given_at' => $validated['consent'] ? now() : null,
             ]);
+
+            if ($status === AppointmentStatus::Confirmed && !empty($validated['worker_ids'])) {
+                $appointment->workers()->sync($validated['worker_ids']);
+            }
 
             // Auto-create quotation if customer included items
             if (!empty($validated['items'])) {
                 $this->quotationService->create([
                     'appointment_id' => $appointment->id,
                     'items'          => $validated['items'],
+                    'notes'          => $validated['quotation_notes'] ?? null,
                 ]);
             }
 
@@ -72,6 +78,7 @@ class AppointmentService
 
     public function confirm(Appointment $appointment, array $data, User $actor): Appointment
     {
+
         $this->ensureCanTransition($appointment, AppointmentStatus::Confirmed);
 
         DB::transaction(function () use ($appointment, $data, $actor) {

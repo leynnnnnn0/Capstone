@@ -1,12 +1,12 @@
 import Link from "next/link";
 
 import StatusBadge from "@/components/tracking/StatusBadge";
-import TrackingProgress from "@/components/tracking/TrackingProgress";
 import type { TrackingResult } from "@/features/tracking/types";
 import {
   formatCurrency,
   formatDate,
   formatDateTime,
+  formatTrackingTimestamp,
   getStatus,
 } from "@/features/tracking/tracking-utils";
 
@@ -54,8 +54,6 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
             )}
           </div>
         </div>
-
-        <TrackingProgress status={result.status} type={result.type} />
 
         <div className="grid grid-cols-1 gap-4 border-b border-slate-100 px-6 py-5 sm:grid-cols-2">
           {infoItems.map((item) => (
@@ -136,27 +134,43 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
           </div>
         )}
 
-        {result.remarks.length > 0 && (
-          <div className="border-t border-slate-100 px-6 py-4">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              Updates
-            </p>
-            <div className="space-y-2">
-              {result.remarks.map((remark, index) => (
-                <div key={`${remark.created_at}-${index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-700">{remark.by}</span>
-                    <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
-                      {remark.action}
-                    </span>
-                    <span className="text-[10px] text-slate-400">{remark.created_at}</span>
+        <div className="border-t border-slate-100 px-6 py-5">
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+            Updates
+          </p>
+          <div className="space-y-3">
+            {result.remarks.length > 0 ? (
+              result.remarks.map((remark, index) => {
+                const remarkStatus = getStatus(remark.action);
+
+                return (
+                  <div key={`${remark.created_at}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="text-[12px] font-bold text-slate-800">{remark.by}</span>
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: remarkStatus.bg, color: remarkStatus.color }}
+                      >
+                        {remarkStatus.label}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {formatTrackingTimestamp(remark.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-slate-600">{remark.message}</p>
                   </div>
-                  <p className="text-[12px] leading-relaxed text-slate-600">{remark.message}</p>
-                </div>
-              ))}
-            </div>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
+                <p className="text-[13px] font-semibold text-slate-700">No updates yet.</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
+                  Updates from the SOG team will appear here once your request moves forward.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {(result.additional_notes || result.notes) && (
           <div className="border-t border-slate-100 px-6 py-4">

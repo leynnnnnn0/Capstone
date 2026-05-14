@@ -33,6 +33,12 @@ export type AdminAppointmentForm = {
   service_type_other: string;
   additional_notes: string;
   consent: boolean;
+  status: "pending" | "confirmed";
+  appointment_date: string;
+  appointment_time_from: string;
+  appointment_time_until: string;
+  worker_ids: number[];
+  quotation_notes?: string;
   items?: QuoteItemPayload[];
 };
 

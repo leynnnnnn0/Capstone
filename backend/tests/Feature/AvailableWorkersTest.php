@@ -60,7 +60,7 @@ it('returns all workers when none are booked', function () use ($queryParams) {
         ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
 
     $response->assertStatus(200)
-        ->assertJsonCount(3, 'data');
+        ->assertJsonCount(4, 'data');
 });
 
 it('excludes workers already assigned to a conflicting appointment', function () use ($appointmentPayload, $queryParams) {
@@ -81,9 +81,9 @@ it('excludes workers already assigned to a conflicting appointment', function ()
     $response = $this->actingAs($this->admin)
         ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
 
-    // Assert — only 1 worker is free
+    // Assert — 1 worker plus the admin are free
     $response->assertStatus(200)
-        ->assertJsonCount(1);
+        ->assertJsonCount(2, 'data');
 });
 
 it('includes workers whose appointments do not overlap', function () use ($appointmentPayload, $queryParams) {
@@ -104,9 +104,9 @@ it('includes workers whose appointments do not overlap', function () use ($appoi
     $response = $this->actingAs($this->admin)
         ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
 
-    // Assert — all 3 workers still available
+    // Assert — all 3 workers plus the admin are still available
     $response->assertStatus(200)
-        ->assertJsonCount(3, 'data');
+        ->assertJsonCount(4, 'data');
 });
 
 it('excludes workers only from confirmed on_the_way and in_progress appointments', function () use ($appointmentPayload, $queryParams) {
@@ -127,9 +127,9 @@ it('excludes workers only from confirmed on_the_way and in_progress appointments
     $response = $this->actingAs($this->admin)
         ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
 
-    // Assert — all 3 available since completed doesn't block
+    // Assert — all 3 workers plus the admin are available since completed doesn't block
     $response->assertStatus(200)
-        ->assertJsonCount(3, 'data');
+        ->assertJsonCount(4, 'data');
 });
 
 it('excludes current appointment from conflict check when rescheduling', function () use ($appointmentPayload, $queryParams) {
@@ -153,9 +153,20 @@ it('excludes current appointment from conflict check when rescheduling', functio
             'appointment_id' => $currentAppointment->id,
         ]));
 
-    // Assert — all 3 available because current appointment is excluded
+    // Assert — all 3 workers plus the admin are available because current appointment is excluded
     $response->assertStatus(200)
-        ->assertJsonCount(3, 'data');
+        ->assertJsonCount(4, 'data');
+});
+
+it('includes admins as assignable workers', function () use ($queryParams) {
+    $response = $this->actingAs($this->admin)
+        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+
+    $response->assertStatus(200)
+        ->assertJsonFragment([
+            'id' => $this->admin->id,
+            'full_name' => $this->admin->full_name,
+        ]);
 });
 
 it('returns correct worker fields', function () use ($queryParams) {

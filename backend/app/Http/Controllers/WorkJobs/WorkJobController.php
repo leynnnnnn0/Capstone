@@ -86,6 +86,9 @@ class WorkJobController extends Controller
             'workers',
             'appointment',
             'quotation.quotation_items.options',
+            'quotation.quotation_items.before_images',
+            'quotation.quotation_items.after_images',
+            'remarks.user',
         ]);
 
         return response()->json([

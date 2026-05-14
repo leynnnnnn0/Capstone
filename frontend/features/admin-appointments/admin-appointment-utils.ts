@@ -43,6 +43,12 @@ export function createAdminAppointmentForm(): AdminAppointmentForm {
     service_type_other: "",
     additional_notes: "",
     consent: true,
+    status: "pending",
+    appointment_date: minimumBookingDate(),
+    appointment_time_from: "09:00",
+    appointment_time_until: "11:00",
+    worker_ids: [],
+    quotation_notes: "",
   };
 }
 

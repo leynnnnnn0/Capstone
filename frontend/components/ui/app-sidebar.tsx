@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  BriefcaseBusiness,
   GitGraphIcon,
   LayoutGrid,
   Package,
@@ -42,6 +43,11 @@ const mainNavItems: NavItem[] = [
     title: "Appointments",
     href: "/dashboard/appointments",
     icon: CalendarDays,
+  },
+  {
+    title: "Work Jobs",
+    href: "/dashboard/work-jobs",
+    icon: BriefcaseBusiness,
   },
 ];
 

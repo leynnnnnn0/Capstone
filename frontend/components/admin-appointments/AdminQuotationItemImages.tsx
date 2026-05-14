@@ -11,6 +11,7 @@ import {
 } from "@/features/admin-appointments/admin-appointment-api";
 import type { CustomerQuotationItemImage } from "@/features/customer/types";
 import { normalizeAssetUrl } from "@/features/products/product-utils";
+import { ApiError } from "@/lib/api";
 
 type ImageType = "before" | "after";
 
@@ -73,11 +74,22 @@ function UploadPanel({
   const [pending, setPending] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const label = type === "before" ? "Before" : "After";
   const panelClass = type === "before" ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50";
 
   function addFiles(files: FileList | File[]) {
-    const nextFiles = Array.from(files).filter((file) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type));
+    setError(null);
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    const maxSize = 5 * 1024 * 1024;
+    const fileList = Array.from(files);
+    const rejected = fileList.find((file) => !allowedTypes.includes(file.type) || file.size > maxSize);
+    const nextFiles = fileList.filter((file) => allowedTypes.includes(file.type) && file.size <= maxSize);
+
+    if (rejected) {
+      setError("Upload JPG, PNG, or WebP images up to 5 MB each.");
+    }
+
     setPending((current) => [...current, ...nextFiles].slice(0, 10));
   }
 
@@ -86,14 +98,17 @@ function UploadPanel({
     const formData = new FormData();
     formData.append("type", type);
     if (caption) formData.append("caption", caption);
-    pending.forEach((file) => formData.append("images[]", file));
+    pending.forEach((file) => formData.append("images[]", file, file.name));
 
     setUploading(true);
+    setError(null);
     try {
       const response = await uploadQuotationItemImages(quotationItemId, formData) as { data?: CustomerQuotationItemImage[] };
       onSavedChange([...(saved ?? []), ...(response.data ?? [])]);
       setPending([]);
       setCaption("");
+    } catch (uploadError) {
+      setError(apiErrorMessage(uploadError));
     } finally {
       setUploading(false);
     }
@@ -140,12 +155,24 @@ function UploadPanel({
           </Button>
         </div>
       )}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">{error}</p>}
       <Button type="button" variant="outline" size="sm" className="w-full bg-white/70" onClick={() => inputRef.current?.click()}>
         <Camera className="size-4" />
         Take / Add Photo
       </Button>
     </div>
   );
+}
+
+function apiErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    const firstError = error.errors ? Object.values(error.errors)[0] : null;
+    if (Array.isArray(firstError)) return firstError[0] ?? error.message;
+    if (typeof firstError === "string") return firstError;
+    return error.message;
+  }
+
+  return "Unable to upload images. Please try again.";
 }
 
 function SavedThumb({ image, onDelete }: { image: CustomerQuotationItemImage; onDelete: (id: number) => void }) {

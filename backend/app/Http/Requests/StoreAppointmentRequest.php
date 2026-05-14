@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Enums\AppointmentStatus;
 
 class StoreAppointmentRequest extends FormRequest
 {
@@ -22,6 +23,8 @@ class StoreAppointmentRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $appointmentTimeFrom = $this->appointment_time_from ? trim($this->appointment_time_from) : $this->appointment_time_from;
+
         $this->merge([
             'first_name'   => $this->first_name   ? trim($this->first_name)   : $this->first_name,
             'last_name'    => $this->last_name     ? trim($this->last_name)    : $this->last_name,
@@ -29,6 +32,9 @@ class StoreAppointmentRequest extends FormRequest
             'phone_number' => $this->phone_number  ? trim($this->phone_number) : $this->phone_number,
             'address'      => $this->address       ? trim($this->address)      : $this->address,
             'consent'      => filter_var($this->consent, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $this->consent,
+            'appointment_time_from' => $appointmentTimeFrom,
+            'preferred_date' => $this->preferred_date ?: $this->appointment_date,
+            'preferred_time' => $this->preferred_time ?: $this->preferredTimeFromAppointmentStart($appointmentTimeFrom),
         ]);
     }
 
@@ -94,30 +100,45 @@ class StoreAppointmentRequest extends FormRequest
             'additional_notes' => ['nullable', 'string', 'max:2000'],
 
             // ── Appointment Scheduling (admin-set, nullable on creation) ─────
-            'appointment_date'       => ['nullable', 'date', 'date_format:Y-m-d'],
+            'appointment_date'       => [
+                'nullable',
+                'date',
+                'date_format:Y-m-d',
+                Rule::requiredIf(fn() => $this->input('status') === AppointmentStatus::Confirmed->value),
+            ],
             'appointment_time_from'  => [
                 'nullable',
                 'date_format:H:i',
                 'required_with:appointment_date',
+                Rule::requiredIf(fn() => $this->input('status') === AppointmentStatus::Confirmed->value),
             ],
             'appointment_time_until' => [
                 'nullable',
                 'date_format:H:i',
                 'required_with:appointment_time_from',
+                Rule::requiredIf(fn() => $this->input('status') === AppointmentStatus::Confirmed->value),
                 'after:appointment_time_from',
             ],
 
             // ── Status ───────────────────────────────────────────────────────
             'status' => [
-                'sometimes', // not required on creation; default set in model/migration
-                Rule::in(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']),
+                'sometimes',
+                Rule::in([AppointmentStatus::Pending->value, AppointmentStatus::Confirmed->value]),
             ],
+
+            'worker_ids'   => [
+                'nullable',
+                'array',
+                Rule::requiredIf(fn() => $this->input('status') === AppointmentStatus::Confirmed->value),
+            ],
+            'worker_ids.*' => ['integer', 'exists:users,id'],
 
             // ── Consent ──────────────────────────────────────────────────────
             'consent'          => ['required', 'boolean', 'accepted'],
             'consent_given_at' => ['nullable', 'date'],
 
             // ── Optional quotation items (customer pre-selection) ─
+            'quotation_notes'                                     => ['nullable', 'string', 'max:2000'],
             'items'                                               => ['sometimes', 'array', 'min:1'],
             'items.*.product_id'                                  => ['required', 'integer', 'exists:products,id'],
             'items.*.name'                                        => ['required', 'string', 'max:255'],
@@ -180,6 +201,7 @@ class StoreAppointmentRequest extends FormRequest
             'appointment_time_from.required_with'  => 'A start time is required when an appointment date is set.',
             'appointment_time_until.required_with' => 'An end time is required when a start time is set.',
             'appointment_time_until.after'         => 'The end time must be after the start time.',
+            'worker_ids.required'                  => 'Please assign at least one worker when confirming the appointment.',
 
             // Consent
             'consent.required' => 'You must provide consent to proceed.',
@@ -211,6 +233,18 @@ class StoreAppointmentRequest extends FormRequest
             'appointment_time_from'  => 'appointment start time',
             'appointment_time_until' => 'appointment end time',
             'consent_given_at'       => 'consent timestamp',
+            'worker_ids'             => 'assigned workers',
         ];
+    }
+
+    private function preferredTimeFromAppointmentStart(?string $time): ?string
+    {
+        if (!$time) {
+            return null;
+        }
+
+        $hour = (int) str($time)->before(':')->toString();
+
+        return $hour < 12 ? 'morning' : 'afternoon';
     }
 }

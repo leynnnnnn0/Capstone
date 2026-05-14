@@ -14,7 +14,7 @@ class WorkerService
         string $to,
         ?int $excludeAppointmentId = null
     ): Collection {
-        return User::where('role', 'worker')
+        return User::whereIn('role', ['worker', 'admin'])
             ->whereDoesntHave('appointments', function ($query) use ($date, $from, $to, $excludeAppointmentId) {
                 $query->where('appointment_date', $date)
                     ->where('appointment_time_from', '<', $to)

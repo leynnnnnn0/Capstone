@@ -5,6 +5,7 @@ export const statusConfig: Record<string, { label: string; color: string; bg: st
   confirmed: { label: "Confirmed", color: "#065f46", bg: "#ecfdf5", dot: "#10b981" },
   completed: { label: "Completed", color: "#1e3a5f", bg: "#eef2f8", dot: "#2c5282" },
   cancelled: { label: "Cancelled", color: "#7f1d1d", bg: "#fef2f2", dot: "#ef4444" },
+  on_the_way: { label: "On The Way", color: "#1d4ed8", bg: "#dbeafe", dot: "#3b82f6" },
   in_progress: { label: "In Progress", color: "#1e40af", bg: "#eff6ff", dot: "#3b82f6" },
   inspected: { label: "Inspected", color: "#065f46", bg: "#ecfdf5", dot: "#10b981" },
   quoted: { label: "Quoted", color: "#3730a3", bg: "#eef2ff", dot: "#6366f1" },
@@ -16,12 +17,24 @@ export const appointmentPipeline = ["pending", "confirmed", "inspected", "quoted
 export const workJobPipeline = ["pending", "confirmed", "in_progress", "completed"];
 
 export function getStatus(status: string) {
-  return statusConfig[status?.toLowerCase()] ?? {
-    label: status || "Unknown",
+  const key = status?.toLowerCase();
+
+  return statusConfig[key] ?? {
+    label: humanizeStatus(status),
     color: "#475569",
     bg: "#f8fafc",
     dot: "#94a3b8",
   };
+}
+
+function humanizeStatus(status?: string | null) {
+  if (!status) return "Unknown";
+
+  return status
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export function trackingPipeline(type: TrackingType) {
@@ -48,4 +61,21 @@ export function formatDateTime(date?: string | null, from?: string | null, until
   if (from && until) return `${formatDate(date)} · ${from} - ${until}`;
   if (from) return `${formatDate(date)} · ${from}`;
   return formatDate(date);
+}
+
+export function formatTrackingTimestamp(value?: string | null) {
+  if (!value) return "-";
+
+  const normalized = value.includes("T") ? value : value.replace(" ", "T");
+  const date = new Date(normalized);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

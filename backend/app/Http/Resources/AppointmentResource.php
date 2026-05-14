@@ -44,6 +44,9 @@ class AppointmentResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'workers' => WorkerResource::collection($this->whenLoaded('workers')),
+            'has_quotation' => $this->relationLoaded('quotation')
+                ? $this->quotation !== null
+                : $this->quotation()->exists(),
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
             'remarks' => AppointmentRemarkResource::collection($this->whenLoaded('remarks')),
         ];

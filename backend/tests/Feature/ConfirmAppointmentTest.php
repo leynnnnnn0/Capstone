@@ -73,3 +73,20 @@ it('assigns workers when confirming an appointment', function () use ($validPayl
 
     expect($appointment->fresh()->workers)->toHaveCount(2);
 });
+
+it('rejects confirm without an authenticated actor', function () use ($validPayload, $appointmentPayload) {
+    $appointment = Appointment::factory()->create($appointmentPayload());
+
+    $response = $this->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
+        ...$validPayload(),
+        'worker_ids' => $this->workers->pluck('id')->toArray(),
+    ]);
+
+    $response->assertStatus(401);
+
+    $appointment->refresh();
+
+    expect($appointment->status->value)->toBe('pending');
+    expect($appointment->workers)->toHaveCount(0);
+    expect($appointment->remarks)->toHaveCount(0);
+});

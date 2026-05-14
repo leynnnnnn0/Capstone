@@ -76,7 +76,7 @@ class TrackingService
     {
         $workJob = WorkJob::query()
             ->where('work_job_number', $reference)
-            ->with(['workers', 'quotation.quotation_items.options'])
+            ->with(['workers', 'remarks.user', 'quotation.quotation_items.options'])
             ->first();
 
         if (!$workJob) {
@@ -106,7 +106,15 @@ class TrackingService
             'discount' => (float) ($quotation->discount ?? 0),
             'quotation_notes' => $quotation?->notes,
             'workers' => $workJob->workers->pluck('full_name')->values(),
-            'remarks' => [],
+            'remarks' => $workJob->remarks
+                ->sortByDesc('created_at')
+                ->map(fn($remark) => [
+                    'action' => $remark->action,
+                    'message' => $remark->message,
+                    'by' => $remark->user_id ? 'SOG Team' : 'System',
+                    'created_at' => $remark->created_at?->toDateTimeString(),
+                ])
+                ->values(),
         ];
     }
 

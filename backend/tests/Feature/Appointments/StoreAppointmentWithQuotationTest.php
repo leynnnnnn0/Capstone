@@ -50,6 +50,33 @@ it('creates appointment without items', function () use ($appointmentPayload) {
     expect(Quotation::count())->toBe(0);
 });
 
+it('allows admin to create a confirmed appointment with schedule and workers', function () use ($appointmentPayload) {
+    $worker = User::factory()->create();
+    $appointmentDate = now()->addDays(4)->format('Y-m-d');
+
+    $this->postJson('/api/v1/appointments', [
+        ...$appointmentPayload(),
+        'preferred_date' => null,
+        'preferred_time' => null,
+        'status' => 'confirmed',
+        'appointment_date' => $appointmentDate,
+        'appointment_time_from' => '13:00',
+        'appointment_time_until' => '15:00',
+        'worker_ids' => [$worker->id],
+    ])
+        ->assertStatus(201)
+        ->assertJsonPath('data.status', 'confirmed')
+        ->assertJsonPath('data.appointment_date', $appointmentDate)
+        ->assertJsonPath('data.preferred_date', $appointmentDate)
+        ->assertJsonPath('data.preferred_time', 'afternoon')
+        ->assertJsonCount(1, 'data.workers');
+
+    $appointment = Appointment::first();
+
+    expect($appointment->workers)->toHaveCount(1);
+    expect($appointment->workers->first()->id)->toBe($worker->id);
+});
+
 it('creates appointment with quotation items', function () use ($appointmentPayload) {
     $response = $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),

@@ -45,6 +45,10 @@ class WorkJobResource extends JsonResource
             'quotation' => new QuotationResource(
                 $this->whenLoaded('quotation')
             ),
+
+            'remarks' => WorkJobRemarkResource::collection(
+                $this->whenLoaded('remarks')
+            ),
         ];
     }
 }

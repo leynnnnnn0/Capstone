@@ -78,4 +78,9 @@ class WorkJob extends Model
     {
         return $this->belongsToMany(User::class, 'work_job_workers');
     }
+
+    public function remarks()
+    {
+        return $this->hasMany(WorkJobRemark::class);
+    }
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock, Loader2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
 import {
   Dialog,
   DialogContent,
@@ -193,30 +194,13 @@ export default function AdminScheduleForm({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Assign Workers</Label>
-              <div className="max-h-44 space-y-2 overflow-y-auto rounded-md border p-3">
-                {availableWorkers.map((worker) => (
-                  <label key={worker.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={data.worker_ids.includes(worker.id)}
-                      onChange={(event) =>
-                        setField(
-                          "worker_ids",
-                          event.target.checked
-                            ? [...data.worker_ids, worker.id]
-                            : data.worker_ids.filter((id) => id !== worker.id),
-                        )
-                      }
-                    />
-                    {worker.full_name}
-                  </label>
-                ))}
-                {availableWorkers.length === 0 && <p className="text-sm text-muted-foreground">No available workers for this slot.</p>}
-              </div>
-              {errors.worker_ids && <p className="text-xs text-red-500">{errors.worker_ids}</p>}
-            </div>
+            <WorkerMultiSelect
+              workers={availableWorkers}
+              value={data.worker_ids}
+              onChange={(value) => setField("worker_ids", value)}
+              label="Assign Workers"
+              error={errors.worker_ids}
+            />
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setScheduleOpen(false)}>Cancel</Button>

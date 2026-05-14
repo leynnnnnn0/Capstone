@@ -116,6 +116,7 @@ export type CustomerWorkJob = {
   workers: CustomerWorker[];
   appointment?: CustomerAppointment | null;
   quotation?: CustomerQuotation | null;
+  remarks: CustomerRemark[];
 };
 
 export type CustomerRemark = {

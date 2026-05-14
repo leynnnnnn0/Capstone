@@ -55,7 +55,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
             scheduledDate={workJob.scheduled_date}
             timeFrom={workJob.scheduled_time_from}
             timeUntil={workJob.scheduled_time_until}
-            remarks={workJob.appointment?.remarks}
+            remarks={workJob.remarks}
           />
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
