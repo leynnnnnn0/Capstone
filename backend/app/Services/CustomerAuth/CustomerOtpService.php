@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class CustomerOtpService
 {
@@ -128,11 +129,12 @@ class CustomerOtpService
                 'phone_number' => $user->phone_number ?: $identity['phone_number'],
                 'email_verified_at' => $user->email_verified_at ?: ($identity['email'] ? now() : null),
             ])->save();
+            $this->assignCustomerRole($user);
 
             return $user;
         }
 
-        return User::create([
+        $customer = User::create([
             'username' => 'customer_' . Str::lower(Str::random(10)),
             'first_name' => $identity['first_name'] ?: 'SOG',
             'last_name' => $identity['last_name'] ?: 'Customer',
@@ -142,6 +144,16 @@ class CustomerOtpService
             'role' => 'customer',
             'email_verified_at' => $identity['email'] ? now() : null,
         ]);
+
+        $this->assignCustomerRole($customer);
+
+        return $customer;
+    }
+
+    private function assignCustomerRole(User $user): void
+    {
+        Role::findOrCreate('customer', 'web');
+        $user->assignRole('customer');
     }
 
     private function ensureCustomerContact(string $contact, string $contactType): void

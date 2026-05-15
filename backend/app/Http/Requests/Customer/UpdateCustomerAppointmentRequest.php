@@ -29,7 +29,7 @@ class UpdateCustomerAppointmentRequest extends FormRequest
             'first_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s\'\-\.]+$/u'],
             'last_name' => ['required', 'string', 'min:2', 'max:100', 'regex:/^[\pL\s\'\-\.]+$/u'],
             'phone_number' => ['required', 'string', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
-            'email' => ['nullable', 'string', 'email:rfc,dns', 'max:255'],
+            'email' => ['nullable', 'string', 'email:rfc', 'max:255'],
             'address' => ['required', 'string', 'min:5', 'max:500'],
             'address_pinned' => ['nullable', 'string', 'max:500'],
             'address_lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:address_lng'],

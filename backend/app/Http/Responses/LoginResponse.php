@@ -3,6 +3,7 @@
 
 namespace App\Http\Responses;
 
+use App\Http\Resources\UserResource;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 class LoginResponse implements LoginResponseContract
@@ -15,7 +16,9 @@ class LoginResponse implements LoginResponseContract
         $expiresAt = $remember ? now()->addHours(2) : now()->addHour();
 
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
-        $response = ['user' => $user->only('id', 'username', 'email', 'role')];
+        $user->load('roles', 'permissions');
+        $role = $user->getRoleNames()->first() ?? $user->role;
+        $response = ['user' => UserResource::make($user)];
         if (env('APP_ENV') !== 'production') {
             $response['token'] = $token;
         }
@@ -35,7 +38,7 @@ class LoginResponse implements LoginResponseContract
             )
             ->cookie(
                 'user_role',
-                $user->role,
+                $role,
                 $minutes,
                 '/',
                 env('SESSION_DOMAIN', ''),
