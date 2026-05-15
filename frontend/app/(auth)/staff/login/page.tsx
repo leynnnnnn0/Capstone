@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -11,8 +11,29 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
+import type { User } from "@/types/user";
+
+type LoginResponse = {
+  user: User | { data: User };
+};
+
+function unwrapUser(payload: LoginResponse["user"]): User {
+  return isResourceUser(payload) ? payload.data : payload;
+}
+
+function isResourceUser(payload: LoginResponse["user"]): payload is { data: User } {
+  return typeof payload === "object" && payload !== null && "data" in payload;
+}
 
 export default function StaffLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <StaffLoginForm />
+    </Suspense>
+  );
+}
+
+function StaffLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
@@ -27,7 +48,7 @@ export default function StaffLoginPage() {
     const form = new FormData(event.currentTarget);
 
     try {
-      await api("/api/login", {
+      const response = await api<LoginResponse>("/api/login", {
         method: "POST",
         body: JSON.stringify({
           email: form.get("email"),
@@ -35,7 +56,9 @@ export default function StaffLoginPage() {
           remember: form.get("remember") != null,
         }),
       });
-      router.push("/dashboard");
+      const user = unwrapUser(response.user);
+      const role = user.roles?.[0] ?? user.role;
+      router.push(role === "customer" ? "/account" : "/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

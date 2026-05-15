@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RotateCcw, Pencil, XCircle } from "lucide-react";
@@ -27,6 +27,7 @@ import {
   getCustomerAppointment,
 } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AppointmentDetailPage({ appointmentId }: { appointmentId: string }) {
   const router = useRouter();
@@ -36,9 +37,19 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelError, setCancelError] = useState("");
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     getCustomerAppointment(appointmentId).then((response) => setAppointment(response.data));
   }, [appointmentId]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useRealtimeRefresh((payload) => {
+    if (payload.id === Number(appointmentId) || payload.appointment_id === Number(appointmentId)) {
+      reload();
+    }
+  }, ["appointment", "quotation"]);
 
   async function cancelAppointment() {
     if (!appointment || !reason.trim()) return;
@@ -201,7 +212,11 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             emptyDescription="Updates from your inspection request will appear here."
           />
 
-          <CustomerQuoteSummary quotation={appointment.quotation} />
+          <CustomerQuoteSummary
+            quotation={appointment.quotation}
+            signerName={appointment.full_name}
+            onSigned={reload}
+          />
         </aside>
       </div>
     </CustomerShell>

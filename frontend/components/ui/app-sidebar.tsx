@@ -6,11 +6,14 @@ import {
   GitGraphIcon,
   LayoutGrid,
   Package,
+  ShieldCheck,
   User2Icon,
 } from "lucide-react";
 import { NavFooter } from "@/components/ui/nav-footer";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import { can } from "@/features/auth/current-user-api";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   Sidebar,
   SidebarContent,
@@ -31,28 +34,39 @@ const mainNavItems: NavItem[] = [
   },
   {
     title: "Users",
-    href: "/users",
+    href: "/dashboard/users",
     icon: User2Icon,
+    permission: "users.view",
   },
   {
     title: "Products",
     href: "/dashboard/products",
     icon: Package,
+    permission: "products.view",
   },
   {
     title: "Appointments",
     href: "/dashboard/appointments",
     icon: CalendarDays,
+    permission: "appointments.view",
   },
   {
     title: "Work Jobs",
     href: "/dashboard/work-jobs",
     icon: BriefcaseBusiness,
+    permission: "work-jobs.view",
   },
   {
     title: "Calendar",
     href: "/dashboard/calendar",
     icon: CalendarDays,
+    permission: "calendar.view",
+  },
+  {
+    title: "Audit Log",
+    href: "/dashboard/audits",
+    icon: ShieldCheck,
+    permission: "audits.view",
   },
 ];
 
@@ -65,6 +79,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+  const { user } = useCurrentUser();
+  const visibleItems = mainNavItems.filter((item) => !item.permission || can(user, item.permission));
+
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
@@ -80,7 +97,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={mainNavItems} />
+        <NavMain items={visibleItems} />
       </SidebarContent>
 
       <SidebarFooter>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Quotations;
 
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QuotationItemImageResource;
 use App\Models\QuotationItem;
@@ -12,8 +13,13 @@ use Illuminate\Support\Facades\Storage;
 
 class QuotationItemImageController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function store(Request $request, QuotationItem $quotationItem): JsonResponse
     {
+        $quotationItem->loadMissing('quotation.appointment');
+        $this->abortIfWorkerNotAssignedToAppointment($request, $quotationItem->quotation->appointment);
+
         $validated = $request->validate([
             'type' => ['required', 'in:before,after'],
             'caption' => ['nullable', 'string', 'max:255'],
@@ -40,6 +46,9 @@ class QuotationItemImageController extends Controller
 
     public function destroy(QuotationItemImage $quotationItemImage): JsonResponse
     {
+        $quotationItemImage->loadMissing('quotation_item.quotation.appointment');
+        $this->abortIfWorkerNotAssignedToAppointment(request(), $quotationItemImage->quotation_item->quotation->appointment);
+
         Storage::disk('public')->delete($quotationItemImage->image_path);
         $quotationItemImage->delete();
 

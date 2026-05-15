@@ -22,6 +22,8 @@ import {
   customerQuotationToCart,
 } from "@/features/customer/customer-quote-utils";
 import {
+  appointmentToCreatePrefillForm,
+  appointmentToForm,
   createCustomerAppointmentForm,
   serviceOptions,
 } from "@/features/customer/customer-utils";
@@ -51,30 +53,19 @@ function fieldError(error: unknown, fallback: string): FieldErrors {
 export default function AppointmentForm({
   appointment,
   prefillAppointment,
+  includePrefillQuotation = false,
 }: {
   appointment?: CustomerAppointment;
   prefillAppointment?: CustomerAppointment;
+  includePrefillQuotation?: boolean;
 }) {
   const router = useRouter();
   const sourceAppointment = appointment ?? prefillAppointment;
   const [data, setData] = useState<CustomerAppointmentForm>(() =>
-    sourceAppointment
-      ? {
-          first_name: sourceAppointment.first_name,
-          last_name: sourceAppointment.last_name,
-          phone_number: sourceAppointment.phone_number,
-          email: sourceAppointment.email ?? "",
-          address: sourceAppointment.address,
-          address_pinned: sourceAppointment.address_pinned ?? "",
-          address_lat: sourceAppointment.address_lat ?? "",
-          address_lng: sourceAppointment.address_lng ?? "",
-          preferred_date: sourceAppointment.preferred_date,
-          preferred_time: sourceAppointment.preferred_time,
-          service_type: sourceAppointment.service_type,
-          service_type_other: sourceAppointment.service_type_other ?? "",
-          additional_notes: sourceAppointment.additional_notes ?? "",
-          consent: true,
-        }
+    appointment
+      ? appointmentToForm(appointment)
+      : prefillAppointment
+        ? appointmentToCreatePrefillForm(prefillAppointment)
       : createCustomerAppointmentForm(),
   );
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -85,7 +76,8 @@ export default function AppointmentForm({
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [productsLoading, setProductsLoading] = useState(true);
   const editingItem = editingIndex !== null ? quoteCart[editingIndex] ?? null : null;
-  const sourceQuotation = sourceAppointment?.quotation;
+  const sourceQuotation =
+    appointment || includePrefillQuotation ? sourceAppointment?.quotation : undefined;
   const showQuoteItems =
     data.service_type === "quotation" || Boolean(sourceQuotation) || quoteCart.length > 0;
 
@@ -283,7 +275,7 @@ export default function AppointmentForm({
 
       <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-sm font-semibold text-slate-950">
-          {appointment ? "Update Appointment" : prefillAppointment ? "Rebook Appointment" : "Create Appointment"}
+          {appointment ? "Update Appointment" : includePrefillQuotation ? "Rebook Appointment" : "Create Appointment"}
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           You can edit this appointment while it is still pending. Once confirmed,
@@ -308,7 +300,9 @@ export default function AppointmentForm({
             : appointment
               ? "Save Changes"
               : prefillAppointment
-                ? "Create Rebooked Appointment"
+                ? includePrefillQuotation
+                  ? "Create Rebooked Appointment"
+                  : "Create Appointment"
                 : "Create Appointment"}
         </Button>
       </aside>

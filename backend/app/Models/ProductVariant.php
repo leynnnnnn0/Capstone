@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class ProductVariant extends Model
+class ProductVariant extends Model implements AuditableContract
 {
     /** @use HasFactory<\Database\Factories\ProductVariantFactory> */
     use HasFactory;
+    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'product_id',

@@ -805,7 +805,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                 getAllOptions().length
               } options selected. ${placeholder}`}
               className={cn(
-                "flex p-1 rounded-md border min-h-10 h-auto items-center justify-between bg-inherit hover:bg-inherit [&_svg]:pointer-events-auto",
+                "flex min-h-10 h-auto items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] hover:bg-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [&_svg]:pointer-events-auto",
                 autoSize ? "w-auto" : "w-full",
                 responsiveSettings.compactMode && "min-h-8 text-sm",
                 screenSize === "mobile" && "min-h-12 text-base",
@@ -818,10 +818,10 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               }}
             >
               {selectedValues.length > 0 ? (
-                <div className="flex justify-between items-center w-full">
+                <div className="flex min-w-0 items-center justify-between gap-2 w-full">
                   <div
                     className={cn(
-                      "flex items-center gap-1",
+                      "flex min-w-0 flex-1 items-center gap-1",
                       singleLine
                         ? "overflow-x-auto multiselect-singleline-scroll"
                         : "flex-wrap",
@@ -963,7 +963,7 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex shrink-0 items-center justify-between">
                     <div
                       role="button"
                       tabIndex={0}
@@ -994,11 +994,11 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between w-full mx-auto">
-                  <span className="text-sm text-muted-foreground mx-3">
+                <div className="flex min-w-0 items-center justify-between gap-2 w-full">
+                  <span className="truncate text-sm text-muted-foreground">
                     {placeholder}
                   </span>
-                  <ChevronDown className="h-4 cursor-pointer text-muted-foreground mx-2" />
+                  <ChevronDown className="h-4 shrink-0 cursor-pointer text-muted-foreground" />
                 </div>
               )}
             </Button>
@@ -1009,24 +1009,27 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
             aria-multiselectable="true"
             aria-label="Available options"
             className={cn(
-              "w-auto p-0",
+              "w-[var(--radix-popover-trigger-width)] min-w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-md border bg-popover p-0 text-popover-foreground shadow-md",
               getPopoverAnimationClass(),
-              screenSize === "mobile" && "w-[85vw] max-w-[280px]",
+              screenSize === "mobile" &&
+                "w-[calc(100vw-2rem)] min-w-0 max-w-[calc(100vw-2rem)]",
               screenSize === "tablet" && "w-[70vw] max-w-md",
-              screenSize === "desktop" && "min-w-[300px]",
+              screenSize === "desktop" && "max-w-[420px]",
               popoverClassName,
             )}
             style={{
               animationDuration: `${animationConfig?.duration || animation}s`,
               animationDelay: `${animationConfig?.delay || 0}s`,
-              maxWidth: `min(${widthConstraints.maxWidth}, 85vw)`,
-              maxHeight: screenSize === "mobile" ? "70vh" : "60vh",
+              maxWidth:
+                screenSize === "mobile"
+                  ? "calc(100vw - 2rem)"
+                  : `min(${widthConstraints.maxWidth}, 85vw)`,
               touchAction: "manipulation",
             }}
             align="start"
             onEscapeKeyDown={() => setIsPopoverOpen(false)}
           >
-            <Command>
+            <Command className="flex max-h-[min(24rem,60vh)] flex-col overflow-hidden">
               {searchable && (
                 <CommandInput
                   placeholder="Search options..."
@@ -1044,9 +1047,8 @@ export const MultiSelect = React.forwardRef<MultiSelectRef, MultiSelectProps>(
               )}
               <CommandList
                 className={cn(
-                  "max-h-[40vh] overflow-y-auto multiselect-scrollbar",
+                  "max-h-[min(18rem,45vh)] overflow-y-auto overscroll-contain multiselect-scrollbar",
                   screenSize === "mobile" && "max-h-[50vh]",
-                  "overscroll-behavior-y-contain",
                 )}
               >
                 <CommandEmpty>

@@ -4,6 +4,7 @@
 namespace App\Services;
 
 use App\Enums\WorkJobStatus;
+use App\Events\WorkJobChanged;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Appointment;
 use App\Models\User;
@@ -12,9 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 class WorkJobService
 {
-    public function create(array $data): WorkJob
+    public function create(array $data, ?User $actor = null): WorkJob
     {
-        return DB::transaction(function () use ($data) {
+        $workJob = DB::transaction(function () use ($data) {
             $workerIds = $data['worker_ids'];
 
             $workJob = WorkJob::create([
@@ -41,9 +42,13 @@ class WorkJobService
 
             return $workJob->load($this->relations());
         });
+
+        WorkJobChanged::dispatch($workJob, 'created', 'Work job created and scheduled.', $actor);
+
+        return $workJob;
     }
 
-    public function createFromAppointment(Appointment $appointment): WorkJob
+    public function createFromAppointment(Appointment $appointment, ?User $actor = null): WorkJob
     {
         $appointment->load(['workers', 'quotation']);
 
@@ -64,7 +69,7 @@ class WorkJobService
             'scheduled_time_from'  => $appointment->appointment_time_from,
             'scheduled_time_until' => $appointment->appointment_time_until,
             'worker_ids'           => $appointment->workers->pluck('id')->toArray(),
-        ]);
+        ], $actor);
     }
 
     public function markInProgress(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
@@ -80,7 +85,10 @@ class WorkJobService
             ]);
         });
 
-        return $workJob->fresh()->load($this->relations());
+        $workJob = $workJob->fresh()->load($this->relations());
+        WorkJobChanged::dispatch($workJob, WorkJobStatus::InProgress->value, $remarks ?: 'Work job is now in progress.', $actor);
+
+        return $workJob;
     }
 
     public function complete(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
@@ -96,7 +104,10 @@ class WorkJobService
             ]);
         });
 
-        return $workJob->fresh()->load($this->relations());
+        $workJob = $workJob->fresh()->load($this->relations());
+        WorkJobChanged::dispatch($workJob, WorkJobStatus::Completed->value, $remarks ?: 'Work job completed.', $actor);
+
+        return $workJob;
     }
 
     public function cancel(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
@@ -112,7 +123,10 @@ class WorkJobService
             ]);
         });
 
-        return $workJob->fresh()->load($this->relations());
+        $workJob = $workJob->fresh()->load($this->relations());
+        WorkJobChanged::dispatch($workJob, WorkJobStatus::Cancelled->value, $remarks ?: 'Work job cancelled.', $actor);
+
+        return $workJob;
     }
 
     private function ensureCanTransition(WorkJob $workJob, WorkJobStatus $next): void

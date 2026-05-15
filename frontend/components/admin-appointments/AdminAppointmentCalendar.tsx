@@ -24,7 +24,15 @@ import type { AdminAppointment } from "@/features/admin-appointments/types";
 import { adminStatusMeta, formatAdminDate, formatAdminTime } from "@/features/admin-appointments/admin-appointment-utils";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
 
-type CalendarMode = "appointments" | "workers";
+export type CalendarMode = "appointments" | "workers";
+
+type AdminAppointmentCalendarProps = {
+  appointments: AdminAppointment[];
+  defaultMode?: CalendarMode;
+  lockedMode?: CalendarMode;
+  fitToContainer?: boolean;
+  compact?: boolean;
+};
 
 const workerPalette = [
   { bg: "bg-blue-100", border: "border-blue-500", text: "text-blue-800", dot: "bg-blue-500" },
@@ -49,8 +57,15 @@ const statusColors: Record<string, { bg: string; border: string; text: string; d
 
 const fcClasses = `[&_.fc]:font-sans [&_.fc-button]:rounded-md [&_.fc-button]:border [&_.fc-button]:border-border [&_.fc-button]:bg-background [&_.fc-button]:px-3 [&_.fc-button]:py-1.5 [&_.fc-button]:text-xs [&_.fc-button]:font-medium [&_.fc-button]:text-foreground [&_.fc-button]:shadow-none [&_.fc-button-active]:!border-primary [&_.fc-button-active]:!bg-primary [&_.fc-button-active]:!text-primary-foreground [&_.fc-button-primary]:!border-border [&_.fc-button-primary]:!bg-background [&_.fc-button-primary]:!text-foreground [&_.fc-button-primary.fc-button-active]:!bg-primary [&_.fc-button-primary.fc-button-active]:!text-primary-foreground [&_.fc-button-primary:hover]:!bg-muted [&_.fc-col-header-cell]:py-2 [&_.fc-col-header-cell-cushion]:text-xs [&_.fc-col-header-cell-cushion]:font-semibold [&_.fc-col-header-cell-cushion]:tracking-widest [&_.fc-col-header-cell-cushion]:text-muted-foreground [&_.fc-col-header-cell-cushion]:uppercase [&_.fc-col-header-cell-cushion]:no-underline [&_.fc-day-today]:!bg-primary/5 [&_.fc-daygrid-day-number]:text-xs [&_.fc-daygrid-day-number]:font-semibold [&_.fc-daygrid-day-number]:text-foreground [&_.fc-daygrid-day-number]:no-underline [&_.fc-event]:cursor-pointer [&_.fc-event]:border-none [&_.fc-event]:bg-transparent [&_.fc-event]:shadow-none [&_.fc-scrollgrid]:border-border [&_.fc-scrollgrid-section>td]:border-border [&_.fc-timegrid-slot]:border-border [&_.fc-timegrid-slot-label-cushion]:text-xs [&_.fc-timegrid-slot-label-cushion]:text-muted-foreground [&_.fc-toolbar-title]:text-xl [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:text-foreground [&_td.fc-day]:border-border [&_th.fc-day]:border-border`;
 
-export default function AdminAppointmentCalendar({ appointments }: { appointments: AdminAppointment[] }) {
-  const [mode, setMode] = useState<CalendarMode>("appointments");
+export default function AdminAppointmentCalendar({
+  appointments,
+  defaultMode = "appointments",
+  lockedMode,
+  fitToContainer = false,
+  compact = false,
+}: AdminAppointmentCalendarProps) {
+  const [mode, setMode] = useState<CalendarMode>(defaultMode);
+  const activeMode = lockedMode ?? mode;
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const scheduled = appointments.filter((appointment) => appointment.appointment_date && appointment.appointment_time_from && appointment.appointment_time_until);
   const initialDate = scheduled[0]?.appointment_date ?? new Date().toISOString().slice(0, 10);
@@ -58,9 +73,11 @@ export default function AdminAppointmentCalendar({ appointments }: { appointment
   const workerEvents = useMemo(() => toWorkerEvents(scheduled), [scheduled]);
   const slotRange = useMemo(() => calendarSlotRange(scheduled), [scheduled]);
   const selectedAppointment = appointments.find((appointment) => appointment.id === selectedId) ?? null;
-  const calendarMinWidth = mode === "workers"
-    ? Math.max(1040, 7 * Math.max(maxConcurrentWorkerEvents(scheduled), 1) * 150)
-    : 1040;
+  const calendarMinWidth = fitToContainer
+    ? "100%"
+    : activeMode === "workers"
+      ? Math.max(920, 7 * Math.max(maxConcurrentWorkerEvents(scheduled), 1) * 126)
+      : 920;
 
   function handleEventClick(info: EventClickArg) {
     const appointmentIds = info.event.extendedProps.appointment_ids as number[] | undefined;
@@ -72,22 +89,24 @@ export default function AdminAppointmentCalendar({ appointments }: { appointment
   return (
     <>
     <div className="flex h-full flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
-          <button type="button" onClick={() => setMode("appointments")} className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${mode === "appointments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-            📋 Appointments
-          </button>
-          <button type="button" onClick={() => setMode("workers")} className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${mode === "workers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-            👷 Workers Schedule
-          </button>
+      {!lockedMode && (
+        <div className="flex items-center gap-2">
+          <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
+            <button type="button" onClick={() => setMode("appointments")} className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${activeMode === "appointments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              📋 Appointments
+            </button>
+            <button type="button" onClick={() => setMode("workers")} className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-all ${activeMode === "workers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              👷 Workers Schedule
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className={`flex-1 overflow-auto rounded-xl border bg-card p-3 shadow-sm ${fcClasses}`}>
-        <style>{`.fc .fc-timegrid-slot { height: 2.25rem !important; } .fc .fc-toolbar.fc-header-toolbar { margin-bottom: 1rem; } .fc .fc-daygrid-day-events { min-height: 1.5rem; } .fc .fc-timegrid-event-harness { inset-inline-end: 0 !important; } .fc .fc-timegrid-event { margin-inline-end: 0 !important; }`}</style>
+      <div className={`flex-1 ${fitToContainer ? "overflow-hidden" : "overflow-auto"} rounded-xl border bg-card p-3 shadow-sm ${fcClasses}`}>
+        <style>{`.fc .fc-timegrid-slot { height: ${compact ? "1.75rem" : "2.05rem"} !important; } .fc .fc-toolbar.fc-header-toolbar { margin-bottom: ${compact ? "0.75rem" : "1rem"}; } .fc .fc-daygrid-day-events { min-height: 1.5rem; } .fc .fc-timegrid-event-harness { inset-inline-end: 0 !important; } .fc .fc-timegrid-event { margin-inline-end: 0 !important; } .fc .fc-event-main { min-width: 0; }`}</style>
         <div style={{ minWidth: calendarMinWidth }}>
           <FullCalendar
-            key={mode}
+            key={activeMode}
             plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
             initialView="timeGridWeek"
             initialDate={initialDate}
@@ -97,8 +116,8 @@ export default function AdminAppointmentCalendar({ appointments }: { appointment
               right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
             }}
             buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day", list: "List" }}
-            events={mode === "appointments" ? appointmentEvents : workerEvents}
-            eventContent={(info) => mode === "appointments" ? <AppointmentEventBlock info={info} onSelect={setSelectedId} /> : <WorkerEventBlock info={info} />}
+            events={activeMode === "appointments" ? appointmentEvents : workerEvents}
+            eventContent={(info) => activeMode === "appointments" ? <AppointmentEventBlock info={info} onSelect={setSelectedId} /> : <WorkerEventBlock info={info} />}
             eventClick={handleEventClick}
             slotMinTime={slotRange.min}
             slotMaxTime={slotRange.max}
@@ -109,14 +128,14 @@ export default function AdminAppointmentCalendar({ appointments }: { appointment
             nowIndicator
             allDaySlot={false}
             dayMaxEvents={false}
-            slotEventOverlap={mode === "workers" ? false : true}
+            slotEventOverlap={activeMode === "workers" ? false : true}
             expandRows={false}
           />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        {mode === "appointments"
+        {activeMode === "appointments"
           ? ["pending", "confirmed", "completed", "cancelled"].map((status) => (
               <div key={status} className="flex items-center gap-1.5">
                 <span className={`size-2.5 rounded-full ${statusColors[status].dot}`} />

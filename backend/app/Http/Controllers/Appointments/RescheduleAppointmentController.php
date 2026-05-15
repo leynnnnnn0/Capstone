@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Appointments;
 
 use App\Exceptions\InvalidStatusTransitionException;
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\RescheduleAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
@@ -13,6 +14,8 @@ use Throwable;
 
 class RescheduleAppointmentController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly AppointmentService $appointmentService
     ) {}
@@ -21,6 +24,8 @@ class RescheduleAppointmentController extends Controller
         RescheduleAppointmentRequest $request,
         Appointment $appointment
     ) {
+        $this->abortIfWorker($request, 'Workers cannot reschedule appointments.');
+
         try {
             $appointment = $this->appointmentService->reschedule(
                 $appointment,

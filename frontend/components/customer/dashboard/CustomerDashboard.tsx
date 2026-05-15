@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarPlus, Clock, Wrench } from "lucide-react";
 
@@ -13,20 +13,29 @@ import {
 } from "@/features/customer/customer-api";
 import { isActiveAppointment, isActiveWorkJob } from "@/features/customer/customer-utils";
 import type { CustomerAppointment, CustomerWorkJob } from "@/features/customer/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function CustomerDashboard() {
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
   const [workJobs, setWorkJobs] = useState<CustomerWorkJob[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([getCustomerAppointments(), getCustomerWorkJobs()])
+  const loadRecords = useCallback(() => {
+    return Promise.all([getCustomerAppointments(), getCustomerWorkJobs()])
       .then(([appointmentResponse, workJobResponse]) => {
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void loadRecords();
+  }, [loadRecords]);
+
+  useRealtimeRefresh(() => {
+    void loadRecords();
+  }, ["appointment", "work_job", "quotation"]);
 
   const stats = useMemo(
     () => [

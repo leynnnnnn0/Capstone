@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Appointments;
 
 use App\Exceptions\InvalidStatusTransitionException;
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
@@ -13,12 +14,16 @@ use Throwable;
 
 class MarkCompletedController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly AppointmentService $appointmentService
     ) {}
 
     public function __invoke(Request $request, Appointment $appointment)
     {
+        $this->abortIfWorkerNotAssignedToAppointment($request, $appointment);
+
         try {
             $appointment = $this->appointmentService->markCompleted(
                 $appointment,

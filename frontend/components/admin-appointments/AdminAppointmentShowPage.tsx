@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminAppointmentDetailsCard from "@/components/admin-appointments/AdminAppointmentDetailsCard";
@@ -12,26 +12,37 @@ import AdminScheduleForm from "@/components/admin-appointments/AdminScheduleForm
 import AdminStatusActions from "@/components/admin-appointments/AdminStatusActions";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
 import { fetchAdminAppointment, fetchWorkers } from "@/features/admin-appointments/admin-appointment-api";
+import { hasRole } from "@/features/auth/current-user-api";
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AdminAppointmentShowPage({ appointmentId }: { appointmentId: string }) {
+  const { user } = useCurrentUser();
   const [appointment, setAppointment] = useState<AdminAppointment | null>(null);
   const [workers, setWorkers] = useState<AdminWorker[]>([]);
   const [quotationOpen, setQuotationOpen] = useState(false);
 
-  function reload() {
+  const reload = useCallback(() => {
     fetchAdminAppointment(appointmentId).then((response) => setAppointment(response.data));
-  }
+  }, [appointmentId]);
+
+  useRealtimeRefresh((payload) => {
+    if (payload.id === Number(appointmentId) || payload.appointment_id === Number(appointmentId)) {
+      reload();
+    }
+  }, ["appointment", "quotation"]);
 
   useEffect(() => {
     reload();
     fetchWorkers().then((response) => setWorkers(response.data));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointmentId]);
+  }, [appointmentId, reload]);
 
   if (!appointment) {
     return <p className="text-sm text-muted-foreground">Loading appointment...</p>;
   }
+
+  const isWorker = hasRole(user, "worker");
 
   return (
     <div className="space-y-6">
@@ -50,7 +61,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
           />
         </div>
         <div className="space-y-6">
-          <AdminProceedToWorkJob appointment={appointment} />
+          {!isWorker && <AdminProceedToWorkJob appointment={appointment} />}
           <AdminStatusActions
             appointment={appointment}
             onUpdated={setAppointment}
@@ -59,6 +70,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
             appointment={appointment}
             workers={workers}
             onUpdated={setAppointment}
+            readOnly={isWorker}
           />
 
           <AdminQuotationDetails quotation={appointment.quotation} />

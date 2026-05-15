@@ -1,4 +1,7 @@
-import { minimumBookingDate } from "@/features/booking/booking-utils";
+import {
+  minimumBookingDate,
+  resolvePreferredTimeForDate,
+} from "@/features/booking/booking-utils";
 
 import type {
   CustomerAppointment,
@@ -66,6 +69,24 @@ export function appointmentToForm(appointment: CustomerAppointment): CustomerApp
     service_type_other: appointment.service_type_other ?? "",
     additional_notes: appointment.additional_notes ?? "",
     consent: true,
+  };
+}
+
+export function appointmentToCreatePrefillForm(
+  appointment: CustomerAppointment,
+): CustomerAppointmentForm {
+  const minimumDate = minimumBookingDate();
+  const preferredDate =
+    appointment.preferred_date >= minimumDate ? appointment.preferred_date : minimumDate;
+  const preferredTime = resolvePreferredTimeForDate(
+    preferredDate,
+    appointment.preferred_time,
+  );
+
+  return {
+    ...appointmentToForm(appointment),
+    preferred_date: preferredDate,
+    preferred_time: preferredTime,
   };
 }
 

@@ -1,17 +1,19 @@
 <?php
 namespace App\Services;
 
-use App\Models\Appointment;
+use App\Events\QuotationChanged;
+use App\Events\QuotationSignatureInvalidated;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationItemOption;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class QuotationService
 {
-    public function create(array $data): Quotation
+    public function create(array $data, ?User $actor = null): Quotation
     {
-        return DB::transaction(function () use ($data) {
+        $quotation = DB::transaction(function () use ($data) {
             $quotation = Quotation::create([
                 'appointment_id' => $data['appointment_id'],
                 'notes'          => $data['notes'] ?? null,
@@ -27,11 +29,15 @@ class QuotationService
                 'quotation_items.after_images',
             ]);
         });
+
+        QuotationChanged::dispatch($quotation, 'created', 'Quotation created.', $actor);
+
+        return $quotation;
     }
 
-    public function update(Quotation $quotation, array $data): Quotation
+    public function update(Quotation $quotation, array $data, ?User $actor = null): Quotation
     {
-        return DB::transaction(function () use ($quotation, $data) {
+        $quotation = DB::transaction(function () use ($quotation, $data) {
             $quotation->update([
                 'notes'    => $data['notes'] ?? null,
                 'discount' => $data['discount'] ?? 0,
@@ -49,12 +55,33 @@ class QuotationService
                 'quotation_items.after_images',
             ]);
         });
+
+        if ($quotation->invalidateSignature('Quotation updated. Please review and sign again.')) {
+            QuotationSignatureInvalidated::dispatch($quotation->fresh(['appointment', 'quotation_items.options']), 'Quotation updated. Please review and sign again.', $actor);
+        }
+
+        QuotationChanged::dispatch($quotation, 'updated', 'Quotation updated.', $actor);
+
+        return $quotation;
     }
 
-    public function updateItemStatus(QuotationItem $item, string $status): QuotationItem
+    public function updateItemStatus(QuotationItem $item, string $status, ?User $actor = null): QuotationItem
     {
         $item->update(['status' => $status]);
-        return $item->fresh();
+        $item = $item->fresh(['quotation.appointment']);
+        $reason = "Quotation item {$item->name} was updated. Please review and sign again.";
+        if ($item->quotation->invalidateSignature($reason)) {
+            QuotationSignatureInvalidated::dispatch($item->quotation->fresh(['appointment', 'quotation_items.options']), $reason, $actor);
+        }
+
+        QuotationChanged::dispatch(
+            $item->quotation,
+            "item_{$status}",
+            "{$item->name} is now ".str_replace('_', ' ', $status).'.',
+            $actor
+        );
+
+        return $item;
     }
 
     private function syncItems(Quotation $quotation, array $items): void

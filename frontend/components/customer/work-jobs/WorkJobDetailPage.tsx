@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
@@ -11,14 +11,23 @@ import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadg
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerSchedule } from "@/features/customer/customer-utils";
 import type { CustomerWorkJob } from "@/features/customer/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) {
   const router = useRouter();
   const [workJob, setWorkJob] = useState<CustomerWorkJob | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     getCustomerWorkJob(workJobId).then((response) => setWorkJob(response.data));
   }, [workJobId]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useRealtimeRefresh((payload) => {
+    if (payload.id === Number(workJobId)) reload();
+  }, ["work_job"]);
 
   if (!workJob) {
     return (
@@ -72,7 +81,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
             addressLng={workJob.address_lng}
           />
 
-          <CustomerQuoteSummary quotation={quotation} />
+          <CustomerQuoteSummary quotation={quotation} signerName={workJob.full_name} onSigned={reload} />
         </section>
 
         <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

@@ -18,15 +18,21 @@ import {
 import { UserInfo } from "./user-info";
 import { UserMenuContent } from "./user-menu-content";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function NavUser() {
   const { state } = useSidebar();
   const isMobile = useIsMobile();
-
+  const { user: currentUser } = useCurrentUser();
   const user = {
-    name: "John Doe",
-    email: "john@example.com",
+    ...currentUser,
+    id: currentUser?.id ?? 0,
+    name: currentUser?.full_name ?? currentUser?.name ?? "Staff User",
+    email: currentUser?.email ?? "",
     avatar: "",
+    email_verified_at: currentUser?.email_verified_at ?? null,
+    created_at: currentUser?.created_at ?? "",
+    updated_at: currentUser?.updated_at ?? "",
   };
 
   return (

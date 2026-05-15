@@ -6,11 +6,13 @@ use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class Appointment extends Model
+class Appointment extends Model implements AuditableContract
 {
     /** @use HasFactory<\Database\Factories\AppointmentFactory> */
     use HasFactory;
+    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'user_id',
@@ -49,7 +51,7 @@ class Appointment extends Model
 
     public function remarks()
     {
-        return $this->hasMany(AppointmentRemark::class);
+        return $this->hasMany(AppointmentRemark::class)->latest();
     }
 
     public function workers(): BelongsToMany

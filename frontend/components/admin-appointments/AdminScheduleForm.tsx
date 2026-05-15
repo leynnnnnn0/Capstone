@@ -31,10 +31,12 @@ export default function AdminScheduleForm({
   appointment,
   workers,
   onUpdated,
+  readOnly = false,
 }: {
   appointment: AdminAppointment;
   workers: AdminWorker[];
   onUpdated: (appointment: AdminAppointment) => void;
+  readOnly?: boolean;
 }) {
   const [data, setData] = useState<SchedulePayload>({
     appointment_date: appointment.appointment_date ?? "",
@@ -51,7 +53,7 @@ export default function AdminScheduleForm({
 
   const canReschedule = ["confirmed", "on_the_way", "in_progress"].includes(appointment.status);
   const canSetSchedule = ["pending", "rescheduled", "reopened"].includes(appointment.status);
-  const canSchedule = canSetSchedule || canReschedule;
+  const canSchedule = !readOnly && (canSetSchedule || canReschedule);
   const scheduleButtonLabel = canSetSchedule ? "Set Schedule" : "Reschedule";
   const selectedWorkerNames = useMemo(
     () => data.worker_ids.map((id) => workers.find((worker) => worker.id === id)?.full_name).filter(Boolean).join(", "),

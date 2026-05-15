@@ -57,6 +57,12 @@ export type CustomerQuotation = {
   discount: number;
   subtotal: number;
   total: number;
+  signature_status?: "unsigned" | "signed" | "needs_resign";
+  customer_signed_at?: string | null;
+  customer_signature_name?: string | null;
+  customer_signature_url?: string | null;
+  signature_invalidated_at?: string | null;
+  signature_invalidated_reason?: string | null;
   created_at?: string;
   updated_at?: string;
   items: CustomerQuotationItem[];

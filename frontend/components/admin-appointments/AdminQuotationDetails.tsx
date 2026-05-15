@@ -54,6 +54,11 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
   const approvedItems = useMemo(() => items.filter((item) => item.status === approvedStatus), [items]);
   const allTotal = items.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const approvedTotal = approvedItems.reduce((sum, item) => sum + Number(item.total_amount), 0);
+  const signatureLabel = quotation?.signature_status === "signed"
+    ? "Signed"
+    : quotation?.signature_status === "needs_resign"
+      ? "Needs re-sign"
+      : null;
 
   if (!quotation || items.length === 0) {
     return (
@@ -105,12 +110,30 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
                   {approvedItems.length} approved
                 </Badge>
               )}
+              {signatureLabel && (
+                <Badge
+                  variant={quotation.signature_status === "signed" ? "secondary" : "outline"}
+                  className={quotation.signature_status === "needs_resign" ? "border-amber-300 bg-amber-50 text-[10px] text-amber-700" : "text-[10px]"}
+                >
+                  {signatureLabel}
+                </Badge>
+              )}
               <Badge variant="outline" className="text-xs">
                 {items.length} item{items.length !== 1 ? "s" : ""}
               </Badge>
             </div>
           </div>
           <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>
+          {quotation.signature_status === "signed" && quotation.customer_signed_at && (
+            <CardDescription className="text-xs">
+              Signed by {quotation.customer_signature_name ?? "customer"} on {formatQuoteDate(quotation.customer_signed_at, quotation.id)}
+            </CardDescription>
+          )}
+          {quotation.signature_status === "needs_resign" && (
+            <CardDescription className="text-xs text-amber-700">
+              Signature is no longer current. Customer needs to sign again.
+            </CardDescription>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-4">

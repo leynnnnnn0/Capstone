@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\QuotationItem;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -9,9 +10,10 @@ uses(RefreshDatabase::class);
 
 it('uploads before images for a quotation item', function () {
     Storage::fake('public');
+    $admin = User::factory()->create(['role' => 'admin']);
     $quotationItem = QuotationItem::factory()->create();
 
-    $response = $this->postJson("/api/v1/quotation-items/{$quotationItem->id}/images", [
+    $response = $this->actingAs($admin)->postJson("/api/v1/quotation-items/{$quotationItem->id}/images", [
         'type' => 'before',
         'caption' => 'Before installation',
         'images' => [

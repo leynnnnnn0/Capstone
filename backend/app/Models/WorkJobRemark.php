@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class WorkJobRemark extends Model
+class WorkJobRemark extends Model implements AuditableContract
 {
+    use \OwenIt\Auditing\Auditable;
+
     protected $fillable = [
         'work_job_id',
         'user_id',

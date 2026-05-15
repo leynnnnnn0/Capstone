@@ -3,6 +3,7 @@
 
 namespace App\Http\Controllers\Quotations;
 
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quotations\UpdateQuotationItemStatusRequest;
 use App\Http\Resources\QuotationItemResource;
@@ -14,6 +15,8 @@ use Throwable;
 
 class QuotationItemStatusController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly QuotationService $quotationService
     ) {}
@@ -23,9 +26,13 @@ class QuotationItemStatusController extends Controller
         QuotationItem $quotationItem
     ): JsonResponse {
         try {
+            $quotationItem->loadMissing('quotation.appointment');
+            $this->abortIfWorkerNotAssignedToAppointment($request, $quotationItem->quotation->appointment);
+
             $item = $this->quotationService->updateItemStatus(
                 $quotationItem,
-                $request->validated()['status']
+                $request->validated()['status'],
+                $request->user()
             );
 
             return response()->json([

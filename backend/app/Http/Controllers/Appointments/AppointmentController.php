@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Appointments;
 
 use App\Exceptions\SlotFullException;
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
@@ -17,6 +18,8 @@ use Throwable;
 
 class AppointmentController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     private const RELATIONS = [
         'quotation.quotation_items.options',
         'quotation.quotation_items.before_images',
@@ -33,6 +36,9 @@ class AppointmentController extends Controller
     {
         $query = Appointment::query()
             ->with(self::RELATIONS)
+            ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+                $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
+            })
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
                 $query->where(function ($query) use ($search) {
@@ -62,8 +68,10 @@ class AppointmentController extends Controller
         return response()->json(AppointmentResource::collection($appointments)->response()->getData(true));
     }
 
-    public function show(Appointment $appointment): JsonResponse
+    public function show(Request $request, Appointment $appointment): JsonResponse
     {
+        $this->abortIfWorkerNotAssignedToAppointment($request, $appointment);
+
         $appointment->load(self::RELATIONS);
 
         return response()->json([
@@ -73,8 +81,10 @@ class AppointmentController extends Controller
 
     public function store(StoreAppointmentRequest $request): JsonResponse
     {
+        $this->abortIfWorker($request, 'Workers cannot create appointments.');
+
         try {
-            $appointment = $this->appointmentService->create($request->validated());
+            $appointment = $this->appointmentService->create($request->validated(), $request->user());
 
             $appointment->load(self::RELATIONS);
 
@@ -99,6 +109,8 @@ class AppointmentController extends Controller
 
     public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
     {
+        $this->abortIfWorker($request, 'Workers cannot edit appointment details.');
+
         try {
             $appointment = $this->appointmentService->update($appointment, $request->validated(), $request->user());
 

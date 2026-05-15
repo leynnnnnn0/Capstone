@@ -12,8 +12,10 @@
         "php": "^8.3",
         "laravel/fortify": "^1.36",
         "laravel/framework": "^13.0",
+        "laravel/reverb": "^1.10",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "owen-it/laravel-auditing": "^14.0",
         "spatie/browsershot": "^5.3",
         "spatie/laravel-pdf": "^2.8",
         "spatie/laravel-permission": "^7.4"

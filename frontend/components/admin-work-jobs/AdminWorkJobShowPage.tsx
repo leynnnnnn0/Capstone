@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
@@ -10,13 +10,22 @@ import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader"
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string }) {
   const [workJob, setWorkJob] = useState<AdminWorkJob | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     fetchAdminWorkJob(workJobId).then((response) => setWorkJob(response.data));
   }, [workJobId]);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useRealtimeRefresh((payload) => {
+    if (payload.id === Number(workJobId)) reload();
+  }, ["work_job"]);
 
   if (!workJob) {
     return <p className="text-sm text-muted-foreground">Loading work job...</p>;

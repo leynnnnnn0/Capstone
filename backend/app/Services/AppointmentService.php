@@ -8,6 +8,7 @@ use App\Events\AppointmentCancelled;
 use App\Events\AppointmentConfirmed;
 use App\Events\AppointmentRescheduled;
 use App\Events\AppointmentStatusChanged;
+use App\Events\AppointmentUpdated;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Exceptions\SlotFullException;
 use App\Models\Appointment;
@@ -22,14 +23,14 @@ class AppointmentService
         private readonly QuotationService $quotationService
     ) {}
 
-    public function create(array $validated): Appointment
+    public function create(array $validated, ?User $actor = null): Appointment
     {
         $this->ensureSlotAvailable(
             $validated['preferred_date'],
             $validated['preferred_time']
         );
 
-        $appointment = DB::transaction(function () use ($validated) {
+        $appointment = DB::transaction(function () use ($validated, $actor) {
             $status = AppointmentStatus::tryFrom($validated['status'] ?? AppointmentStatus::Pending->value) ?? AppointmentStatus::Pending;
 
             $appointment = Appointment::create([
@@ -48,13 +49,13 @@ class AppointmentService
                     'appointment_id' => $appointment->id,
                     'items'          => $validated['items'],
                     'notes'          => $validated['quotation_notes'] ?? null,
-                ]);
+                ], $actor);
             }
 
             return $appointment;
         });
 
-        AppointmentBooked::dispatch($appointment);
+        AppointmentBooked::dispatch($appointment, $actor);
 
         return $appointment;
     }
@@ -77,13 +78,13 @@ class AppointmentService
                     $this->quotationService->update($appointment->quotation, [
                         'items' => $validated['items'],
                         'notes' => $validated['quotation_notes'] ?? null,
-                    ]);
+                    ], $actor);
                 } else {
                     $this->quotationService->create([
                         'appointment_id' => $appointment->id,
                         'items' => $validated['items'],
                         'notes' => $validated['quotation_notes'] ?? null,
-                    ]);
+                    ], $actor);
                 }
             }
 
@@ -102,7 +103,14 @@ class AppointmentService
             AppointmentStatusChanged::dispatch(
                 $updated,
                 $updated->status,
-                "Appointment status changed to {$updated->status->label()}."
+                "Appointment status changed to {$updated->status->label()}.",
+                $actor
+            );
+        } else {
+            AppointmentUpdated::dispatch(
+                $updated,
+                'Appointment details updated.',
+                $actor
             );
         }
 
@@ -151,7 +159,7 @@ class AppointmentService
         });
 
 
-        AppointmentConfirmed::dispatch($appointment->fresh());
+        AppointmentConfirmed::dispatch($appointment->fresh(), $actor);
 
 
         return $appointment->fresh();
@@ -171,7 +179,7 @@ class AppointmentService
             ]);
         });
 
-        AppointmentCancelled::dispatch($appointment->fresh());
+        AppointmentCancelled::dispatch($appointment->fresh(), $actor);
 
         return $appointment->fresh();
     }
@@ -195,7 +203,8 @@ class AppointmentService
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::Reopened,
-            $data['remarks'] ?? 'Appointment reopened.'
+            $data['remarks'] ?? 'Appointment reopened.',
+            $actor
         );
 
         return $appointment->fresh();
@@ -224,7 +233,7 @@ class AppointmentService
             ]);
         });
 
-        AppointmentRescheduled::dispatch($appointment->fresh());
+        AppointmentRescheduled::dispatch($appointment->fresh(), $actor);
 
         return $appointment->fresh();
     }
@@ -246,7 +255,8 @@ class AppointmentService
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::OnTheWay,
-            'Worker is on the way.'
+            'Worker is on the way.',
+            $actor
         );
 
         return $appointment->fresh();
@@ -269,7 +279,8 @@ class AppointmentService
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::InProgress,
-            'Job is now in progress.'
+            'Job is now in progress.',
+            $actor
         );
 
         return $appointment->fresh();
@@ -292,7 +303,8 @@ class AppointmentService
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::Completed,
-            'Appointment completed.'
+            'Appointment completed.',
+            $actor
         );
 
         return $appointment->fresh();
@@ -317,7 +329,8 @@ class AppointmentService
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::NoShow,
-            $message
+            $message,
+            $actor
         );
 
         return $appointment->fresh();

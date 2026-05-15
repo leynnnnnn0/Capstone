@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class CustomerLoginOtp extends Model
+class CustomerLoginOtp extends Model implements AuditableContract
 {
+    use \OwenIt\Auditing\Auditable;
+
     protected $fillable = [
         'contact',
         'contact_type',

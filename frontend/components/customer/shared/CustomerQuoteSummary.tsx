@@ -1,16 +1,27 @@
-import { Calculator, Download, FileText, Layers, Package } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Calculator, CheckCircle2, Download, FileText, Layers, Package, PenLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CustomerSignatureDialog from "@/components/customer/shared/CustomerSignatureDialog";
+import { quotationPdfUrl } from "@/features/admin-appointments/admin-appointment-api";
 import { Separator } from "@/components/ui/separator";
 import { formatPeso } from "@/features/customer/customer-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 
 export default function CustomerQuoteSummary({
   quotation,
+  signerName,
+  onSigned,
 }: {
   quotation?: CustomerQuotation | null;
+  signerName?: string | null;
+  onSigned?: () => void;
 }) {
+  const [signOpen, setSignOpen] = useState(false);
+
   if (!quotation || quotation.items.length === 0) {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -23,6 +34,8 @@ export default function CustomerQuoteSummary({
   }
 
   const totalEstimate = quotation.total || quotation.subtotal - quotation.discount;
+  const isSigned = quotation.signature_status === "signed";
+  const needsResign = quotation.signature_status === "needs_resign";
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -37,9 +50,21 @@ export default function CustomerQuoteSummary({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <Download className="size-3.5" />
-            PDF
+          <Button asChild type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+            <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
+              <Download className="size-3.5" />
+              Download
+            </a>
+          </Button>
+          <Button
+            type="button"
+            variant={isSigned ? "outline" : "default"}
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            onClick={() => setSignOpen(true)}
+          >
+            {isSigned ? <CheckCircle2 className="size-3.5" /> : <PenLine className="size-3.5" />}
+            {isSigned ? "Signed" : needsResign ? "Sign Again" : "Sign"}
           </Button>
           <Badge variant="outline" className="text-xs">
             {quotation.items.length} item{quotation.items.length === 1 ? "" : "s"}
@@ -80,6 +105,26 @@ export default function CustomerQuoteSummary({
           {quotation.notes}
         </p>
       )}
+
+      {isSigned && quotation.customer_signed_at && (
+        <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">
+          Signed by {quotation.customer_signature_name ?? "customer"} on {formatDate(quotation.customer_signed_at)}.
+        </p>
+      )}
+
+      {needsResign && (
+        <p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
+          This quotation changed after it was signed. Please review and sign again.
+        </p>
+      )}
+
+      <CustomerSignatureDialog
+        quotationId={quotation.id}
+        defaultName={signerName}
+        open={signOpen}
+        onOpenChange={setSignOpen}
+        onSigned={() => onSigned?.()}
+      />
     </section>
   );
 }

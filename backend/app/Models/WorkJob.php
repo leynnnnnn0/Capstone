@@ -6,10 +6,12 @@ namespace App\Models;
 use App\Enums\WorkJobStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class WorkJob extends Model
+class WorkJob extends Model implements AuditableContract
 {
     use HasFactory;
+    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'work_job_number',

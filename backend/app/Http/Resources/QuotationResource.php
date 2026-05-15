@@ -23,6 +23,14 @@ class QuotationResource extends JsonResource
             'discount'       => $discount,
             'subtotal'       => $subtotal,
             'total'          => $subtotal - $discount,
+            'signature_status' => $this->signatureStatus(),
+            'customer_signed_at' => $this->customer_signed_at,
+            'customer_signature_name' => $this->customer_signature_name,
+            'customer_signature_url' => $this->customer_signature_path
+                ? asset('storage/' . $this->customer_signature_path)
+                : null,
+            'signature_invalidated_at' => $this->signature_invalidated_at,
+            'signature_invalidated_reason' => $this->signature_invalidated_reason,
 
             'appointment' => new AppointmentResource(
                 $this->whenLoaded('appointment')

@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'role' => $roles->first() ?? $this->role,
             'roles' => $roles,
             'permissions' => $permissions,
+            'two_factor_enabled' => ! is_null($this->two_factor_confirmed_at),
             'email_verified_at' => $this->email_verified_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

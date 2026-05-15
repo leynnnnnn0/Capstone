@@ -11,4 +11,5 @@ export type NavItem = {
   href: LinkProps["href"];
   icon?: LucideIcon | null;
   isActive?: boolean;
+  permission?: string;
 };

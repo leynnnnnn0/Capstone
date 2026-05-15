@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import TrackPage from "@/components/tracking/TrackPage";
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <TrackPage />;
+  return (
+    <Suspense fallback={null}>
+      <TrackPage />
+    </Suspense>
+  );
 }

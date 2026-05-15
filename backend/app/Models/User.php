@@ -6,12 +6,15 @@ use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements AuditableContract
 {
-    use HasApiTokens, HasFactory, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'username',
@@ -59,6 +62,16 @@ class User extends Authenticatable
     public function isWorker(): bool
     {
         return $this->hasRole('worker') || $this->role === 'worker';
+    }
+
+    public function isSubAdmin(): bool
+    {
+        return $this->hasRole('sub_admin') || $this->role === 'sub_admin';
+    }
+
+    public function isOperationsAdmin(): bool
+    {
+        return $this->isAdmin() || $this->isSubAdmin();
     }
 
     public function isCustomer(): bool

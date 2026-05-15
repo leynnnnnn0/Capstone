@@ -3,6 +3,7 @@
 
 namespace App\Http\Controllers\Quotations;
 
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Quotations\StoreQuotationRequest;
 use App\Http\Requests\Quotations\UpdateQuotationRequest;
@@ -15,6 +16,8 @@ use Throwable;
 
 class QuotationController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly QuotationService $quotationService
     ) {}
@@ -36,7 +39,10 @@ class QuotationController extends Controller
     public function store(StoreQuotationRequest $request): JsonResponse
     {
         try {
-            $quotation = $this->quotationService->create($request->validated());
+            $appointment = \App\Models\Appointment::findOrFail($request->validated()['appointment_id']);
+            $this->abortIfWorkerNotAssignedToAppointment($request, $appointment);
+
+            $quotation = $this->quotationService->create($request->validated(), $request->user());
 
             return response()->json([
                 'message' => 'Quotation created successfully.',
@@ -57,9 +63,13 @@ class QuotationController extends Controller
     public function update(UpdateQuotationRequest $request, Quotation $quotation): JsonResponse
     {
         try {
+            $quotation->loadMissing('appointment');
+            $this->abortIfWorkerNotAssignedToAppointment($request, $quotation->appointment);
+
             $quotation = $this->quotationService->update(
                 $quotation,
-                $request->validated()
+                $request->validated(),
+                $request->user()
             );
 
             return response()->json([

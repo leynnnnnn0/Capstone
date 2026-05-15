@@ -4,6 +4,7 @@ namespace App\Events;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -15,5 +16,6 @@ class AppointmentStatusChanged
         public readonly Appointment $appointment,
         public readonly AppointmentStatus $status,
         public readonly string $message,
+        public readonly ?User $actor = null,
     ) {}
 }

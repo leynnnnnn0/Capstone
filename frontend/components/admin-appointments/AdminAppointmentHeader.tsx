@@ -16,7 +16,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
+import { hasRole } from "@/features/auth/current-user-api";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function AdminAppointmentHeader({
   appointment,
@@ -25,9 +27,11 @@ export default function AdminAppointmentHeader({
   appointment: AdminAppointment;
   onOpenQuotation: () => void;
 }) {
+  const { user } = useCurrentUser();
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const isLocked = ["cancelled", "no_show"].includes(appointment.status);
+  const isWorker = hasRole(user, "worker");
 
   useEffect(() => {
     if (!calendarOpen) return;
@@ -46,7 +50,7 @@ export default function AdminAppointmentHeader({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <AdminAppointmentStatusBadge status={appointment.status} />
-        {!isLocked && (
+        {!isLocked && !isWorker && (
           <Button asChild variant="outline" size="sm" className="gap-1.5">
             <Link href={`/dashboard/appointments/${appointment.id}/edit`}>
               <FilePenLine className="size-3.5" />

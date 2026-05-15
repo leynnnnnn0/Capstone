@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -33,14 +33,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
+import { hasRole } from "@/features/auth/current-user-api";
 import {
   adminServiceOptions,
   adminStatusOptions,
   formatAdminDate,
 } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment, AppointmentCollection } from "@/features/admin-appointments/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function AdminAppointmentsPage() {
+  const { user } = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [response, setResponse] = useState<AppointmentCollection | null>(null);
@@ -61,7 +65,7 @@ export default function AdminAppointmentsPage() {
     [searchParams],
   );
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let mounted = true;
 
     fetchAdminAppointments(filters)
@@ -76,6 +80,12 @@ export default function AdminAppointmentsPage() {
       mounted = false;
     };
   }, [filters]);
+
+  useEffect(() => reload(), [reload]);
+  useRealtimeRefresh(() => {
+    setLoading(true);
+    reload();
+  }, ["appointment", "quotation"]);
 
   function applyFilter(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -96,6 +106,7 @@ export default function AdminAppointmentsPage() {
   const meta = response?.meta;
   const total = response?.meta?.total ?? appointments.length;
   const activeFilters = Boolean(filters.search || filters.status !== "all" || filters.service_type !== "all" || filters.date_from || filters.date_to);
+  const isWorker = hasRole(user, "worker");
 
   return (
     <div className="space-y-4">
@@ -104,12 +115,14 @@ export default function AdminAppointmentsPage() {
           <h1 className="text-xl font-semibold tracking-tight">Appointments</h1>
           <p className="text-sm text-muted-foreground">{total} total appointment{total === 1 ? "" : "s"}</p>
         </div>
-        <Button asChild size="sm" className="gap-1.5">
-          <Link href="/dashboard/appointments/create">
-            <CalendarDays className="size-3.5" />
-            New Appointment
-          </Link>
-        </Button>
+        {!isWorker && (
+          <Button asChild size="sm" className="gap-1.5">
+            <Link href="/dashboard/appointments/create">
+              <CalendarDays className="size-3.5" />
+              New Appointment
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

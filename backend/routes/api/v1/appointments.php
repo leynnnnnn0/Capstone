@@ -12,11 +12,11 @@ use App\Http\Controllers\Appointments\ReopenAppointmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('appointments')->group(function () {
-    Route::get('/', [AppointmentController::class, 'index']);
     Route::post('/', [AppointmentController::class, 'store']);
-    Route::get('{appointment}', [AppointmentController::class, 'show']);
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/', [AppointmentController::class, 'index']);
+        Route::get('{appointment}', [AppointmentController::class, 'show']);
         Route::put('{appointment}', [AppointmentController::class, 'update']);
         Route::patch('{appointment}/confirm', ConfirmAppointmentController::class);
         Route::patch('{appointment}/cancel', CancelAppointmentController::class);

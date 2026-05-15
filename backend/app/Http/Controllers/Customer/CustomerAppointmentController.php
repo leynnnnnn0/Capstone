@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Enums\AppointmentStatus;
+use App\Events\AppointmentUpdated;
 use App\Exceptions\SlotFullException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\CancelAppointmentRequest;
@@ -56,7 +57,7 @@ class CustomerAppointmentController extends Controller
         ];
 
         try {
-            $appointment = $this->appointmentService->create($payload)
+            $appointment = $this->appointmentService->create($payload, $user)
                 ->load(self::APPOINTMENT_RELATIONS);
 
             return response()->json([
@@ -96,17 +97,23 @@ class CustomerAppointmentController extends Controller
                 if ($appointment->quotation) {
                     $this->quotationService->update($appointment->quotation, [
                         'items' => $validated['items'],
-                    ]);
+                    ], $request->user());
                 } else {
                     $this->quotationService->create([
                         'appointment_id' => $appointment->id,
                         'items' => $validated['items'],
-                    ]);
+                    ], $request->user());
                 }
             }
 
             return $appointment->fresh(self::APPOINTMENT_RELATIONS);
         });
+
+        AppointmentUpdated::dispatch(
+            $appointment,
+            'Customer updated appointment details.',
+            $request->user()
+        );
 
         return response()->json(['data' => new AppointmentResource($appointment)]);
     }

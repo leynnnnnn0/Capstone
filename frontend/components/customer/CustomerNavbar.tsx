@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Bell,
   BriefcaseBusiness,
   ChevronDown,
   LayoutDashboard,
@@ -15,6 +14,8 @@ import {
 
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,14 @@ const navItems = [
 export default function CustomerNavbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useCurrentUser();
+  const displayName = user?.full_name ?? user?.first_name ?? "Customer";
+  const initials = displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   async function logout() {
     await api("/api/logout", { method: "POST" });
@@ -80,16 +89,7 @@ export default function CustomerNavbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            className="relative hidden size-8 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 sm:flex"
-            aria-label="Notifications"
-          >
-            <Bell className="size-4" />
-            <span className="absolute right-0.5 top-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-medium text-white">
-              3
-            </span>
-          </button>
+          <NotificationBell className="hidden text-slate-700 hover:bg-slate-100 sm:inline-flex" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -98,10 +98,10 @@ export default function CustomerNavbar() {
                 className="flex items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-slate-100"
               >
                 <span className="flex size-8 items-center justify-center rounded-lg bg-slate-200 text-xs font-medium text-slate-700">
-                  JD
+                  {initials || "CU"}
                 </span>
                 <span className="hidden text-xs font-medium text-slate-800 sm:inline">
-                  John Doe
+                  {displayName}
                 </span>
                 <ChevronDown className="hidden size-3.5 text-slate-500 sm:inline" />
               </button>

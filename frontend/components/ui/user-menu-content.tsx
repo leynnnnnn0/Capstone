@@ -47,7 +47,7 @@ export function UserMenuContent({ user }: Props) {
       <DropdownMenuGroup>
         <DropdownMenuItem asChild>
           <Link
-            href="/profile"
+            href="/dashboard/settings"
             className="block w-full cursor-pointer"
             onClick={cleanup}
           >

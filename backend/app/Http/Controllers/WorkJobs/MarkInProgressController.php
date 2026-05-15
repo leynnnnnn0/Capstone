@@ -4,6 +4,7 @@
 namespace App\Http\Controllers\WorkJobs;
 
 use App\Exceptions\InvalidStatusTransitionException;
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WorkJobResource;
 use App\Models\WorkJob;
@@ -15,12 +16,16 @@ use Throwable;
 
 class MarkInProgressController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly WorkJobService $workJobService
     ) {}
 
     public function __invoke(Request $request, WorkJob $workJob): JsonResponse
     {
+        $this->abortIfWorkerNotAssignedToWorkJob($request, $workJob);
+
         try {
             $validated = $request->validate([
                 'remarks' => ['nullable', 'string', 'max:2000'],

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import GetQuotePage from "@/components/quote/GetQuotePage";
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <GetQuotePage />;
+  return (
+    <Suspense fallback={null}>
+      <GetQuotePage />
+    </Suspense>
+  );
 }

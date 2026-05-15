@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { type ReactNode } from "react";
 import { AppSidebarHeader } from "@/components/ui/app-sidebar-header";
 import { AppLayoutProps } from "@/types/ui";
+import { RealtimeBridge } from "@/components/realtime/RealtimeBridge";
 
 export default function AppSidebarLayout({
   children,
@@ -17,6 +18,7 @@ export default function AppSidebarLayout({
       <SidebarProvider>
         <AppSidebar />
         <AppContent variant="sidebar" className="overflow-x-hidden">
+          <RealtimeBridge />
           <AppSidebarHeader breadcrumbs={breadcrumbs} />
           {children}
         </AppContent>

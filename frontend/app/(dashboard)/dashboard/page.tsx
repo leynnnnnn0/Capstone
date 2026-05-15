@@ -1,5 +1,5 @@
-import AdminDashboardPage from "@/components/dashboard/AdminDashboardPage";
+import RoleDashboardPage from "@/components/dashboard/RoleDashboardPage";
 
 export default function DashboardPage() {
-  return <AdminDashboardPage />;
+  return <RoleDashboardPage />;
 }

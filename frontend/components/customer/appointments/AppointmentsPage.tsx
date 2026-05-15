@@ -1,22 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
 import CustomerShell from "@/components/customer/shared/CustomerShell";
 import { getCustomerAppointments } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     getCustomerAppointments()
       .then((response) => setAppointments(response.data))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  useRealtimeRefresh(() => {
+    setLoading(true);
+    reload();
+  }, ["appointment", "quotation"]);
 
   return (
     <CustomerShell>

@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
-class QuotationItem extends Model
+class QuotationItem extends Model implements AuditableContract
 {
     /** @use HasFactory<\Database\Factories\QuotationItemFactory> */
     use HasFactory;
+    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'quotation_id',

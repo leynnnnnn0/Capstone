@@ -3,6 +3,7 @@ import { api } from "@/lib/api";
 import type {
   CustomerAppointment,
   CustomerAppointmentPayload,
+  CustomerQuotation,
   CustomerWorkJob,
 } from "./types";
 
@@ -35,6 +36,16 @@ export function cancelCustomerAppointment(id: string | number, reason: string) {
   return api<ResourceResponse<CustomerAppointment>>(`/api/v1/customer/appointments/${id}/cancel`, {
     method: "PATCH",
     body: JSON.stringify({ reason }),
+  });
+}
+
+export function signCustomerQuotation(
+  quotationId: string | number,
+  payload: { signer_name: string; signature: string },
+) {
+  return api<ResourceResponse<CustomerQuotation>>(`/api/v1/customer/quotations/${quotationId}/sign`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

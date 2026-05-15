@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\WorkJobs;
 
+use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkJobs\StoreWorkJobRequest;
 use App\Http\Resources\WorkJobResource;
@@ -15,6 +16,8 @@ use Throwable;
 
 class WorkJobController extends Controller
 {
+    use AuthorizesAssignedWork;
+
     public function __construct(
         private readonly WorkJobService $workJobService
     ) {}
@@ -27,6 +30,9 @@ class WorkJobController extends Controller
 
         $workJobs = WorkJob::query()
             ->with(['workers', 'appointment', 'quotation'])
+            ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+                $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
+            })
             ->when(
                 $request->search,
                 fn($q) =>
@@ -61,8 +67,10 @@ class WorkJobController extends Controller
 
     public function store(StoreWorkJobRequest $request): JsonResponse
     {
+        $this->abortIfWorker($request, 'Workers cannot create work jobs.');
+
         try {
-            $workJob = $this->workJobService->create($request->validated());
+            $workJob = $this->workJobService->create($request->validated(), $request->user());
 
             return response()->json([
                 'message' => 'Work job created successfully.',
@@ -80,8 +88,10 @@ class WorkJobController extends Controller
         }
     }
 
-    public function show(WorkJob $workJob): JsonResponse
+    public function show(Request $request, WorkJob $workJob): JsonResponse
     {
+        $this->abortIfWorkerNotAssignedToWorkJob($request, $workJob);
+
         $workJob->load([
             'workers',
             'appointment',
@@ -98,8 +108,10 @@ class WorkJobController extends Controller
 
     public function createFromAppointment(Appointment $appointment): JsonResponse
     {
+        $this->abortIfWorker(request(), 'Workers cannot create work jobs.');
+
         try {
-            $workJob = $this->workJobService->createFromAppointment($appointment);
+            $workJob = $this->workJobService->createFromAppointment($appointment, request()->user());
 
             return response()->json([
                 'message' => 'Work job created from appointment successfully.',

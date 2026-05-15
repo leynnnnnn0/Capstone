@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,13 +34,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchAdminWorkJobs } from "@/features/admin-work-jobs/admin-work-job-api";
+import { hasRole } from "@/features/auth/current-user-api";
 import {
   adminWorkJobStatusOptions,
   formatWorkJobSchedule,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
 import type { AdminWorkJob, WorkJobCollection } from "@/features/admin-work-jobs/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export default function AdminWorkJobsPage() {
+  const { user } = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [response, setResponse] = useState<WorkJobCollection | null>(null);
@@ -60,7 +64,7 @@ export default function AdminWorkJobsPage() {
     [searchParams],
   );
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let mounted = true;
 
     fetchAdminWorkJobs(filters)
@@ -75,6 +79,12 @@ export default function AdminWorkJobsPage() {
       mounted = false;
     };
   }, [filters]);
+
+  useEffect(() => reload(), [reload]);
+  useRealtimeRefresh(() => {
+    setLoading(true);
+    reload();
+  }, ["work_job"]);
 
   function applyFilter(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -95,6 +105,7 @@ export default function AdminWorkJobsPage() {
   const meta = response?.meta;
   const total = meta?.total ?? workJobs.length;
   const activeFilters = Boolean(filters.search || filters.status !== "all" || filters.date_from || filters.date_to);
+  const isWorker = hasRole(user, "worker");
 
   return (
     <div className="space-y-4">
@@ -103,12 +114,14 @@ export default function AdminWorkJobsPage() {
           <h1 className="text-xl font-semibold tracking-tight">Work Jobs</h1>
           <p className="text-sm text-muted-foreground">{total} total work job{total === 1 ? "" : "s"}</p>
         </div>
-        <Button asChild size="sm" className="gap-1.5">
-          <Link href="/dashboard/work-jobs/create">
-            <BriefcaseBusiness className="size-3.5" />
-            New Work Job
-          </Link>
-        </Button>
+        {!isWorker && (
+          <Button asChild size="sm" className="gap-1.5">
+            <Link href="/dashboard/work-jobs/create">
+              <BriefcaseBusiness className="size-3.5" />
+              New Work Job
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
