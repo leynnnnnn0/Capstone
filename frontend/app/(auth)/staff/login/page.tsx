@@ -17,6 +17,13 @@ type LoginResponse = {
   user: User | { data: User };
 };
 
+type TwoFactorChallengeResponse = {
+  two_factor: true;
+  challenge_id: string;
+};
+
+type StaffLoginResponse = LoginResponse | TwoFactorChallengeResponse;
+
 function unwrapUser(payload: LoginResponse["user"]): User {
   return isResourceUser(payload) ? payload.data : payload;
 }
@@ -38,7 +45,15 @@ function StaffLoginForm() {
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [challengeId, setChallengeId] = useState("");
+  const [remember, setRemember] = useState(false);
   const wasReset = searchParams.get("reset") === "true";
+
+  function redirectForUser(payload: LoginResponse) {
+    const user = unwrapUser(payload.user);
+    const role = user.roles?.[0] ?? user.role;
+    router.push(role === "customer" ? "/account" : "/dashboard");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,21 +61,52 @@ function StaffLoginForm() {
     setLoading(true);
 
     const form = new FormData(event.currentTarget);
+    const shouldRemember = form.get("remember") != null;
 
     try {
-      const response = await api<LoginResponse>("/api/login", {
+      const response = await api<StaffLoginResponse>("/api/login", {
         method: "POST",
         body: JSON.stringify({
           email: form.get("email"),
           password: form.get("password"),
-          remember: form.get("remember") != null,
+          remember: shouldRemember,
         }),
       });
-      const user = unwrapUser(response.user);
-      const role = user.roles?.[0] ?? user.role;
-      router.push(role === "customer" ? "/account" : "/dashboard");
+
+      if ("two_factor" in response) {
+        setChallengeId(response.challenge_id);
+        setRemember(shouldRemember);
+        return;
+      }
+
+      redirectForUser(response);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTwoFactorSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const form = new FormData(event.currentTarget);
+
+    try {
+      const response = await api<LoginResponse>("/api/two-factor-challenge", {
+        method: "POST",
+        body: JSON.stringify({
+          challenge_id: challengeId,
+          code: form.get("code"),
+          remember,
+        }),
+      });
+
+      redirectForUser(response);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Invalid authentication code.");
     } finally {
       setLoading(false);
     }
@@ -88,6 +134,34 @@ function StaffLoginForm() {
           </p>
         )}
 
+        {challengeId ? (
+          <form onSubmit={handleTwoFactorSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">Authentication code</Label>
+              <Input
+                id="code"
+                required
+                name="code"
+                inputMode="numeric"
+                placeholder="123456"
+                autoComplete="one-time-code"
+              />
+            </div>
+
+            {error && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="h-11 w-full" disabled={loading}>
+              {loading ? "Verifying..." : "Verify and sign in"}
+            </Button>
+            <Button type="button" variant="ghost" className="w-full" onClick={() => setChallengeId("")}>
+              Back to email and password
+            </Button>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -138,6 +212,7 @@ function StaffLoginForm() {
             {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
+        )}
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Customer?{" "}

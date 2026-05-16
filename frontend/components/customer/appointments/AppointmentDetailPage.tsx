@@ -122,74 +122,90 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           <CustomerStatusBadge status={appointment.status} />
           <div className="flex flex-wrap gap-2">
             {appointment.status === "cancelled" ? (
-              <Button asChild type="button" variant="outline" className="h-10 gap-2">
-                <Link href={`/account/appointments/new?rebook=${appointment.id}`}>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="h-10 gap-2"
+              >
+                <Link
+                  href={`/account/appointments/new?rebook=${appointment.id}`}
+                >
                   <RotateCcw className="size-4" />
                   Rebook Appointment
                 </Link>
               </Button>
             ) : appointment.can_edit ? (
-              <Button asChild type="button" variant="outline" className="h-10 gap-2">
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="h-10 gap-2"
+              >
                 <Link href={`/account/appointments/${appointment.id}/edit`}>
                   <Pencil className="size-4" />
                   Edit Appointment
                 </Link>
               </Button>
             ) : null}
-            {appointment.status == "pending" || appointment.status == "confirmed" && appointment.can_cancel && (
-              <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 gap-2 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
-                  >
-                    <XCircle className="size-4" />
-                    Cancel Appointment
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Cancel appointment?</DialogTitle>
-                    <DialogDescription>
-                      Please tell us why you want to cancel. This keeps the team informed and helps with follow-up.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-2">
-                    <Textarea
-                      value={reason}
-                      onChange={(event) => {
-                        setReason(event.target.value);
-                        setCancelError("");
-                      }}
-                      placeholder="Reason for cancellation"
-                      className="min-h-28 resize-none"
-                    />
-                    {cancelError && (
-                      <p className="text-sm font-medium text-red-600">{cancelError}</p>
-                    )}
-                  </div>
-                  <DialogFooter>
+            {appointment.status == "pending" ||
+              (appointment.status == "confirmed" && appointment.can_cancel && (
+                <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                  <DialogTrigger asChild>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCancelOpen(false)}
-                      disabled={cancelling}
+                      className="h-10 gap-2 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
                     >
-                      Keep Appointment
+                      <XCircle className="size-4" />
+                      Cancel Appointment
                     </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={!reason.trim() || cancelling}
-                      onClick={cancelAppointment}
-                    >
-                      {cancelling ? "Cancelling..." : "Confirm Cancel"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Cancel appointment?</DialogTitle>
+                      <DialogDescription>
+                        Please tell us why you want to cancel. This keeps the
+                        team informed and helps with follow-up.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                      <Textarea
+                        value={reason}
+                        onChange={(event) => {
+                          setReason(event.target.value);
+                          setCancelError("");
+                        }}
+                        placeholder="Reason for cancellation"
+                        className="min-h-28 resize-none"
+                      />
+                      {cancelError && (
+                        <p className="text-sm font-medium text-red-600">
+                          {cancelError}
+                        </p>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setCancelOpen(false)}
+                        disabled={cancelling}
+                      >
+                        Keep Appointment
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={!reason.trim() || cancelling}
+                        onClick={cancelAppointment}
+                      >
+                        {cancelling ? "Cancelling..." : "Confirm Cancel"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              ))}
           </div>
         </div>
       </div>
@@ -207,15 +223,15 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         </section>
 
         <aside className="space-y-4">
-          <CustomerActivityLog
-            remarks={appointment.remarks}
-            emptyDescription="Updates from your inspection request will appear here."
-          />
-
           <CustomerQuoteSummary
             quotation={appointment.quotation}
             signerName={appointment.full_name}
             onSigned={reload}
+          />
+          
+          <CustomerActivityLog
+            remarks={appointment.remarks}
+            emptyDescription="Updates from your inspection request will appear here."
           />
         </aside>
       </div>

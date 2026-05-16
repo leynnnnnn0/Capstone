@@ -69,10 +69,17 @@ export default function CustomerDashboard() {
           const Icon = stat.icon;
 
           return (
-            <div key={stat.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <Icon className="mb-3 size-5 text-primary" />
-              <p className="text-base font-medium text-slate-950">{loading ? "-" : stat.value}</p>
+            <div
+              key={stat.label}
+              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+            >
               <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+              <div className="flex items-center gap-2">
+                <Icon className="size-5 text-primary " />
+                <p className="font-medium text-slate-950 ">
+                  {loading ? "-" : stat.value}
+                </p>
+              </div>
             </div>
           );
         })}

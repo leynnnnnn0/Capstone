@@ -12,7 +12,7 @@ export type ProfilePayload = {
 };
 
 export type PasswordPayload = {
-  current_password: string;
+  current_password: string; 
   password: string;
   password_confirmation: string;
 };
@@ -47,7 +47,7 @@ export function enableTwoFactor() {
     method: "POST",
   });
 }
-
+ 
 export function confirmTwoFactor(code: string) {
   return api<void>("/api/user/confirmed-two-factor-authentication", {
     method: "POST",
