@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\DB;
 class CustomerAppointmentController extends Controller
 {
     private const APPOINTMENT_RELATIONS = [
+        'workJob',
         'quotation.quotation_items.options',
+        'quotation.quotation_items.product.product_images',
         'quotation.quotation_items.before_images',
         'quotation.quotation_items.after_images',
         'workers',
@@ -41,9 +43,10 @@ class CustomerAppointmentController extends Controller
             ->appointmentsFor($request->user())
             ->with(self::APPOINTMENT_RELATIONS)
             ->latest()
-            ->get();
+            ->paginate((int) $request->input('per_page', 10))
+            ->withQueryString();
 
-        return response()->json(['data' => AppointmentResource::collection($appointments)]);
+        return response()->json(AppointmentResource::collection($appointments)->response()->getData(true));
     }
 
     public function store(StoreCustomerAppointmentRequest $request): JsonResponse

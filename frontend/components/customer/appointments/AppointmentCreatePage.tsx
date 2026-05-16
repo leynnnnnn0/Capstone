@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
-import CustomerShell from "@/components/customer/shared/CustomerShell";
 import {
   getCustomerAppointment,
   getCustomerAppointments,
@@ -45,7 +44,7 @@ export default function AppointmentCreatePage() {
     if (rebookId) return;
 
     let mounted = true;
-    getCustomerAppointments()
+    getCustomerAppointments({ per_page: 1 })
       .then((response) => {
         if (mounted) setLatestPrefill(response.data[0] ?? null);
       })
@@ -59,7 +58,7 @@ export default function AppointmentCreatePage() {
   }, [rebookId]);
 
   return (
-    <CustomerShell>
+    <>
       <div className="mb-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">
           {isRebook ? "Rebook Appointment" : "New Appointment"}
@@ -86,6 +85,6 @@ export default function AppointmentCreatePage() {
           includePrefillQuotation={isRebook}
         />
       )}
-    </CustomerShell>
+    </>
   );
 }

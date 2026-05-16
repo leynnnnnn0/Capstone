@@ -15,11 +15,14 @@ class CustomerWorkJobController extends Controller
         'workers',
         'remarks.user',
         'appointment.workers',
+        'appointment.workJob',
         'appointment.remarks.user',
         'appointment.quotation.quotation_items.options',
+        'appointment.quotation.quotation_items.product.product_images',
         'appointment.quotation.quotation_items.before_images',
         'appointment.quotation.quotation_items.after_images',
         'quotation.quotation_items.options',
+        'quotation.quotation_items.product.product_images',
         'quotation.quotation_items.before_images',
         'quotation.quotation_items.after_images',
     ];
@@ -32,9 +35,10 @@ class CustomerWorkJobController extends Controller
             ->workJobsFor($request->user())
             ->with(self::WORK_JOB_RELATIONS)
             ->latest()
-            ->get();
+            ->paginate((int) $request->input('per_page', 10))
+            ->withQueryString();
 
-        return response()->json(['data' => WorkJobResource::collection($workJobs)]);
+        return response()->json(WorkJobResource::collection($workJobs)->response()->getData(true));
     }
 
     public function show(Request $request, WorkJob $workJob): JsonResponse

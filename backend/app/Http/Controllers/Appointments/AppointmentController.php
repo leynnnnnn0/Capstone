@@ -21,7 +21,9 @@ class AppointmentController extends Controller
     use AuthorizesAssignedWork;
 
     private const RELATIONS = [
+        'workJob',
         'quotation.quotation_items.options',
+        'quotation.quotation_items.product.product_images',
         'quotation.quotation_items.before_images',
         'quotation.quotation_items.after_images',
         'workers',

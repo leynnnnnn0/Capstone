@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Calculator, CheckCircle2, Download, FileText, Layers, Package, PenLine } from "lucide-react";
+import Image from "next/image";
+import { Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, PenLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CustomerSignatureDialog from "@/components/customer/shared/CustomerSignatureDialog";
 import { quotationPdfUrl } from "@/features/admin-appointments/admin-appointment-api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatPeso } from "@/features/customer/customer-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
+import type { Product, ProductImage, ResourceCollection } from "@/features/products/types";
 
 export default function CustomerQuoteSummary({
   quotation,
@@ -21,6 +29,8 @@ export default function CustomerQuoteSummary({
   onSigned?: () => void;
 }) {
   const [signOpen, setSignOpen] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
+  const [photoItemId, setPhotoItemId] = useState<number | null>(null);
 
   if (!quotation || quotation.items.length === 0) {
     return (
@@ -36,6 +46,8 @@ export default function CustomerQuoteSummary({
   const totalEstimate = quotation.total || quotation.subtotal - quotation.discount;
   const isSigned = quotation.signature_status === "signed";
   const needsResign = quotation.signature_status === "needs_resign";
+  const visibleItems = showAllItems ? quotation.items : quotation.items.slice(0, 1);
+  const activePhotoItem = quotation.items.find((item) => item.id === photoItemId) ?? null;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -73,10 +85,26 @@ export default function CustomerQuoteSummary({
       </div>
 
       <div className="mt-5 space-y-3">
-        {quotation.items.map((item, index) => (
-          <ReadonlyQuoteItem key={item.id} item={item} index={index} />
+        {visibleItems.map((item, index) => (
+          <ReadonlyQuoteItem
+            key={item.id}
+            item={item}
+            index={index}
+            onOpenPhotos={() => setPhotoItemId(item.id)}
+          />
         ))}
       </div>
+      {quotation.items.length > 1 && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-3 h-8 w-full text-xs"
+          onClick={() => setShowAllItems((value) => !value)}
+        >
+          {showAllItems ? "Show Less" : `Show All ${quotation.items.length} Items`}
+        </Button>
+      )}
 
       <Separator className="my-5" />
 
@@ -125,22 +153,51 @@ export default function CustomerQuoteSummary({
         onOpenChange={setSignOpen}
         onSigned={() => onSigned?.()}
       />
+      {activePhotoItem && (
+        <ReadonlyPhotoDialog
+          item={activePhotoItem}
+          open={photoItemId !== null}
+          onOpenChange={(open) => {
+            if (!open) setPhotoItemId(null);
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ReadonlyQuoteItem({ item, index }: { item: CustomerQuotationItem; index: number }) {
+function ReadonlyQuoteItem({
+  item,
+  index,
+  onOpenPhotos,
+}: {
+  item: CustomerQuotationItem;
+  index: number;
+  onOpenPhotos: () => void;
+}) {
   const optionsTotal = Number(item.options_amount || 0);
+  const image = productImage(item.product);
+  const photoCount = item.before_images.length + item.after_images.length;
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200">
       <div className="flex items-start justify-between gap-4 p-4">
         <div className="flex min-w-0 gap-3">
+          {image && (
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+              <Image src={image} alt={item.name} fill unoptimized className="object-cover" />
+            </div>
+          )}
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
             {index + 1}
           </span>
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold leading-tight text-slate-950">{item.name}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-sm font-semibold leading-tight text-slate-950">{item.name}</h3>
+              <Badge variant="outline" className="h-5 rounded-full px-2 text-[10px] font-medium">
+                {formatItemStatus(item.status)}
+              </Badge>
+            </div>
             {item.description && (
               <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{item.description}</p>
             )}
@@ -188,6 +245,24 @@ function ReadonlyQuoteItem({ item, index }: { item: CustomerQuotationItem; index
         </div>
       )}
 
+      <div className="border-t border-slate-200 bg-white px-4 py-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-full gap-2 text-xs"
+          onClick={onOpenPhotos}
+        >
+          <Images className="size-3.5" />
+          View Before / After Photos
+          {photoCount > 0 && (
+            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+              {photoCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
       <div className="border-t border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
           <span className="flex items-center gap-2">
@@ -204,6 +279,70 @@ function ReadonlyQuoteItem({ item, index }: { item: CustomerQuotationItem; index
         )}
       </div>
     </article>
+  );
+}
+
+function ReadonlyPhotoDialog({
+  item,
+  open,
+  onOpenChange,
+}: {
+  item: CustomerQuotationItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-sm font-medium">{item.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <ReadonlyImageGroup title="Before photos" images={item.before_images} />
+          <ReadonlyImageGroup title="After photos" images={item.after_images} />
+          {item.before_images.length + item.after_images.length === 0 && (
+            <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+              No photos uploaded yet.
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReadonlyImageGroup({
+  title,
+  images,
+}: {
+  title: string;
+  images: CustomerQuotationItem["before_images"];
+}) {
+  if (images.length === 0) return null;
+
+  return (
+    <div className="mb-3 last:mb-0">
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">{title}</p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {images.map((image) => {
+          const src = image.image_url || image.url;
+
+          if (!src) return null;
+
+          return (
+            <a
+              key={image.id}
+              href={src}
+              target="_blank"
+              rel="noreferrer"
+              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+            >
+              <Image src={src} alt={image.caption ?? title} fill unoptimized className="object-cover" />
+            </a>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -225,4 +364,27 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatItemStatus(status?: string | null) {
+  if (!status) return "For Acceptance";
+
+  return status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function productImage(product?: Product | null) {
+  if (!product) return null;
+  if (product.cover_image) return product.cover_image;
+
+  return firstImage(product.images) ?? firstImage(product.product_images);
+}
+
+function firstImage(collection?: ResourceCollection<ProductImage>) {
+  const images = Array.isArray(collection) ? collection : collection?.data;
+  const image = images?.[0];
+
+  return image?.image_url ?? image?.url ?? null;
 }

@@ -91,6 +91,7 @@ it('creates work job from appointment', function () {
     $workJob = WorkJob::first();
     expect($workJob->first_name)->toBe($appointment->first_name);
     expect($workJob->workers)->toHaveCount(2);
+    expect($appointment->remarks()->where('action', 'work_job_created')->exists())->toBeTrue();
 });
 
 it('creates work job from appointment with quotation', function () {
@@ -152,4 +153,3 @@ it('returns 422 when worker does not exist', function () use ($validPayload) {
         ->assertStatus(422)
         ->assertJsonValidationErrors(['worker_ids.0']);
 });
-

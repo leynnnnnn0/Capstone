@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
-import CustomerShell from "@/components/customer/shared/CustomerShell";
 import { getCustomerAppointment } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
 
@@ -17,14 +16,14 @@ export default function AppointmentEditPage({ appointmentId }: { appointmentId: 
 
   if (!appointment) {
     return (
-      <CustomerShell>
+      <>
         <p className="text-sm text-slate-500">Loading appointment...</p>
-      </CustomerShell>
+      </>
     );
   }
 
   return (
-    <CustomerShell>
+    <>
       <div className="mb-6">
         <Link href={`/account/appointments/${appointment.id}`} className="text-sm font-medium text-primary hover:underline">
           Back to appointment
@@ -47,6 +46,6 @@ export default function AppointmentEditPage({ appointmentId }: { appointmentId: 
           You cannot edit this appointment because its status is {appointment.status_label}.
         </div>
       )}
-    </CustomerShell>
+    </>
   );
 }

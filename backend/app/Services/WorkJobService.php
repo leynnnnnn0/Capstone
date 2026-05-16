@@ -15,7 +15,7 @@ class WorkJobService
 {
     public function create(array $data, ?User $actor = null): WorkJob
     {
-        $workJob = DB::transaction(function () use ($data) {
+        $workJob = DB::transaction(function () use ($data, $actor) {
             $workerIds = $data['worker_ids'];
 
             $workJob = WorkJob::create([
@@ -39,6 +39,14 @@ class WorkJobService
             ]);
 
             $workJob->workers()->sync($workerIds);
+
+            if ($workJob->appointment_id) {
+                $workJob->appointment?->remarks()->create([
+                    'user_id' => $actor?->id,
+                    'action' => 'work_job_created',
+                    'message' => "Work job {$workJob->work_job_number} was created from this appointment.",
+                ]);
+            }
 
             return $workJob->load($this->relations());
         });
@@ -142,8 +150,9 @@ class WorkJobService
     {
         return [
             'workers',
-            'appointment',
+            'appointment.workJob',
             'quotation.quotation_items.options',
+            'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',
             'quotation.quotation_items.after_images',
             'remarks.user',

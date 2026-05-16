@@ -64,6 +64,11 @@ class Appointment extends Model implements AuditableContract
         return $this->hasOne(Quotation::class);
     }
 
+    public function workJob()
+    {
+        return $this->hasOne(WorkJob::class);
+    }
+
     protected static function boot(): void
     {
         parent::boot();

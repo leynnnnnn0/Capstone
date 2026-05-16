@@ -10,6 +10,14 @@ import LocationPicker from "@/components/landing/LocationPicker";
 import ProductConfigurator from "@/components/quote/ProductConfigurator";
 import QuoteCart from "@/components/quote/QuoteCart";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +78,7 @@ export default function AppointmentForm({
   );
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [quoteCart, setQuoteCart] = useState<QuoteCartItem[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -110,16 +119,21 @@ export default function AppointmentForm({
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrors({});
+
+    if (showQuoteItems && sourceQuotation && quoteCart.length === 0) {
+      setErrors({ items: "Keep at least one quote item, or contact SOG to remove the quote." });
+      return;
+    }
+
+    setConfirmOpen(true);
+  }
+
+  async function performSubmit() {
     setSaving(true);
     setErrors({});
 
     try {
-      if (showQuoteItems && sourceQuotation && quoteCart.length === 0) {
-        setErrors({ items: "Keep at least one quote item, or contact SOG to remove the quote." });
-        setSaving(false);
-        return;
-      }
-
       const payload = {
         ...data,
         ...(quoteCart.length > 0 ? { items: quoteCart.map(cartItemToPayload) } : {}),
@@ -131,6 +145,7 @@ export default function AppointmentForm({
       router.push(`/account/appointments/${response.data.id}`);
     } catch (error) {
       setErrors(fieldError(error, "Unable to save appointment. Please try again."));
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -306,6 +321,26 @@ export default function AppointmentForm({
                 : "Create Appointment"}
         </Button>
       </aside>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{appointment ? "Save appointment changes?" : "Create appointment?"}</DialogTitle>
+            <DialogDescription>
+              {appointment
+                ? "This will update your pending appointment request."
+                : "This will send your appointment request to the SOG team for review."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={saving} onClick={performSubmit}>
+              {saving ? "Saving..." : appointment ? "Save Changes" : "Create Appointment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

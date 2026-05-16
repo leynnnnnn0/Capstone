@@ -18,6 +18,12 @@ import { CalendarCheck, CircleDollarSign, ClipboardList, Package, TriangleAlert,
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
 import { adminStatusMeta, formatAdminDate } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
@@ -77,10 +83,36 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Approved Revenue" value={peso(metrics.approvedRevenue)} description={`${metrics.approvedItems} approved quote items`} icon={CircleDollarSign} />
-        <MetricCard title="Open Appointments" value={metrics.openAppointments.toString()} description={`${metrics.pendingAppointments} pending review`} icon={ClipboardList} />
-        <MetricCard title="Today's Schedule" value={metrics.todayAppointments.toString()} description={`${metrics.todayWorkJobs} work jobs today`} icon={CalendarCheck} />
-        <MetricCard title="No Show / Cancelled" value={metrics.serviceRisks.toString()} description="Bookings needing follow-up" icon={TriangleAlert} />
+        <TooltipProvider>
+          <MetricCard
+            title="Approved Revenue"
+            value={peso(metrics.approvedRevenue)}
+            description={`${metrics.approvedItems} approved quote items`}
+            icon={CircleDollarSign}
+            tooltip="Total value from quotation items marked approved."
+          />
+          <MetricCard
+            title="Open Appointments"
+            value={metrics.openAppointments.toString()}
+            description={`${metrics.pendingAppointments} pending review`}
+            icon={ClipboardList}
+            tooltip="Appointments that are not completed, cancelled, or marked no show."
+          />
+          <MetricCard
+            title="Today's Schedule"
+            value={metrics.todayAppointments.toString()}
+            description={`${metrics.todayWorkJobs} work jobs today`}
+            icon={CalendarCheck}
+            tooltip="Confirmed appointments and scheduled work jobs for today."
+          />
+          <MetricCard
+            title="No Show / Cancelled"
+            value={metrics.serviceRisks.toString()}
+            description="Bookings needing follow-up"
+            icon={TriangleAlert}
+            tooltip="Cancelled and no-show appointments that may need admin review."
+          />
+        </TooltipProvider>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-7">
@@ -212,18 +244,35 @@ export default function AdminDashboardPage() {
   );
 }
 
-function MetricCard({ title, value, description, icon: Icon }: { title: string; value: string; description: string; icon: typeof Wrench }) {
+function MetricCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  tooltip,
+}: {
+  title: string;
+  value: string;
+  description: string;
+  icon: typeof Wrench;
+  tooltip: string;
+}) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
+    <UiTooltip>
+      <TooltipTrigger asChild>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{value}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          </CardContent>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </UiTooltip>
   );
 }
 

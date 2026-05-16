@@ -49,9 +49,11 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
   const [items, setItems] = useState<CustomerQuotationItem[]>(quotation?.items ?? []);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
+  const [showAllItems, setShowAllItems] = useState(false);
 
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
   const approvedItems = useMemo(() => items.filter((item) => item.status === approvedStatus), [items]);
+  const visibleItems = showAllItems ? items : items.slice(0, 1);
   const allTotal = items.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const approvedTotal = approvedItems.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const signatureLabel = quotation?.signature_status === "signed"
@@ -148,7 +150,7 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
           )}
 
           <div className="space-y-3">
-            {items.map((item, index) => (
+            {visibleItems.map((item, index) => (
               <QuotationItemCard
                 key={item.id}
                 item={item}
@@ -159,6 +161,17 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
               />
             ))}
           </div>
+          {items.length > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 w-full text-xs"
+              onClick={() => setShowAllItems((value) => !value)}
+            >
+              {showAllItems ? "Show Less" : `Show All ${items.length} Items`}
+            </Button>
+          )}
 
           {items.length === 0 && (
             <div className="flex flex-col items-center justify-center py-6 text-sm text-muted-foreground">

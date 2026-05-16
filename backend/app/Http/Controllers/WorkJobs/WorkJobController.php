@@ -94,8 +94,9 @@ class WorkJobController extends Controller
 
         $workJob->load([
             'workers',
-            'appointment',
+            'appointment.workJob',
             'quotation.quotation_items.options',
+            'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',
             'quotation.quotation_items.after_images',
             'remarks.user',

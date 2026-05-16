@@ -24,6 +24,7 @@ class QuotationItemResource extends JsonResource
             'total_amount'     => $this->total_amount,
             'status'           => $this->status,
             'notes'            => $this->notes,
+            'product'          => new ProductResource($this->whenLoaded('product')),
 
             'options' => QuotationItemOptionResource::collection(
                 $this->whenLoaded('options')

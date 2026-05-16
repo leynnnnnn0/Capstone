@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Pencil, XCircle } from "lucide-react";
+import { BriefcaseBusiness, RotateCcw, Pencil, XCircle } from "lucide-react";
 
 import AppointmentInfoCard from "@/components/customer/appointments/AppointmentInfoCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
+import CustomerQuoteImageList from "@/components/customer/shared/CustomerQuoteImageList";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
-import CustomerShell from "@/components/customer/shared/CustomerShell";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,16 +93,16 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
 
   if (!appointment) {
     return (
-      <CustomerShell>
+      <>
         <p className="text-sm text-slate-500">Loading appointment...</p>
-      </CustomerShell>
+      </>
     );
   }
 
 
 
   return (
-    <CustomerShell>
+    <>
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <button
@@ -148,8 +148,8 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
                 </Link>
               </Button>
             ) : null}
-            {appointment.status == "pending" ||
-              (appointment.status == "confirmed" && appointment.can_cancel && (
+            {(appointment.status === "pending" || appointment.status === "confirmed") &&
+              appointment.can_cancel && (
                 <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
                   <DialogTrigger asChild>
                     <Button
@@ -205,7 +205,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              ))}
+              )}
           </div>
         </div>
       </div>
@@ -220,6 +220,10 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             addressLng={appointment.address_lng}
             compact
           />
+
+          {appointment.work_job && <LinkedWorkJobCard workJob={appointment.work_job} />}
+
+          <CustomerQuoteImageList quotation={appointment.quotation} />
         </section>
 
         <aside className="space-y-4">
@@ -235,6 +239,39 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           />
         </aside>
       </div>
-    </CustomerShell>
+    </>
+  );
+}
+
+function LinkedWorkJobCard({
+  workJob,
+}: {
+  workJob: NonNullable<CustomerAppointment["work_job"]>;
+}) {
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <BriefcaseBusiness className="size-4 text-primary" />
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">
+              Work Job Created
+            </h2>
+          </div>
+          <p className="mt-2 text-sm font-medium text-slate-950">{workJob.work_job_number}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {workJob.scheduled_date
+              ? `${workJob.scheduled_date} · ${workJob.scheduled_time_from ?? "-"}-${workJob.scheduled_time_until ?? "-"}`
+              : "Schedule pending"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <CustomerStatusBadge status={workJob.status} />
+          <Button asChild type="button" variant="outline" size="sm">
+            <Link href={`/account/work-jobs/${workJob.id}`}>View Work Job</Link>
+          </Button>
+        </div>
+      </div>
+    </section>
   );
 }

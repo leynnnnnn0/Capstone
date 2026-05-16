@@ -4,20 +4,27 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
-import CustomerShell from "@/components/customer/shared/CustomerShell";
+import { Button } from "@/components/ui/button";
 import { getCustomerAppointments } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
+import type { PaginatedResponse } from "@/features/products/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
+  const [meta, setMeta] = useState<PaginatedResponse<CustomerAppointment>["meta"]>(undefined);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(() => {
-    getCustomerAppointments()
-      .then((response) => setAppointments(response.data))
+    setLoading(true);
+    getCustomerAppointments({ page, per_page: 9 })
+      .then((response) => {
+        setAppointments(response.data);
+        setMeta(response.meta);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     reload();
@@ -29,7 +36,7 @@ export default function AppointmentsPage() {
   }, ["appointment", "quotation"]);
 
   return (
-    <CustomerShell>
+    <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">Appointments</p>
@@ -55,6 +62,32 @@ export default function AppointmentsPage() {
           <p className="mt-1 text-sm text-slate-500">Start by creating your first inspection request.</p>
         </div>
       )}
-    </CustomerShell>
+
+      {meta && meta.last_page > 1 && (
+        <div className="mt-5 flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={meta.current_page <= 1 || loading}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-slate-500">
+            Page {meta.current_page} of {meta.last_page}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={meta.current_page >= meta.last_page || loading}
+            onClick={() => setPage((value) => value + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+    </>
   );
 }

@@ -1,3 +1,5 @@
+import type { Product } from "@/features/products/types";
+
 export type CustomerStatus =
   | "pending"
   | "confirmed"
@@ -37,6 +39,7 @@ export type CustomerQuotationItem = {
   total_amount: number;
   status: string | null;
   notes: string | null;
+  product?: Product | null;
   options: CustomerQuotationOption[];
   before_images: CustomerQuotationItemImage[];
   after_images: CustomerQuotationItemImage[];
@@ -95,6 +98,15 @@ export type CustomerAppointment = {
   created_at: string;
   workers: CustomerWorker[];
   quotation: CustomerQuotation | null;
+  work_job?: {
+    id: number;
+    work_job_number: string;
+    status: CustomerStatus;
+    status_label: string;
+    scheduled_date: string | null;
+    scheduled_time_from: string | null;
+    scheduled_time_until: string | null;
+  } | null;
   remarks: CustomerRemark[];
 };
 

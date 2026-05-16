@@ -9,6 +9,12 @@ import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppoi
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
 import { adminStatusMeta, formatAdminDate, formatAdminTime } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
@@ -53,10 +59,36 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Upcoming Appointments" value={metrics.upcomingAppointments.length} description="Assigned inspections ahead" icon={CalendarCheck} />
-        <MetricCard title="Upcoming Work Jobs" value={metrics.upcomingWorkJobs.length} description="Scheduled installation jobs" icon={BriefcaseBusiness} />
-        <MetricCard title="Finished Appointments" value={metrics.finishedAppointments} description="Completed inspections" icon={CheckCircle2} />
-        <MetricCard title="Finished Work Jobs" value={metrics.finishedWorkJobs} description="Completed jobs" icon={ClipboardList} />
+        <TooltipProvider>
+          <MetricCard
+            title="Upcoming Appointments"
+            value={metrics.upcomingAppointments.length}
+            description="Assigned inspections ahead"
+            icon={CalendarCheck}
+            tooltip="Assigned inspections scheduled from today onward."
+          />
+          <MetricCard
+            title="Upcoming Work Jobs"
+            value={metrics.upcomingWorkJobs.length}
+            description="Scheduled installation jobs"
+            icon={BriefcaseBusiness}
+            tooltip="Assigned installation or service jobs scheduled from today onward."
+          />
+          <MetricCard
+            title="Finished Appointments"
+            value={metrics.finishedAppointments}
+            description="Completed inspections"
+            icon={CheckCircle2}
+            tooltip="Assigned appointments marked completed."
+          />
+          <MetricCard
+            title="Finished Work Jobs"
+            value={metrics.finishedWorkJobs}
+            description="Completed jobs"
+            icon={ClipboardList}
+            tooltip="Assigned work jobs marked completed."
+          />
+        </TooltipProvider>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-5">
@@ -127,18 +159,35 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
   );
 }
 
-function MetricCard({ title, value, description, icon: Icon }: { title: string; value: number; description: string; icon: typeof CalendarCheck }) {
+function MetricCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  tooltip,
+}: {
+  title: string;
+  value: number;
+  description: string;
+  icon: typeof CalendarCheck;
+  tooltip: string;
+}) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
+    <UiTooltip>
+      <TooltipTrigger asChild>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{value}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          </CardContent>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </UiTooltip>
   );
 }
 

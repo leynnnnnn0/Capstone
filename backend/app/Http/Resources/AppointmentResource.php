@@ -49,6 +49,15 @@ class AppointmentResource extends JsonResource
                 : $this->quotation()->exists(),
             'quotation' => new QuotationResource($this->whenLoaded('quotation')),
             'remarks' => AppointmentRemarkResource::collection($this->whenLoaded('remarks')),
+            'work_job' => $this->whenLoaded('workJob', fn () => $this->workJob ? [
+                'id' => $this->workJob->id,
+                'work_job_number' => $this->workJob->work_job_number,
+                'status' => $this->workJob->status?->value ?? $this->workJob->status,
+                'status_label' => method_exists($this->workJob->status, 'label') ? $this->workJob->status->label() : $this->workJob->status,
+                'scheduled_date' => $this->workJob->scheduled_date,
+                'scheduled_time_from' => $this->workJob->scheduled_time_from,
+                'scheduled_time_until' => $this->workJob->scheduled_time_until,
+            ] : null),
         ];
     }
 }

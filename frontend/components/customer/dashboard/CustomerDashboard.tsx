@@ -5,8 +5,13 @@ import Link from "next/link";
 import { CalendarPlus, Clock, Wrench } from "lucide-react";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
-import CustomerShell from "@/components/customer/shared/CustomerShell";
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   getCustomerAppointments,
   getCustomerWorkJobs,
@@ -21,7 +26,10 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
 
   const loadRecords = useCallback(() => {
-    return Promise.all([getCustomerAppointments(), getCustomerWorkJobs()])
+    return Promise.all([
+      getCustomerAppointments({ per_page: 20 }),
+      getCustomerWorkJobs({ per_page: 20 }),
+    ])
       .then(([appointmentResponse, workJobResponse]) => {
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
@@ -39,15 +47,30 @@ export default function CustomerDashboard() {
 
   const stats = useMemo(
     () => [
-      { label: "Active Appointments", value: appointments.filter(isActiveAppointment).length, icon: Clock },
-      { label: "Active Work Jobs", value: workJobs.filter(isActiveWorkJob).length, icon: Wrench },
-      { label: "Pending Appointments", value: appointments.filter((item) => item.status === "pending").length, icon: CalendarPlus },
+      {
+        label: "Active Appointments",
+        value: appointments.filter(isActiveAppointment).length,
+        icon: Clock,
+        tooltip: "Appointments still moving through inspection, quotation, or scheduling.",
+      },
+      {
+        label: "Active Work Jobs",
+        value: workJobs.filter(isActiveWorkJob).length,
+        icon: Wrench,
+        tooltip: "Installation or service jobs that are scheduled or in progress.",
+      },
+      {
+        label: "Pending Appointments",
+        value: appointments.filter((item) => item.status === "pending").length,
+        icon: CalendarPlus,
+        tooltip: "Requests waiting for the SOG team to confirm the schedule.",
+      },
     ],
     [appointments, workJobs],
   );
 
   return (
-    <CustomerShell>
+    <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">Customer Dashboard</p>
@@ -64,26 +87,30 @@ export default function CustomerDashboard() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+      <TooltipProvider>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
 
-          return (
-            <div
-              key={stat.label}
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-              <div className="flex items-center gap-2">
-                <Icon className="size-5 text-primary " />
-                <p className="font-medium text-slate-950 ">
-                  {loading ? "-" : stat.value}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            return (
+              <Tooltip key={stat.label}>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border border-slate-200 bg-white p-4 text-left shadow-sm">
+                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Icon className="size-5 text-primary" />
+                      <p className="text-sm font-medium text-slate-950">
+                        {loading ? "-" : stat.value}
+                      </p>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>{stat.tooltip}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section>
@@ -116,7 +143,7 @@ export default function CustomerDashboard() {
           </div>
         </section>
       </div>
-    </CustomerShell>
+    </>
   );
 }
 
