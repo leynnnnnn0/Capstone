@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, MapPin } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, MapPin } from "lucide-react";
 
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import {
@@ -38,6 +38,13 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
           <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
           <span className="line-clamp-2">{appointment.address}</span>
         </p>
+        {appointment.work_job && (
+          <p className="flex items-center gap-2 rounded-md bg-primary/5 px-2 py-1.5 text-xs text-primary">
+            <BriefcaseBusiness className="size-3.5" />
+            <span className="font-medium">{appointment.work_job.work_job_number}</span>
+            <span className="text-primary/70">· {appointment.work_job.status_label}</span>
+          </p>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">

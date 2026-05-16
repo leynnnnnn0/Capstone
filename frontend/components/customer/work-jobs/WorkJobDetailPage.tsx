@@ -75,7 +75,12 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         </section>
 
         <aside className="space-y-4">
-          <CustomerQuoteSummary quotation={quotation} signerName={workJob.full_name} onSigned={reload} />
+          <CustomerQuoteSummary
+            quotation={quotation}
+            signerName={workJob.full_name}
+            canSign={!["cancelled", "no_show", "completed"].includes(workJob.status)}
+            onSigned={reload}
+          />
 
           <CustomerActivityLog
             remarks={workJob.remarks}

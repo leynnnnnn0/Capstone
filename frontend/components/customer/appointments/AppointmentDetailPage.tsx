@@ -230,6 +230,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           <CustomerQuoteSummary
             quotation={appointment.quotation}
             signerName={appointment.full_name}
+            canSign={!["cancelled", "no_show"].includes(appointment.status)}
             onSigned={reload}
           />
           

@@ -22,10 +22,12 @@ import type { Product, ProductImage, ResourceCollection } from "@/features/produ
 export default function CustomerQuoteSummary({
   quotation,
   signerName,
+  canSign = true,
   onSigned,
 }: {
   quotation?: CustomerQuotation | null;
   signerName?: string | null;
+  canSign?: boolean;
   onSigned?: () => void;
 }) {
   const [signOpen, setSignOpen] = useState(false);
@@ -68,16 +70,18 @@ export default function CustomerQuoteSummary({
               Download
             </a>
           </Button>
-          <Button
-            type="button"
-            variant={isSigned ? "outline" : "default"}
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => setSignOpen(true)}
-          >
-            {isSigned ? <CheckCircle2 className="size-3.5" /> : <PenLine className="size-3.5" />}
-            {isSigned ? "Signed" : needsResign ? "Sign Again" : "Sign"}
-          </Button>
+          {canSign && (
+            <Button
+              type="button"
+              variant={isSigned ? "outline" : "default"}
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={() => setSignOpen(true)}
+            >
+              {isSigned ? <CheckCircle2 className="size-3.5" /> : <PenLine className="size-3.5" />}
+              {isSigned ? "Signed" : needsResign ? "Sign Again" : "Sign"}
+            </Button>
+          )}
           <Badge variant="outline" className="text-xs">
             {quotation.items.length} item{quotation.items.length === 1 ? "" : "s"}
           </Badge>
@@ -140,19 +144,21 @@ export default function CustomerQuoteSummary({
         </p>
       )}
 
-      {needsResign && (
+      {needsResign && canSign && (
         <p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
           This quotation changed after it was signed. Please review and sign again.
         </p>
       )}
 
-      <CustomerSignatureDialog
-        quotationId={quotation.id}
-        defaultName={signerName}
-        open={signOpen}
-        onOpenChange={setSignOpen}
-        onSigned={() => onSigned?.()}
-      />
+      {canSign && (
+        <CustomerSignatureDialog
+          quotationId={quotation.id}
+          defaultName={signerName}
+          open={signOpen}
+          onOpenChange={setSignOpen}
+          onSigned={() => onSigned?.()}
+        />
+      )}
       {activePhotoItem && (
         <ReadonlyPhotoDialog
           item={activePhotoItem}
