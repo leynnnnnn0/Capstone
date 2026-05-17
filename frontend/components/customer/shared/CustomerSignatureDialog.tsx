@@ -16,19 +16,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signCustomerQuotation } from "@/features/customer/customer-api";
+import type { CustomerQuotation } from "@/features/customer/types";
+
+type SignatureAction = (
+  quotationId: number,
+  payload: { signer_name: string; signature: string },
+) => Promise<{ data: CustomerQuotation }>;
 
 export default function CustomerSignatureDialog({
   quotationId,
   defaultName,
+  signAction = signCustomerQuotation,
   open,
   onOpenChange,
   onSigned,
 }: {
   quotationId: number;
   defaultName?: string | null;
+  signAction?: SignatureAction;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSigned: () => void;
+  onSigned: (quotation: CustomerQuotation) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
@@ -107,11 +115,11 @@ export default function CustomerSignatureDialog({
     try {
       setSubmitting(true);
       setError("");
-      await signCustomerQuotation(quotationId, {
+      const response = await signAction(quotationId, {
         signer_name: name.trim(),
         signature: canvas.toDataURL("image/png"),
       });
-      onSigned();
+      onSigned(response.data);
       onOpenChange(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign quotation.");

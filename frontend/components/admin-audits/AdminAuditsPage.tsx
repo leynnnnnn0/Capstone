@@ -7,19 +7,26 @@ import { ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchAudits } from "@/features/audits/audit-api";
 import type { AuditRecord } from "@/features/audits/types";
 
 export default function AdminAuditsPage() {
   const [audits, setAudits] = useState<AuditRecord[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAudits({ per_page: 50 })
-      .then((response) => setAudits(response.data))
+    setLoading(true);
+    fetchAudits({ page, per_page: 25 })
+      .then((response) => {
+        setAudits(response.data);
+        setMeta(response.meta);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   return (
     <div className="space-y-5">
@@ -36,7 +43,7 @@ export default function AdminAuditsPage() {
             Latest activity
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -77,6 +84,10 @@ export default function AdminAuditsPage() {
               )}
             </TableBody>
           </Table>
+
+          {meta && meta.last_page > 1 && (
+            <PaginationControls meta={meta} loading={loading} onPageChange={setPage} />
+          )}
         </CardContent>
       </Card>
     </div>

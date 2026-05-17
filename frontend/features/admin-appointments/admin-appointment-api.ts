@@ -8,6 +8,7 @@ import type {
   SchedulePayload,
 } from "./types";
 import type { QuoteItemPayload } from "@/features/quotes/types";
+import type { CustomerQuotation } from "@/features/customer/types";
 
 type ResourceResponse<T> = { data: T };
 type CollectionResponse<T> = { data: T[] };
@@ -132,6 +133,16 @@ export function updateQuotationItemStatus(itemId: number, status: string) {
   return api(`/api/v1/quotation-items/${itemId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+}
+
+export function signAdminQuotation(
+  quotationId: number,
+  payload: { signer_name: string; signature: string },
+) {
+  return api<ResourceResponse<CustomerQuotation>>(`/api/v1/quotations/${quotationId}/sign`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

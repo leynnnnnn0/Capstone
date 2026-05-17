@@ -31,6 +31,9 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
     return <p className="text-sm text-muted-foreground">Loading work job...</p>;
   }
 
+  const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(workJob.status);
+  const quotationCanBeSigned = !["cancelled", "no_show", "completed"].includes(workJob.status);
+
   return (
     <div className="space-y-6">
       <AdminWorkJobHeader workJob={workJob} />
@@ -42,7 +45,11 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
         <div className="space-y-6">
           <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
           <AssignedWorkers workers={workJob.workers} />
-          <AdminQuotationDetails quotation={workJob.quotation ?? null} />
+          <AdminQuotationDetails
+            quotation={workJob.quotation ?? null}
+            canDownload={quotationCanBeDownloaded}
+            canSign={quotationCanBeSigned}
+          />
           <AdminActivityLog remarks={workJob.remarks} />
         </div>
       </div>

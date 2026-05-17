@@ -10,10 +10,12 @@ import {
   Images,
   Layers,
   Package,
+  PenLine,
   StickyNote,
 } from "lucide-react";
 
 import AdminQuotationItemImages from "@/components/admin-appointments/AdminQuotationItemImages";
+import CustomerSignatureDialog from "@/components/customer/shared/CustomerSignatureDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +33,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { quotationPdfUrl, updateQuotationItemStatus } from "@/features/admin-appointments/admin-appointment-api";
+import {
+  quotationPdfUrl,
+  signAdminQuotation,
+  updateQuotationItemStatus,
+} from "@/features/admin-appointments/admin-appointment-api";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 
@@ -45,20 +51,34 @@ const itemStatuses = [
   { value: "on_hold", label: "On Hold" },
 ];
 
-export default function AdminQuotationDetails({ quotation }: { quotation?: CustomerQuotation | null }) {
+export default function AdminQuotationDetails({
+  quotation,
+  canDownload = true,
+  canSign = true,
+}: {
+  quotation?: CustomerQuotation | null;
+  canDownload?: boolean;
+  canSign?: boolean;
+}) {
   const [items, setItems] = useState<CustomerQuotationItem[]>(quotation?.items ?? []);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const [showAllItems, setShowAllItems] = useState(false);
+  const [signOpen, setSignOpen] = useState(false);
+  const [signature, setSignature] = useState({
+    status: quotation?.signature_status,
+    signedAt: quotation?.customer_signed_at,
+    name: quotation?.customer_signature_name,
+  });
 
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
   const approvedItems = useMemo(() => items.filter((item) => item.status === approvedStatus), [items]);
   const visibleItems = showAllItems ? items : items.slice(0, 1);
   const allTotal = items.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const approvedTotal = approvedItems.reduce((sum, item) => sum + Number(item.total_amount), 0);
-  const signatureLabel = quotation?.signature_status === "signed"
+  const signatureLabel = signature.status === "signed"
     ? "Signed"
-    : quotation?.signature_status === "needs_resign"
+    : signature.status === "needs_resign"
       ? "Needs re-sign"
       : null;
 
@@ -95,43 +115,57 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
     <>
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <CardTitle className="text-base">Quotation</CardTitle>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Button asChild variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-                <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
-                  <Download className="h-3 w-3" />
-                  PDF
-                </a>
-              </Button>
+            <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:justify-end">
+              {canDownload && (
+                <Button asChild variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+                  <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
+                    <Download className="h-3 w-3" />
+                    PDF
+                  </a>
+                </Button>
+              )}
+              {approvedItems.length > 0 && canSign && (
+                <Button
+                  type="button"
+                  variant={signature.status === "signed" ? "outline" : "default"}
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => setSignOpen(true)}
+                >
+                  {signature.status === "signed" ? <CheckCircle2 className="h-3 w-3" /> : <PenLine className="h-3 w-3" />}
+                  {signature.status === "signed" ? "Re-sign" : signature.status === "needs_resign" ? "Sign Again" : "Sign"}
+                </Button>
+              )}
               {approvedItems.length > 0 && (
-                <Badge className="bg-green-600 text-[10px] text-white hover:bg-green-700">
+                <Badge className="h-7 bg-green-600 text-[10px] leading-tight text-white hover:bg-green-700">
                   {approvedItems.length} approved
                 </Badge>
               )}
               {signatureLabel && (
                 <Badge
-                  variant={quotation.signature_status === "signed" ? "secondary" : "outline"}
-                  className={quotation.signature_status === "needs_resign" ? "border-amber-300 bg-amber-50 text-[10px] text-amber-700" : "text-[10px]"}
+                  variant={signature.status === "signed" ? "secondary" : "outline"}
+                  className={signature.status === "needs_resign" ? "h-7 border-amber-300 bg-amber-50 text-[10px] text-amber-700" : "h-7 text-[10px]"}
                 >
                   {signatureLabel}
                 </Badge>
               )}
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="h-7 text-xs leading-tight">
                 {items.length} item{items.length !== 1 ? "s" : ""}
               </Badge>
             </div>
           </div>
           <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>
-          {quotation.signature_status === "signed" && quotation.customer_signed_at && (
+          {signature.status === "signed" && signature.signedAt && (
             <CardDescription className="text-xs">
-              Signed by {quotation.customer_signature_name ?? "customer"} on {formatQuoteDate(quotation.customer_signed_at, quotation.id)}
+              Signed by {signature.name ?? "customer"} on {formatQuoteDate(signature.signedAt, quotation.id)}
             </CardDescription>
           )}
-          {quotation.signature_status === "needs_resign" && (
+          {signature.status === "needs_resign" && (
             <CardDescription className="text-xs text-amber-700">
               Signature is no longer current. Customer needs to sign again.
             </CardDescription>
@@ -213,6 +247,20 @@ export default function AdminQuotationDetails({ quotation }: { quotation?: Custo
           }}
         />
       )}
+      <CustomerSignatureDialog
+        quotationId={quotation.id}
+        defaultName={signature.name}
+        signAction={signAdminQuotation}
+        open={signOpen}
+        onOpenChange={setSignOpen}
+        onSigned={(nextQuotation) => {
+          setSignature({
+            status: nextQuotation.signature_status,
+            signedAt: nextQuotation.customer_signed_at,
+            name: nextQuotation.customer_signature_name,
+          });
+        }}
+      />
     </>
   );
 }

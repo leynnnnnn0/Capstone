@@ -43,6 +43,8 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
   }
 
   const isWorker = hasRole(user, "worker");
+  const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(appointment.status);
+  const quotationCanBeSigned = !["cancelled", "no_show"].includes(appointment.status);
 
   return (
     <div className="space-y-6">
@@ -73,7 +75,11 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
             readOnly={isWorker}
           />
 
-          <AdminQuotationDetails quotation={appointment.quotation} />
+          <AdminQuotationDetails
+            quotation={appointment.quotation}
+            canDownload={quotationCanBeDownloaded}
+            canSign={quotationCanBeSigned}
+          />
           <AdminActivityLog remarks={appointment.remarks} />
         </div>
       </div>

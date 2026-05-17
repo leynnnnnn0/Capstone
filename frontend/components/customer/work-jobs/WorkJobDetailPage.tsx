@@ -42,27 +42,38 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
   }
 
   const quotation = workJob.quotation ?? workJob.appointment?.quotation;
+  const quotationCanBeSigned =
+    !["cancelled", "no_show", "completed"].includes(workJob.status) &&
+    !["cancelled", "no_show", "completed"].includes(workJob.appointment?.status ?? "");
+  const quotationCanBeDownloaded =
+    !["cancelled", "no_show"].includes(workJob.status) &&
+    !["cancelled", "no_show"].includes(workJob.appointment?.status ?? "");
 
   return (
     <>
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <button onClick={() => router.back()} className="mb-3 text-sm font-medium text-primary hover:underline">
+          <button
+            onClick={() => router.back()}
+            className="mb-3 text-sm font-medium text-primary hover:underline"
+          >
             Back
           </button>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
             {workJob.work_job_number}
           </p>
-          <h1 className="mt-1 text-sm font-medium text-slate-950">{workJob.full_name}</h1>
+          <h1 className="mt-1 text-sm font-medium text-slate-950">
+            {workJob.full_name}
+          </h1>
         </div>
         <CustomerStatusBadge status={workJob.status} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="space-y-5">
-          <WorkJobInfoCard workJob={workJob} />
-
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
+          
+          <WorkJobInfoCard workJob={workJob} />
 
           <CustomerLocationCard
             address={workJob.address}
@@ -78,7 +89,8 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
           <CustomerQuoteSummary
             quotation={quotation}
             signerName={workJob.full_name}
-            canSign={!["cancelled", "no_show", "completed"].includes(workJob.status)}
+            canSign={quotationCanBeSigned}
+            canDownload={quotationCanBeDownloaded}
             onSigned={reload}
           />
 

@@ -99,7 +99,12 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
     );
   }
 
-
+  const quotationCanBeSigned =
+    !["cancelled", "no_show", "completed"].includes(appointment.status) &&
+    !["cancelled", "no_show", "completed"].includes(appointment.work_job?.status ?? "");
+  const quotationCanBeDownloaded =
+    !["cancelled", "no_show"].includes(appointment.status) &&
+    !["cancelled", "no_show"].includes(appointment.work_job?.status ?? "");
 
   return (
     <>
@@ -148,7 +153,8 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
                 </Link>
               </Button>
             ) : null}
-            {(appointment.status === "pending" || appointment.status === "confirmed") &&
+            {(appointment.status === "pending" ||
+              appointment.status === "confirmed") &&
               appointment.can_cancel && (
                 <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
                   <DialogTrigger asChild>
@@ -212,6 +218,11 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="space-y-5">
+          {appointment.work_job && (
+            <LinkedWorkJobCard workJob={appointment.work_job} />
+          )}
+
+          
           <AppointmentInfoCard appointment={appointment} />
 
           <CustomerLocationCard
@@ -221,8 +232,6 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             compact
           />
 
-          {appointment.work_job && <LinkedWorkJobCard workJob={appointment.work_job} />}
-
           <CustomerQuoteImageList quotation={appointment.quotation} />
         </section>
 
@@ -230,10 +239,11 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           <CustomerQuoteSummary
             quotation={appointment.quotation}
             signerName={appointment.full_name}
-            canSign={!["cancelled", "no_show"].includes(appointment.status)}
+            canSign={quotationCanBeSigned}
+            canDownload={quotationCanBeDownloaded}
             onSigned={reload}
           />
-          
+
           <CustomerActivityLog
             remarks={appointment.remarks}
             emptyDescription="Updates from your inspection request will appear here."

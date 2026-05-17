@@ -4,6 +4,7 @@ use App\Http\Controllers\Quotations\QuotationController;
 use App\Http\Controllers\Quotations\QuotationItemImageController;
 use App\Http\Controllers\Quotations\QuotationItemStatusController;
 use App\Http\Controllers\Quotations\QuotationPdfController;
+use App\Http\Controllers\Quotations\QuotationSignatureController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('quotations/{quotation}', [QuotationController::class, 'show']);
@@ -12,6 +13,7 @@ Route::get('quotations/{quotation}/pdf', QuotationPdfController::class);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotations', [QuotationController::class, 'store']);
     Route::put('quotations/{quotation}', [QuotationController::class, 'update']);
+    Route::post('quotations/{quotation}/sign', [QuotationSignatureController::class, 'store']);
 
     Route::patch(
         'quotation-items/{quotationItem}/status',

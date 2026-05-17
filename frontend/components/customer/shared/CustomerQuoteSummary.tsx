@@ -23,11 +23,13 @@ export default function CustomerQuoteSummary({
   quotation,
   signerName,
   canSign = true,
+  canDownload = true,
   onSigned,
 }: {
   quotation?: CustomerQuotation | null;
   signerName?: string | null;
   canSign?: boolean;
+  canDownload?: boolean;
   onSigned?: () => void;
 }) {
   const [signOpen, setSignOpen] = useState(false);
@@ -64,12 +66,14 @@ export default function CustomerQuoteSummary({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button asChild type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
-              <Download className="size-3.5" />
-              Download
-            </a>
-          </Button>
+          {canDownload && (
+            <Button asChild type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
+                <Download className="size-3.5" />
+                Download
+              </a>
+            </Button>
+          )}
           {canSign && (
             <Button
               type="button"
