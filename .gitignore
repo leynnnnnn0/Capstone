@@ -3,6 +3,10 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 
+# AR app
+ar/node_modules/
+ar/dist/
+
 # Laravel
 backend/vendor/
 backend/.env
