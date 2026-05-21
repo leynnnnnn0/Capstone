@@ -8,6 +8,7 @@ import {
   ImageUploader,
   OptionGroupEditor,
   ProductBasicsCard,
+  Product3DModelUploader,
   ProductSummaryCard,
   VariantEditor,
   type ProductBasicsValue,
@@ -39,6 +40,9 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
   const [submitting, setSubmitting] = useState(false);
   const visibleProductImages = productImages(product).filter(
     (image) => !data.deleted_image_ids.includes(image.id),
+  );
+  const hasVisible3DModel = Boolean(
+    data.model_3d || (data.existing_3d_model && !data.delete_3d_model),
   );
 
   const setField = <K extends keyof ProductFormState>(
@@ -172,6 +176,41 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>3D Model</CardTitle>
+              <CardDescription>Replace or remove the model used by AR preview.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Product3DModelUploader
+                existingModel={data.existing_3d_model}
+                modelFile={data.model_3d}
+                deleteExisting={data.delete_3d_model}
+                error={errors.model_3d}
+                onChange={(file) => {
+                  setData((current) => ({
+                    ...current,
+                    model_3d: file,
+                    delete_3d_model: file ? false : current.delete_3d_model,
+                  }));
+                  setErrors((current) => {
+                    const next = { ...current };
+                    delete next.model_3d;
+                    delete next.form;
+                    return next;
+                  });
+                }}
+                onRemoveExisting={() =>
+                  setData((current) => ({
+                    ...current,
+                    model_3d: null,
+                    delete_3d_model: true,
+                  }))
+                }
+              />
+            </CardContent>
+          </Card>
+
           <ProductSummaryCard
             name={data.name}
             unit={data.unit}
@@ -180,6 +219,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
             variants={data.variants.length}
             optionGroups={data.option_groups.length}
             images={visibleProductImages.length + data.images.length}
+            model3D={hasVisible3DModel}
           />
         </div>
       </div>

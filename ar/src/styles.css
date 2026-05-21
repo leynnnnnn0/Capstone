@@ -59,6 +59,7 @@ input {
 .ar-compact-panel,
 .ar-action-bar,
 .ar-tap-layer,
+.model-catalog,
 .summary {
   pointer-events: auto;
 }
@@ -275,6 +276,180 @@ h1 {
   cursor: pointer;
 }
 
+.model-catalog-panel {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.model-category-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.model-category-tabs button {
+  min-height: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.9rem;
+  padding: 0.55rem;
+  background: rgba(15, 23, 42, 0.46);
+  color: #cbd5e1;
+  text-align: left;
+  cursor: pointer;
+}
+
+.model-category-tabs button.active {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(34, 211, 238, 0.14);
+  color: white;
+}
+
+.model-category-tabs strong,
+.model-category-tabs span {
+  display: block;
+}
+
+.model-category-tabs strong {
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.model-category-tabs span {
+  margin-top: 0.18rem;
+  color: #94a3b8;
+  font-size: 0.62rem;
+  line-height: 1.25;
+}
+
+.model-card-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8.5rem, 1fr);
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  overscroll-behavior-x: contain;
+}
+
+.model-card {
+  min-height: 5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.model-card.active {
+  border-color: #22d3ee;
+  background: linear-gradient(145deg, rgba(34, 211, 238, 0.2), rgba(15, 23, 42, 0.5));
+}
+
+.model-card-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 4.35rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.8rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent),
+    rgba(15, 23, 42, 0.76);
+}
+
+.model-card-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.model-card-preview i {
+  width: 2.8rem;
+  height: 2.1rem;
+  border-radius: 0.35rem;
+  box-shadow:
+    inset 0 0 0 0.35rem rgba(255, 255, 255, 0.22),
+    0 14px 26px rgba(0, 0, 0, 0.24);
+}
+
+.model-card-copy {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+.model-card-copy strong,
+.model-card-copy small {
+  display: block;
+}
+
+.model-card-copy strong {
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.model-card-copy small {
+  margin-top: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
+.model-catalog {
+  position: absolute;
+  z-index: 24;
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 3.45rem);
+  max-height: min(23rem, 54vh);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.15rem;
+  padding: 0.75rem;
+  background: rgba(2, 6, 23, 0.78);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.model-catalog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.model-catalog-header h2 {
+  margin-top: 0.2rem;
+  font-size: 0.98rem;
+}
+
+.model-catalog-header button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.32rem 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.model-catalog-panel.compact .model-card-row {
+  grid-auto-columns: minmax(7.5rem, 10rem);
+}
+
+.model-catalog-panel.compact .model-category-tabs button {
+  min-height: 2.25rem;
+  text-align: center;
+}
+
+.model-catalog-panel.compact .model-card-preview {
+  height: 3.4rem;
+}
+
 .reticle {
   pointer-events: none;
   position: absolute;
@@ -385,13 +560,14 @@ h1 {
 }
 
 .session-panel--compact {
-  top: calc(max(0.65rem, env(safe-area-inset-top)) + 3.6rem);
+  top: auto;
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 3.45rem);
   left: 0.65rem;
   right: 0.65rem;
   width: auto;
-  max-height: 13rem;
+  max-height: min(14rem, 38vh);
   padding: 0.75rem;
-  background: rgba(2, 6, 23, 0.72);
+  background: rgba(2, 6, 23, 0.78);
 }
 
 .object-list {
@@ -400,7 +576,7 @@ h1 {
   margin-top: 0.75rem;
 }
 
-.object-list button,
+.object-list article,
 .empty {
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -411,15 +587,44 @@ h1 {
   text-align: left;
 }
 
-.object-list button {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+.object-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
 }
 
-.object-list button.selected {
+.object-list article.selected {
   border-color: #22d3ee;
+}
+
+.object-select-button {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.object-select-button span {
+  min-width: 0;
+}
+
+.object-delete-button {
+  align-self: center;
+  border: 1px solid rgba(248, 113, 113, 0.34);
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  background: rgba(127, 29, 29, 0.24);
+  color: #fecaca;
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .object-list small {
@@ -429,11 +634,53 @@ h1 {
   line-height: 1.35;
 }
 
+.object-list em {
+  display: block;
+  margin-top: 0.12rem;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
 .object-list i {
   width: 0.7rem;
   height: 0.7rem;
   flex: none;
   border-radius: 999px;
+}
+
+.object-model-editor {
+  margin-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.8rem;
+}
+
+.object-model-editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.object-model-editor-header strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+}
+
+.object-model-editor-header span {
+  flex: none;
+  max-width: 9rem;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(34, 211, 238, 0.1);
+  color: #cffafe;
+  font-size: 0.72rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty {

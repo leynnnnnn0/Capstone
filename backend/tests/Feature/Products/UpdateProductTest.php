@@ -6,6 +6,7 @@ use App\Models\ProductOption;
 use App\Models\ProductOptionGroup;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -198,6 +199,56 @@ it('removes product and variant images during product update', function () {
     $this->assertDatabaseMissing('product_variant_images', ['id' => $variantImage->id]);
     Storage::disk('public')->assertMissing($productImage->image_path);
     Storage::disk('public')->assertMissing($variantImage->image_path);
+});
+
+it('replaces a product 3d model during product update', function () {
+    $product = Product::factory()->create();
+    $oldModel = $product->product_3d_model()->create([
+        'file_path' => "products/{$product->id}/models/old.glb",
+        'original_name' => 'old.glb',
+        'file_size' => 100,
+        'mime_type' => 'model/gltf-binary',
+    ]);
+
+    Storage::disk('public')->put($oldModel->file_path, 'old-model');
+
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            "/api/v1/products/{$product->id}",
+            ['_method' => 'PUT'],
+            [],
+            ['model_3d' => UploadedFile::fake()->create('new-door.glb', 32, 'model/gltf-binary')],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertOk()
+        ->assertJsonPath('data.model_3d.original_name', 'new-door.glb');
+
+    $this->assertDatabaseMissing('product_3d_models', ['id' => $oldModel->id]);
+    Storage::disk('public')->assertMissing($oldModel->file_path);
+    Storage::disk('public')->assertExists($product->fresh()->product_3d_model->file_path);
+});
+
+it('removes a product 3d model during product update', function () {
+    $product = Product::factory()->create();
+    $model = $product->product_3d_model()->create([
+        'file_path' => "products/{$product->id}/models/current.glb",
+        'original_name' => 'current.glb',
+        'file_size' => 100,
+        'mime_type' => 'model/gltf-binary',
+    ]);
+
+    Storage::disk('public')->put($model->file_path, 'model');
+
+    $this->actingAs($this->admin)
+        ->putJson("/api/v1/products/{$product->id}", [
+            'delete_3d_model' => true,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.model_3d', null);
+
+    $this->assertDatabaseMissing('product_3d_models', ['id' => $model->id]);
+    Storage::disk('public')->assertMissing($model->file_path);
 });
 
 it('returns validation errors for invalid nested product update data', function () {

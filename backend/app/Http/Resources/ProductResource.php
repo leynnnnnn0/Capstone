@@ -28,6 +28,13 @@ class ProductResource extends JsonResource
                 $this->whenLoaded('product_images')
             ),
 
+            'model_3d' => $this->whenLoaded(
+                'product_3d_model',
+                fn() => $this->product_3d_model
+                    ? new Product3DModelResource($this->product_3d_model)
+                    : null
+            ),
+
             'variants' => ProductVariantResource::collection(
                 $this->whenLoaded('product_variants')
             ),

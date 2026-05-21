@@ -75,6 +75,47 @@ it('creates a product with images', function () use ($validPayload) {
     );
 });
 
+it('creates a product with a 3d model', function () use ($validPayload) {
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            '/api/v1/products',
+            $validPayload(),
+            [],
+            ['model_3d' => UploadedFile::fake()->create('sliding-door.glb', 24, 'model/gltf-binary')],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertStatus(201)
+        ->assertJsonPath('data.model_3d.original_name', 'sliding-door.glb');
+
+    $model = Product::first()->product_3d_model;
+
+    expect($model)->not->toBeNull();
+    Storage::disk('public')->assertExists($model->file_path);
+});
+
+it('serves product 3d models with cors headers for model viewer', function () use ($validPayload) {
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            '/api/v1/products',
+            $validPayload(),
+            [],
+            ['model_3d' => UploadedFile::fake()->create('sliding-door.glb', 24, 'model/gltf-binary')],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertStatus(201);
+
+    $model = Product::first()->product_3d_model;
+
+    $this->withHeaders(['Origin' => 'http://localhost:3000'])
+        ->get("/api/v1/product-3d-models/{$model->id}/file")
+        ->assertOk()
+        ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:3000')
+        ->assertHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+        ->assertHeader('Content-Type', 'model/gltf-binary');
+});
+
 it('creates a product with variants', function () use ($validPayload) {
     $this->actingAs($this->admin)
         ->postJson('/api/v1/products', [

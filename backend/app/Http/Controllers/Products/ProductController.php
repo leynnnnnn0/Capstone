@@ -26,6 +26,7 @@ class ProductController extends Controller
             ->with([
                 'categories',
                 'product_images',
+                'product_3d_model',
                 'product_variants.product_variant_images',
                 'product_option_groups.product_options',
             ])
@@ -83,6 +84,7 @@ class ProductController extends Controller
         $product->load([
             'categories',
             'product_images',
+            'product_3d_model',
             'product_variants.product_variant_images',
             'product_option_groups.product_options',
         ]);

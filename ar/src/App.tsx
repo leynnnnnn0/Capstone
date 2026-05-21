@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { computeDimensions, formatDimensions } from "./features/measurement/dimensions";
 import { createLabel } from "./features/measurement/labels";
+import {
+  DEFAULT_MODEL,
+  getModelById,
+  MODEL_CATALOG,
+  MODEL_CATEGORIES,
+  type ModelCategoryId,
+  type ModelDefinition,
+} from "./features/measurement/model-catalog";
 import { OBJECT_TYPES } from "./features/measurement/object-types";
 import {
   createMeasurementScene,
@@ -17,8 +26,13 @@ import type {
   ReticleConfidence,
 } from "./features/measurement/types";
 import {
+  copyMeasurementPlane,
+  createMeasurementPlane,
+  createPlaneReticleMatrix,
   extractSurfaceNormal,
+  type MeasurementPlane,
   MIN_SEGMENT_LENGTH_METERS,
+  projectPointToPlane,
   snapHeightPoint,
   snapShapePoint,
 } from "./features/measurement/snapping";
@@ -28,6 +42,8 @@ import { metersToCentimeters } from "./lib/format";
 const VERSION = "react-vite-tier1-2026-05-17";
 const PREVIEW_MODEL_DEPTH_METERS = 0.012;
 type CapturePhase = "shape" | "height";
+const gltfLoader = new GLTFLoader();
+const modelCache = new Map<string, Promise<THREE.Group>>();
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -39,9 +55,11 @@ export default function App() {
   const hitTestSourceRef = useRef<XRHitTestSource | null>(null);
   const currentHitPositionRef = useRef<THREE.Vector3 | null>(null);
   const currentHitNormalRef = useRef<THREE.Vector3 | null>(null);
-  const shapePlaneNormalRef = useRef<THREE.Vector3 | null>(null);
+  const currentHitPlaneRef = useRef<MeasurementPlane | null>(null);
+  const shapePlaneRef = useRef<MeasurementPlane | null>(null);
   const confidenceRef = useRef<ReticleConfidence>("none");
-  const selectedTypeRef = useRef<ObjectType>("other");
+  const selectedTypeRef = useRef<ObjectType>(DEFAULT_MODEL.type);
+  const selectedModelIdRef = useRef(DEFAULT_MODEL.id);
   const capturePhaseRef = useRef<CapturePhase>("shape");
   const ignorePlacementUntilRef = useRef(0);
   const lastPlacementAtRef = useRef(0);
@@ -54,6 +72,13 @@ export default function App() {
   const [isActive, setIsActive] = useState(false);
   const [confidence, setConfidence] = useState<ReticleConfidence>("none");
   const [capturePhase, setCapturePhase] = useState<CapturePhase>("shape");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<ModelCategoryId>(
+    DEFAULT_MODEL.category,
+  );
+  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL.id);
+  const [reassignCategoryId, setReassignCategoryId] = useState<ModelCategoryId>(
+    DEFAULT_MODEL.category,
+  );
   const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
   const [points, setPoints] = useState<MeasurementPoint[]>([]);
   const pointsRef = useRef<MeasurementPoint[]>([]);
@@ -63,6 +88,15 @@ export default function App() {
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [ocularConfirmed, setOcularConfirmed] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const sessionPanelOpenRef = useRef(false);
+  const summaryOpenRef = useRef(false);
+  const catalogOpenRef = useRef(false);
+  const selectedModel = getModelById(selectedModelId);
+  const selectedObject = useMemo(
+    () => objects.find((object) => object.id === selectedObjectId) ?? null,
+    [objects, selectedObjectId],
+  );
 
   const confidenceCopy = useMemo(() => {
     if (capturePhase === "height") return "Height point: tap the top/end of the vertical height.";
@@ -80,6 +114,18 @@ export default function App() {
     capturePhaseRef.current = capturePhase;
   }, [capturePhase]);
 
+  useEffect(() => {
+    sessionPanelOpenRef.current = sessionPanelOpen;
+  }, [sessionPanelOpen]);
+
+  useEffect(() => {
+    summaryOpenRef.current = summaryOpen;
+  }, [summaryOpen]);
+
+  useEffect(() => {
+    catalogOpenRef.current = catalogOpen;
+  }, [catalogOpen]);
+
   const log = useCallback((message: string) => {
     setDiagnostics((items) => [
       `${new Date().toLocaleTimeString()} - ${message}`,
@@ -88,8 +134,110 @@ export default function App() {
   }, []);
 
   const markUiInteraction = useCallback(() => {
-    ignorePlacementUntilRef.current = performance.now() + 160;
+    ignorePlacementUntilRef.current = performance.now() + 900;
   }, []);
+
+  const selectModel = useCallback(
+    (model: ModelDefinition, closeCatalog = false) => {
+      ignorePlacementUntilRef.current = performance.now() + 1200;
+      selectedModelIdRef.current = model.id;
+      selectedTypeRef.current = model.type;
+      setSelectedModelId(model.id);
+      setSelectedCategoryId(model.category);
+
+      if (closeCatalog) {
+        setCatalogOpen(false);
+      }
+
+      setStatus(`${model.label} selected. Measure the shape, then height.`);
+    },
+    [],
+  );
+
+  const selectCompletedObject = useCallback((object: MeasuredObject) => {
+    const model = getModelById(object.modelId);
+    ignorePlacementUntilRef.current = performance.now() + 1200;
+    setSelectedObjectId(object.id);
+    setReassignCategoryId(model.category);
+  }, []);
+
+  const changeCompletedObjectModel = useCallback(
+    (objectId: number, model: ModelDefinition) => {
+      const measurementScene = sceneRef.current;
+      const currentObject = objectsRef.current.find((object) => object.id === objectId);
+
+      if (!measurementScene || !currentObject) {
+        return;
+      }
+
+      ignorePlacementUntilRef.current = performance.now() + 1400;
+
+      currentObject.root.remove(currentObject.model);
+      disposeObject(currentObject.model);
+      currentObject.root.remove(currentObject.label);
+      disposeObject(currentObject.label);
+
+      recolorMeasurementGuides(currentObject, OBJECT_TYPES[model.type].color);
+
+      const nextModel = createGlassModel(currentObject.points, model);
+      const nextLabel = createObjectLabel(currentObject.id, model, currentObject.points);
+      currentObject.root.add(nextModel);
+      currentObject.root.add(nextLabel);
+
+      const updatedObject: MeasuredObject = {
+        ...currentObject,
+        type: model.type,
+        modelId: model.id,
+        model: nextModel,
+        label: nextLabel,
+      };
+
+      objectsRef.current = objectsRef.current.map((object) =>
+        object.id === objectId ? updatedObject : object,
+      );
+      setObjects(objectsRef.current);
+      setSelectedObjectId(objectId);
+      setReassignCategoryId(model.category);
+      setStatus(`Item ${objectId} changed to ${model.label}.`);
+      log(`item ${objectId} model changed to ${model.label}`);
+    },
+    [log],
+  );
+
+  const deleteCompletedObject = useCallback(
+    (objectId: number) => {
+      const currentObject = objectsRef.current.find((object) => object.id === objectId);
+
+      if (!currentObject) {
+        return;
+      }
+
+      ignorePlacementUntilRef.current = performance.now() + 1400;
+      sceneRef.current?.scene.remove(currentObject.root);
+      disposeObject(currentObject.root);
+
+      const nextObjects = objectsRef.current.filter((object) => object.id !== objectId);
+      objectsRef.current = nextObjects;
+      setObjects(nextObjects);
+
+      setSelectedObjectId((currentId) => {
+        if (currentId !== objectId) return currentId;
+
+        const fallbackObject = nextObjects.at(-1) ?? null;
+        if (fallbackObject) {
+          setReassignCategoryId(getModelById(fallbackObject.modelId).category);
+        } else {
+          setReassignCategoryId(DEFAULT_MODEL.category);
+        }
+
+        return fallbackObject?.id ?? null;
+      });
+
+      setStatus(`Item ${objectId} deleted.`);
+      log(`item ${objectId} deleted`);
+    },
+    [log],
+  );
 
   useEffect(() => {
     log(`app=${VERSION}`);
@@ -102,6 +250,25 @@ export default function App() {
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, []);
+
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const blockUiXrSelect = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target?.closest("[data-xr-ui='true']")) return;
+
+      event.preventDefault();
+      markUiInteraction();
+    };
+
+    overlay.addEventListener("beforexrselect", blockUiXrSelect);
+
+    return () => {
+      overlay.removeEventListener("beforexrselect", blockUiXrSelect);
+    };
+  }, [markUiInteraction]);
 
   const startSession = async () => {
     if (!canvasRef.current || sessionRef.current) return;
@@ -171,6 +338,7 @@ export default function App() {
       hitStreakRef.current = 0;
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
+      currentHitPlaneRef.current = null;
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
@@ -183,6 +351,7 @@ export default function App() {
       hitStreakRef.current = 0;
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
+      currentHitPlaneRef.current = null;
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
@@ -192,12 +361,27 @@ export default function App() {
 
     hitStreakRef.current += 1;
     const matrix = new THREE.Matrix4().fromArray(pose.transform.matrix);
-    currentHitPositionRef.current = new THREE.Vector3().setFromMatrixPosition(matrix);
-    currentHitNormalRef.current = extractSurfaceNormal(matrix);
-    measurementScene.reticle.matrix.copy(matrix);
-    measurementScene.reticle.visible = true;
+    const rawPosition = new THREE.Vector3().setFromMatrixPosition(matrix);
+    const detectedPlane = createMeasurementPlane(
+      rawPosition,
+      extractSurfaceNormal(matrix),
+      getPreferredPlaneKind(),
+      getViewerForward(frame, localSpace),
+    );
+    const isHeightPhase = capturePhaseRef.current === "height";
+    const activePlane =
+      !isHeightPhase && shapePlaneRef.current ? shapePlaneRef.current : detectedPlane;
+    const cleanPosition = projectPointToPlane(rawPosition, activePlane);
 
-    const nextConfidence = getConfidence(hitStreakRef.current);
+    currentHitPositionRef.current = cleanPosition;
+    currentHitNormalRef.current = activePlane.normal;
+    currentHitPlaneRef.current = activePlane;
+    measurementScene.reticle.visible = true;
+    measurementScene.reticle.matrix.copy(
+      createPlaneReticleMatrix(cleanPosition, activePlane),
+    );
+
+    const nextConfidence = getConfidence(hitStreakRef.current, activePlane.quality);
     confidenceRef.current = nextConfidence;
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
     setReticleColor(measurementScene.reticle, nextConfidence);
@@ -209,6 +393,20 @@ export default function App() {
 
     if (now < ignorePlacementUntilRef.current) {
       log("tap ignored: ui control");
+      return;
+    }
+
+    if (
+      catalogOpenRef.current ||
+      sessionPanelOpenRef.current ||
+      summaryOpenRef.current
+    ) {
+      log("tap ignored: panel open");
+      return;
+    }
+
+    if (now - lastPlacementAtRef.current < 650) {
+      log("tap ignored: duplicate tap debounce");
       return;
     }
 
@@ -224,12 +422,25 @@ export default function App() {
     const type = selectedTypeRef.current;
     const phase = capturePhaseRef.current;
     const objectType = OBJECT_TYPES[type];
+    const hitPlane = currentHitPlaneRef.current;
+    const activePlane =
+      phase === "height"
+        ? hitPlane ?? shapePlaneRef.current
+        : shapePlaneRef.current ?? hitPlane;
+    const snapPlane =
+      phase === "height" ? shapePlaneRef.current ?? activePlane : activePlane;
 
-    const stableNormal = shapePlaneNormalRef.current ?? currentHitNormalRef.current;
+    if (!activePlane || !snapPlane) {
+      setStatus("No surface detected yet. Move camera slowly.");
+      log("tap ignored: no active measurement plane");
+      return;
+    }
+
+    const projectedPosition = projectPointToPlane(position, activePlane);
     const snappedPosition =
       phase === "height"
-        ? snapHeightPoint(position, pointsRef.current, stableNormal)
-        : snapShapePoint(position, pointsRef.current, stableNormal);
+        ? snapHeightPoint(projectedPosition, pointsRef.current, snapPlane)
+        : snapShapePoint(projectedPosition, pointsRef.current, snapPlane);
     const previous = pointsRef.current.at(-1);
     const lastPlacementPosition = lastPlacementPositionRef.current;
 
@@ -255,7 +466,9 @@ export default function App() {
     lastPlacementPositionRef.current = snappedPosition.clone();
 
     if (phase === "shape" && pointsRef.current.length === 0) {
-      shapePlaneNormalRef.current = currentHitNormalRef.current?.clone() ?? null;
+      shapePlaneRef.current = copyMeasurementPlane(activePlane, snappedPosition);
+      const planeLabel = activePlane.kind === "floor" ? "floor" : "wall";
+      log(`measurement plane locked: ${planeLabel}`);
     }
 
     const pointNumber = pointsRef.current.length + 1;
@@ -287,7 +500,9 @@ export default function App() {
       return;
     }
 
-    setStatus(`Shape point ${pointNumber} placed. Next segments will stay straight or 90-degree.`);
+    setStatus(
+      `Shape point ${pointNumber} placed. Locked to a straight ${activePlane.kind} plane.`,
+    );
   };
 
   const finishShape = () => {
@@ -317,15 +532,29 @@ export default function App() {
     nextObjectIdRef.current += 1;
 
     const dimensions = computeDimensions(pointsRef.current);
-    const type = selectedTypeRef.current;
-    const model = createGlassModel(pointsRef.current, OBJECT_TYPES[type].color);
-    const label = createObjectLabel(id, type, pointsRef.current);
-    measurementScene.scene.add(model);
-    measurementScene.scene.add(label);
+    const selectedModel = getModelById(selectedModelIdRef.current);
+    const type = selectedModel.type;
+    const model = createGlassModel(pointsRef.current, selectedModel);
+    const label = createObjectLabel(id, selectedModel, pointsRef.current);
+    const root = new THREE.Group();
+    root.name = `measured-object-${id}`;
+    measurementScene.scene.add(root);
+
+    pointsRef.current.forEach((point) => root.attach(point.marker));
+    segmentsRef.current.forEach((segment) => {
+      root.attach(segment.line);
+      if (segment.label) {
+        root.attach(segment.label);
+      }
+    });
+    root.add(model);
+    root.add(label);
 
     const object: MeasuredObject = {
       id,
       type,
+      modelId: selectedModel.id,
+      root,
       points: pointsRef.current,
       segments: segmentsRef.current,
       dimensions,
@@ -336,9 +565,13 @@ export default function App() {
     objectsRef.current = [...objectsRef.current, object];
     setObjects(objectsRef.current);
     setSelectedObjectId(id);
+    setReassignCategoryId(selectedModel.category);
     pointsRef.current = [];
     segmentsRef.current = [];
-    shapePlaneNormalRef.current = null;
+    shapePlaneRef.current = null;
+    currentHitPlaneRef.current = null;
+    currentHitPositionRef.current = null;
+    currentHitNormalRef.current = null;
     lastPlacementPositionRef.current = null;
     setPoints([]);
     capturePhaseRef.current = "shape";
@@ -371,7 +604,7 @@ export default function App() {
 
     pointsRef.current = pointsRef.current.slice(0, -1);
     if (pointsRef.current.length === 0) {
-      shapePlaneNormalRef.current = null;
+      shapePlaneRef.current = null;
     }
     if (capturePhaseRef.current === "height") {
       capturePhaseRef.current = "shape";
@@ -405,35 +638,20 @@ export default function App() {
     });
 
     objectsRef.current.forEach((object) => {
-      object.points.forEach((point) => {
-        measurementScene.scene.remove(point.marker);
-        disposeObject(point.marker);
-      });
-      object.segments.forEach((segment) => {
-        measurementScene.scene.remove(segment.line);
-        if (segment.label) {
-          measurementScene.scene.remove(segment.label);
-        }
-        disposeObject(segment.line);
-        if (segment.label) {
-          disposeObject(segment.label);
-        }
-      });
-      measurementScene.scene.remove(object.model);
-      disposeObject(object.model);
-      measurementScene.scene.remove(object.label);
-      disposeObject(object.label);
+      measurementScene.scene.remove(object.root);
+      disposeObject(object.root);
     });
 
     pointsRef.current = [];
     segmentsRef.current = [];
     objectsRef.current = [];
-    shapePlaneNormalRef.current = null;
+    shapePlaneRef.current = null;
     lastPlacementPositionRef.current = null;
     nextObjectIdRef.current = 1;
     setPoints([]);
     setObjects([]);
     setSelectedObjectId(null);
+    setReassignCategoryId(DEFAULT_MODEL.category);
     capturePhaseRef.current = "shape";
     setCapturePhase("shape");
     setStatus("Session cleared.");
@@ -463,6 +681,7 @@ export default function App() {
     sessionRef.current = null;
     currentHitPositionRef.current = null;
     currentHitNormalRef.current = null;
+    currentHitPlaneRef.current = null;
     lastPlacementPositionRef.current = null;
     hitStreakRef.current = 0;
     if (sceneRef.current) sceneRef.current.reticle.visible = false;
@@ -472,21 +691,22 @@ export default function App() {
     <main className={`ar-app ${isActive ? "is-ar-active" : ""}`}>
       <canvas ref={canvasRef} className="ar-canvas" />
 
-      <div ref={overlayRef} className="ar-overlay-root">
-        {isActive && (
-          <div
-            className="ar-tap-layer"
-            aria-label="Place measurement point"
-            onPointerUp={(event) => {
-              if (event.target !== event.currentTarget) return;
-              if (event.pointerType === "mouse" && event.button !== 0) return;
-              placePointFromHit();
-            }}
-          />
-        )}
-
+      <div
+        ref={overlayRef}
+        className="ar-overlay-root"
+        onPointerDownCapture={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest("[data-xr-ui='true']")) {
+            markUiInteraction();
+          }
+        }}
+      >
         {isActive ? (
-          <section className="ar-compact-panel" onPointerDown={markUiInteraction}>
+          <section
+            className="ar-compact-panel"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
             <div>
               <p className="eyebrow">SOG AR</p>
               <strong>
@@ -495,11 +715,16 @@ export default function App() {
                   : "Tap height point"}
               </strong>
             </div>
+            <span>{selectedModel.label}</span>
             <span>{points.length} pts</span>
             <span>{objects.length} obj</span>
           </section>
         ) : (
-          <section className="top-panel" onPointerDown={markUiInteraction}>
+          <section
+            className="top-panel"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
             <div className="panel-header">
               <div>
                 <p className="eyebrow">SOG AR Measure</p>
@@ -520,6 +745,13 @@ export default function App() {
                 <strong>{objects.length}</strong>
               </span>
             </div>
+
+            <ModelCatalogPanel
+              activeCategoryId={selectedCategoryId}
+              selectedModelId={selectedModelId}
+              onCategoryChange={setSelectedCategoryId}
+              onSelectModel={(model) => selectModel(model)}
+            />
 
             <div className="actions">
               <button type="button" className="primary" onClick={startSession}>
@@ -550,15 +782,40 @@ export default function App() {
         )}
 
         {isActive && (
-          <div className="ar-action-bar" onPointerDown={markUiInteraction}>
+          <div
+            className="ar-action-bar"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
             <button type="button" className="primary" onClick={finishShape}>
               {capturePhase === "shape" ? "Finish Shape" : "Tap Height"}
             </button>
             <button type="button" onClick={undoPoint}>
               Undo
             </button>
-            <button type="button" onClick={() => setSessionPanelOpen((open) => !open)}>
+            <button
+              type="button"
+              onClick={() => {
+                setSessionPanelOpen((open) => {
+                  const nextOpen = !open;
+                  if (nextOpen) setCatalogOpen(false);
+                  return nextOpen;
+                });
+              }}
+            >
               Objects {objects.length}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCatalogOpen((open) => {
+                  const nextOpen = !open;
+                  if (nextOpen) setSessionPanelOpen(false);
+                  return nextOpen;
+                });
+              }}
+            >
+              Models
             </button>
             <button type="button" onClick={openSummary}>
               Done
@@ -569,9 +826,35 @@ export default function App() {
           </div>
         )}
 
-        {(!isActive || sessionPanelOpen) && (
+        {isActive && catalogOpen && (
+          <section
+            className="model-catalog model-catalog--active"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
+            <div className="model-catalog-header">
+              <div>
+                <p className="eyebrow">Model Catalog</p>
+                <h2>Choose a product</h2>
+              </div>
+              <button type="button" onClick={() => setCatalogOpen(false)}>
+                Close
+              </button>
+            </div>
+            <ModelCatalogPanel
+              activeCategoryId={selectedCategoryId}
+              selectedModelId={selectedModelId}
+              onCategoryChange={setSelectedCategoryId}
+              onSelectModel={(model) => selectModel(model, true)}
+              compact
+            />
+          </section>
+        )}
+
+        {sessionPanelOpen && (
           <aside
             className={`session-panel ${isActive ? "session-panel--compact" : ""}`}
+            data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
             <div className="session-panel-header">
@@ -590,28 +873,63 @@ export default function App() {
                 <div className="empty">Finished objects will appear here.</div>
               ) : (
                 objects.map((object) => (
-                  <button
-                    type="button"
+                  <article
                     key={object.id}
-                  className={selectedObjectId === object.id ? "selected" : ""}
-                  onClick={() => {
-                    setSelectedObjectId(object.id);
-                  }}
-                >
-                    <span>
-                      <strong>{`Item ${object.id}`}</strong>
-                      <small>{formatDimensions(object.dimensions)}</small>
-                    </span>
-                    <i style={{ background: OBJECT_TYPES[object.type].color }} />
-                  </button>
+                    className={selectedObjectId === object.id ? "selected" : ""}
+                  >
+                    <button
+                      type="button"
+                      className="object-select-button"
+                      onClick={() => selectCompletedObject(object)}
+                    >
+                      <span>
+                        <strong>{`Item ${object.id}`}</strong>
+                        <em>{getModelById(object.modelId).label}</em>
+                        <small>{formatDimensions(object.dimensions)}</small>
+                      </span>
+                      <i style={{ background: OBJECT_TYPES[object.type].color }} />
+                    </button>
+                    <button
+                      type="button"
+                      className="object-delete-button"
+                      onClick={() => deleteCompletedObject(object.id)}
+                    >
+                      Delete
+                    </button>
+                  </article>
                 ))
               )}
             </div>
+
+            {selectedObject && (
+              <div className="object-model-editor">
+                <div className="object-model-editor-header">
+                  <div>
+                    <p className="eyebrow">Change Displayed Model</p>
+                    <strong>{`Item ${selectedObject.id}`}</strong>
+                  </div>
+                  <span>{getModelById(selectedObject.modelId).label}</span>
+                </div>
+                <ModelCatalogPanel
+                  activeCategoryId={reassignCategoryId}
+                  selectedModelId={selectedObject.modelId}
+                  onCategoryChange={setReassignCategoryId}
+                  onSelectModel={(model) =>
+                    changeCompletedObjectModel(selectedObject.id, model)
+                  }
+                  compact
+                />
+              </div>
+            )}
           </aside>
         )}
 
         {summaryOpen && (
-          <section className="summary" onPointerDown={markUiInteraction}>
+          <section
+            className="summary"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
             <div className="summary-card">
               <p className="eyebrow">Measurement Summary</p>
               <h2>Captured objects</h2>
@@ -627,6 +945,7 @@ export default function App() {
                     <article key={object.id}>
                       <div>
                         <strong>{`Item ${object.id}`}</strong>
+                        <small>{getModelById(object.modelId).label}</small>
                         <p>{formatDimensions(object.dimensions)}</p>
                       </div>
                       <span style={{ background: OBJECT_TYPES[object.type].color }}>
@@ -660,8 +979,12 @@ export default function App() {
   );
 }
 
-function getConfidence(streak: number): ReticleConfidence {
+function getConfidence(
+  streak: number,
+  planeQuality: MeasurementPlane["quality"] = "stable",
+): ReticleConfidence {
   if (streak < 8) return "weak";
+  if (planeQuality === "slanted") return "medium";
   if (streak < 24) return "medium";
   return "high";
 }
@@ -675,6 +998,114 @@ function setReticleColor(reticle: THREE.Mesh, confidence: ReticleConfidence) {
     high: 0x34d399,
   }[confidence];
   material.color.setHex(color);
+}
+
+function recolorMeasurementGuides(object: MeasuredObject, color: string) {
+  const nextColor = new THREE.Color(color);
+
+  [...object.points.map((point) => point.marker), ...object.segments.map((segment) => segment.line)]
+    .forEach((guide) => {
+      guide.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        const materials = Array.isArray(mesh.material)
+          ? mesh.material
+          : mesh.material
+            ? [mesh.material]
+            : [];
+
+        materials.forEach((material) => {
+          const colored = material as THREE.Material & {
+            color?: THREE.Color;
+            emissive?: THREE.Color;
+          };
+          colored.color?.copy(nextColor);
+          colored.emissive?.copy(nextColor);
+        });
+      });
+    });
+}
+
+function getPreferredPlaneKind(): MeasurementPlane["kind"] | undefined {
+  return undefined;
+}
+
+function getViewerForward(frame: XRFrame, referenceSpace: XRReferenceSpace) {
+  const viewerPose = frame.getViewerPose(referenceSpace);
+  const viewMatrix = viewerPose?.views[0]?.transform.matrix;
+
+  if (!viewMatrix) {
+    return null;
+  }
+
+  return new THREE.Vector3(0, 0, -1)
+    .transformDirection(new THREE.Matrix4().fromArray(viewMatrix))
+    .normalize();
+}
+
+interface ModelCatalogPanelProps {
+  activeCategoryId: ModelCategoryId;
+  selectedModelId: string;
+  onCategoryChange: (category: ModelCategoryId) => void;
+  onSelectModel: (model: ModelDefinition) => void;
+  compact?: boolean;
+}
+
+function ModelCatalogPanel({
+  activeCategoryId,
+  selectedModelId,
+  onCategoryChange,
+  onSelectModel,
+  compact = false,
+}: ModelCatalogPanelProps) {
+  const visibleModels = MODEL_CATALOG.filter(
+    (model) => model.category === activeCategoryId,
+  );
+
+  return (
+    <div className={`model-catalog-panel ${compact ? "compact" : ""}`}>
+      <div className="model-category-tabs" aria-label="Model categories">
+        {MODEL_CATEGORIES.map((category) => (
+          <button
+            type="button"
+            key={category.id}
+            className={category.id === activeCategoryId ? "active" : ""}
+            onClick={() => onCategoryChange(category.id)}
+          >
+            <strong>{category.label}</strong>
+            {!compact && <span>{category.description}</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="model-card-row">
+        {visibleModels.map((model) => {
+          const isSelected = model.id === selectedModelId;
+          const color = OBJECT_TYPES[model.type].color;
+
+          return (
+            <button
+              type="button"
+              key={model.id}
+              className={`model-card ${isSelected ? "active" : ""}`}
+              onClick={() => onSelectModel(model)}
+            >
+              <span className="model-card-preview" style={{ borderColor: color }}>
+                {model.thumbnail ? (
+                  <img src={model.thumbnail} alt="" />
+                ) : (
+                  <i style={{ background: color }} />
+                )}
+              </span>
+              <span className="model-card-copy">
+                <strong>{model.label}</strong>
+                <small>{model.description}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function createMarker(position: THREE.Vector3, index: number, color: string) {
@@ -729,19 +1160,23 @@ function createSegment(
   return { line, label };
 }
 
-function createObjectLabel(id: number, type: ObjectType, points: MeasurementPoint[]) {
+function createObjectLabel(
+  id: number,
+  model: ModelDefinition,
+  points: MeasurementPoint[],
+) {
   const center = points
     .reduce((total, point) => total.add(point.position), new THREE.Vector3())
     .multiplyScalar(1 / points.length);
 
-  const label = createLabel(`Item ${id}`, OBJECT_TYPES[type].color);
+  const label = createLabel(`${model.label} ${id}`, OBJECT_TYPES[model.type].color);
   label.position.copy(center);
   label.position.y += 0.12;
 
   return label;
 }
 
-function createGlassModel(points: MeasurementPoint[], color: string) {
+function createGlassModel(points: MeasurementPoint[], model: ModelDefinition) {
   const dimensions = computeDimensions(points);
   const shapePoints = points.slice(0, -1);
   const heightStart = points[points.length - 2].position;
@@ -751,6 +1186,7 @@ function createGlassModel(points: MeasurementPoint[], color: string) {
   heightDir.normalize();
   const heightMeters = Math.max(0.05, dimensions.heightCm / 100);
   const group = new THREE.Group();
+  const color = OBJECT_TYPES[model.type].color;
 
   shapePoints.slice(0, -1).forEach((point, index) => {
     const nextPoint = shapePoints[index + 1];
@@ -788,7 +1224,194 @@ function createGlassModel(points: MeasurementPoint[], color: string) {
     group.add(panel);
   });
 
+  const frame = createModelFrame(points, model, heightDir, heightMeters);
+  loadCatalogModel(model.file)
+    .then((catalogModel) => {
+      const fittedModel = fitCatalogModel(catalogModel, frame);
+      group.add(fittedModel);
+    })
+    .catch((error) => {
+      console.warn(`Unable to load model ${model.file}`, error);
+    });
+
   return group;
+}
+
+interface ModelFrame {
+  center: THREE.Vector3;
+  widthDir: THREE.Vector3;
+  heightDir: THREE.Vector3;
+  depthDir: THREE.Vector3;
+  width: number;
+  height: number;
+  depth: number;
+}
+
+function loadCatalogModel(file: string) {
+  if (!modelCache.has(file)) {
+    modelCache.set(
+      file,
+      new Promise<THREE.Group>((resolve, reject) => {
+        gltfLoader.load(
+          file,
+          (gltf) => resolve(gltf.scene),
+          undefined,
+          (error) => reject(error),
+        );
+      }).catch((error) => {
+        modelCache.delete(file);
+        throw error;
+      }),
+    );
+  }
+
+  return modelCache.get(file)!;
+}
+
+function createModelFrame(
+  points: MeasurementPoint[],
+  model: ModelDefinition,
+  heightDir: THREE.Vector3,
+  heightMeters: number,
+): ModelFrame {
+  const shapePoints = points.slice(0, -1);
+  const origin = shapePoints[0].position;
+  const widthDir = findWidthDirection(shapePoints, heightDir);
+  const depthDir = findDepthDirection(shapePoints, widthDir, heightDir);
+
+  const projected = shapePoints.map((point) => {
+    const relative = new THREE.Vector3().subVectors(point.position, origin);
+    return {
+      x: relative.dot(widthDir),
+      z: relative.dot(depthDir),
+    };
+  });
+
+  const minX = Math.min(...projected.map((point) => point.x), 0);
+  const maxX = Math.max(...projected.map((point) => point.x), 0);
+  const minZ = Math.min(...projected.map((point) => point.z), 0);
+  const maxZ = Math.max(...projected.map((point) => point.z), 0);
+
+  const width = Math.max(maxX - minX, MIN_SEGMENT_LENGTH_METERS);
+  const measuredDepth = maxZ - minZ;
+  const fallbackDepth =
+    model.type === "cabinet" ? Math.max(width * 0.42, 0.28) : PREVIEW_MODEL_DEPTH_METERS * 4;
+  const depth = Math.max(measuredDepth, fallbackDepth);
+
+  const center = origin
+    .clone()
+    .add(widthDir.clone().multiplyScalar(minX + width / 2))
+    .add(depthDir.clone().multiplyScalar(minZ + depth / 2))
+    .add(heightDir.clone().multiplyScalar(heightMeters / 2));
+
+  return {
+    center,
+    widthDir,
+    heightDir,
+    depthDir,
+    width,
+    height: heightMeters,
+    depth,
+  };
+}
+
+function findWidthDirection(
+  shapePoints: MeasurementPoint[],
+  heightDir: THREE.Vector3,
+) {
+  for (let index = 0; index < shapePoints.length - 1; index += 1) {
+    const direction = new THREE.Vector3().subVectors(
+      shapePoints[index + 1].position,
+      shapePoints[index].position,
+    );
+
+    if (direction.length() >= MIN_SEGMENT_LENGTH_METERS) {
+      const widthDir = direction.normalize();
+      if (Math.abs(widthDir.dot(heightDir)) < 0.94) {
+        return widthDir;
+      }
+    }
+  }
+
+  return new THREE.Vector3(1, 0, 0);
+}
+
+function findDepthDirection(
+  shapePoints: MeasurementPoint[],
+  widthDir: THREE.Vector3,
+  heightDir: THREE.Vector3,
+) {
+  for (let index = 0; index < shapePoints.length - 1; index += 1) {
+    const direction = new THREE.Vector3().subVectors(
+      shapePoints[index + 1].position,
+      shapePoints[index].position,
+    );
+
+    if (direction.length() < MIN_SEGMENT_LENGTH_METERS) continue;
+
+    direction.normalize();
+    const candidate = direction
+      .clone()
+      .addScaledVector(widthDir, -direction.dot(widthDir))
+      .addScaledVector(heightDir, -direction.dot(heightDir));
+
+    if (candidate.lengthSq() > 0.04) {
+      return candidate.normalize();
+    }
+  }
+
+  const fallback = new THREE.Vector3().crossVectors(widthDir, heightDir);
+  if (fallback.lengthSq() < 0.0001) {
+    fallback.set(0, 0, 1);
+  }
+
+  return fallback.normalize();
+}
+
+function fitCatalogModel(source: THREE.Group, frame: ModelFrame) {
+  const wrapper = new THREE.Group();
+  const model = cloneModel(source);
+
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const modelSize = new THREE.Vector3();
+  const modelCenter = new THREE.Vector3();
+  bounds.getSize(modelSize);
+  bounds.getCenter(modelCenter);
+
+  model.position.sub(modelCenter);
+  wrapper.add(model);
+
+  wrapper.scale.set(
+    frame.width / Math.max(modelSize.x, 0.001),
+    frame.height / Math.max(modelSize.y, 0.001),
+    frame.depth / Math.max(modelSize.z, 0.001),
+  );
+  wrapper.setRotationFromMatrix(
+    new THREE.Matrix4().makeBasis(frame.widthDir, frame.heightDir, frame.depthDir),
+  );
+  wrapper.position.copy(frame.center);
+  wrapper.userData.isCatalogModel = true;
+
+  return wrapper;
+}
+
+function cloneModel(source: THREE.Group) {
+  const clone = source.clone(true);
+
+  clone.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+
+    mesh.frustumCulled = false;
+    if (Array.isArray(mesh.material)) {
+      mesh.material = mesh.material.map((material) => material.clone());
+    } else if (mesh.material) {
+      mesh.material = mesh.material.clone();
+    }
+  });
+
+  return clone;
 }
 
 function createPanelMesh(
@@ -806,7 +1429,7 @@ function createPanelMesh(
     emissive: new THREE.Color(color),
     emissiveIntensity: 0.08,
     transparent: true,
-    opacity: 0.34,
+    opacity: 0.16,
     roughness: 0.15,
     metalness: 0.05,
   });

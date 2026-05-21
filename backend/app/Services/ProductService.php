@@ -4,7 +4,7 @@
 namespace App\Services;
 
 use App\Models\Product;
-use App\Models\QuotationItem;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -34,6 +34,10 @@ class ProductService
                     $path = $image->store("products/{$product->id}", 'public');
                     $product->product_images()->create(['image_path' => $path]);
                 }
+            }
+
+            if (!empty($files['model_3d'])) {
+                $this->sync3DModel($product, $files['model_3d']);
             }
 
             // 4 — Create variants with their images
@@ -82,12 +86,7 @@ class ProductService
                 }
             }
 
-            return $product->load([
-                'categories',
-                'product_images',
-                'product_variants.product_variant_images',
-                'product_option_groups.product_options',
-            ]);
+            return $product->load($this->productRelations());
         });
     }
 
@@ -119,6 +118,14 @@ class ProductService
                 }
             }
 
+            if (!empty($data['delete_3d_model'])) {
+                $this->delete3DModel($product);
+            }
+
+            if (!empty($files['model_3d'])) {
+                $this->sync3DModel($product, $files['model_3d']);
+            }
+
             if (array_key_exists('variants', $data)) {
                 $this->syncVariants($product, $data['variants'] ?? [], $files['variants'] ?? []);
             }
@@ -127,12 +134,7 @@ class ProductService
                 $this->syncOptionGroups($product, $data['option_groups'] ?? []);
             }
 
-            return $product->load([
-                'categories',
-                'product_images',
-                'product_variants.product_variant_images',
-                'product_option_groups.product_options',
-            ]);
+            return $product->load($this->productRelations());
         });
     }
 
@@ -269,11 +271,57 @@ class ProductService
 
     public function delete(Product $product): void
     {
+        $product->loadMissing('product_images', 'product_3d_model');
+
         // Delete all images from storage
         foreach ($product->product_images as $image) {
             Storage::disk('public')->delete($image->image_path);
         }
 
+        $this->delete3DModel($product);
+
         $product->delete();
+    }
+
+    private function sync3DModel(Product $product, mixed $file): void
+    {
+        if (!$file instanceof UploadedFile) {
+            return;
+        }
+
+        $this->delete3DModel($product);
+
+        $path = $file->store("products/{$product->id}/models", 'public');
+
+        $product->product_3d_model()->create([
+            'file_path'     => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'file_size'     => $file->getSize(),
+            'mime_type'     => $file->getClientMimeType(),
+            'is_default'    => true,
+        ]);
+    }
+
+    private function delete3DModel(Product $product): void
+    {
+        $model = $product->product_3d_model()->first();
+
+        if (!$model) {
+            return;
+        }
+
+        Storage::disk('public')->delete($model->file_path);
+        $model->delete();
+    }
+
+    private function productRelations(): array
+    {
+        return [
+            'categories',
+            'product_images',
+            'product_3d_model',
+            'product_variants.product_variant_images',
+            'product_option_groups.product_options',
+        ];
     }
 }

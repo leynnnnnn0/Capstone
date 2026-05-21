@@ -23,6 +23,8 @@ export interface MeasurementDimensions {
 export interface MeasuredObject {
   id: number;
   type: ObjectType;
+  modelId: string;
+  root: THREE.Group;
   points: MeasurementPoint[];
   segments: MeasurementSegment[];
   dimensions: MeasurementDimensions;

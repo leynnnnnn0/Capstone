@@ -45,6 +45,11 @@ class Product extends Model implements AuditableContract
         return $this->hasMany(ProductOptionGroup::class)->orderBy('sort_order');
     }
 
+    public function product_3d_model()
+    {
+        return $this->hasOne(Product3DModel::class);
+    }
+
     // Cover image convenience accessor
     public function getCoverImageAttribute(): ?string
     {

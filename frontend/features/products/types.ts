@@ -10,6 +10,17 @@ export type ProductImage = {
   url?: string;
 };
 
+export type Product3DModel = {
+  id: number;
+  file_path: string;
+  file_url: string;
+  original_name?: string | null;
+  file_size?: number | null;
+  mime_type?: string | null;
+  is_default?: boolean;
+  material_targets?: unknown;
+};
+
 export type ResourceCollection<T> = T[] | { data: T[] };
 
 export type ProductOption = {
@@ -48,6 +59,8 @@ export type Product = {
   is_active: boolean;
   cover_image?: string | null;
   categories?: ResourceCollection<Category>;
+  model_3d?: Product3DModel | null;
+  product_3d_model?: Product3DModel | null;
   images?: ResourceCollection<ProductImage>;
   product_images?: ResourceCollection<ProductImage>;
   variants?: ResourceCollection<ProductVariant>;
@@ -119,6 +132,9 @@ export type ProductFormState = {
   is_active: boolean;
   images: NewImageFile[];
   deleted_image_ids: number[];
+  model_3d: File | null;
+  existing_3d_model: Product3DModel | null;
+  delete_3d_model: boolean;
   variants: ProductVariantDraft[];
   option_groups: ProductOptionGroupDraft[];
 };

@@ -1,5 +1,6 @@
 import type {
   Product,
+  Product3DModel,
   ProductFormState,
   ProductImage,
   ProductOptionGroup,
@@ -19,12 +20,14 @@ export const PRODUCT_UNITS: Array<{ label: string; value: ProductUnit }> = [
 export const MAX_PRODUCT_IMAGES = 10;
 export const MAX_VARIANT_IMAGES = 5;
 export const MAX_FILE_SIZE_MB = 5;
+export const MAX_3D_MODEL_SIZE_MB = 50;
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
   "image/png",
   "image/webp",
 ];
+export const ALLOWED_3D_MODEL_EXTENSIONS = [".glb", ".gltf"];
 
 export function generateId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -44,6 +47,9 @@ export function createInitialProductForm(): ProductFormState {
     is_active: true,
     images: [],
     deleted_image_ids: [],
+    model_3d: null,
+    existing_3d_model: null,
+    delete_3d_model: false,
     variants: [],
     option_groups: [],
   };
@@ -59,6 +65,9 @@ export function createProductEditForm(product: Product): ProductFormState {
     is_active: product.is_active,
     images: [],
     deleted_image_ids: [],
+    model_3d: null,
+    existing_3d_model: product3DModel(product),
+    delete_3d_model: false,
     variants: productVariants(product).map((variant) => ({
       id: String(variant.id),
       width: String(variant.width ?? ""),
@@ -82,6 +91,21 @@ export function createProductEditForm(product: Product): ProductFormState {
       })),
     })),
   };
+}
+
+export function validate3DModelFile(file: File | null) {
+  if (!file) return { valid: true };
+
+  const extension = `.${file.name.split(".").pop()?.toLowerCase() ?? ""}`;
+  if (!ALLOWED_3D_MODEL_EXTENSIONS.includes(extension)) {
+    return { valid: false, error: "Only GLB and GLTF 3D model files are allowed." };
+  }
+
+  if (file.size > MAX_3D_MODEL_SIZE_MB * 1024 * 1024) {
+    return { valid: false, error: `The 3D model must be under ${MAX_3D_MODEL_SIZE_MB}MB.` };
+  }
+
+  return { valid: true };
 }
 
 export function validateImageFiles(files: File[]) {
@@ -130,6 +154,10 @@ export function productImages(product: Product): ProductImage[] {
   return unwrapCollection(product.images ?? product.product_images);
 }
 
+export function product3DModel(product: Product): Product3DModel | null {
+  return product.model_3d ?? product.product_3d_model ?? null;
+}
+
 export function productVariants(product: Product): ProductVariant[] {
   return unwrapCollection(product.variants ?? product.product_variants);
 }
@@ -148,6 +176,20 @@ export function imageUrl(image?: ProductImage | null) {
 
 export function productCover(product: Product) {
   return normalizeAssetUrl(product.cover_image ?? imageUrl(productImages(product)[0]));
+}
+
+export function model3DUrl(model?: Product3DModel | null) {
+  return normalizeAssetUrl(model?.file_url ?? "");
+}
+
+export function formatFileSize(bytes?: number | null) {
+  if (!bytes) return "";
+
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export function optionGroupOptions(group: ProductOptionGroup) {
@@ -214,6 +256,14 @@ export function appendProductFormData(data: ProductFormState) {
   data.deleted_image_ids.forEach((imageId) => {
     formData.append("deleted_image_ids[]", String(imageId));
   });
+
+  if (data.model_3d) {
+    formData.append("model_3d", data.model_3d);
+  }
+
+  if (data.delete_3d_model) {
+    formData.append("delete_3d_model", "1");
+  }
 
   data.variants.forEach((variant, variantIndex) => {
     appendExistingId(formData, `variants[${variantIndex}][id]`, variant.id);

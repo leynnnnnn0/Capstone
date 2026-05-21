@@ -19,6 +19,9 @@ export const productFormSchema = z.object({
   is_active: z.boolean(),
   images: z.array(z.unknown()),
   deleted_image_ids: z.array(z.number()),
+  model_3d: z.unknown().nullable(),
+  existing_3d_model: z.unknown().nullable(),
+  delete_3d_model: z.boolean(),
   variants: z.array(
     z.object({
       id: z.string(),

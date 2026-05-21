@@ -26,6 +26,14 @@ class UpdateProductRequest extends FormRequest
             'images.*'        => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'deleted_image_ids'   => ['sometimes', 'array'],
             'deleted_image_ids.*' => ['integer', 'exists:product_images,id'],
+            'model_3d'           => [
+                'sometimes',
+                'file',
+                'extensions:glb,gltf',
+                'mimetypes:model/gltf-binary,model/gltf+json,application/octet-stream,application/json,text/plain',
+                'max:51200',
+            ],
+            'delete_3d_model'    => ['sometimes', 'boolean'],
 
             'variants'              => ['sometimes', 'array'],
             'variants.*.id'         => ['sometimes', 'integer', 'exists:product_variants,id'],
@@ -57,6 +65,9 @@ class UpdateProductRequest extends FormRequest
         return [
             'unit.in'        => 'Unit must be one of: sqm, meter, piece, set.',
             'price_per_unit.min' => 'Price cannot be negative.',
+            'model_3d.extensions' => 'The 3D model must use a .glb or .gltf extension.',
+            'model_3d.mimes' => 'The 3D model must be a GLB or GLTF file.',
+            'model_3d.max'   => 'The 3D model must not exceed 50MB.',
         ];
     }
 }

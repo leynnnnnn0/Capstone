@@ -28,6 +28,15 @@ class StoreProductRequest extends FormRequest
             'images'          => ['sometimes', 'array', 'max:10'],
             'images.*'        => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
+            // ── Product 3D Model ──────────────────────────────
+            'model_3d'        => [
+                'sometimes',
+                'file',
+                'extensions:glb,gltf',
+                'mimetypes:model/gltf-binary,model/gltf+json,application/octet-stream,application/json,text/plain',
+                'max:51200',
+            ],
+
             // ── Variants ──────────────────────────────────────
             'variants'              => ['sometimes', 'array'],
             'variants.*.width'      => ['required_with:variants', 'numeric', 'min:0'],
@@ -63,6 +72,9 @@ class StoreProductRequest extends FormRequest
             'images.*.image'          => 'Each file must be a valid image.',
             'images.*.mimes'          => 'Images must be jpg, jpeg, png, or webp.',
             'images.*.max'            => 'Each image must not exceed 5MB.',
+            'model_3d.extensions'     => 'The 3D model must use a .glb or .gltf extension.',
+            'model_3d.mimes'          => 'The 3D model must be a GLB or GLTF file.',
+            'model_3d.max'            => 'The 3D model must not exceed 50MB.',
         ];
     }
 }

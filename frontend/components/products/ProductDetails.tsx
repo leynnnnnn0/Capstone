@@ -3,18 +3,22 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { ImageIcon, Package, Ruler, Settings2 } from "lucide-react";
+import { Box, ExternalLink, ImageIcon, Package, Ruler, Settings2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import type { Product } from "@/features/products/types";
 import {
   calcArea,
+  formatFileSize,
   formatCurrency,
   imageUrl,
+  model3DUrl,
   optionGroupOptions,
+  product3DModel,
   productCategories,
   productCover,
   productImages,
@@ -28,6 +32,7 @@ export default function ProductDetails({ product }: { product: Product }) {
   const variants = productVariants(product);
   const optionGroups = productOptionGroups(product);
   const cover = productCover(product);
+  const model3D = product3DModel(product);
 
   return (
     <div className="space-y-6">
@@ -93,6 +98,43 @@ export default function ProductDetails({ product }: { product: Product }) {
                   )}
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {model3D && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Box className="h-4 w-4 text-primary" />
+              <CardTitle>3D Model</CardTitle>
+            </div>
+            <CardDescription>Product model available for AR preview.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Product3DModelViewer
+              src={model3DUrl(model3D)}
+              title={model3D.original_name ?? "Product 3D model"}
+              description="Admin preview with orbit, zoom, and auto-rotation."
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {model3D.original_name ?? "Product 3D model"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatFileSize(model3D.file_size) || "GLB / GLTF asset"}
+                </p>
+              </div>
+              {model3DUrl(model3D) && (
+                <Button type="button" variant="outline" size="sm" asChild>
+                  <a href={model3DUrl(model3D)} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open
+                  </a>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

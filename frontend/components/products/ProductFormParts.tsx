@@ -2,7 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { AlertCircle, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, Box, ExternalLink, ImagePlus, Plus, Trash2, X } from "lucide-react";
 
 import FormSelect from "@/components/form/FormSelect";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelect, type MultiSelectOption } from "@/components/ui/multi-select";
 import { Textarea } from "@/components/ui/textarea";
+import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import type {
   Category,
   NewImageFile,
+  Product3DModel,
   ProductFormErrors,
   ProductImage,
   ProductOptionGroupDraft,
@@ -25,11 +28,14 @@ import type {
 import {
   calcArea,
   createImageDrafts,
+  formatFileSize,
   formatCurrency,
   generateId,
   imageUrl,
   MAX_VARIANT_IMAGES,
+  model3DUrl,
   PRODUCT_UNITS,
+  validate3DModelFile,
   validateImageFiles,
 } from "@/features/products/product-utils";
 
@@ -132,6 +138,146 @@ export function ImageUploader({
         <p className="text-xs text-muted-foreground">
           {existingImages.length + images.length} / {max} images
           {images.length > 0 ? ` · ${images.length} new` : ""}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function Product3DModelUploader({
+  existingModel,
+  modelFile,
+  deleteExisting,
+  onChange,
+  onRemoveExisting,
+  error,
+}: {
+  existingModel?: Product3DModel | null;
+  modelFile: File | null;
+  deleteExisting?: boolean;
+  onChange: (file: File | null) => void;
+  onRemoveExisting?: () => void;
+  error?: string;
+}) {
+  const [localError, setLocalError] = useState<string>();
+  const visibleExisting = existingModel && !deleteExisting && !modelFile;
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const previewUrl = localPreviewUrl ?? (visibleExisting ? model3DUrl(existingModel) : null);
+
+  useEffect(() => {
+    if (!modelFile) {
+      setLocalPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(modelFile);
+    setLocalPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [modelFile]);
+
+  const addModel = (files: FileList | null) => {
+    const file = files?.[0] ?? null;
+    const result = validate3DModelFile(file);
+
+    if (!result.valid) {
+      setLocalError(result.error);
+      return;
+    }
+
+    setLocalError(undefined);
+    onChange(file);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center transition-colors hover:bg-muted/50">
+        <Box className="mb-2 h-6 w-6 text-muted-foreground" />
+        <span className="text-sm font-medium">Upload 3D model</span>
+        <span className="text-xs text-muted-foreground">
+          GLB or GLTF · Max 50MB · One model per product
+        </span>
+        <input
+          type="file"
+          accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+          className="hidden"
+          onChange={(event) => {
+            addModel(event.target.files);
+            event.currentTarget.value = "";
+          }}
+        />
+      </label>
+
+      <FieldError message={localError ?? error} />
+
+      <Product3DModelViewer
+        src={previewUrl}
+        title={
+          modelFile
+            ? "New 3D model preview"
+            : visibleExisting
+              ? "Current 3D model preview"
+              : "3D model preview"
+        }
+        compact
+      />
+
+      {visibleExisting && (
+        <div className="rounded-lg border p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Box className="h-4 w-4 text-primary" />
+                <span className="truncate">
+                  {existingModel.original_name ?? "Product 3D model"}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formatFileSize(existingModel.file_size) || "Ready for AR preview"}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              {model3DUrl(existingModel) && (
+                <Button type="button" variant="ghost" size="icon-sm" asChild>
+                  <a href={model3DUrl(existingModel)} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              )}
+              {onRemoveExisting && (
+                <Button type="button" variant="ghost" size="icon-sm" onClick={onRemoveExisting}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modelFile && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Box className="h-4 w-4 text-primary" />
+                <span className="truncate">{modelFile.name}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                New upload · {formatFileSize(modelFile.size)}
+              </p>
+            </div>
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => onChange(null)}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {deleteExisting && !modelFile && (
+        <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          Existing 3D model will be removed after saving.
         </p>
       )}
     </div>
@@ -543,6 +689,7 @@ export function ProductSummaryCard({
   variants,
   optionGroups,
   images,
+  model3D,
 }: {
   name: string;
   unit: string;
@@ -551,6 +698,7 @@ export function ProductSummaryCard({
   variants: number;
   optionGroups: number;
   images: number;
+  model3D?: boolean;
 }) {
   if (!name && categories.length === 0 && variants === 0 && optionGroups === 0) return null;
 
@@ -565,6 +713,7 @@ export function ProductSummaryCard({
         {price && <SummaryRow label="Price" value={formatCurrency(price)} />}
         <SummaryRow label="Categories" value={String(categories.length)} />
         <SummaryRow label="Images" value={String(images)} />
+        <SummaryRow label="3D Model" value={model3D ? "Attached" : "None"} />
         <SummaryRow label="Variants" value={String(variants)} />
         <SummaryRow label="Option Groups" value={String(optionGroups)} />
       </CardContent>

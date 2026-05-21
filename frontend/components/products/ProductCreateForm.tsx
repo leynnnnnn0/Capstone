@@ -11,6 +11,7 @@ import {
   ImageUploader,
   OptionGroupEditor,
   ProductBasicsCard,
+  Product3DModelUploader,
   ProductSummaryCard,
   VariantEditor,
 } from "@/components/products/ProductFormParts";
@@ -135,6 +136,20 @@ export default function ProductCreateForm({ categories }: { categories: Category
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>3D Model</CardTitle>
+              <CardDescription>Used by the AR product preview and measuring tool.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Product3DModelUploader
+                modelFile={data.model_3d}
+                error={errors.model_3d}
+                onChange={(file) => setField("model_3d", file)}
+              />
+            </CardContent>
+          </Card>
+
           <ProductSummaryCard
             name={data.name}
             unit={data.unit}
@@ -143,6 +158,7 @@ export default function ProductCreateForm({ categories }: { categories: Category
             variants={data.variants.length}
             optionGroups={data.option_groups.length}
             images={data.images.length}
+            model3D={Boolean(data.model_3d)}
           />
         </div>
       </div>
