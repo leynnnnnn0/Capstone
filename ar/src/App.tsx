@@ -1,14 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bell,
+  Box,
+  CheckCircle2,
+  ChevronRight,
+  Layers3,
+  Menu,
+  MousePointerClick,
+  Move3D,
+  PanelRightOpen,
+  Play,
+  Ruler,
+  ScanLine,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  Smartphone,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "./components/ui/card";
+import { Input } from "./components/ui/input";
 import { computeDimensions, formatDimensions } from "./features/measurement/dimensions";
 import { createLabel } from "./features/measurement/labels";
 import {
   DEFAULT_MODEL,
+  fetchProductModelCatalog,
   getModelById,
   MODEL_CATALOG,
   MODEL_CATEGORIES,
   type ModelCategoryId,
+  type ModelCategory,
   type ModelDefinition,
 } from "./features/measurement/model-catalog";
 import { OBJECT_TYPES } from "./features/measurement/object-types";
@@ -38,6 +70,7 @@ import {
 } from "./features/measurement/snapping";
 import { requestHitTestSession } from "./features/measurement/xr-session";
 import { metersToCentimeters } from "./lib/format";
+import { cn } from "./lib/utils";
 
 const VERSION = "react-vite-tier1-2026-05-17";
 const PREVIEW_MODEL_DEPTH_METERS = 0.012;
@@ -58,6 +91,10 @@ export default function App() {
   const currentHitPlaneRef = useRef<MeasurementPlane | null>(null);
   const shapePlaneRef = useRef<MeasurementPlane | null>(null);
   const confidenceRef = useRef<ReticleConfidence>("none");
+  const noSurfaceSinceRef = useRef<number | null>(null);
+  const lastViewerPositionRef = useRef<THREE.Vector3 | null>(null);
+  const lastViewerMovementAtRef = useRef(0);
+  const movementCoachCooldownUntilRef = useRef(0);
   const selectedTypeRef = useRef<ObjectType>(DEFAULT_MODEL.type);
   const selectedModelIdRef = useRef(DEFAULT_MODEL.id);
   const capturePhaseRef = useRef<CapturePhase>("shape");
@@ -68,10 +105,16 @@ export default function App() {
   const nextObjectIdRef = useRef(1);
 
   const [status, setStatus] = useState("Ready. Tap Start AR.");
-  const [diagnostics, setDiagnostics] = useState<string[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState("Loading products...");
   const [isActive, setIsActive] = useState(false);
   const [confidence, setConfidence] = useState<ReticleConfidence>("none");
+  const [showArGuide, setShowArGuide] = useState(false);
+  const [showMovementCoach, setShowMovementCoach] = useState(false);
   const [capturePhase, setCapturePhase] = useState<CapturePhase>("shape");
+  const [modelCategories, setModelCategories] =
+    useState<ModelCategory[]>(MODEL_CATEGORIES);
+  const [modelCatalog, setModelCatalog] =
+    useState<ModelDefinition[]>(MODEL_CATALOG);
   const [selectedCategoryId, setSelectedCategoryId] = useState<ModelCategoryId>(
     DEFAULT_MODEL.category,
   );
@@ -80,6 +123,7 @@ export default function App() {
     DEFAULT_MODEL.category,
   );
   const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
+  const [productSearch, setProductSearch] = useState("");
   const [points, setPoints] = useState<MeasurementPoint[]>([]);
   const pointsRef = useRef<MeasurementPoint[]>([]);
   const segmentsRef = useRef<MeasurementSegment[]>([]);
@@ -92,11 +136,51 @@ export default function App() {
   const sessionPanelOpenRef = useRef(false);
   const summaryOpenRef = useRef(false);
   const catalogOpenRef = useRef(false);
-  const selectedModel = getModelById(selectedModelId);
+  const showArGuideRef = useRef(false);
+  const showMovementCoachRef = useRef(false);
+  const modelCatalogRef = useRef<ModelDefinition[]>(MODEL_CATALOG);
+  const selectedModel = getModelById(modelCatalog, selectedModelId);
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectedObjectId) ?? null,
     [objects, selectedObjectId],
   );
+
+  useEffect(() => {
+    modelCatalogRef.current = modelCatalog;
+  }, [modelCatalog]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchProductModelCatalog()
+      .then(({ categories, models }) => {
+        if (cancelled) return;
+
+        if (models.length === 0) {
+          setCatalogStatus("No uploaded product 3D models yet. Showing local samples.");
+          return;
+        }
+
+        const firstModel = models[0];
+        setModelCatalog(models);
+        setModelCategories(categories);
+        setSelectedCategoryId(firstModel.category);
+        setReassignCategoryId(firstModel.category);
+        setSelectedModelId(firstModel.id);
+        selectedModelIdRef.current = firstModel.id;
+        selectedTypeRef.current = firstModel.type;
+        setCatalogStatus(`${models.length} product model${models.length === 1 ? "" : "s"} loaded.`);
+        setStatus(`${firstModel.label} selected. Tap Start AR to measure.`);
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Product models unavailable.";
+        setCatalogStatus(`${message} Showing local samples.`);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const confidenceCopy = useMemo(() => {
     if (capturePhase === "height") return "Height point: tap the top/end of the vertical height.";
@@ -109,6 +193,14 @@ export default function App() {
   useEffect(() => {
     confidenceRef.current = confidence;
   }, [confidence]);
+
+  useEffect(() => {
+    showArGuideRef.current = showArGuide;
+  }, [showArGuide]);
+
+  useEffect(() => {
+    showMovementCoachRef.current = showMovementCoach;
+  }, [showMovementCoach]);
 
   useEffect(() => {
     capturePhaseRef.current = capturePhase;
@@ -126,16 +218,36 @@ export default function App() {
     catalogOpenRef.current = catalogOpen;
   }, [catalogOpen]);
 
+  const findModel = useCallback(
+    (id: string) => getModelById(modelCatalogRef.current, id),
+    [],
+  );
+
   const log = useCallback((message: string) => {
-    setDiagnostics((items) => [
-      `${new Date().toLocaleTimeString()} - ${message}`,
-      ...items.slice(0, 13),
-    ]);
+    console.debug(`[SOG AR] ${message}`);
   }, []);
 
   const markUiInteraction = useCallback(() => {
     ignorePlacementUntilRef.current = performance.now() + 900;
   }, []);
+
+  const setArGuideVisible = useCallback((visible: boolean) => {
+    showArGuideRef.current = visible;
+    setShowArGuide(visible);
+  }, []);
+
+  const setMovementCoachVisible = useCallback((visible: boolean) => {
+    showMovementCoachRef.current = visible;
+    setShowMovementCoach(visible);
+  }, []);
+
+  const dismissArGuide = useCallback(() => {
+    markUiInteraction();
+    setArGuideVisible(false);
+    noSurfaceSinceRef.current = null;
+    movementCoachCooldownUntilRef.current = performance.now() + 1800;
+    setStatus("Move the phone slowly until the reticle turns yellow or green.");
+  }, [markUiInteraction, setArGuideVisible]);
 
   const selectModel = useCallback(
     (model: ModelDefinition, closeCatalog = false) => {
@@ -154,12 +266,15 @@ export default function App() {
     [],
   );
 
-  const selectCompletedObject = useCallback((object: MeasuredObject) => {
-    const model = getModelById(object.modelId);
-    ignorePlacementUntilRef.current = performance.now() + 1200;
-    setSelectedObjectId(object.id);
-    setReassignCategoryId(model.category);
-  }, []);
+  const selectCompletedObject = useCallback(
+    (object: MeasuredObject) => {
+      const model = findModel(object.modelId);
+      ignorePlacementUntilRef.current = performance.now() + 1200;
+      setSelectedObjectId(object.id);
+      setReassignCategoryId(model.category);
+    },
+    [findModel],
+  );
 
   const changeCompletedObjectModel = useCallback(
     (objectId: number, model: ModelDefinition) => {
@@ -201,7 +316,7 @@ export default function App() {
       setStatus(`Item ${objectId} changed to ${model.label}.`);
       log(`item ${objectId} model changed to ${model.label}`);
     },
-    [log],
+    [findModel, log],
   );
 
   const deleteCompletedObject = useCallback(
@@ -225,7 +340,7 @@ export default function App() {
 
         const fallbackObject = nextObjects.at(-1) ?? null;
         if (fallbackObject) {
-          setReassignCategoryId(getModelById(fallbackObject.modelId).category);
+          setReassignCategoryId(findModel(fallbackObject.modelId).category);
         } else {
           setReassignCategoryId(DEFAULT_MODEL.category);
         }
@@ -314,6 +429,12 @@ export default function App() {
       setSummaryOpen(false);
       setCapturePhase("shape");
       capturePhaseRef.current = "shape";
+      setArGuideVisible(true);
+      setMovementCoachVisible(false);
+      noSurfaceSinceRef.current = null;
+      lastViewerPositionRef.current = null;
+      lastViewerMovementAtRef.current = performance.now();
+      movementCoachCooldownUntilRef.current = performance.now() + 2500;
       setStatus("Item 1: tap the outline. Segments snap straight or 90-degree.");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -327,11 +448,67 @@ export default function App() {
     await sessionRef.current?.end().catch(() => undefined);
   };
 
+  const trackViewerMotion = (
+    frame: XRFrame,
+    localSpace: XRReferenceSpace,
+    now: number,
+  ) => {
+    const viewerPose = frame.getViewerPose(localSpace);
+    const matrix = viewerPose?.views[0]?.transform.matrix;
+
+    if (!matrix) return;
+
+    const viewerPosition = new THREE.Vector3().setFromMatrixPosition(
+      new THREE.Matrix4().fromArray(matrix),
+    );
+    const previousPosition = lastViewerPositionRef.current;
+
+    if (previousPosition && previousPosition.distanceTo(viewerPosition) > 0.018) {
+      lastViewerMovementAtRef.current = now;
+      noSurfaceSinceRef.current = null;
+      movementCoachCooldownUntilRef.current = now + 1700;
+
+      if (showMovementCoachRef.current) {
+        setMovementCoachVisible(false);
+      }
+    }
+
+    lastViewerPositionRef.current = viewerPosition;
+  };
+
+  const noteNoSurfaceFrame = (now: number) => {
+    if (showArGuideRef.current || now < movementCoachCooldownUntilRef.current) {
+      noSurfaceSinceRef.current = null;
+      return;
+    }
+
+    noSurfaceSinceRef.current ??= now;
+
+    if (
+      now - noSurfaceSinceRef.current > 3200 &&
+      now - lastViewerMovementAtRef.current > 900 &&
+      !showMovementCoachRef.current
+    ) {
+      setMovementCoachVisible(true);
+    }
+  };
+
+  const noteSurfaceFrame = () => {
+    noSurfaceSinceRef.current = null;
+
+    if (showMovementCoachRef.current) {
+      setMovementCoachVisible(false);
+    }
+  };
+
   const renderFrame = (_time: number, frame?: XRFrame) => {
     const measurementScene = sceneRef.current;
     const localSpace = localSpaceRef.current;
     const hitTestSource = hitTestSourceRef.current;
     if (!measurementScene || !frame || !localSpace || !hitTestSource) return;
+
+    const now = performance.now();
+    trackViewerMotion(frame, localSpace, now);
 
     const results = frame.getHitTestResults(hitTestSource);
     if (results.length === 0) {
@@ -342,6 +519,7 @@ export default function App() {
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
+      noteNoSurfaceFrame(now);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
       return;
     }
@@ -355,6 +533,7 @@ export default function App() {
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
+      noteNoSurfaceFrame(now);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
       return;
     }
@@ -385,6 +564,7 @@ export default function App() {
     confidenceRef.current = nextConfidence;
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
     setReticleColor(measurementScene.reticle, nextConfidence);
+    noteSurfaceFrame();
     measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
   };
 
@@ -532,7 +712,7 @@ export default function App() {
     nextObjectIdRef.current += 1;
 
     const dimensions = computeDimensions(pointsRef.current);
-    const selectedModel = getModelById(selectedModelIdRef.current);
+    const selectedModel = findModel(selectedModelIdRef.current);
     const type = selectedModel.type;
     const model = createGlassModel(pointsRef.current, selectedModel);
     const label = createObjectLabel(id, selectedModel, pointsRef.current);
@@ -669,6 +849,8 @@ export default function App() {
     setIsActive(false);
     setSessionPanelOpen(false);
     setConfidence("none");
+    setArGuideVisible(false);
+    setMovementCoachVisible(false);
     setStatus("AR session ended. Tap Start AR to continue.");
   };
 
@@ -683,6 +865,12 @@ export default function App() {
     currentHitNormalRef.current = null;
     currentHitPlaneRef.current = null;
     lastPlacementPositionRef.current = null;
+    noSurfaceSinceRef.current = null;
+    lastViewerPositionRef.current = null;
+    lastViewerMovementAtRef.current = 0;
+    movementCoachCooldownUntilRef.current = 0;
+    showArGuideRef.current = false;
+    showMovementCoachRef.current = false;
     hitStreakRef.current = 0;
     if (sceneRef.current) sceneRef.current.reticle.visible = false;
   };
@@ -721,57 +909,353 @@ export default function App() {
           </section>
         ) : (
           <section
-            className="top-panel"
+            className="shop-screen"
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">SOG AR Measure</p>
-                <h1>Glass measurement</h1>
+            <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-5 pb-5">
+              <header className="flex items-center justify-between gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 rounded-full border border-border bg-card shadow-sm"
+                  aria-label="Menu"
+                >
+                  <Menu className="size-5" />
+                </Button>
+                <div className="grid justify-items-center leading-none">
+                  <strong className="text-xl font-black tracking-[0.08em] text-primary">
+                    SOG
+                  </strong>
+                  <small className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    AR Measure
+                  </small>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="relative size-11 rounded-full border border-border bg-card shadow-sm"
+                  aria-label="Notifications"
+                >
+                  <Bell className="size-5" />
+                  <span className="absolute right-2 top-2 size-2 rounded-full bg-secondary" />
+                </Button>
+              </header>
+
+              <div className="grid grid-cols-[1fr_auto] gap-3">
+                <label className="relative">
+                  <span className="sr-only">Search</span>
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    value={productSearch}
+                    placeholder="Search product models"
+                    className="h-12 rounded-2xl border-border bg-card pl-10 shadow-sm"
+                    onChange={(event) => setProductSearch(event.target.value)}
+                  />
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="size-12 rounded-2xl shadow-sm"
+                  aria-label="Filters"
+                >
+                  <SlidersHorizontal className="size-5" />
+                </Button>
               </div>
-              <span className="badge">Tier 1</span>
+
+              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {modelCategories.map((category) => (
+                  <Button
+                    type="button"
+                    key={category.id}
+                    variant={category.id === selectedCategoryId ? "secondary" : "outline"}
+                    className={cn(
+                      "h-14 shrink-0 rounded-full px-5",
+                      category.id !== selectedCategoryId &&
+                        "bg-card text-muted-foreground",
+                    )}
+                    onClick={() => setSelectedCategoryId(category.id)}
+                  >
+                    {category.label}
+                  </Button>
+                ))}
+              </div>
+
+              <Card className="overflow-hidden rounded-[1.75rem] border-border/80 bg-card shadow-xl shadow-slate-200/70">
+                <CardContent className="grid grid-cols-[minmax(0,1fr)_8.5rem] items-center gap-3 p-4">
+                  <div className="space-y-3">
+                    <Badge variant="secondary" className="w-max">
+                      AR ready
+                    </Badge>
+                    <div>
+                      <CardTitle className="text-xl leading-tight">
+                        {selectedModel.label}
+                      </CardTitle>
+                      <CardDescription className="mt-2 line-clamp-2">
+                        {selectedModel.description}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="dark"
+                      size="sm"
+                      className="rounded-full"
+                      onClick={startSession}
+                    >
+                      <Play className="size-4" />
+                      View in AR
+                    </Button>
+                  </div>
+                  <div className="grid h-32 place-items-center overflow-hidden rounded-2xl bg-muted">
+                    {selectedModel.thumbnail ? (
+                      <img
+                        src={selectedModel.thumbnail}
+                        alt=""
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    ) : (
+                      <Box
+                        className="size-12"
+                        style={{ color: OBJECT_TYPES[selectedModel.type].color }}
+                      />
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="overflow-hidden rounded-[2rem] border-border/80 bg-card shadow-xl shadow-slate-200/80">
+                <CardContent className="space-y-5 p-4">
+                  <div className="relative grid min-h-72 place-items-center overflow-hidden rounded-[1.4rem] bg-gradient-to-b from-slate-200 to-white">
+                    {selectedModel.thumbnail ? (
+                      <img
+                        src={selectedModel.thumbnail}
+                        alt=""
+                        className="max-h-64 max-w-[86%] object-contain drop-shadow-2xl"
+                      />
+                    ) : (
+                      <div className="grid size-40 place-items-center rounded-[2rem] bg-white shadow-xl">
+                        <Box
+                          className="size-16"
+                          style={{ color: OBJECT_TYPES[selectedModel.type].color }}
+                        />
+                      </div>
+                    )}
+                    <div className="pointer-events-none absolute bottom-8 h-9 w-48 rounded-b-full border-b border-slate-400/70">
+                      <span className="absolute -bottom-1 left-0 size-2 rounded-full bg-slate-400" />
+                      <span className="absolute -bottom-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-slate-400" />
+                      <span className="absolute -bottom-1 right-0 size-2 rounded-full bg-slate-400" />
+                      <small className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium text-muted-foreground">
+                        360
+                      </small>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
+                        Selected Product
+                      </p>
+                      <h1 className="mt-2 text-3xl font-black leading-tight tracking-normal text-foreground">
+                        {selectedModel.label}
+                      </h1>
+                    </div>
+                    {selectedModel.price != null && (
+                      <strong className="shrink-0 text-xl font-black text-secondary">
+                        {formatModelPrice(selectedModel.price, selectedModel.unit)}
+                      </strong>
+                    )}
+                  </div>
+
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    {selectedModel.description}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="muted" className="max-w-full truncate">
+                      {catalogStatus}
+                    </Badge>
+                    <Badge variant="outline">{objects.length} captured</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      className="rounded-2xl border-primary text-primary"
+                      onClick={resetAll}
+                    >
+                      <RotateCcw className="size-4" />
+                      Reset
+                    </Button>
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="rounded-2xl"
+                      onClick={startSession}
+                    >
+                      <Play className="size-4" />
+                      Start AR
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">
+                    Available models
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Choose the model before measuring.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary"
+                  onClick={() => setSelectedCategoryId("all")}
+                >
+                  See all
+                  <ChevronRight className="size-4" />
+                </Button>
+              </div>
+
+              <ModelCatalogPanel
+                categories={modelCategories}
+                models={modelCatalog}
+                activeCategoryId={selectedCategoryId}
+                selectedModelId={selectedModelId}
+                searchQuery={productSearch}
+                onCategoryChange={setSelectedCategoryId}
+                onSelectModel={(model) => selectModel(model)}
+                shop
+              />
+
+              {objects.length > 0 && (
+                <Button
+                  type="button"
+                  variant="dark"
+                  size="lg"
+                  className="rounded-2xl"
+                  onClick={openSummary}
+                >
+                  <Layers3 className="size-4" />
+                  Review captured objects
+                </Button>
+              )}
             </div>
-
-            <p className="status">{status}</p>
-
-            <div className="stats-grid">
-              <span>
-                Current points
-                <strong>{points.length}</strong>
-              </span>
-              <span>
-                Captured objects
-                <strong>{objects.length}</strong>
-              </span>
-            </div>
-
-            <ModelCatalogPanel
-              activeCategoryId={selectedCategoryId}
-              selectedModelId={selectedModelId}
-              onCategoryChange={setSelectedCategoryId}
-              onSelectModel={(model) => selectModel(model)}
-            />
-
-            <div className="actions">
-              <button type="button" className="primary" onClick={startSession}>
-                Start AR
-              </button>
-              <button type="button" onClick={resetAll}>
-                Reset
-              </button>
-              <button type="button" className="light" onClick={openSummary}>
-                I&apos;m Done
-              </button>
-            </div>
-
-            <details className="diagnostics">
-              <summary>Diagnostics</summary>
-              {diagnostics.map((entry) => (
-                <p key={entry}>{entry}</p>
-              ))}
-            </details>
           </section>
+        )}
+
+        {isActive && (
+          <>
+            {showArGuide && (
+              <section
+                className="ar-guide-backdrop"
+                data-xr-ui="true"
+                onPointerDown={markUiInteraction}
+              >
+                <Card className="ar-guide-card">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="eyebrow">Quick guide</p>
+                        <h2 className="mt-2 text-2xl font-semibold text-white">
+                          How to measure
+                        </h2>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full text-white hover:bg-white/10"
+                        aria-label="Close guide"
+                        onClick={dismissArGuide}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+
+                    <div className="guide-step-list">
+                      <article>
+                        <Move3D className="size-5" />
+                        <span>
+                          <strong>Scan slowly</strong>
+                          Move the phone side to side until the reticle turns yellow
+                          or green.
+                        </span>
+                      </article>
+                      <article>
+                        <ScanLine className="size-5" />
+                        <span>
+                          <strong>Tap the outline</strong>
+                          Place points along the shape. Lines will snap straight or
+                          90-degree where possible.
+                        </span>
+                      </article>
+                      <article>
+                        <Ruler className="size-5" />
+                        <span>
+                          <strong>Finish, then height</strong>
+                          Press Finish Shape, then tap the height point for the item.
+                        </span>
+                      </article>
+                      <article>
+                        <MousePointerClick className="size-5" />
+                        <span>
+                          <strong>Keep controls separate</strong>
+                          Use the bottom buttons for undo, models, objects, and done.
+                        </span>
+                      </article>
+                    </div>
+
+                    <div className="ar-guide-note">
+                      Tip: start with the bottom edge, then trace the remaining
+                      outline. For best results, keep the phone moving gently until
+                      the surface locks.
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="lg"
+                      className="w-full rounded-2xl"
+                      onClick={dismissArGuide}
+                    >
+                      Start scanning
+                    </Button>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {showMovementCoach && !showArGuide && (
+              <section
+                className="movement-coach"
+                data-xr-ui="true"
+                onPointerDown={markUiInteraction}
+              >
+                <div className="movement-phone" aria-hidden="true">
+                  <span className="movement-arrow movement-arrow--left" />
+                  <Smartphone className="movement-phone-icon" />
+                  <span className="movement-arrow movement-arrow--right" />
+                </div>
+                <div>
+                  <p className="eyebrow">Need a surface</p>
+                  <h2>Move your phone slowly</h2>
+                  <p>
+                    Pan side to side and slightly up or down. This disappears as
+                    soon as movement is detected.
+                  </p>
+                </div>
+              </section>
+            )}
+          </>
         )}
 
         {isActive && (
@@ -787,13 +1271,15 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <button type="button" className="primary" onClick={finishShape}>
+            <Button type="button" className="primary" onClick={finishShape}>
+              <CheckCircle2 className="size-4" />
               {capturePhase === "shape" ? "Finish Shape" : "Tap Height"}
-            </button>
-            <button type="button" onClick={undoPoint}>
+            </Button>
+            <Button type="button" onClick={undoPoint}>
+              <Undo2 className="size-4" />
               Undo
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => {
                 setSessionPanelOpen((open) => {
@@ -803,9 +1289,10 @@ export default function App() {
                 });
               }}
             >
+              <Layers3 className="size-4" />
               Objects {objects.length}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => {
                 setCatalogOpen((open) => {
@@ -815,14 +1302,15 @@ export default function App() {
                 });
               }}
             >
+              <PanelRightOpen className="size-4" />
               Models
-            </button>
-            <button type="button" onClick={openSummary}>
+            </Button>
+            <Button type="button" onClick={openSummary}>
               Done
-            </button>
-            <button type="button" onClick={endSession}>
+            </Button>
+            <Button type="button" onClick={endSession}>
               End
-            </button>
+            </Button>
           </div>
         )}
 
@@ -837,11 +1325,20 @@ export default function App() {
                 <p className="eyebrow">Model Catalog</p>
                 <h2>Choose a product</h2>
               </div>
-              <button type="button" onClick={() => setCatalogOpen(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-slate-100"
+                onClick={() => setCatalogOpen(false)}
+              >
+                <X className="size-4" />
                 Close
-              </button>
+              </Button>
             </div>
             <ModelCatalogPanel
+              categories={modelCategories}
+              models={modelCatalog}
               activeCategoryId={selectedCategoryId}
               selectedModelId={selectedModelId}
               onCategoryChange={setSelectedCategoryId}
@@ -851,7 +1348,7 @@ export default function App() {
           </section>
         )}
 
-        {sessionPanelOpen && (
+        {isActive && sessionPanelOpen && (
           <aside
             className={`session-panel ${isActive ? "session-panel--compact" : ""}`}
             data-xr-ui="true"
@@ -863,9 +1360,16 @@ export default function App() {
                 <p>{objects.length} captured</p>
               </div>
               {isActive && (
-                <button type="button" onClick={() => setSessionPanelOpen(false)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-slate-100"
+                  onClick={() => setSessionPanelOpen(false)}
+                >
+                  <X className="size-4" />
                   Close
-                </button>
+                </Button>
               )}
             </div>
             <div className="object-list">
@@ -877,25 +1381,29 @@ export default function App() {
                     key={object.id}
                     className={selectedObjectId === object.id ? "selected" : ""}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className="object-select-button"
                       onClick={() => selectCompletedObject(object)}
                     >
                       <span>
                         <strong>{`Item ${object.id}`}</strong>
-                        <em>{getModelById(object.modelId).label}</em>
+                        <em>{findModel(object.modelId).label}</em>
                         <small>{formatDimensions(object.dimensions)}</small>
                       </span>
                       <i style={{ background: OBJECT_TYPES[object.type].color }} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       className="object-delete-button"
                       onClick={() => deleteCompletedObject(object.id)}
                     >
+                      <Trash2 className="size-4" />
                       Delete
-                    </button>
+                    </Button>
                   </article>
                 ))
               )}
@@ -908,9 +1416,11 @@ export default function App() {
                     <p className="eyebrow">Change Displayed Model</p>
                     <strong>{`Item ${selectedObject.id}`}</strong>
                   </div>
-                  <span>{getModelById(selectedObject.modelId).label}</span>
+                  <span>{findModel(selectedObject.modelId).label}</span>
                 </div>
                 <ModelCatalogPanel
+                  categories={modelCategories}
+                  models={modelCatalog}
                   activeCategoryId={reassignCategoryId}
                   selectedModelId={selectedObject.modelId}
                   onCategoryChange={setReassignCategoryId}
@@ -945,7 +1455,7 @@ export default function App() {
                     <article key={object.id}>
                       <div>
                         <strong>{`Item ${object.id}`}</strong>
-                        <small>{getModelById(object.modelId).label}</small>
+                        <small>{findModel(object.modelId).label}</small>
                         <p>{formatDimensions(object.dimensions)}</p>
                       </div>
                       <span style={{ background: OBJECT_TYPES[object.type].color }}>
@@ -963,14 +1473,19 @@ export default function App() {
               )}
 
               <div className="summary-actions">
-                <input placeholder="Contact number or email" type="text" />
-                <button type="button" onClick={() => setOcularConfirmed(true)}>
+                <Input placeholder="Contact number or email" type="text" />
+                <Button type="button" onClick={() => setOcularConfirmed(true)}>
                   Proceed to Get Ocular Visit
-                </button>
+                </Button>
               </div>
-              <button type="button" className="back-button" onClick={() => setSummaryOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                className="back-button"
+                onClick={() => setSummaryOpen(false)}
+              >
                 Go Back
-              </button>
+              </Button>
             </div>
           </section>
         )}
@@ -1043,69 +1558,187 @@ function getViewerForward(frame: XRFrame, referenceSpace: XRReferenceSpace) {
 }
 
 interface ModelCatalogPanelProps {
+  categories: ModelCategory[];
+  models: ModelDefinition[];
   activeCategoryId: ModelCategoryId;
   selectedModelId: string;
   onCategoryChange: (category: ModelCategoryId) => void;
   onSelectModel: (model: ModelDefinition) => void;
+  searchQuery?: string;
   compact?: boolean;
+  shop?: boolean;
 }
 
 function ModelCatalogPanel({
+  categories,
+  models,
   activeCategoryId,
   selectedModelId,
   onCategoryChange,
   onSelectModel,
+  searchQuery = "",
   compact = false,
+  shop = false,
 }: ModelCatalogPanelProps) {
-  const visibleModels = MODEL_CATALOG.filter(
-    (model) => model.category === activeCategoryId,
-  );
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const categoryModels =
+    activeCategoryId === "all"
+      ? models
+      : models.filter((model) => model.category === activeCategoryId);
+  const visibleModels = normalizedSearch
+    ? categoryModels.filter((model) =>
+        [model.label, model.description, model.category]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch),
+      )
+    : categoryModels;
 
   return (
-    <div className={`model-catalog-panel ${compact ? "compact" : ""}`}>
-      <div className="model-category-tabs" aria-label="Model categories">
-        {MODEL_CATEGORIES.map((category) => (
-          <button
-            type="button"
-            key={category.id}
-            className={category.id === activeCategoryId ? "active" : ""}
-            onClick={() => onCategoryChange(category.id)}
-          >
-            <strong>{category.label}</strong>
-            {!compact && <span>{category.description}</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="model-card-row">
-        {visibleModels.map((model) => {
-          const isSelected = model.id === selectedModelId;
-          const color = OBJECT_TYPES[model.type].color;
-
-          return (
-            <button
+    <div className={cn("grid gap-3", compact && "gap-2")}>
+      {!shop && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          aria-label="Model categories"
+        >
+          {categories.map((category) => (
+            <Button
               type="button"
-              key={model.id}
-              className={`model-card ${isSelected ? "active" : ""}`}
-              onClick={() => onSelectModel(model)}
+              key={category.id}
+              variant={category.id === activeCategoryId ? "secondary" : "dark"}
+              size={compact ? "sm" : "default"}
+              className={cn(
+                "h-auto shrink-0 rounded-full px-4 py-2 text-left",
+                category.id !== activeCategoryId &&
+                  "border border-white/10 bg-slate-950/60 text-slate-200",
+              )}
+              onClick={() => onCategoryChange(category.id)}
             >
-              <span className="model-card-preview" style={{ borderColor: color }}>
-                {model.thumbnail ? (
-                  <img src={model.thumbnail} alt="" />
-                ) : (
-                  <i style={{ background: color }} />
+              <span className="grid gap-0.5">
+                <strong className="text-xs leading-none">{category.label}</strong>
+                {!compact && (
+                  <span className="text-[10px] font-medium text-current/70">
+                    {category.description}
+                  </span>
                 )}
               </span>
-              <span className="model-card-copy">
-                <strong>{model.label}</strong>
-                <small>{model.description}</small>
-              </span>
-            </button>
-          );
-        })}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={cn(
+          shop
+            ? "grid grid-cols-2 gap-3"
+            : "grid grid-flow-col auto-cols-[minmax(10.5rem,12.5rem)] gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [overscroll-behavior-x:contain] [&::-webkit-scrollbar]:hidden",
+          compact && !shop && "auto-cols-[minmax(9.5rem,11rem)]",
+        )}
+      >
+        {visibleModels.length === 0 ? (
+          <Card
+            className={cn(
+              "grid min-h-28 place-items-center border-dashed p-4 text-center text-sm text-muted-foreground",
+              shop ? "col-span-2 bg-card" : "bg-slate-950/50 text-slate-300",
+            )}
+          >
+            No AR-ready models match this selection yet.
+          </Card>
+        ) : (
+          visibleModels.map((model) => {
+            const isSelected = model.id === selectedModelId;
+            const color = OBJECT_TYPES[model.type].color;
+
+            return (
+              <Button
+                type="button"
+                key={model.id}
+                variant="ghost"
+                className="group h-auto min-w-0 justify-start p-0 text-left hover:bg-transparent"
+                onClick={() => onSelectModel(model)}
+              >
+                <Card
+                  className={cn(
+                    "h-full overflow-hidden transition duration-200 group-active:scale-[0.98]",
+                    shop
+                      ? "border-border bg-card shadow-lg shadow-slate-200/60"
+                      : "border-white/10 bg-white/10 text-white shadow-xl shadow-black/20 backdrop-blur-xl",
+                    isSelected &&
+                      (shop
+                        ? "border-secondary ring-2 ring-secondary/30"
+                        : "border-secondary bg-secondary/15 ring-2 ring-secondary/25"),
+                  )}
+                >
+                  <CardContent className="p-2">
+                    <div
+                      className={cn(
+                        "relative grid overflow-hidden rounded-xl",
+                        shop ? "h-32 place-items-center bg-muted" : "h-24 place-items-center bg-white/10",
+                      )}
+                      style={{ border: `1px solid ${isSelected ? color : "transparent"}` }}
+                    >
+                      {model.thumbnail ? (
+                        <img
+                          src={model.thumbnail}
+                          alt=""
+                          className="h-full w-full object-contain p-2"
+                        />
+                      ) : (
+                        <Box className="size-10" style={{ color }} />
+                      )}
+                      {isSelected && (
+                        <Badge
+                          variant="secondary"
+                          className="absolute right-2 top-2 gap-1 px-2"
+                        >
+                          <CheckCircle2 className="size-3" />
+                          Selected
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-3 grid gap-1">
+                      <strong
+                        className={cn(
+                          "truncate text-sm font-bold",
+                          shop ? "text-foreground" : "text-white",
+                        )}
+                      >
+                        {model.label}
+                      </strong>
+                      <small
+                        className={cn(
+                          "line-clamp-2 min-h-9 text-xs leading-snug",
+                          shop ? "text-muted-foreground" : "text-slate-300",
+                        )}
+                      >
+                        {model.description}
+                      </small>
+                      {model.price != null && (
+                        <b className="mt-1 text-sm font-black text-primary">
+                          {formatModelPrice(model.price, model.unit)}
+                        </b>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Button>
+            );
+          })
+        )}
       </div>
     </div>
   );
+}
+
+function formatModelPrice(price: number, unit?: string | null) {
+  const formatted = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    maximumFractionDigits: 0,
+  }).format(price);
+
+  return unit ? `${formatted} / ${unit}` : formatted;
 }
 
 function createMarker(position: THREE.Vector3, index: number, color: string) {

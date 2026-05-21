@@ -19,13 +19,26 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3001')],
+    'allowed_origins' => array_values(array_filter(array_unique([
+        env('FRONTEND_URL', 'http://localhost:3001'),
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        env('AR_FRONTEND_URL', 'http://localhost:5173'),
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:4173',
+        'http://127.0.0.1:4173',
+    ]))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://[a-z0-9-]+\.ngrok-free\.dev$#',
+    ],
 
-    'allowed_headers' => ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    'allowed_headers' => ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Range'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Content-Length', 'Content-Range', 'Accept-Ranges'],
 
     'max_age' => 0,
 

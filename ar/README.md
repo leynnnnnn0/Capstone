@@ -26,6 +26,16 @@ ngrok http 5173
 
 Open the HTTPS ngrok URL on an Android Chrome device with ARCore support.
 
+If the AR app needs to read products from a backend that is not reachable as
+`http://localhost:8000` from the device, set:
+
+```bash
+VITE_API_URL=https://your-backend-url.test npm run dev
+```
+
+The AR catalogue reads products from `/api/v1/products` and uses each product's
+uploaded `model_3d.file_url`.
+
 ## Current Scope
 
 This is Tier 1 only:
@@ -37,8 +47,8 @@ This is Tier 1 only:
 - Reticle confidence based on stable hit-test frames
 - Tap places numbered points
 - Consecutive points draw measured line segments
-- `Finish Object` computes shape segments, height, and thickness
+- `Finish Object` computes shape segments and height
 - Multi-object session list and summary page
 
-The second-to-last point is treated as height, and the last point is treated as
-material thickness.
+Shape points are captured first. After pressing `Finish Shape`, the next point
+is treated as the object height.
