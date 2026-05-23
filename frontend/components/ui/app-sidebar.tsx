@@ -3,11 +3,13 @@
 import {
   CalendarDays,
   BriefcaseBusiness,
+  ChartNoAxesCombined,
   GitGraphIcon,
   LayoutGrid,
   Package,
   ShieldCheck,
   User2Icon,
+  WalletCards,
 } from "lucide-react";
 import { NavFooter } from "@/components/ui/nav-footer";
 import { NavMain } from "./nav-main";
@@ -55,6 +57,18 @@ const mainNavItems: NavItem[] = [
     href: "/dashboard/work-jobs",
     icon: BriefcaseBusiness,
     permission: "work-jobs.view",
+  },
+  {
+    title: "Payments",
+    href: "/dashboard/payments",
+    icon: WalletCards,
+    permission: "payments.view",
+  },
+  {
+    title: "Sales",
+    href: "/dashboard/sales",
+    icon: ChartNoAxesCombined,
+    permission: "reports.view",
   },
   {
     title: "Calendar",

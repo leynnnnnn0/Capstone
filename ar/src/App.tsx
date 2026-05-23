@@ -78,6 +78,23 @@ type CapturePhase = "shape" | "height";
 const gltfLoader = new GLTFLoader();
 const modelCache = new Map<string, Promise<THREE.Group>>();
 
+interface ArQuoteTransferItem {
+  productId: number;
+  modelId: string;
+  label: string;
+  description: string;
+  segmentsCm: number[];
+  widthCm: number;
+  heightCm: number;
+}
+
+interface ArQuoteTransferPayload {
+  source: "sog-ar";
+  version: 1;
+  createdAt: string;
+  items: ArQuoteTransferItem[];
+}
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -131,7 +148,6 @@ export default function App() {
   const objectsRef = useRef<MeasuredObject[]>([]);
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [ocularConfirmed, setOcularConfirmed] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const sessionPanelOpenRef = useRef(false);
   const summaryOpenRef = useRef(false);
@@ -840,8 +856,32 @@ export default function App() {
   const openSummary = async () => {
     await endSession();
     setSessionPanelOpen(false);
-    setOcularConfirmed(false);
     setSummaryOpen(true);
+  };
+
+  const proceedToQuoteRequest = () => {
+    markUiInteraction();
+
+    const items = objectsRef.current
+      .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
+      .filter((item): item is ArQuoteTransferItem => Boolean(item));
+
+    if (items.length === 0) {
+      setStatus("Choose an uploaded product model before sending measurements to quote.");
+      return;
+    }
+
+    const payload = encodeArQuoteTransfer({
+      source: "sog-ar",
+      version: 1,
+      createdAt: new Date().toISOString(),
+      items,
+    });
+    const url = new URL("/get-quote", frontendQuoteBaseUrl());
+    url.searchParams.set("checkout", "1");
+    url.searchParams.set("source", "ar");
+    url.searchParams.set("ar_items", payload);
+    window.location.assign(url.toString());
   };
 
   const handleSessionEnd = () => {
@@ -1466,16 +1506,13 @@ export default function App() {
                 )}
               </div>
 
-              {ocularConfirmed && (
-                <div className="confirmation">
-                  Our team will contact you to schedule an ocular visit.
-                </div>
-              )}
-
               <div className="summary-actions">
-                <Input placeholder="Contact number or email" type="text" />
-                <Button type="button" onClick={() => setOcularConfirmed(true)}>
-                  Proceed to Get Ocular Visit
+                <Button
+                  type="button"
+                  onClick={proceedToQuoteRequest}
+                  disabled={objects.length === 0}
+                >
+                  Continue to Quote Request
                 </Button>
               </div>
               <Button
@@ -1502,6 +1539,58 @@ function getConfidence(
   if (planeQuality === "slanted") return "medium";
   if (streak < 24) return "medium";
   return "high";
+}
+
+function objectToQuoteTransferItem(
+  object: MeasuredObject,
+  model: ModelDefinition,
+): ArQuoteTransferItem | null {
+  if (!model.productId) return null;
+
+  const widthCm = object.dimensions.segmentsCm.reduce(
+    (sum, segment) => sum + segment,
+    0,
+  );
+
+  return {
+    productId: model.productId,
+    modelId: model.id,
+    label: model.label,
+    description: model.description,
+    segmentsCm: object.dimensions.segmentsCm,
+    widthCm,
+    heightCm: object.dimensions.heightCm,
+  };
+}
+
+function encodeArQuoteTransfer(payload: ArQuoteTransferPayload) {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = "";
+
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return window
+    .btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function frontendQuoteBaseUrl() {
+  const env = (import.meta as unknown as { env?: { VITE_FRONTEND_URL?: string } }).env;
+  const configured = env?.VITE_FRONTEND_URL?.trim();
+
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const url = new URL(window.location.href);
+  if ((url.hostname === "localhost" || url.hostname === "127.0.0.1") && url.port === "5173") {
+    url.port = "3000";
+    return url.origin;
+  }
+
+  return window.location.origin;
 }
 
 function setReticleColor(reticle: THREE.Mesh, confidence: ReticleConfidence) {

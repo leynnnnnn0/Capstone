@@ -10,6 +10,7 @@ import QuoteCart from "@/components/quote/QuoteCart";
 import QuoteCheckoutForm from "@/components/quote/QuoteCheckoutForm";
 import { fetchProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
+import { arHandoffToCartItems, parseArQuoteHandoff } from "@/features/quotes/ar-quote-handoff";
 import type { QuoteCartItem } from "@/features/quotes/types";
 
 export default function GetQuotePage() {
@@ -23,6 +24,7 @@ export default function GetQuotePage() {
 
   const preSelectedProductId = useMemo(() => numberParam(searchParams.get("product")), [searchParams]);
   const preSelectedVariantId = useMemo(() => numberParam(searchParams.get("variant")), [searchParams]);
+  const arItemsParam = useMemo(() => searchParams.get("ar_items"), [searchParams]);
   const editingItem = editingIndex !== null ? cart[editingIndex] ?? null : null;
 
   useEffect(() => {
@@ -33,6 +35,17 @@ export default function GetQuotePage() {
         if (!mounted) return;
         setProducts(response.data);
         setError("");
+        const arHandoff = parseArQuoteHandoff(arItemsParam);
+        if (arHandoff) {
+          const arCartItems = arHandoffToCartItems(arHandoff, response.data);
+          if (arCartItems.length > 0) {
+            setCart(arCartItems);
+            setEditingIndex(null);
+            setShowCheckout(true);
+          } else {
+            setError("AR measurements were received, but no matching quote products were found.");
+          }
+        }
       })
       .catch(() => {
         if (mounted) setError("Unable to load quote products.");
@@ -44,7 +57,7 @@ export default function GetQuotePage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [arItemsParam]);
 
   const addItem = (item: QuoteCartItem) => {
     setCart((current) => [...current, item]);

@@ -9,6 +9,7 @@ use App\Events\AppointmentConfirmed;
 use App\Events\AppointmentRescheduled;
 use App\Events\AppointmentStatusChanged;
 use App\Events\AppointmentUpdated;
+use App\Events\PaymentRecorded;
 use App\Events\QuotationChanged;
 use App\Events\QuotationSigned;
 use App\Events\QuotationSignatureInvalidated;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
             QuotationSigned::class,
             QuotationSignatureInvalidated::class,
             WorkJobChanged::class,
+            PaymentRecorded::class,
         ] as $event) {
             Event::listen($event, DispatchRealtimeNotification::class);
         }

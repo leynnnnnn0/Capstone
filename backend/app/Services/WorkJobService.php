@@ -36,6 +36,8 @@ class WorkJobService
                 'scheduled_time_until' => $data['scheduled_time_until'],
                 'status'               => WorkJobStatus::Pending,
                 'notes'                => $data['notes'] ?? null,
+                'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
+                'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
             ]);
 
             $workJob->workers()->sync($workerIds);
@@ -77,6 +79,8 @@ class WorkJobService
             'scheduled_time_from'  => $appointment->appointment_time_from,
             'scheduled_time_until' => $appointment->appointment_time_until,
             'worker_ids'           => $appointment->workers->pluck('id')->toArray(),
+            'is_down_payment_required' => false,
+            'down_payment_percentage' => 20,
         ], $actor);
     }
 
@@ -155,6 +159,8 @@ class WorkJobService
             'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',
             'quotation.quotation_items.after_images',
+            'payments.payer',
+            'payments.creator',
             'remarks.user',
         ];
     }

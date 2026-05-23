@@ -34,6 +34,8 @@ export function emptyWorkJobForm(): AdminWorkJobForm {
     scheduled_time_from: "09:00",
     scheduled_time_until: "11:00",
     worker_ids: [],
+    is_down_payment_required: false,
+    down_payment_percentage: 20,
     notes: "",
   };
 }
@@ -56,6 +58,8 @@ export function workJobFormFromAppointment(appointment: AdminAppointment): Admin
     scheduled_time_from: appointment.appointment_time_from ?? "09:00",
     scheduled_time_until: appointment.appointment_time_until ?? "11:00",
     worker_ids: appointment.workers.map((worker) => worker.id),
+    is_down_payment_required: false,
+    down_payment_percentage: 20,
     notes: appointment.additional_notes ?? "",
   };
 }

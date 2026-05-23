@@ -23,6 +23,7 @@ import {
   cartItemToPayload,
   computeItemTotal,
   formatCurrency,
+  measurementWidth,
   quoteTotal,
   variantLabel,
 } from "@/features/quotes/quote-utils";
@@ -282,6 +283,13 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
             <p className="text-[13px] font-bold text-slate-900">{item.product.name}</p>
             {item.size_mode === "standard" && item.variant ? (
               <p className="text-[11px] font-semibold text-primary">{variantLabel(item.variant)}</p>
+            ) : item.source === "ar" ? (
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold text-primary">AR measured item</p>
+                <p className="text-[11px] text-slate-400">
+                  {formatMeasurementSummary(item)}
+                </p>
+              </div>
             ) : item.width ? (
               <p className="text-[11px] text-slate-400">
                 {item.product.unit === "sqm" ? `${item.width}m x ${item.height}m` : `${item.width}m`}
@@ -304,6 +312,20 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
       </div>
     </div>
   );
+}
+
+function formatMeasurementSummary(item: QuoteCartItem) {
+  const segments = item.measurement_segments?.filter((segment) => segment > 0) ?? [];
+  const width = measurementWidth(item);
+  const height = Number(item.height || item.measurement_height || 0);
+
+  if (segments.length > 1) {
+    return `${segments.map((segment) => `${segment}m`).join(" + ")} x ${height}m`;
+  }
+
+  if (item.product.unit === "sqm") return `${width}m x ${height}m`;
+  if (item.product.unit === "meter") return `${width}m`;
+  return height > 0 ? `${width}m x ${height}m` : `${width}m`;
 }
 
 function FormField({

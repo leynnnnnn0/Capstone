@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Quotations;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quotation;
+use App\Services\Pdf\BrowsershotConfigurator;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class QuotationPdfController extends Controller
@@ -33,9 +34,7 @@ class QuotationPdfController extends Controller
         ])
             ->format('a4')
             ->margins(16, 16, 16, 16)
-            ->withBrowsershot(fn ($browsershot) => $browsershot
-                ->setNodeModulePath(base_path('node_modules'))
-                ->noSandbox())
+            ->withBrowsershot(fn ($browsershot) => app(BrowsershotConfigurator::class)->configure($browsershot))
             ->download("quotation-{$quotation->id}.pdf");
     }
 }

@@ -16,6 +16,107 @@ export type CustomerWorker = {
   full_name: string;
 };
 
+export type CustomerPaymentType =
+  | "down_payment"
+  | "final_payment"
+  | "full_payment"
+  | "additional_charge";
+
+export type CustomerPaymentMethod =
+  | "paypal"
+  | "cash"
+  | "bank_transfer"
+  | "other";
+
+export type CustomerPaymentStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "cancelled"
+  | "refunded";
+
+export type CustomerPayment = {
+  id: number;
+  payment_number: string | null;
+  work_job_id: number;
+  quotation_id: number | null;
+  type: CustomerPaymentType;
+  type_label: string;
+  method: CustomerPaymentMethod;
+  method_label: string;
+  status: CustomerPaymentStatus;
+  status_label: string;
+  amount: number;
+  currency: string;
+  provider: string | null;
+  provider_order_id: string | null;
+  provider_capture_id: string | null;
+  provider_payer_email: string | null;
+  paid_at: string | null;
+  remarks: string | null;
+  created_at: string;
+  payer?: CustomerWorker | null;
+  creator?: CustomerWorker | null;
+};
+
+export type CustomerWorkJobChargeType =
+  | "service_fee"
+  | "extra_material"
+  | "extra_labor"
+  | "delivery"
+  | "adjustment"
+  | "discount"
+  | "other";
+
+export type CustomerWorkJobChargeStatus =
+  | "pending_approval"
+  | "approved"
+  | "waived"
+  | "cancelled";
+
+export type CustomerWorkJobCharge = {
+  id: number;
+  charge_number: string | null;
+  work_job_id: number;
+  title: string;
+  description: string | null;
+  type: CustomerWorkJobChargeType;
+  type_label: string;
+  status: CustomerWorkJobChargeStatus;
+  status_label: string;
+  amount: number;
+  payable_amount: number;
+  currency: string;
+  requires_customer_approval: boolean;
+  approved_at: string | null;
+  customer_approved_at: string | null;
+  created_at: string;
+  creator?: CustomerWorker | null;
+  approver?: CustomerWorker | null;
+};
+
+export type WorkJobPaymentSummary = {
+  currency: string;
+  quotation_total: number;
+  base_quotation_total?: number;
+  approved_charges_total?: number;
+  discount_total?: number;
+  pending_charges_total?: number;
+  payable_total?: number;
+  paid_amount: number;
+  remaining_amount: number;
+  is_fully_paid: boolean;
+  down_payment_required: boolean;
+  down_payment_percentage: number;
+  down_payment_amount: number;
+  down_payment_remaining_amount: number;
+  final_payment_amount: number;
+  additional_charge_amount?: number;
+  next_due_type: CustomerPaymentType | null;
+  next_due_amount: number;
+  can_accept_payment: boolean;
+};
+
 export type CustomerQuotationOption = {
   id: number;
   product_option_group_id: number;
@@ -131,10 +232,15 @@ export type CustomerWorkJob = {
   status: CustomerStatus;
   status_label: string;
   notes: string | null;
+  is_down_payment_required: boolean;
+  down_payment_percentage: number;
+  payment_summary: WorkJobPaymentSummary;
   created_at: string;
   workers: CustomerWorker[];
   appointment?: CustomerAppointment | null;
   quotation?: CustomerQuotation | null;
+  payments: CustomerPayment[];
+  charges?: CustomerWorkJobCharge[];
   remarks: CustomerRemark[];
 };
 

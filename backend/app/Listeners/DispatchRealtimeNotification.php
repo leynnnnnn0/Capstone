@@ -8,6 +8,7 @@ use App\Events\AppointmentConfirmed;
 use App\Events\AppointmentRescheduled;
 use App\Events\AppointmentStatusChanged;
 use App\Events\AppointmentUpdated;
+use App\Events\PaymentRecorded;
 use App\Events\QuotationChanged;
 use App\Events\QuotationSigned;
 use App\Events\QuotationSignatureInvalidated;
@@ -62,6 +63,12 @@ class DispatchRealtimeNotification
             $event instanceof WorkJobChanged => $this->realtime->workJobChanged(
                 $event->workJob,
                 $event->action,
+                $event->message,
+                $event->actor
+            ),
+            $event instanceof PaymentRecorded => $this->realtime->paymentRecorded(
+                $event->payment,
+                $event->workJob,
                 $event->message,
                 $event->actor
             ),

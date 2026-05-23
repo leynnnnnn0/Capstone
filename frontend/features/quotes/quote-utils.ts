@@ -74,7 +74,7 @@ export function computeItemTotal(item: QuoteDraft | QuoteCartItem) {
   }
 
   const pricePerUnit = Number(item.product.price_per_unit);
-  const width = parseNumber(item.width);
+  const width = measurementWidth(item);
   const height = parseNumber(item.height);
   const measure =
     item.product.unit === "sqm" ? width * height : item.product.unit === "meter" ? width : 1;
@@ -93,16 +93,37 @@ export function cartItemToPayload(item: QuoteCartItem): QuoteItemPayload {
     product_id: item.product.id,
     name: item.product.name,
     description: item.product.description,
-    width: parseNumber(item.width) || null,
+    width: measurementWidth(item) || null,
     height: parseNumber(item.height) || null,
     thickness: parseNumber(item.thickness) || null,
     pieces: item.pieces,
     amount_per_piece: amountPerPiece,
     options_amount: computeOptionsAmount(item.selected_options),
     total_amount: amountPerPiece * item.pieces,
-    notes: "",
+    notes: arMeasurementNote(item),
     selected_options: item.selected_options,
   };
+}
+
+export function measurementWidth(item: Pick<QuoteCartItem, "measurement_segments" | "width"> | QuoteDraft) {
+  if ("measurement_segments" in item && item.measurement_segments?.length) {
+    return item.measurement_segments.reduce((sum, segment) => sum + parseNumber(segment), 0);
+  }
+
+  return parseNumber(item.width);
+}
+
+export function arMeasurementNote(item: QuoteCartItem) {
+  if (item.source !== "ar") return "";
+
+  const segments = item.measurement_segments?.filter((segment) => segment > 0) ?? [];
+  const height = parseNumber(item.height);
+  const segmentText = segments.length
+    ? `Segments: ${segments.map((segment) => `${segment}m`).join(" + ")}.`
+    : "";
+  const heightText = height > 0 ? `Height: ${height}m.` : "";
+
+  return ["AR measurement estimate.", segmentText, heightText].filter(Boolean).join(" ");
 }
 
 export function quoteTotal(items: QuoteCartItem[]) {

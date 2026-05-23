@@ -47,6 +47,10 @@ class StoreWorkJobRequest extends FormRequest
 
             // ── Notes ─────────────────────────────────────────
             'notes' => ['nullable', 'string', 'max:2000'],
+
+            // ── Payment Terms ─────────────────────────────────
+            'is_down_payment_required' => ['sometimes', 'boolean'],
+            'down_payment_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
         ];
     }
 

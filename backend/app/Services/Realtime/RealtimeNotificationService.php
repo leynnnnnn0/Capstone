@@ -5,6 +5,7 @@ namespace App\Services\Realtime;
 use App\Events\RecordsChanged;
 use App\Events\SystemNotificationCreated;
 use App\Models\Appointment;
+use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Models\WorkJob;
@@ -75,7 +76,7 @@ class RealtimeNotificationService
         ];
 
         $staff = $this->staffUsers('work-jobs.view');
-        $customer = $this->customerUser($workJob->appointment);
+        $customer = $this->customerUserForWorkJob($workJob);
 
         if ($this->shouldNotifyStaff($actor)) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
@@ -135,6 +136,46 @@ class RealtimeNotificationService
             'action' => $action,
             'id' => $quotation->id,
             'appointment_id' => $appointment?->id,
+        ]);
+    }
+
+    public function paymentRecorded(
+        Payment $payment,
+        WorkJob $workJob,
+        string $message,
+        ?User $actor = null
+    ): void {
+        $workJob->loadMissing(['appointment']);
+
+        $payload = [
+            'type' => 'payment',
+            'action' => 'paid',
+            'title' => 'Payment recorded',
+            'message' => $message,
+            'record_id' => $payment->id,
+            'record_number' => $payment->payment_number,
+            'href' => "/dashboard/work-jobs/{$workJob->id}",
+        ];
+
+        $staff = $this->staffUsers('work-jobs.view');
+        $customer = $this->customerUserForWorkJob($workJob);
+
+        if ($this->shouldNotifyStaff($actor)) {
+            $this->notify($this->withoutActor($staff, $actor), $payload);
+        }
+
+        if ($customer && $this->shouldNotifyCustomer($actor)) {
+            $this->notify(collect([$customer]), [
+                ...$payload,
+                'href' => "/account/work-jobs/{$workJob->id}",
+            ]);
+        }
+
+        $this->broadcastChange($this->channels($staff, $customer), [
+            'type' => 'work_job',
+            'action' => 'payment_paid',
+            'id' => $workJob->id,
+            'number' => $workJob->work_job_number,
         ]);
     }
 
@@ -211,6 +252,37 @@ class RealtimeNotificationService
                     $query->{$method}(
                         $this->normalizedPhoneSql('phone_number') . ' = ?',
                         [$this->normalizePhone($appointment->phone_number)]
+                    );
+                }
+            })
+            ->where(function ($query) {
+                $query->where('role', 'customer')
+                    ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'customer'));
+            })
+            ->first();
+    }
+
+    private function customerUserForWorkJob(WorkJob $workJob): ?User
+    {
+        if ($workJob->appointment) {
+            return $this->customerUser($workJob->appointment);
+        }
+
+        if (! $workJob->email && ! $workJob->phone_number) {
+            return null;
+        }
+
+        return User::query()
+            ->where(function ($query) use ($workJob) {
+                if ($workJob->email) {
+                    $query->whereRaw('lower(email) = ?', [strtolower($workJob->email)]);
+                }
+
+                if ($workJob->phone_number) {
+                    $method = $workJob->email ? 'orWhereRaw' : 'whereRaw';
+                    $query->{$method}(
+                        $this->normalizedPhoneSql('phone_number') . ' = ?',
+                        [$this->normalizePhone($workJob->phone_number)]
                     );
                 }
             })

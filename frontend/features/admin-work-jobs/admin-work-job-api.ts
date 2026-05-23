@@ -6,6 +6,11 @@ import type {
   AdminWorkJobForm,
   WorkJobCollection,
 } from "./types";
+import type { CustomerPaymentMethod, CustomerPaymentType } from "@/features/customer/types";
+import type {
+  CustomerWorkJobChargeStatus,
+  CustomerWorkJobChargeType,
+} from "@/features/customer/types";
 
 type ResourceResponse<T> = { data: T };
 type StatusPayload = { remarks?: string };
@@ -56,6 +61,56 @@ export function markWorkJobCompleted(id: number, payload: StatusPayload = {}) {
 
 export function cancelWorkJob(id: number, payload: StatusPayload = {}) {
   return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function recordManualWorkJobPayment(
+  id: number,
+  payload: {
+    type: CustomerPaymentType;
+    method: Exclude<CustomerPaymentMethod, "paypal">;
+    amount: number;
+    paid_at?: string;
+    remarks?: string;
+  },
+) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/payments/manual`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export type WorkJobChargePayload = {
+  title: string;
+  description?: string;
+  type: CustomerWorkJobChargeType;
+  status?: CustomerWorkJobChargeStatus;
+  amount: number;
+  requires_customer_approval?: boolean;
+};
+
+export function createWorkJobCharge(id: number, payload: WorkJobChargePayload) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/charges`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateWorkJobCharge(
+  id: number,
+  chargeId: number,
+  payload: Partial<WorkJobChargePayload>,
+) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/charges/${chargeId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function cancelWorkJobCharge(id: number, chargeId: number, payload: { remarks?: string } = {}) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/charges/${chargeId}/cancel`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

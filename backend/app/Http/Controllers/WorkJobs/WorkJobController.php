@@ -29,7 +29,7 @@ class WorkJobController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
 
         $workJobs = WorkJob::query()
-            ->with(['workers', 'appointment', 'quotation'])
+            ->with(['workers', 'appointment', 'quotation.quotation_items', 'payments', 'charges.creator', 'charges.approver'])
             ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
@@ -99,6 +99,10 @@ class WorkJobController extends Controller
             'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',
             'quotation.quotation_items.after_images',
+            'payments.payer',
+            'payments.creator',
+            'charges.creator',
+            'charges.approver',
             'remarks.user',
         ]);
 

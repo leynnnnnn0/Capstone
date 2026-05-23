@@ -32,10 +32,14 @@ class WorkJob extends Model implements AuditableContract
         'scheduled_time_until',
         'status',
         'notes',
+        'is_down_payment_required',
+        'down_payment_percentage',
     ];
 
     protected $casts = [
         'status' => WorkJobStatus::class,
+        'is_down_payment_required' => 'boolean',
+        'down_payment_percentage' => 'decimal:2',
     ];
 
     protected $appends = ['full_name'];
@@ -84,5 +88,15 @@ class WorkJob extends Model implements AuditableContract
     public function remarks()
     {
         return $this->hasMany(WorkJobRemark::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function charges()
+    {
+        return $this->hasMany(WorkJobCharge::class);
     }
 }

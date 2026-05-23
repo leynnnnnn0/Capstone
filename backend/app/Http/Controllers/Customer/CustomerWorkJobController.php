@@ -25,6 +25,10 @@ class CustomerWorkJobController extends Controller
         'quotation.quotation_items.product.product_images',
         'quotation.quotation_items.before_images',
         'quotation.quotation_items.after_images',
+        'payments.payer',
+        'payments.creator',
+        'charges.creator',
+        'charges.approver',
     ];
 
     public function __construct(private readonly CustomerRecordAccess $recordAccess) {}

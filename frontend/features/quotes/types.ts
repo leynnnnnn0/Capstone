@@ -21,6 +21,9 @@ export type QuoteCartItem = {
   height: string;
   thickness: string;
   pieces: number;
+  source?: "ar";
+  measurement_segments?: number[];
+  measurement_height?: number;
 };
 
 export type QuoteDraft = Omit<QuoteCartItem, "id">;

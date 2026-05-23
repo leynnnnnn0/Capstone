@@ -33,6 +33,14 @@ If the AR app needs to read products from a backend that is not reachable as
 VITE_API_URL=https://your-backend-url.test npm run dev
 ```
 
+If the AR app is served from a different origin than the Next.js frontend, set
+the frontend URL too so the summary can send measured items into the quote
+checkout:
+
+```bash
+VITE_FRONTEND_URL=https://your-frontend-url.test npm run dev
+```
+
 The AR catalogue reads products from `/api/v1/products` and uses each product's
 uploaded `model_3d.file_url`.
 

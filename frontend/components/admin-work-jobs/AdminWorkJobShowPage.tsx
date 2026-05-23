@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
+import AdminWorkJobChargesCard from "@/components/admin-work-jobs/AdminWorkJobChargesCard";
 import AdminWorkJobDetailsCard from "@/components/admin-work-jobs/AdminWorkJobDetailsCard";
 import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader";
+import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobPaymentsCard";
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
@@ -44,6 +46,8 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
         </div>
         <div className="space-y-6">
           <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
+          <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
+          <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
           <AssignedWorkers workers={workJob.workers} />
           <AdminQuotationDetails
             quotation={workJob.quotation ?? null}

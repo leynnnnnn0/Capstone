@@ -15,8 +15,10 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/categories.php';
     require __DIR__ . '/api/v1/customer.php';
     require __DIR__ . '/api/v1/notifications.php';
+    require __DIR__ . '/api/v1/payments.php';
     require __DIR__ . '/api/v1/products.php';
     require __DIR__ . '/api/v1/quotations.php';
+    require __DIR__ . '/api/v1/sales.php';
     require __DIR__ . '/api/v1/tracking.php';
     require __DIR__ . '/api/v1/users.php';
     require __DIR__ . '/api/v1/work_jobs.php';

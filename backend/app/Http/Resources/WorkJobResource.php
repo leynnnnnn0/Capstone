@@ -3,6 +3,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Payments\WorkJobPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,6 +33,9 @@ class WorkJobResource extends JsonResource
             'status'               => $this->status->value,
             'status_label'         => $this->status->label(),
             'notes'                => $this->notes,
+            'is_down_payment_required' => (bool) $this->is_down_payment_required,
+            'down_payment_percentage' => (float) ($this->down_payment_percentage ?? 20),
+            'payment_summary' => app(WorkJobPaymentService::class)->summary($this->resource),
             'created_at'           => $this->created_at,
 
             'workers' => WorkerResource::collection(
@@ -48,6 +52,14 @@ class WorkJobResource extends JsonResource
 
             'remarks' => WorkJobRemarkResource::collection(
                 $this->whenLoaded('remarks')
+            ),
+
+            'payments' => PaymentResource::collection(
+                $this->whenLoaded('payments')
+            ),
+
+            'charges' => WorkJobChargeResource::collection(
+                $this->whenLoaded('charges')
             ),
         ];
     }

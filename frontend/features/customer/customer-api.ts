@@ -3,6 +3,8 @@ import { api } from "@/lib/api";
 import type {
   CustomerAppointment,
   CustomerAppointmentPayload,
+  CustomerPayment,
+  CustomerPaymentType,
   CustomerQuotation,
   CustomerWorkJob,
 } from "./types";
@@ -73,4 +75,41 @@ export function getCustomerWorkJobs(filters: CustomerListFilters = {}) {
 
 export function getCustomerWorkJob(id: string | number) {
   return api<ResourceResponse<CustomerWorkJob>>(`/api/v1/customer/work-jobs/${id}`);
+}
+
+export type CustomerPayPalConfig = {
+  enabled: boolean;
+  client_id: string | null;
+  currency: string;
+  mode: string;
+};
+
+export function getCustomerPayPalConfig() {
+  return api<CustomerPayPalConfig>("/api/v1/customer/payments/paypal/config");
+}
+
+export function createCustomerWorkJobPaypalOrder(
+  workJobId: string | number,
+  payload: { type: CustomerPaymentType },
+) {
+  return api<{ order_id: string; data: CustomerPayment }>(
+    `/api/v1/customer/work-jobs/${workJobId}/payments/paypal/order`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function captureCustomerWorkJobPaypalOrder(
+  workJobId: string | number,
+  payload: { payment_id: number; order_id: string },
+) {
+  return api<ResourceResponse<CustomerWorkJob>>(
+    `/api/v1/customer/work-jobs/${workJobId}/payments/paypal/capture`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }

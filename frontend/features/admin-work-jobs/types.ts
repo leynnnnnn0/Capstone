@@ -32,6 +32,8 @@ export type AdminWorkJobForm = {
   scheduled_time_from: string;
   scheduled_time_until: string;
   worker_ids: number[];
+  is_down_payment_required: boolean;
+  down_payment_percentage: number;
   notes: string;
 };
 

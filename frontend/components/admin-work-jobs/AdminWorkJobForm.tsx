@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BriefcaseBusiness, CalendarDays, FileText, Loader2, Users } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, FileText, Loader2, Percent, Users } from "lucide-react";
 import { z } from "zod";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
@@ -12,6 +12,7 @@ import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect
 import LocationPicker from "@/components/landing/LocationPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -56,6 +57,8 @@ const workJobSchema = z.object({
   scheduled_time_from: z.string().min(1, "Start time is required."),
   scheduled_time_until: z.string().min(1, "End time is required."),
   worker_ids: z.array(z.number()).min(1, "Assign at least one worker."),
+  is_down_payment_required: z.boolean(),
+  down_payment_percentage: z.coerce.number().min(1).max(100),
 }).refine((value) => value.scheduled_time_until > value.scheduled_time_from, {
   path: ["scheduled_time_until"],
   message: "End time must be after start time.",
@@ -106,6 +109,9 @@ export default function AdminWorkJobForm() {
   }, [appointment]);
 
   const quoteTotal = appointment?.quotation?.total ?? 0;
+  const downPaymentAmount = data.is_down_payment_required
+    ? Number(quoteTotal) * (Number(data.down_payment_percentage || 0) / 100)
+    : 0;
 
   function setField<Key extends keyof WorkJobFormValues>(field: Key, value: WorkJobFormValues[Key]) {
     setData((current) => ({ ...current, [field]: value }));
@@ -260,6 +266,44 @@ export default function AdminWorkJobForm() {
               />
             </div>
           </section>
+
+          <section className="rounded-lg border bg-card p-5 shadow-sm">
+            <SectionTitle title="Payment Terms" description="Choose whether the customer must pay a down payment before the job continues." />
+            <div className="mt-4 rounded-lg border bg-muted/30 p-4">
+              <label className="flex items-start gap-3">
+                <Checkbox
+                  checked={data.is_down_payment_required}
+                  onCheckedChange={(checked) => setField("is_down_payment_required", checked === true)}
+                />
+                <span>
+                  <span className="block text-sm font-medium">Require down payment</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    The customer can still pay the full balance, but the remaining balance is blocked until the down payment is complete.
+                  </span>
+                </span>
+              </label>
+              {data.is_down_payment_required && (
+                <div className="mt-4 max-w-xs space-y-1.5">
+                  <Label htmlFor="down_payment_percentage">Down Payment Percentage</Label>
+                  <div className="relative">
+                    <Percent className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="down_payment_percentage"
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={data.down_payment_percentage}
+                      onChange={(event) => setField("down_payment_percentage", Number(event.target.value))}
+                      className="pr-9"
+                    />
+                  </div>
+                  {errors.down_payment_percentage && (
+                    <p className="text-xs font-medium text-destructive">{errors.down_payment_percentage}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         <aside className="h-fit space-y-5">
@@ -280,6 +324,10 @@ export default function AdminWorkJobForm() {
               <SummaryRow label="Time" value={`${data.scheduled_time_from || "-"} - ${data.scheduled_time_until || "-"}`} />
               <SummaryRow label="Workers" value={data.worker_ids.length ? `${data.worker_ids.length} assigned` : "None"} />
               <SummaryRow label="Quote Total" value={`₱${Number(quoteTotal).toLocaleString("en-PH")}`} />
+              <SummaryRow
+                label="Down Payment"
+                value={data.is_down_payment_required ? `₱${downPaymentAmount.toLocaleString("en-PH")}` : "Not required"}
+              />
             </div>
 
             <Button type="submit" className="mt-5 h-11 w-full" disabled={saving}>
