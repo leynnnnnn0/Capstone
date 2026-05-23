@@ -54,10 +54,18 @@ export default function CustomerWorkJobPaymentCard({
 
   const summary = workJob.payment_summary;
   const payableTotal = summary.payable_total ?? summary.quotation_total;
+  const paymentNotRequired = Boolean(summary.payment_not_required);
+  const paymentStatusLabel = paymentNotRequired ? "Covered" : summary.is_fully_paid ? "Paid" : "Open";
+  const paymentDescription = paymentNotRequired
+    ? "This back job is covered by the original work job payment. Only approved extra charges will be collected."
+    : summary.down_payment_required
+      ? `${summary.down_payment_percentage}% down payment is required before installation continues.`
+      : "Pay the balance online, or coordinate cash payment with SOG.";
   const visibleCharges = (workJob.charges ?? []).filter(
     (charge) => charge.requires_customer_approval && charge.status !== "cancelled" && charge.status !== "waived",
   );
   const hasAdjustments = Boolean(
+    paymentNotRequired ||
     (summary.approved_charges_total ?? 0) > 0 ||
       (summary.discount_total ?? 0) > 0 ||
       (summary.pending_charges_total ?? 0) > 0,
@@ -75,16 +83,18 @@ export default function CustomerWorkJobPaymentCard({
             <h2 className="text-sm font-semibold text-slate-950">Payments</h2>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            {summary.down_payment_required
-              ? `${summary.down_payment_percentage}% down payment is required before installation continues.`
-              : "Pay the balance online, or coordinate cash payment with SOG."}
+            {paymentDescription}
           </p>
         </div>
         <Badge
           variant="outline"
-          className={summary.is_fully_paid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : ""}
+          className={
+            summary.is_fully_paid
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : ""
+          }
         >
-          {summary.is_fully_paid ? "Paid" : "Open"}
+          {paymentStatusLabel}
         </Badge>
       </div>
 
@@ -97,9 +107,15 @@ export default function CustomerWorkJobPaymentCard({
       {hasAdjustments && (
         <div className="mt-3 rounded-lg border bg-slate-50 p-3 text-xs text-slate-500">
           <div className="flex justify-between gap-3">
-            <span>Approved quotation</span>
+            <span>{paymentNotRequired ? "Original quotation covered" : "Approved quotation"}</span>
             <span className="font-medium text-slate-900">{formatPeso(summary.base_quotation_total ?? summary.quotation_total)}</span>
           </div>
+          {paymentNotRequired && (summary.source_quotation_total ?? 0) > 0 && (
+            <div className="mt-1 flex justify-between gap-3">
+              <span>Original quoted value</span>
+              <span className="font-medium text-slate-900">{formatPeso(summary.source_quotation_total ?? 0)}</span>
+            </div>
+          )}
           {(summary.approved_charges_total ?? 0) > 0 && (
             <div className="mt-1 flex justify-between gap-3">
               <span>Additional approved charges</span>
@@ -179,7 +195,9 @@ export default function CustomerWorkJobPaymentCard({
       ) : (
         <div className="mt-4 rounded-lg border border-dashed border-slate-200 p-4 text-sm text-slate-500">
           {payableTotal <= 0
-            ? "No approved payable quotation items yet."
+            ? paymentNotRequired
+              ? "This back job is covered by the original payment. New charges will appear here only if SOG approves an extra collection."
+              : "No approved payable quotation items yet."
             : "No remaining balance for this work job."}
         </div>
       )}

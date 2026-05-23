@@ -99,21 +99,33 @@ export type WorkJobPaymentSummary = {
   currency: string;
   quotation_total: number;
   base_quotation_total?: number;
+  source_quotation_total?: number;
+  is_back_job_billing?: boolean;
+  payment_not_required?: boolean;
   approved_charges_total?: number;
   discount_total?: number;
   pending_charges_total?: number;
   payable_total?: number;
   paid_amount: number;
+  pending_amount?: number;
   remaining_amount: number;
+  remaining_after_pending_amount?: number;
   is_fully_paid: boolean;
   down_payment_required: boolean;
   down_payment_percentage: number;
   down_payment_amount: number;
   down_payment_remaining_amount: number;
+  down_payment_satisfied?: boolean;
   final_payment_amount: number;
   additional_charge_amount?: number;
   next_due_type: CustomerPaymentType | null;
   next_due_amount: number;
+  has_pending_online_payment?: boolean;
+  accepted_payment_types?: CustomerPaymentType[];
+  can_pay_down_payment?: boolean;
+  can_pay_final_payment?: boolean;
+  can_pay_full_payment?: boolean;
+  can_pay_additional_charge?: boolean;
   can_accept_payment: boolean;
 };
 
@@ -141,9 +153,9 @@ export type CustomerQuotationItem = {
   status: string | null;
   notes: string | null;
   product?: Product | null;
-  options: CustomerQuotationOption[];
-  before_images: CustomerQuotationItemImage[];
-  after_images: CustomerQuotationItemImage[];
+  options?: CustomerQuotationOption[];
+  before_images?: CustomerQuotationItemImage[];
+  after_images?: CustomerQuotationItemImage[];
 };
 
 export type CustomerQuotationItemImage = {
@@ -211,10 +223,26 @@ export type CustomerAppointment = {
   remarks: CustomerRemark[];
 };
 
+export type CustomerBackJobSummary = {
+  id: number;
+  work_job_number: string;
+  status: CustomerStatus;
+  status_label: string;
+  scheduled_date: string | null;
+  scheduled_time_from: string | null;
+  scheduled_time_until: string | null;
+  full_name: string;
+  back_job_reason: string | null;
+  back_job_reason_label: string | null;
+  back_job_details: string | null;
+};
+
 export type CustomerWorkJob = {
   id: number;
   work_job_number: string;
   appointment_id: number | null;
+  parent_work_job_id: number | null;
+  is_back_job: boolean;
   first_name: string;
   last_name: string;
   full_name: string;
@@ -231,6 +259,10 @@ export type CustomerWorkJob = {
   scheduled_time_until: string | null;
   status: CustomerStatus;
   status_label: string;
+  back_job_reason: string | null;
+  back_job_reason_label: string | null;
+  back_job_reason_other: string | null;
+  back_job_details: string | null;
   notes: string | null;
   is_down_payment_required: boolean;
   down_payment_percentage: number;
@@ -238,6 +270,8 @@ export type CustomerWorkJob = {
   created_at: string;
   workers: CustomerWorker[];
   appointment?: CustomerAppointment | null;
+  parent_work_job?: CustomerBackJobSummary | null;
+  back_jobs?: CustomerBackJobSummary[];
   quotation?: CustomerQuotation | null;
   payments: CustomerPayment[];
   charges?: CustomerWorkJobCharge[];

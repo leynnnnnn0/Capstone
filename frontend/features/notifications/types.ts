@@ -21,6 +21,7 @@ export type RecordsChangedPayload = {
   action: string;
   id?: number;
   appointment_id?: number | null;
+  parent_work_job_id?: number | null;
   number?: string | null;
   occurred_at: string;
 };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CalendarClock, MapPin } from "lucide-react";
 
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { formatCustomerSchedule } from "@/features/customer/customer-utils";
 import type { CustomerWorkJob } from "@/features/customer/types";
 
@@ -18,6 +19,11 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
             {workJob.work_job_number}
           </p>
+          {workJob.is_back_job && (
+            <Badge variant="outline" className="mt-1 border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+              Back Job
+            </Badge>
+          )}
           <h3 className="mt-1 text-base font-semibold text-slate-950">
             {workJob.service_type === "other" ? workJob.service_type_other : workJob.service_type}
           </h3>

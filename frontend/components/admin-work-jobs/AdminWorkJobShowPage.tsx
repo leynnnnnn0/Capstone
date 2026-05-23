@@ -5,16 +5,20 @@ import { useCallback, useEffect, useState } from "react";
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
+import AdminWorkJobBackJobsCard from "@/components/admin-work-jobs/AdminWorkJobBackJobsCard";
 import AdminWorkJobChargesCard from "@/components/admin-work-jobs/AdminWorkJobChargesCard";
 import AdminWorkJobDetailsCard from "@/components/admin-work-jobs/AdminWorkJobDetailsCard";
 import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader";
 import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobPaymentsCard";
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
+import { hasRole } from "@/features/auth/current-user-api";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string }) {
+  const { user } = useCurrentUser();
   const [workJob, setWorkJob] = useState<AdminWorkJob | null>(null);
 
   const reload = useCallback(() => {
@@ -26,7 +30,12 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
   }, [reload]);
 
   useRealtimeRefresh((payload) => {
-    if (payload.id === Number(workJobId)) reload();
+    if (
+      payload.id === Number(workJobId) ||
+      payload.parent_work_job_id === Number(workJobId)
+    ) {
+      reload();
+    }
   }, ["work_job"]);
 
   if (!workJob) {
@@ -35,6 +44,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
 
   const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(workJob.status);
   const quotationCanBeSigned = !["cancelled", "no_show", "completed"].includes(workJob.status);
+  const isWorker = hasRole(user, "worker");
 
   return (
     <div className="space-y-6">
@@ -46,6 +56,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
         </div>
         <div className="space-y-6">
           <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
+          <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />
           <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
           <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
           <AssignedWorkers workers={workJob.workers} />

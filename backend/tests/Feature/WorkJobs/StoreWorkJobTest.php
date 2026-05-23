@@ -49,8 +49,11 @@ it('creates a work job successfully', function () use ($validPayload) {
             ],
         ]);
 
+    $workJob = WorkJob::first();
+
     expect(WorkJob::count())->toBe(1);
-    expect(WorkJob::first()->workers)->toHaveCount(2);
+    expect($workJob->user_id)->not->toBeNull();
+    expect($workJob->workers)->toHaveCount(2);
 });
 
 it('generates work job number automatically', function () use ($validPayload) {
@@ -75,7 +78,9 @@ it('creates work job with pending status by default', function () use ($validPay
 
 it('creates work job from appointment', function () {
     $workers     = User::factory(2)->create(['role' => 'worker']);
+    $customer = User::factory()->create(['role' => 'customer']);
     $appointment = Appointment::factory()->create([
+        'user_id'                => $customer->id,
         'status'                 => AppointmentStatus::Confirmed,
         'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
         'appointment_time_from'  => '09:00',
@@ -90,6 +95,7 @@ it('creates work job from appointment', function () {
 
     $workJob = WorkJob::first();
     expect($workJob->first_name)->toBe($appointment->first_name);
+    expect($workJob->user_id)->toBe($customer->id);
     expect($workJob->workers)->toHaveCount(2);
     expect($appointment->remarks()->where('action', 'work_job_created')->exists())->toBeTrue();
 });
@@ -152,4 +158,28 @@ it('returns 422 when worker does not exist', function () use ($validPayload) {
         ]))
         ->assertStatus(422)
         ->assertJsonValidationErrors(['worker_ids.0']);
+});
+
+it('blocks work jobs when email and phone belong to different customers', function () use ($validPayload) {
+    User::factory()->create([
+        'role' => 'customer',
+        'email' => 'job@example.com',
+        'phone_number' => '+639111111111',
+    ]);
+
+    User::factory()->create([
+        'role' => 'customer',
+        'email' => 'other-job@example.com',
+        'phone_number' => '+639222222222',
+    ]);
+
+    $this->actingAs($this->admin)
+        ->postJson('/api/v1/work-jobs', [
+            ...$validPayload(),
+            'email' => 'job@example.com',
+            'phone_number' => '+639222222222',
+            'worker_ids' => $this->workers->pluck('id')->toArray(),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['contact']);
 });

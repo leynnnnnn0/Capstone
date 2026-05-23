@@ -8,18 +8,21 @@ use App\Models\Appointment;
 use App\Models\CustomerLoginOtp;
 use App\Models\User;
 use App\Models\WorkJob;
+use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Role;
 
 class CustomerOtpService
 {
     private const EXPIRY_MINUTES = 10;
     private const COOLDOWN_SECONDS = 60;
     private const MAX_ATTEMPTS = 5;
+
+    public function __construct(
+        private readonly CustomerAccountResolver $customerAccountResolver
+    ) {}
 
     public function requestCode(string $contact, Request $request): array
     {
@@ -113,47 +116,10 @@ class CustomerOtpService
             ]);
         }
 
-        $user = $this->findUserByIdentity($identity);
-
-        if ($user) {
-            if (! $user->isCustomer()) {
-                throw ValidationException::withMessages([
-                    'contact' => 'Use the staff login for this account.',
-                ]);
-            }
-
-            $user->fill([
-                'first_name' => $user->first_name ?: $identity['first_name'],
-                'last_name' => $user->last_name ?: $identity['last_name'],
-                'email' => $user->email ?: $identity['email'],
-                'phone_number' => $user->phone_number ?: $identity['phone_number'],
-                'email_verified_at' => $user->email_verified_at ?: ($identity['email'] ? now() : null),
-            ])->save();
-            $this->assignCustomerRole($user);
-
-            return $user;
-        }
-
-        $customer = User::create([
-            'username' => 'customer_' . Str::lower(Str::random(10)),
-            'first_name' => $identity['first_name'] ?: 'SOG',
-            'last_name' => $identity['last_name'] ?: 'Customer',
-            'email' => $identity['email'],
-            'phone_number' => $identity['phone_number'],
-            'password' => Str::password(32),
-            'role' => 'customer',
-            'email_verified_at' => $identity['email'] ? now() : null,
-        ]);
-
-        $this->assignCustomerRole($customer);
+        $customer = $this->customerAccountResolver->resolveForBooking($identity);
+        $this->customerAccountResolver->claimRecordsFor($customer, $contact, $contactType);
 
         return $customer;
-    }
-
-    private function assignCustomerRole(User $user): void
-    {
-        Role::findOrCreate('customer', 'web');
-        $user->assignRole('customer');
     }
 
     private function ensureCustomerContact(string $contact, string $contactType): void
@@ -166,7 +132,7 @@ class CustomerOtpService
             ]);
         }
 
-        $user = $this->findUserByIdentity($identity);
+        $user = $this->findExistingUserByIdentity($identity);
 
         if ($user && ! $user->isCustomer()) {
             throw ValidationException::withMessages([
@@ -185,6 +151,7 @@ class CustomerOtpService
         }
 
         return [
+            'user_id' => $record->user_id,
             'first_name' => $record->first_name,
             'last_name' => $record->last_name,
             'email' => $record->email ? strtolower($record->email) : null,
@@ -207,24 +174,30 @@ class CustomerOtpService
             ->first(fn ($record) => $this->normalizePhone($record->phone_number) === $contact);
     }
 
-    private function findUserByIdentity(array $identity): ?User
+    private function findExistingUserByIdentity(array $identity): ?User
     {
-        if ($identity['email']) {
-            $user = User::query()->where('email', $identity['email'])->first();
-
-            if ($user) {
-                return $user;
-            }
+        if (! empty($identity['user_id'])) {
+            return User::query()->find($identity['user_id']);
         }
 
-        if (! $identity['phone_number']) {
-            return null;
+        $emailUser = $identity['email']
+            ? User::query()->whereNotNull('email')->whereRaw('lower(email) = ?', [$identity['email']])->first()
+            : null;
+
+        $phoneUser = $identity['phone_number']
+            ? User::query()
+                ->whereNotNull('phone_number')
+                ->get()
+                ->first(fn (User $user) => $this->normalizePhone($user->phone_number) === $identity['phone_number'])
+            : null;
+
+        if ($emailUser && $phoneUser && (int) $emailUser->id !== (int) $phoneUser->id) {
+            throw ValidationException::withMessages([
+                'contact' => 'This email and phone number belong to different customer accounts. Please verify the contact details.',
+            ]);
         }
 
-        return User::query()
-            ->whereNotNull('phone_number')
-            ->get()
-            ->first(fn (User $user) => $this->normalizePhone($user->phone_number) === $identity['phone_number']);
+        return $emailUser ?: $phoneUser;
     }
 
     private function ensureRequestCooldown(string $contact, string $contactType): void

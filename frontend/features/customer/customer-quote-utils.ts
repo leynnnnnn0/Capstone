@@ -26,7 +26,7 @@ export function customerQuotationToCart(
       {
         id: `quotation-${item.id}`,
         product,
-        selected_options: item.options.map<SelectedQuoteOption>((option) => ({
+        selected_options: (item.options ?? []).map<SelectedQuoteOption>((option) => ({
           product_option_group_id: option.product_option_group_id,
           product_option_id: option.product_option_id,
           group_name: option.group_name,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\WorkJobs\CancelWorkJobController;
 use App\Http\Controllers\WorkJobs\CompleteWorkJobController;
+use App\Http\Controllers\WorkJobs\CreateBackJobController;
 use App\Http\Controllers\WorkJobs\MarkInProgressController;
 use App\Http\Controllers\WorkJobs\RecordWorkJobPaymentController;
 use App\Http\Controllers\WorkJobs\WorkJobChargeController;
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('work-jobs/{workJob}/in-progress', MarkInProgressController::class);
     Route::patch('work-jobs/{workJob}/complete', CompleteWorkJobController::class);
     Route::patch('work-jobs/{workJob}/cancel', CancelWorkJobController::class);
+    Route::post('work-jobs/{workJob}/back-jobs', CreateBackJobController::class);
     Route::post('work-jobs/{workJob}/payments/manual', RecordWorkJobPaymentController::class);
     Route::post('work-jobs/{workJob}/charges', [WorkJobChargeController::class, 'store']);
     Route::patch('work-jobs/{workJob}/charges/{charge}', [WorkJobChargeController::class, 'update']);

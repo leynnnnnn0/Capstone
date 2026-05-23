@@ -59,7 +59,7 @@ it('sends a customer login code by sms', function () {
 });
 
 it('verifies an otp and creates a customer session', function () {
-    Appointment::factory()->create([
+    $appointment = Appointment::factory()->create([
         'first_name' => 'Juan',
         'last_name' => 'Dela Cruz',
         'email' => 'customer@example.com',
@@ -73,7 +73,7 @@ it('verifies an otp and creates a customer session', function () {
         'expires_at' => now()->addMinutes(10),
     ]);
 
-    $this->postJson('/api/customer/verify-otp', [
+    $response = $this->postJson('/api/customer/verify-otp', [
         'contact' => 'customer@example.com',
         'code' => '123456',
     ])
@@ -90,6 +90,7 @@ it('verifies an otp and creates a customer session', function () {
         'role' => 'customer',
     ]);
 
+    expect($appointment->fresh()->user_id)->toBe($response->json('user.id'));
     expect(CustomerLoginOtp::first()->consumed_at)->not->toBeNull();
 });
 
@@ -113,7 +114,7 @@ it('rejects an invalid otp without logging in', function () {
 });
 
 it('reuses an existing customer account when verifying', function () {
-    Appointment::factory()->create([
+    $appointment = Appointment::factory()->create([
         'email' => 'customer@example.com',
         'phone_number' => '+63 912 345 6789',
     ]);
@@ -138,6 +139,7 @@ it('reuses an existing customer account when verifying', function () {
         ->assertJsonPath('user.id', $user->id);
 
     expect(User::where('email', 'customer@example.com')->count())->toBe(1);
+    expect($appointment->fresh()->user_id)->toBe($user->id);
 });
 
 it('does not allow staff accounts to log in through customer otp', function () {
@@ -179,7 +181,7 @@ it('does not send otp when contact has no appointment or work job', function () 
 });
 
 it('resolves email and phone logins to the same customer account from appointment identity', function () {
-    Appointment::factory()->create([
+    $appointment = Appointment::factory()->create([
         'first_name' => 'Maria',
         'last_name' => 'Santos',
         'email' => 'maria@example.com',
@@ -212,12 +214,13 @@ it('resolves email and phone logins to the same customer account from appointmen
 
     expect($phoneLogin->json('user.id'))->toBe($emailLogin->json('user.id'));
     expect(User::where('email', 'maria@example.com')->count())->toBe(1);
+    expect($appointment->fresh()->user_id)->toBe($emailLogin->json('user.id'));
 });
 
 it('can use a work job contact when no appointment exists', function () {
     Queue::fake();
 
-    WorkJob::factory()->create([
+    $workJob = WorkJob::factory()->create([
         'email' => 'worker-customer@example.com',
         'phone_number' => '+63 918 222 3333',
     ]);
@@ -229,4 +232,21 @@ it('can use a work job contact when no appointment exists', function () {
         ->assertJsonPath('data.contact', '+639182223333');
 
     Queue::assertPushed(SendSmsJob::class);
+
+    CustomerLoginOtp::query()
+        ->where('contact', '+639182223333')
+        ->where('contact_type', 'phone')
+        ->latest()
+        ->first()
+        ->update([
+            'code_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+    $response = $this->postJson('/api/customer/verify-otp', [
+        'contact' => '+63 918 222 3333',
+        'code' => '123456',
+    ])->assertOk();
+
+    expect($workJob->fresh()->user_id)->toBe($response->json('user.id'));
 });

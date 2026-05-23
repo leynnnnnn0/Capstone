@@ -156,7 +156,7 @@ export function quotationItemImage(item: CustomerQuotationItem) {
 }
 
 export function quotationItemSubtitle(item: CustomerQuotationItem) {
-  const options = item.options.map((option) => option.option_name).filter(Boolean);
+  const options = (item.options ?? []).map((option) => option.option_name).filter(Boolean);
   const size = item.width && item.height ? `${item.width} x ${item.height}` : null;
 
   return [size, ...options].filter(Boolean).slice(0, 2);

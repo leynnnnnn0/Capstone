@@ -57,7 +57,10 @@ export default function AdminWorkJobPaymentsCard({
   const [error, setError] = useState<string | null>(null);
   const summary = workJob.payment_summary;
   const payableTotal = summary.payable_total ?? summary.quotation_total;
+  const paymentNotRequired = Boolean(summary.payment_not_required);
+  const paymentStatusLabel = paymentNotRequired ? "Covered" : summary.is_fully_paid ? "Paid" : "Open";
   const hasAdjustments = Boolean(
+    paymentNotRequired ||
     (summary.approved_charges_total ?? 0) > 0 ||
       (summary.discount_total ?? 0) > 0 ||
       (summary.pending_charges_total ?? 0) > 0,
@@ -99,14 +102,16 @@ export default function AdminWorkJobPaymentsCard({
             <h2 className="text-sm font-semibold text-foreground">Payments</h2>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Track PayPal, cash, and bank transfer payments for this work job.
+            {paymentNotRequired
+              ? "This back job is covered by the original work job payment. Record only approved extra collections here."
+              : "Track PayPal, cash, and bank transfer payments for this work job."}
           </p>
         </div>
         <Badge
           variant="outline"
           className={summary.is_fully_paid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : ""}
         >
-          {summary.is_fully_paid ? "Paid" : "Open"}
+          {paymentStatusLabel}
         </Badge>
       </div>
 
@@ -119,9 +124,15 @@ export default function AdminWorkJobPaymentsCard({
       {hasAdjustments && (
         <div className="mt-3 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground">
           <div className="flex justify-between gap-3">
-            <span>Approved quotation</span>
+            <span>{paymentNotRequired ? "Original quotation covered" : "Approved quotation"}</span>
             <span className="font-medium text-foreground">{formatPeso(summary.base_quotation_total ?? summary.quotation_total)}</span>
           </div>
+          {paymentNotRequired && (summary.source_quotation_total ?? 0) > 0 && (
+            <div className="mt-1 flex justify-between gap-3">
+              <span>Original quoted value</span>
+              <span className="font-medium text-foreground">{formatPeso(summary.source_quotation_total ?? 0)}</span>
+            </div>
+          )}
           {(summary.approved_charges_total ?? 0) > 0 && (
             <div className="mt-1 flex justify-between gap-3">
               <span>Additional approved charges</span>
@@ -165,7 +176,9 @@ export default function AdminWorkJobPaymentsCard({
       {!canRecord && (
         <p className="mt-2 text-xs text-muted-foreground">
           {payableTotal <= 0
-            ? "No approved payable quotation items yet."
+            ? paymentNotRequired
+              ? "No payment is required for this back job unless an approved extra charge is added."
+              : "No approved payable quotation items yet."
             : summary.remaining_amount <= 0
               ? "This work job is fully paid."
               : "Payments are closed for this work job."}

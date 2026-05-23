@@ -93,6 +93,7 @@ class RealtimeNotificationService
             'type' => 'work_job',
             'action' => $action,
             'id' => $workJob->id,
+            'parent_work_job_id' => $workJob->parent_work_job_id,
             'number' => $workJob->work_job_number,
         ]);
     }

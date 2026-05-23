@@ -17,6 +17,7 @@ it('lists only appointments belonging to the authenticated customer', function (
     ]);
 
     $own = Appointment::factory()->create([
+        'user_id' => $customer->id,
         'email' => 'customer@gmail.com',
         'phone_number' => '+63 912 345 6789',
     ]);
@@ -62,6 +63,7 @@ it('allows customer edits only while appointment is pending', function () {
     ]);
 
     $appointment = Appointment::factory()->create([
+        'user_id' => $customer->id,
         'email' => 'customer@gmail.com',
         'status' => AppointmentStatus::Confirmed,
     ]);
@@ -89,6 +91,7 @@ it('lets customers cancel but not delete appointments', function () {
     ]);
 
     $appointment = Appointment::factory()->create([
+        'user_id' => $customer->id,
         'email' => 'customer@gmail.com',
         'status' => AppointmentStatus::Pending,
     ]);
@@ -112,6 +115,7 @@ it('lists customer work jobs without allowing creation', function () {
     ]);
 
     $workJob = WorkJob::factory()->create([
+        'user_id' => $customer->id,
         'phone_number' => '+63 912 345 6789',
     ]);
 

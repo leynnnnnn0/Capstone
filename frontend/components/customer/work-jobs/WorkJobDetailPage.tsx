@@ -11,6 +11,7 @@ import CustomerLocationCard from "@/components/customer/shared/CustomerLocationC
 import CustomerQuoteImageList from "@/components/customer/shared/CustomerQuoteImageList";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
+import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/CustomerWorkJobBackJobsCard";
 import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/CustomerWorkJobPaymentCard";
 import { Button } from "@/components/ui/button";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
@@ -31,7 +32,12 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
   }, [reload]);
 
   useRealtimeRefresh((payload) => {
-    if (payload.id === Number(workJobId)) reload();
+    if (
+      payload.id === Number(workJobId) ||
+      payload.parent_work_job_id === Number(workJobId)
+    ) {
+      reload();
+    }
   }, ["work_job"]);
 
   if (!workJob) {
@@ -73,6 +79,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <section className="space-y-5">
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
+          <CustomerWorkJobBackJobsCard workJob={workJob} />
           
           <WorkJobInfoCard workJob={workJob} />
 

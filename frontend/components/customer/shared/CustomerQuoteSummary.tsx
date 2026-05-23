@@ -35,8 +35,9 @@ export default function CustomerQuoteSummary({
   const [signOpen, setSignOpen] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
+  const items = quotation?.items ?? [];
 
-  if (!quotation || quotation.items.length === 0) {
+  if (!quotation || items.length === 0) {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="text-sm font-medium text-slate-800">No quote items yet</p>
@@ -50,8 +51,8 @@ export default function CustomerQuoteSummary({
   const totalEstimate = quotation.total || quotation.subtotal - quotation.discount;
   const isSigned = quotation.signature_status === "signed";
   const needsResign = quotation.signature_status === "needs_resign";
-  const visibleItems = showAllItems ? quotation.items : quotation.items.slice(0, 1);
-  const activePhotoItem = quotation.items.find((item) => item.id === photoItemId) ?? null;
+  const visibleItems = showAllItems ? items : items.slice(0, 1);
+  const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -87,7 +88,7 @@ export default function CustomerQuoteSummary({
             </Button>
           )}
           <Badge variant="outline" className="text-xs">
-            {quotation.items.length} item{quotation.items.length === 1 ? "" : "s"}
+            {items.length} item{items.length === 1 ? "" : "s"}
           </Badge>
         </div>
       </div>
@@ -102,7 +103,7 @@ export default function CustomerQuoteSummary({
           />
         ))}
       </div>
-      {quotation.items.length > 1 && (
+      {items.length > 1 && (
         <Button
           type="button"
           variant="outline"
@@ -110,7 +111,7 @@ export default function CustomerQuoteSummary({
           className="mt-3 h-8 w-full text-xs"
           onClick={() => setShowAllItems((value) => !value)}
         >
-          {showAllItems ? "Show Less" : `Show All ${quotation.items.length} Items`}
+          {showAllItems ? "Show Less" : `Show All ${items.length} Items`}
         </Button>
       )}
 
@@ -187,7 +188,10 @@ function ReadonlyQuoteItem({
 }) {
   const optionsTotal = Number(item.options_amount || 0);
   const image = productImage(item.product);
-  const photoCount = item.before_images.length + item.after_images.length;
+  const options = item.options ?? [];
+  const beforeImages = item.before_images ?? [];
+  const afterImages = item.after_images ?? [];
+  const photoCount = beforeImages.length + afterImages.length;
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200">
@@ -231,14 +235,14 @@ function ReadonlyQuoteItem({
         <p className="shrink-0 text-sm font-semibold text-primary">{formatPeso(item.total_amount)}</p>
       </div>
 
-      {item.options.length > 0 && (
+      {options.length > 0 && (
         <div className="border-t border-slate-200 bg-slate-50/70 px-4 py-3">
           <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-slate-500">
             <Layers className="size-4" />
             Material Options
           </div>
           <div className="space-y-1">
-            {item.options.map((option) => (
+            {options.map((option) => (
               <div key={option.id} className="flex items-center justify-between gap-3 text-xs">
                 <span className="text-slate-500">
                   {option.group_name}:{" "}
@@ -310,7 +314,7 @@ function ReadonlyPhotoDialog({
         <div className="space-y-4">
           <ReadonlyImageGroup title="Before photos" images={item.before_images} />
           <ReadonlyImageGroup title="After photos" images={item.after_images} />
-          {item.before_images.length + item.after_images.length === 0 && (
+          {(item.before_images ?? []).length + (item.after_images ?? []).length === 0 && (
             <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
               No photos uploaded yet.
             </div>
@@ -326,15 +330,16 @@ function ReadonlyImageGroup({
   images,
 }: {
   title: string;
-  images: CustomerQuotationItem["before_images"];
+  images?: CustomerQuotationItem["before_images"];
 }) {
-  if (images.length === 0) return null;
+  const safeImages = images ?? [];
+  if (safeImages.length === 0) return null;
 
   return (
     <div className="mb-3 last:mb-0">
       <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">{title}</p>
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {images.map((image) => {
+        {safeImages.map((image) => {
           const src = image.image_url || image.url;
 
           if (!src) return null;

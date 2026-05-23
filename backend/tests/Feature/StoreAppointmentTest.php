@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -31,6 +32,63 @@ it('creates appointment successfully', function () use ($validPayload) {
         'last_name'  => 'dela Cruz',
         'status'     => 'pending',
     ]);
+});
+
+it('creates and links a customer account for public bookings', function () use ($validPayload) {
+    $response = $this->postJson('/api/v1/appointments', [
+        ...$validPayload(),
+        'email' => 'TEST@gmail.com',
+    ])->assertStatus(201);
+
+    $appointment = Appointment::query()->findOrFail($response->json('data.id'));
+
+    expect($appointment->user_id)->not->toBeNull();
+    $this->assertDatabaseHas('users', [
+        'id' => $appointment->user_id,
+        'email' => 'test@gmail.com',
+        'phone_number' => '+639123456789',
+        'role' => 'customer',
+    ]);
+});
+
+it('reuses the same customer account when the email matches but phone changes', function () use ($validPayload) {
+    $first = $this->postJson('/api/v1/appointments', [
+        ...$validPayload(),
+        'email' => 'test@gmail.com',
+        'phone_number' => '+63 912 345 6789',
+    ])->assertStatus(201);
+
+    $firstUserId = Appointment::query()->findOrFail($first->json('data.id'))->user_id;
+
+    $second = $this->postJson('/api/v1/appointments', [
+        ...$validPayload(),
+        'email' => 'TEST@gmail.com',
+        'phone_number' => '+63 917 111 2222',
+    ])->assertStatus(201);
+
+    expect(Appointment::query()->findOrFail($second->json('data.id'))->user_id)->toBe($firstUserId);
+    expect(User::query()->whereRaw('lower(email) = ?', ['test@gmail.com'])->count())->toBe(1);
+});
+
+it('blocks bookings when email and phone belong to different customers', function () use ($validPayload) {
+    User::factory()->create([
+        'role' => 'customer',
+        'email' => 'test@gmail.com',
+        'phone_number' => '+639111111111',
+    ]);
+
+    User::factory()->create([
+        'role' => 'customer',
+        'email' => 'other@gmail.com',
+        'phone_number' => '+639222222222',
+    ]);
+
+    $this->postJson('/api/v1/appointments', [
+        ...$validPayload(),
+        'email' => 'test@gmail.com',
+        'phone_number' => '+639222222222',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors(['contact']);
 });
 
 it('appointment number follows expected format', function () use ($validPayload) {

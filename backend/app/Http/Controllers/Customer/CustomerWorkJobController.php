@@ -17,6 +17,8 @@ class CustomerWorkJobController extends Controller
         'appointment.workers',
         'appointment.workJob',
         'appointment.remarks.user',
+        'parentWorkJob.workers',
+        'backJobs.workers',
         'appointment.quotation.quotation_items.options',
         'appointment.quotation.quotation_items.product.product_images',
         'appointment.quotation.quotation_items.before_images',

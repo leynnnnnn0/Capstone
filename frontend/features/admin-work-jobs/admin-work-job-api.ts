@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import type { AdminWorker } from "@/features/admin-appointments/types";
 import type {
   AdminWorkJob,
+  AdminBackJobForm,
   AdminWorkJobFilters,
   AdminWorkJobForm,
   WorkJobCollection,
@@ -40,6 +41,13 @@ export function fetchAdminWorkJob(id: string | number) {
 
 export function createAdminWorkJob(payload: AdminWorkJobForm) {
   return api<ResourceResponse<AdminWorkJob>>("/api/v1/work-jobs", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createBackJob(id: number, payload: AdminBackJobForm) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/back-jobs`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

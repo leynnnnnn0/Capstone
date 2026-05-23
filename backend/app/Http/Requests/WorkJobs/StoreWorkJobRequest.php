@@ -17,6 +17,7 @@ class StoreWorkJobRequest extends FormRequest
     {
         return [
             // ── Origin ────────────────────────────────────────
+            'user_id'        => ['nullable', 'integer', 'exists:users,id'],
             'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'],
             'quotation_id'   => ['nullable', 'integer', 'exists:quotations,id'],
 

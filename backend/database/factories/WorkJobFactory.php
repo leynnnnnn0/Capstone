@@ -16,6 +16,7 @@ class WorkJobFactory extends Factory
     {
         return [
             'work_job_number'      => 'WJ-' . str_pad($this->faker->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT) . '-' . now()->format('Ymd'),
+            'user_id'              => null,
             'appointment_id'       => null,
             'quotation_id'         => null,
             'first_name'           => $this->faker->firstName(),

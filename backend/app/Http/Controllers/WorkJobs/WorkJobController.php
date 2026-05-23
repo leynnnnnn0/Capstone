@@ -12,6 +12,7 @@ use App\Services\WorkJobService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class WorkJobController extends Controller
@@ -29,7 +30,16 @@ class WorkJobController extends Controller
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
 
         $workJobs = WorkJob::query()
-            ->with(['workers', 'appointment', 'quotation.quotation_items', 'payments', 'charges.creator', 'charges.approver'])
+            ->with([
+                'workers',
+                'appointment',
+                'parentWorkJob',
+                'backJobs',
+                'quotation.quotation_items',
+                'payments',
+                'charges.creator',
+                'charges.approver',
+            ])
             ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
@@ -76,6 +86,8 @@ class WorkJobController extends Controller
                 'message' => 'Work job created successfully.',
                 'data'    => new WorkJobResource($workJob),
             ], 201);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to create work job', [
                 'error' => $e->getMessage(),
@@ -95,6 +107,8 @@ class WorkJobController extends Controller
         $workJob->load([
             'workers',
             'appointment.workJob',
+            'parentWorkJob.workers',
+            'backJobs.workers',
             'quotation.quotation_items.options',
             'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',
@@ -122,6 +136,8 @@ class WorkJobController extends Controller
                 'message' => 'Work job created from appointment successfully.',
                 'data'    => new WorkJobResource($workJob),
             ], 201);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to create work job from appointment', [
                 'appointment_id' => $appointment->id,

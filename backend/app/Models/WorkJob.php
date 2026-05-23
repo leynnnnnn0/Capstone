@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,8 +16,10 @@ class WorkJob extends Model implements AuditableContract
 
     protected $fillable = [
         'work_job_number',
+        'user_id',
         'appointment_id',
         'quotation_id',
+        'parent_work_job_id',
         'first_name',
         'last_name',
         'phone_number',
@@ -31,6 +34,9 @@ class WorkJob extends Model implements AuditableContract
         'scheduled_time_from',
         'scheduled_time_until',
         'status',
+        'back_job_reason',
+        'back_job_reason_other',
+        'back_job_details',
         'notes',
         'is_down_payment_required',
         'down_payment_percentage',
@@ -38,6 +44,7 @@ class WorkJob extends Model implements AuditableContract
 
     protected $casts = [
         'status' => WorkJobStatus::class,
+        'back_job_reason' => WorkJobBackJobReason::class,
         'is_down_payment_required' => 'boolean',
         'down_payment_percentage' => 'decimal:2',
     ];
@@ -75,9 +82,24 @@ class WorkJob extends Model implements AuditableContract
         return $this->belongsTo(Appointment::class);
     }
 
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function quotation()
     {
         return $this->belongsTo(Quotation::class);
+    }
+
+    public function parentWorkJob()
+    {
+        return $this->belongsTo(self::class, 'parent_work_job_id');
+    }
+
+    public function backJobs()
+    {
+        return $this->hasMany(self::class, 'parent_work_job_id');
     }
 
     public function workers()

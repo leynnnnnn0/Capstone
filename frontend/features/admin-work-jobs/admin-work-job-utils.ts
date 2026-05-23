@@ -1,5 +1,5 @@
 import type { AdminAppointment } from "@/features/admin-appointments/types";
-import type { AdminWorkJob, AdminWorkJobForm, AdminWorkJobStatus } from "./types";
+import type { AdminBackJobReason, AdminWorkJob, AdminWorkJobForm, AdminWorkJobStatus } from "./types";
 
 export const adminWorkJobStatusOptions = [
   { value: "all", label: "All statuses" },
@@ -7,6 +7,39 @@ export const adminWorkJobStatusOptions = [
   { value: "in_progress", label: "In Progress" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
+];
+
+export const backJobReasonOptions: { value: AdminBackJobReason; label: string; description: string }[] = [
+  {
+    value: "unfinished_work",
+    label: "Unfinished Work",
+    description: "The crew needs another visit because work could not be finished on the same day.",
+  },
+  {
+    value: "quality_issue",
+    label: "Quality Issue",
+    description: "Something needs correction after inspection, such as alignment, screws, sealant, or finish.",
+  },
+  {
+    value: "missing_parts",
+    label: "Missing Parts",
+    description: "The team needs to return after hardware, glass, aluminum, or accessories become available.",
+  },
+  {
+    value: "warranty_claim",
+    label: "Warranty Claim",
+    description: "A completed job needs service under warranty.",
+  },
+  {
+    value: "customer_request",
+    label: "Customer Request",
+    description: "The customer asked for a return visit or follow-up adjustment.",
+  },
+  {
+    value: "other",
+    label: "Other",
+    description: "Use this for special cases that do not fit the standard reasons.",
+  },
 ];
 
 export const workJobStatusStyle: Record<AdminWorkJobStatus, string> = {
@@ -89,6 +122,15 @@ export function formatWorkJobSchedule(workJob: AdminWorkJob) {
 
 export function workJobStatusLabel(status: string) {
   return status
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+export function backJobReasonLabel(reason?: string | null, fallback?: string | null) {
+  if (fallback) return fallback;
+  if (!reason) return "Back Job";
+
+  return reason
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

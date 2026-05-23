@@ -3,24 +3,34 @@
 
 namespace App\Services;
 
+use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use App\Events\WorkJobChanged;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Models\WorkJob;
+use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class WorkJobService
 {
+    public function __construct(
+        private readonly CustomerAccountResolver $customerAccountResolver
+    ) {}
+
     public function create(array $data, ?User $actor = null): WorkJob
     {
-        $workJob = DB::transaction(function () use ($data, $actor) {
+        $customerId = $this->resolveCustomerId($data, $actor);
+
+        $workJob = DB::transaction(function () use ($data, $actor, $customerId) {
             $workerIds = $data['worker_ids'];
 
             $workJob = WorkJob::create([
                 'appointment_id'       => $data['appointment_id'] ?? null,
                 'quotation_id'         => $data['quotation_id'] ?? null,
+                'user_id'              => $customerId,
                 'first_name'           => $data['first_name'],
                 'last_name'            => $data['last_name'],
                 'phone_number'         => $data['phone_number'],
@@ -82,6 +92,71 @@ class WorkJobService
             'is_down_payment_required' => false,
             'down_payment_percentage' => 20,
         ], $actor);
+    }
+
+    public function createBackJob(WorkJob $source, array $data, User $actor): WorkJob
+    {
+        $this->ensureCanCreateBackJob($source, WorkJobBackJobReason::from($data['back_job_reason']));
+        $customerId = $source->user_id
+            ?: $source->appointment?->user_id
+            ?: $this->customerAccountResolver->resolveForBooking([
+                'first_name' => $source->first_name,
+                'last_name' => $source->last_name,
+                'email' => $source->email,
+                'phone_number' => $source->phone_number,
+            ])->id;
+
+        $backJob = DB::transaction(function () use ($source, $data, $actor, $customerId) {
+            $reason = WorkJobBackJobReason::from($data['back_job_reason']);
+
+            $workJob = WorkJob::create([
+                'appointment_id'       => $source->appointment_id,
+                'quotation_id'         => $source->quotation_id,
+                'parent_work_job_id'   => $source->id,
+                'user_id'              => $customerId,
+                'first_name'           => $source->first_name,
+                'last_name'            => $source->last_name,
+                'phone_number'         => $source->phone_number,
+                'email'                => $source->email,
+                'address'              => $source->address,
+                'address_pinned'       => $source->address_pinned,
+                'address_lat'          => $source->address_lat,
+                'address_lng'          => $source->address_lng,
+                'service_type'         => $source->service_type,
+                'service_type_other'   => $source->service_type_other,
+                'scheduled_date'       => $data['scheduled_date'],
+                'scheduled_time_from'  => $data['scheduled_time_from'],
+                'scheduled_time_until' => $data['scheduled_time_until'],
+                'status'               => WorkJobStatus::Pending,
+                'back_job_reason'      => $reason,
+                'back_job_reason_other' => $data['back_job_reason_other'] ?? null,
+                'back_job_details'     => $data['back_job_details'],
+                'notes'                => $data['notes'] ?? $source->notes,
+                'is_down_payment_required' => false,
+                'down_payment_percentage' => 20,
+            ]);
+
+            $workJob->refresh();
+            $workJob->workers()->sync($data['worker_ids']);
+
+            $source->remarks()->create([
+                'user_id' => $actor->id,
+                'action' => 'back_job_created',
+                'message' => $this->backJobCreatedMessage($workJob, $reason, $data['back_job_details']),
+            ]);
+
+            $workJob->remarks()->create([
+                'user_id' => $actor->id,
+                'action' => 'back_job_created',
+                'message' => "Created as a back job from {$source->work_job_number}.",
+            ]);
+
+            return $workJob->load($this->relations());
+        });
+
+        WorkJobChanged::dispatch($backJob, 'back_job_created', "Back job {$backJob->work_job_number} was scheduled.", $actor);
+
+        return $backJob;
     }
 
     public function markInProgress(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
@@ -150,11 +225,54 @@ class WorkJobService
         }
     }
 
+    private function ensureCanCreateBackJob(WorkJob $source, WorkJobBackJobReason $reason): void
+    {
+        if (! in_array($source->status, [WorkJobStatus::InProgress, WorkJobStatus::Completed], true)) {
+            throw ValidationException::withMessages([
+                'work_job' => 'A back job can only be created from an in-progress or completed work job.',
+            ]);
+        }
+
+        if ($source->status === WorkJobStatus::InProgress && $reason !== WorkJobBackJobReason::UnfinishedWork) {
+            throw ValidationException::withMessages([
+                'back_job_reason' => 'Only unfinished work can create a back job while the original work job is still in progress.',
+            ]);
+        }
+    }
+
+    private function backJobCreatedMessage(WorkJob $backJob, WorkJobBackJobReason $reason, string $details): string
+    {
+        return "Back job {$backJob->work_job_number} scheduled ({$reason->label()}). {$details}";
+    }
+
+    private function resolveCustomerId(array $data, ?User $actor): int
+    {
+        $appointment = null;
+
+        if (! empty($data['appointment_id'])) {
+            $appointment = Appointment::query()->find($data['appointment_id']);
+
+            if ($appointment?->user_id) {
+                return (int) $appointment->user_id;
+            }
+        }
+
+        $customer = $this->customerAccountResolver->resolveForBooking($data, $actor);
+
+        if ($appointment && ! $appointment->user_id) {
+            $appointment->update(['user_id' => $customer->id]);
+        }
+
+        return (int) $customer->id;
+    }
+
     private function relations(): array
     {
         return [
             'workers',
             'appointment.workJob',
+            'parentWorkJob.workers',
+            'backJobs.workers',
             'quotation.quotation_items.options',
             'quotation.quotation_items.product.product_images',
             'quotation.quotation_items.before_images',

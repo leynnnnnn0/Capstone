@@ -10,10 +10,12 @@ use App\Http\Requests\UpdateAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Services\AppointmentService;
+use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class AppointmentController extends Controller
@@ -31,7 +33,8 @@ class AppointmentController extends Controller
     ];
 
     public function __construct(
-        private readonly AppointmentService $appointmentService
+        private readonly AppointmentService $appointmentService,
+        private readonly CustomerAccountResolver $customerAccountResolver
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -86,7 +89,16 @@ class AppointmentController extends Controller
         $this->abortIfWorker($request, 'Workers cannot create appointments.');
 
         try {
-            $appointment = $this->appointmentService->create($request->validated(), $request->user());
+            $payload = $request->validated();
+            $actor = $request->user();
+
+            if (! $actor || $actor->isCustomer() || empty($payload['user_id'])) {
+                $payload['user_id'] = $this->customerAccountResolver
+                    ->resolveForBooking($payload, $actor)
+                    ->id;
+            }
+
+            $appointment = $this->appointmentService->create($payload, $actor);
 
             $appointment->load(self::RELATIONS);
 
@@ -96,6 +108,8 @@ class AppointmentController extends Controller
             ], 201);
         } catch (SlotFullException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to create appointment', [
                 'error'   => $e->getMessage(),

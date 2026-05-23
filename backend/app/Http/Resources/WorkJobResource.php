@@ -14,8 +14,11 @@ class WorkJobResource extends JsonResource
         return [
             'id'                   => $this->id,
             'work_job_number'      => $this->work_job_number,
+            'user_id'              => $this->user_id,
             'appointment_id'       => $this->appointment_id,
             'quotation_id'         => $this->quotation_id,
+            'parent_work_job_id'   => $this->parent_work_job_id,
+            'is_back_job'          => $this->parent_work_job_id !== null,
             'first_name'           => $this->first_name,
             'last_name'            => $this->last_name,
             'full_name'            => $this->full_name,
@@ -32,6 +35,10 @@ class WorkJobResource extends JsonResource
             'scheduled_time_until' => $this->scheduled_time_until,
             'status'               => $this->status->value,
             'status_label'         => $this->status->label(),
+            'back_job_reason'      => $this->back_job_reason?->value,
+            'back_job_reason_label' => $this->back_job_reason?->label(),
+            'back_job_reason_other' => $this->back_job_reason_other,
+            'back_job_details'     => $this->back_job_details,
             'notes'                => $this->notes,
             'is_down_payment_required' => (bool) $this->is_down_payment_required,
             'down_payment_percentage' => (float) ($this->down_payment_percentage ?? 20),
@@ -44,6 +51,16 @@ class WorkJobResource extends JsonResource
 
             'appointment' => new AppointmentResource(
                 $this->whenLoaded('appointment')
+            ),
+
+            'parent_work_job' => $this->whenLoaded(
+                'parentWorkJob',
+                fn () => $this->summaryWorkJob($this->parentWorkJob)
+            ),
+
+            'back_jobs' => $this->whenLoaded(
+                'backJobs',
+                fn () => $this->backJobs->map(fn ($workJob) => $this->summaryWorkJob($workJob))->values()
             ),
 
             'quotation' => new QuotationResource(
@@ -61,6 +78,27 @@ class WorkJobResource extends JsonResource
             'charges' => WorkJobChargeResource::collection(
                 $this->whenLoaded('charges')
             ),
+        ];
+    }
+
+    private function summaryWorkJob($workJob): ?array
+    {
+        if (! $workJob) {
+            return null;
+        }
+
+        return [
+            'id'                   => $workJob->id,
+            'work_job_number'      => $workJob->work_job_number,
+            'status'               => $workJob->status?->value ?? $workJob->status,
+            'status_label'         => method_exists($workJob->status, 'label') ? $workJob->status->label() : $workJob->status,
+            'scheduled_date'       => $workJob->scheduled_date,
+            'scheduled_time_from'  => $workJob->scheduled_time_from,
+            'scheduled_time_until' => $workJob->scheduled_time_until,
+            'full_name'            => trim("{$workJob->first_name} {$workJob->last_name}"),
+            'back_job_reason'      => $workJob->back_job_reason?->value,
+            'back_job_reason_label' => $workJob->back_job_reason?->label(),
+            'back_job_details'     => $workJob->back_job_details,
         ];
     }
 }

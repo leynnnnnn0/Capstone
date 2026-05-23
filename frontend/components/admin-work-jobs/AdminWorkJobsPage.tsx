@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import AdminWorkJobStatusBadge from "@/components/admin-work-jobs/AdminWorkJobStatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -214,7 +215,16 @@ export default function AdminWorkJobsPage() {
 function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
   return (
     <TableRow>
-      <TableCell className="font-medium">{workJob.work_job_number}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex flex-col gap-1">
+          <span>{workJob.work_job_number}</span>
+          {workJob.is_back_job && (
+            <Badge variant="outline" className="w-fit border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+              Back Job
+            </Badge>
+          )}
+        </div>
+      </TableCell>
       <TableCell>{workJob.full_name}</TableCell>
       <TableCell>{workJob.phone_number}</TableCell>
       <TableCell>{formatWorkJobSchedule(workJob)}</TableCell>

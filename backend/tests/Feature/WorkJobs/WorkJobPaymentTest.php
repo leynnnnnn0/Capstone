@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
+use App\Models\WorkJobCharge;
 use App\Models\WorkJob;
 use App\Services\Payments\PayPalClient;
 use App\Services\Payments\WorkJobPaymentService;
@@ -226,8 +227,122 @@ it('uses additional charge payments for approved extras added after full payment
         ->amount->toBe('500.00');
 });
 
-it('cancels stale pending paypal checkout attempts for the same work job and payment type', function () {
+it('does not re-bill the original quotation on back jobs', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $source = payableWorkJob(total: 7000);
+    $backJob = WorkJob::factory()->create([
+        'parent_work_job_id' => $source->id,
+        'quotation_id' => $source->quotation_id,
+        'is_down_payment_required' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->getJson("/api/v1/work-jobs/{$backJob->id}")
+        ->assertOk()
+        ->assertJsonPath('data.payment_summary.quotation_total', 0)
+        ->assertJsonPath('data.payment_summary.source_quotation_total', 7000)
+        ->assertJsonPath('data.payment_summary.payable_total', 0)
+        ->assertJsonPath('data.payment_summary.remaining_amount', 0)
+        ->assertJsonPath('data.payment_summary.payment_not_required', true)
+        ->assertJsonPath('data.payment_summary.can_accept_payment', false);
+
+    $this->actingAs($admin)
+        ->postJson("/api/v1/work-jobs/{$backJob->id}/payments/manual", [
+            'type' => PaymentType::FullPayment->value,
+            'method' => PaymentMethod::Cash->value,
+            'amount' => 7000,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['payment']);
+});
+
+it('collects only approved extra charges on back jobs', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $source = payableWorkJob(total: 7000);
+    $backJob = WorkJob::factory()->create([
+        'parent_work_job_id' => $source->id,
+        'quotation_id' => $source->quotation_id,
+        'is_down_payment_required' => false,
+    ]);
+
+    WorkJobCharge::create([
+        'work_job_id' => $backJob->id,
+        'created_by' => $admin->id,
+        'approved_by' => $admin->id,
+        'title' => 'Out-of-scope replacement hardware',
+        'type' => WorkJobChargeType::ExtraMaterial,
+        'status' => WorkJobChargeStatus::Approved,
+        'amount' => 500,
+        'currency' => 'PHP',
+        'requires_customer_approval' => false,
+        'approved_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->getJson("/api/v1/work-jobs/{$backJob->id}")
+        ->assertOk()
+        ->assertJsonPath('data.payment_summary.quotation_total', 0)
+        ->assertJsonPath('data.payment_summary.source_quotation_total', 7000)
+        ->assertJsonPath('data.payment_summary.approved_charges_total', 500)
+        ->assertJsonPath('data.payment_summary.payable_total', 500)
+        ->assertJsonPath('data.payment_summary.remaining_amount', 500)
+        ->assertJsonPath('data.payment_summary.next_due_type', PaymentType::AdditionalCharge->value)
+        ->assertJsonPath('data.payment_summary.additional_charge_amount', 500);
+
+    $this->actingAs($admin)
+        ->postJson("/api/v1/work-jobs/{$backJob->id}/payments/manual", [
+            'type' => PaymentType::FullPayment->value,
+            'method' => PaymentMethod::Cash->value,
+            'amount' => 500,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['type']);
+
+    $this->actingAs($admin)
+        ->postJson("/api/v1/work-jobs/{$backJob->id}/payments/manual", [
+            'type' => PaymentType::AdditionalCharge->value,
+            'method' => PaymentMethod::Cash->value,
+            'amount' => 500,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.payment_summary.is_fully_paid', true);
+});
+
+it('reuses a fresh pending paypal checkout for the same work job payment type and amount', function () {
     $customer = User::factory()->create(['role' => 'customer']);
+    $workJob = payableWorkJob(total: 7000);
+
+    $payPal = Mockery::mock(PayPalClient::class);
+    $payPal->shouldReceive('configured')->twice()->andReturnTrue();
+    $payPal->shouldReceive('currency')->once()->andReturn('PHP');
+    $payPal->shouldReceive('createOrder')->once()->andReturn([
+        'id' => 'ORDER-ONE',
+        'status' => 'PAYER_ACTION_REQUIRED',
+    ]);
+
+    $service = new WorkJobPaymentService($payPal);
+
+    $firstAttempt = $service->createPayPalOrder($workJob, PaymentType::FullPayment, $customer);
+    $secondAttempt = $service->createPayPalOrder($workJob, PaymentType::FullPayment, $customer);
+    $first = $firstAttempt['payment'];
+    $second = $secondAttempt['payment'];
+
+    expect($second->id)->toBe($first->id);
+    expect($secondAttempt['order']['id'])->toBe('ORDER-ONE');
+    expect($first->fresh()->status)->toBe(PaymentStatus::Pending);
+    expect($second->fresh()->status)->toBe(PaymentStatus::Pending);
+    expect($second->fresh()->provider_order_id)->toBe('ORDER-ONE');
+    expect(Payment::query()
+        ->where('work_job_id', $workJob->id)
+        ->where('type', PaymentType::FullPayment->value)
+        ->where('method', PaymentMethod::PayPal->value)
+        ->where('status', PaymentStatus::Pending->value)
+        ->count())->toBe(1);
+});
+
+it('cancels stale pending paypal checkout attempts when a new amount is due', function () {
+    $customer = User::factory()->create(['role' => 'customer']);
+    $admin = User::factory()->create(['role' => 'admin']);
     $workJob = payableWorkJob(total: 7000);
 
     $payPal = Mockery::mock(PayPalClient::class);
@@ -241,16 +356,51 @@ it('cancels stale pending paypal checkout attempts for the same work job and pay
     $service = new WorkJobPaymentService($payPal);
 
     $first = $service->createPayPalOrder($workJob, PaymentType::FullPayment, $customer)['payment'];
+
+    WorkJobCharge::create([
+        'work_job_id' => $workJob->id,
+        'created_by' => $admin->id,
+        'approved_by' => $admin->id,
+        'title' => 'Additional sealant',
+        'type' => WorkJobChargeType::ServiceFee,
+        'status' => WorkJobChargeStatus::Approved,
+        'amount' => 500,
+        'currency' => 'PHP',
+        'approved_at' => now(),
+    ]);
+
     $second = $service->createPayPalOrder($workJob, PaymentType::FullPayment, $customer)['payment'];
 
     expect($first->fresh()->status)->toBe(PaymentStatus::Cancelled);
     expect($first->fresh()->remarks)->toBe('Superseded by a newer PayPal checkout session.');
     expect($second->fresh()->status)->toBe(PaymentStatus::Pending);
     expect($second->fresh()->provider_order_id)->toBe('ORDER-TWO');
-    expect(Payment::query()
-        ->where('work_job_id', $workJob->id)
-        ->where('type', PaymentType::FullPayment->value)
-        ->where('method', PaymentMethod::PayPal->value)
-        ->where('status', PaymentStatus::Pending->value)
-        ->count())->toBe(1);
+    expect($second->fresh()->amount)->toBe('7500.00');
+});
+
+it('cancels pending paypal checkout attempts when an offline payment is recorded', function () {
+    $customer = User::factory()->create(['role' => 'customer']);
+    $admin = User::factory()->create(['role' => 'admin']);
+    $workJob = payableWorkJob(total: 7000);
+
+    $payPal = Mockery::mock(PayPalClient::class);
+    $payPal->shouldReceive('configured')->once()->andReturnTrue();
+    $payPal->shouldReceive('currency')->once()->andReturn('PHP');
+    $payPal->shouldReceive('createOrder')->once()->andReturn(['id' => 'ORDER-ONE']);
+
+    $service = new WorkJobPaymentService($payPal);
+    $pending = $service->createPayPalOrder($workJob, PaymentType::FullPayment, $customer)['payment'];
+
+    $this->actingAs($admin)
+        ->postJson("/api/v1/work-jobs/{$workJob->id}/payments/manual", [
+            'type' => PaymentType::FullPayment->value,
+            'method' => PaymentMethod::Cash->value,
+            'amount' => 7000,
+            'remarks' => 'Paid at office.',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.payment_summary.is_fully_paid', true);
+
+    expect($pending->fresh()->status)->toBe(PaymentStatus::Cancelled);
+    expect($pending->fresh()->remarks)->toBe('Cancelled because an offline payment changed the payable balance.');
 });

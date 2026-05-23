@@ -15,10 +15,11 @@ export default function CustomerQuoteImageList({
   quotation?: CustomerQuotation | null;
 }) {
   const [showAllItems, setShowAllItems] = useState(false);
+  const items = quotation?.items ?? [];
 
-  if (!quotation || quotation.items.length === 0) return null;
+  if (!quotation || items.length === 0) return null;
 
-  const visibleItems = showAllItems ? quotation.items : quotation.items.slice(0, 1);
+  const visibleItems = showAllItems ? items : items.slice(0, 1);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -30,7 +31,7 @@ export default function CustomerQuoteImageList({
           <QuoteImageItem key={item.id} item={item} />
         ))}
       </div>
-      {quotation.items.length > 1 && (
+      {items.length > 1 && (
         <Button
           type="button"
           variant="outline"
@@ -38,7 +39,7 @@ export default function CustomerQuoteImageList({
           className="mt-3 h-8 w-full text-xs"
           onClick={() => setShowAllItems((value) => !value)}
         >
-          {showAllItems ? "Show Less" : `Show All ${quotation.items.length} Items`}
+          {showAllItems ? "Show Less" : `Show All ${items.length} Items`}
         </Button>
       )}
     </section>
@@ -47,7 +48,9 @@ export default function CustomerQuoteImageList({
 
 function QuoteImageItem({ item }: { item: CustomerQuotationItem }) {
   const image = productImage(item.product);
-  const photoCount = item.before_images.length + item.after_images.length;
+  const beforeImages = item.before_images ?? [];
+  const afterImages = item.after_images ?? [];
+  const photoCount = beforeImages.length + afterImages.length;
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white">
