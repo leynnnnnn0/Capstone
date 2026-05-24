@@ -2,9 +2,20 @@
 
 import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Edit2, Plus, RefreshCw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -73,6 +84,9 @@ export default function AdminUsersPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const users = response?.data ?? [];
   const permissionOptions = useMemo(
@@ -138,14 +152,28 @@ export default function AdminUsersPage() {
       return;
     }
 
+    setConfirmSaveOpen(true);
+  }
+
+  async function saveUser() {
+    const parsed = adminUserSchema.safeParse(form);
+    if (!parsed.success) {
+      setConfirmSaveOpen(false);
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as Record<string, string>);
+      return;
+    }
+
     setSaving(true);
     try {
       if (editing) await updateAdminUser(editing.id, parsed.data as AdminUserForm);
       else await createAdminUser(parsed.data as AdminUserForm);
 
+      toast.success(editing ? "User updated successfully." : "User created successfully.");
+      setConfirmSaveOpen(false);
       setDialogOpen(false);
       setResponse(await fetchAdminUsers({ search, role }));
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save user.");
       if (error instanceof ApiError && error.errors) {
         setErrors(flattenErrors(error.errors));
       } else {
@@ -156,11 +184,20 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function remove(user: AdminUser) {
-    if (!window.confirm(`Delete ${user.full_name}?`)) return;
+  async function remove() {
+    if (!deleteTarget) return;
 
-    await deleteAdminUser(user.id);
-    setResponse(await fetchAdminUsers({ search, role }));
+    setDeleting(true);
+    try {
+      await deleteAdminUser(deleteTarget.id);
+      toast.success("User deleted successfully.");
+      setDeleteTarget(null);
+      setResponse(await fetchAdminUsers({ search, role }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete user.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -228,7 +265,7 @@ export default function AdminUsersPage() {
                     <Button type="button" variant="ghost" size="icon-sm" onClick={() => openEdit(user)}>
                       <Edit2 className="size-4" />
                     </Button>
-                    <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={() => remove(user)}>
+                    <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleteTarget(user)}>
                       <Trash2 className="size-4" />
                     </Button>
                   </div>
@@ -321,6 +358,57 @@ export default function AdminUsersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{editing ? "Save user changes?" : "Create this user?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {editing
+                ? "This will update the user account, role, and permission overrides."
+                : "This will create a new user account with the selected role and permissions."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Review</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void saveUser();
+              }}
+            >
+              {saving ? "Saving..." : editing ? "Save Changes" : "Create User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `${deleteTarget.full_name} will be removed from the system. This action cannot be undone.`
+                : "This user will be removed from the system."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void remove();
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -3,6 +3,11 @@ import type { User } from "@/types/user";
 
 type ResourceResponse<T> = { data: T };
 
+export type PasswordConfirmationStatus = {
+  confirmed: boolean;
+  expires_in_minutes?: number;
+};
+
 export type ProfilePayload = {
   username: string;
   first_name: string;
@@ -33,6 +38,10 @@ export function updatePassword(payload: PasswordPayload) {
 
 export function fetchProfileUser() {
   return api<ResourceResponse<User>>("/api/user");
+}
+
+export function fetchPasswordConfirmationStatus() {
+  return api<PasswordConfirmationStatus>("/api/user/confirmed-password-status");
 }
 
 export function confirmPassword(password: string) {

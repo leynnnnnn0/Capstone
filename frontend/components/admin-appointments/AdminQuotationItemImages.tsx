@@ -6,12 +6,23 @@ import { Camera, ImageIcon, Loader2, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   deleteQuotationItemImage,
   uploadQuotationItemImages,
 } from "@/features/admin-appointments/admin-appointment-api";
 import type { CustomerQuotationItemImage } from "@/features/customer/types";
 import { normalizeAssetUrl } from "@/features/products/product-utils";
 import { ApiError } from "@/lib/api";
+import { toast } from "sonner";
 
 type ImageType = "before" | "after";
 
@@ -73,6 +84,8 @@ function UploadPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<CustomerQuotationItemImage | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
   const label = type === "before" ? "Before" : "After";
@@ -107,16 +120,29 @@ function UploadPanel({
       onSavedChange([...(saved ?? []), ...(response.data ?? [])]);
       setPending([]);
       setCaption("");
+      toast.success(`${label} photo${pending.length === 1 ? "" : "s"} uploaded.`);
     } catch (uploadError) {
       setError(apiErrorMessage(uploadError));
+      toast.error(`Unable to upload ${label.toLowerCase()} photos.`);
     } finally {
       setUploading(false);
     }
   }
 
-  async function remove(id: number) {
-    await deleteQuotationItemImage(id);
-    onSavedChange(saved.filter((image) => image.id !== id));
+  async function remove() {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
+    try {
+      await deleteQuotationItemImage(deleteTarget.id);
+      onSavedChange(saved.filter((image) => image.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      toast.success("Photo deleted.");
+    } catch {
+      toast.error("Unable to delete photo.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -127,7 +153,7 @@ function UploadPanel({
       </div>
       {saved.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
-          {saved.map((image) => <SavedThumb key={image.id} image={image} onDelete={remove} />)}
+          {saved.map((image) => <SavedThumb key={image.id} image={image} onDelete={setDeleteTarget} />)}
         </div>
       )}
       <div
@@ -160,6 +186,22 @@ function UploadPanel({
         <Camera className="size-4" />
         Take / Add Photo
       </Button>
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete photo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this {label.toLowerCase()} photo from the quotation item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={remove}>
+              {deleting ? "Deleting..." : "Delete Photo"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -175,12 +217,12 @@ function apiErrorMessage(error: unknown) {
   return "Unable to upload images. Please try again.";
 }
 
-function SavedThumb({ image, onDelete }: { image: CustomerQuotationItemImage; onDelete: (id: number) => void }) {
+function SavedThumb({ image, onDelete }: { image: CustomerQuotationItemImage; onDelete: (image: CustomerQuotationItemImage) => void }) {
   const src = normalizeAssetUrl(image.image_url ?? image.url ?? "");
   return (
     <div className="group relative aspect-square overflow-hidden rounded-lg border bg-white">
       {src && <Image src={src} alt={image.caption ?? "Quotation image"} fill unoptimized className="object-cover" />}
-      <button type="button" onClick={() => onDelete(image.id)} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
+      <button type="button" onClick={() => onDelete(image)} className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100">
         <Trash2 className="size-5 text-white" />
       </button>
     </div>

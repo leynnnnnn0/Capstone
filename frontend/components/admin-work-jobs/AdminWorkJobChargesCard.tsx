@@ -10,9 +10,20 @@ import {
   ReceiptText,
   Tags,
 } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import NumericInput from "@/components/form/NumericInput";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -98,6 +109,7 @@ export default function AdminWorkJobChargesCard({
   const [open, setOpen] = useState(false);
   const [editingCharge, setEditingCharge] = useState<CustomerWorkJobCharge | null>(null);
   const [form, setForm] = useState<ChargeForm>(() => defaultForm());
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<ChargeFormErrors>({});
@@ -118,6 +130,7 @@ export default function AdminWorkJobChargesCard({
     setForm(defaultForm());
     setError(null);
     setErrors({});
+    setConfirmOpen(false);
     setOpen(true);
   }
 
@@ -126,6 +139,7 @@ export default function AdminWorkJobChargesCard({
     setForm(formFromCharge(charge));
     setError(null);
     setErrors({});
+    setConfirmOpen(false);
     setOpen(true);
   }
 
@@ -133,6 +147,18 @@ export default function AdminWorkJobChargesCard({
     const parsed = chargeSchema.safeParse(form);
 
     if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof ChargeForm | "form">(parsed.error.issues));
+      return;
+    }
+
+    setConfirmOpen(true);
+  }
+
+  async function saveCharge() {
+    const parsed = chargeSchema.safeParse(form);
+
+    if (!parsed.success) {
+      setConfirmOpen(false);
       setErrors(zodIssuesToFieldErrors<keyof ChargeForm | "form">(parsed.error.issues));
       return;
     }
@@ -155,9 +181,14 @@ export default function AdminWorkJobChargesCard({
         : await createWorkJobCharge(workJob.id, payload);
 
       onUpdated(response.data);
+      toast.success(editingCharge ? "Charge updated successfully." : "Charge added successfully.");
+      setConfirmOpen(false);
       setOpen(false);
     } catch (error) {
-      setError(errorMessage(error));
+      const message = errorMessage(error);
+      setError(message);
+      toast.error(message);
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -381,6 +412,31 @@ export default function AdminWorkJobChargesCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {editingCharge ? "Save charge changes?" : "Add this charge?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will update the work job balance and may change what the customer can pay.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void saveCharge();
+              }}
+            >
+              {saving ? "Saving..." : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

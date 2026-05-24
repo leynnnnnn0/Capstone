@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BriefcaseBusiness, CalendarDays, FileText, Loader2, Percent, Users } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
@@ -13,6 +14,16 @@ import NameInput from "@/components/form/NameInput";
 import NumericInput from "@/components/form/NumericInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -118,6 +129,7 @@ export default function AdminWorkJobForm() {
   const [saving, setSaving] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [quotationOpen, setQuotationOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchWorkJobWorkers().then((response) => setWorkers(response.data));
@@ -159,15 +171,29 @@ export default function AdminWorkJobForm() {
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function saveWorkJob() {
+    const parsed = workJobSchema.safeParse(data);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof WorkJobFormValues>(parsed.error.issues) as FormErrors);
+      setConfirmOpen(false);
+      return;
+    }
+
     setSaving(true);
     setErrors({});
     try {
       const response = await createAdminWorkJob({ ...data, ...parsed.data });
+      toast.success("Work job created successfully.");
       router.push(`/dashboard/work-jobs/${response.data.id}`);
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
         setErrors(Object.fromEntries(Object.entries(error.errors).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])) as FormErrors);
       }
+      toast.error(error instanceof ApiError ? error.message : "Unable to create work job.");
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -398,6 +424,29 @@ export default function AdminWorkJobForm() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create this work job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please confirm the customer details, schedule, assigned workers, quotation, and payment terms before saving.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void saveWorkJob();
+              }}
+            >
+              {saving ? "Creating..." : "Create Work Job"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

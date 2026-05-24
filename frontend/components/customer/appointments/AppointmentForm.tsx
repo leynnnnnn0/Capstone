@@ -14,16 +14,19 @@ import ProductConfigurator from "@/components/quote/ProductConfigurator";
 import QuoteCart from "@/components/quote/QuoteCart";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { allowsMorning, minimumBookingDate } from "@/features/booking/booking-utils";
 import {
@@ -203,8 +206,10 @@ export default function AppointmentForm({
         ? await updateCustomerAppointment(appointment.id, payload)
         : await createCustomerAppointment(payload);
 
+      toast.success(appointment ? "Appointment updated." : "Appointment created.");
       router.push(`/account/appointments/${response.data.id}`);
     } catch (error) {
+      toast.error("Unable to save appointment.");
       setErrors(fieldError(error, "Unable to save appointment. Please try again."));
       setConfirmOpen(false);
     } finally {
@@ -382,26 +387,26 @@ export default function AppointmentForm({
                 : "Create Appointment"}
         </Button>
       </aside>
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{appointment ? "Save appointment changes?" : "Create appointment?"}</DialogTitle>
-            <DialogDescription>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{appointment ? "Save appointment changes?" : "Create appointment?"}</AlertDialogTitle>
+            <AlertDialogDescription>
               {appointment
                 ? "This will update your pending appointment request."
                 : "This will send your appointment request to the SOG team for review."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => setConfirmOpen(false)}>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>
               Cancel
-            </Button>
-            <Button type="button" disabled={saving} onClick={performSubmit}>
+            </AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={performSubmit}>
               {saving ? "Saving..." : appointment ? "Save Changes" : "Create Appointment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   cancelAppointment,
   markAppointmentCompleted,
@@ -52,6 +53,7 @@ export default function AdminStatusActions({
 
     setSaving(true);
     try {
+      const currentAction = action;
       const response =
         action === "cancel"
           ? await cancelAppointment(appointment.id, reason)
@@ -63,6 +65,17 @@ export default function AdminStatusActions({
       onUpdated(response.data);
       setAction(null);
       setReason("");
+      toast.success(
+        currentAction === "cancel"
+          ? "Appointment cancelled."
+          : currentAction === "reopen"
+            ? "Appointment reopened."
+            : currentAction === "no_show"
+              ? "Appointment marked as no show."
+              : "Appointment status updated.",
+      );
+    } catch {
+      toast.error("Unable to update appointment status.");
     } finally {
       setSaving(false);
     }

@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signCustomerQuotation } from "@/features/customer/customer-api";
 import type { CustomerQuotation } from "@/features/customer/types";
+import { toast } from "sonner";
 
 type SignatureAction = (
   quotationId: number,
@@ -121,8 +122,10 @@ export default function CustomerSignatureDialog({
       });
       onSigned(response.data);
       onOpenChange(false);
+      toast.success("Quotation signed successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign quotation.");
+      toast.error(err instanceof Error ? err.message : "Could not sign quotation.");
     } finally {
       setSubmitting(false);
     }

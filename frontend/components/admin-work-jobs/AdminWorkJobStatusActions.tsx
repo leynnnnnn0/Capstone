@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   cancelWorkJob,
   markWorkJobCompleted,
@@ -45,6 +46,7 @@ export default function AdminWorkJobStatusActions({
   async function submit() {
     setSaving(true);
     try {
+      const currentAction = action;
       const response =
         action === "cancel"
           ? await cancelWorkJob(workJob.id, { remarks })
@@ -52,6 +54,9 @@ export default function AdminWorkJobStatusActions({
       onUpdated(response.data);
       setAction(null);
       setRemarks("");
+      toast.success(currentAction === "cancel" ? "Work job cancelled." : "Work job status updated.");
+    } catch {
+      toast.error("Unable to update work job status.");
     } finally {
       setSaving(false);
     }

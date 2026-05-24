@@ -42,11 +42,13 @@ if (Features::enabled(Features::registration())) {
 Route::middleware('auth:sanctum')->group(function () {
     if (Features::enabled(Features::updateProfileInformation())) {
         Route::put('/user/profile-information', [ProfileInformationController::class, 'update'])
+            ->middleware('password.confirmed')
             ->name('user-profile-information.update');
     }
 
     if (Features::enabled(Features::updatePasswords())) {
         Route::put('/user/password', [PasswordController::class, 'update'])
+            ->middleware('password.confirmed')
             ->name('user-password.update');
     }
 
@@ -58,24 +60,31 @@ Route::middleware('auth:sanctum')->group(function () {
 
     if (Features::enabled(Features::twoFactorAuthentication())) {
         Route::post('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'store'])
+            ->middleware('password.confirmed')
             ->name('two-factor.enable');
 
         Route::post('/user/confirmed-two-factor-authentication', [ConfirmedTwoFactorAuthenticationController::class, 'store'])
+            ->middleware('password.confirmed')
             ->name('two-factor.confirm');
 
         Route::delete('/user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'destroy'])
+            ->middleware('password.confirmed')
             ->name('two-factor.disable');
 
         Route::get('/user/two-factor-qr-code', [TwoFactorQrCodeController::class, 'show'])
+            ->middleware('password.confirmed')
             ->name('two-factor.qr-code');
 
         Route::get('/user/two-factor-secret-key', [TwoFactorSecretKeyController::class, 'show'])
+            ->middleware('password.confirmed')
             ->name('two-factor.secret-key');
 
         Route::get('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'index'])
+            ->middleware('password.confirmed')
             ->name('two-factor.recovery-codes');
 
         Route::post('/user/two-factor-recovery-codes', [RecoveryCodeController::class, 'store'])
+            ->middleware('password.confirmed')
             ->name('two-factor.regenerate-recovery-codes');
     }
 });

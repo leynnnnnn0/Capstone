@@ -6,7 +6,18 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ImageOff, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +36,8 @@ export default function ProductList() {
   const searchParams = useSearchParams();
   const [response, setResponse] = useState<PaginatedResponse<Product> | null>(null);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -55,14 +68,24 @@ export default function ProductList() {
     router.push(`/dashboard/products?${params.toString()}`);
   };
 
-  const removeProduct = async (product: Product) => {
-    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
-    await deleteProduct(product.id);
-    setResponse((current) =>
-      current
-        ? { ...current, data: current.data.filter((item) => item.id !== product.id) }
-        : current,
-    );
+  const removeProduct = async () => {
+    if (!deleteTarget) return;
+
+    setDeleting(true);
+    try {
+      await deleteProduct(deleteTarget.id);
+      toast.success("Product deleted successfully.");
+      setResponse((current) =>
+        current
+          ? { ...current, data: current.data.filter((item) => item.id !== deleteTarget.id) }
+          : current,
+      );
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete product.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const products = response?.data ?? [];
@@ -172,7 +195,7 @@ export default function ProductList() {
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          onClick={() => removeProduct(product)}
+                          onClick={() => setDeleteTarget(product)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -185,6 +208,32 @@ export default function ProductList() {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `"${deleteTarget.name}" will be removed from products and quoting workflows. This action cannot be undone.`
+                : "This product will be removed. This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault();
+                void removeProduct();
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete Product"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

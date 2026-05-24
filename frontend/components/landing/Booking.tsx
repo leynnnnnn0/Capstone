@@ -26,12 +26,25 @@ import type {
   LocationValue,
 } from "@/features/booking/types";
 import LocationPicker from "./LocationPicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function Booking() {
   const [data, setData] = useState<BookingForm>(() => createInitialBookingForm());
   const [errors, setErrors] = useState<BookingFormErrors>({});
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<BookingForm | null>(null);
 
   const setField = <K extends keyof BookingForm>(
     field: K,
@@ -76,6 +89,13 @@ export default function Booking() {
       return;
     }
 
+    setPendingBooking(parsed.data as BookingForm);
+    setConfirmOpen(true);
+  }
+
+  async function performSubmit() {
+    if (!pendingBooking) return;
+
     setProcessing(true);
     setErrors({});
 
@@ -83,15 +103,20 @@ export default function Booking() {
       await api("/api/v1/appointments", {
         method: "POST",
         skipAuth: true,
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify(pendingBooking),
       });
       setSuccess("Appointment booked successfully. We will contact you soon.");
+      toast.success("Appointment booked successfully.");
       setData(createInitialBookingForm());
+      setPendingBooking(null);
+      setConfirmOpen(false);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(flattenServerErrors(error));
+        toast.error(error.message || "Failed to book appointment.");
       } else {
         setErrors({ form: "Failed to book appointment. Please try again." });
+        toast.error("Failed to book appointment. Please try again.");
       }
     } finally {
       setProcessing(false);
@@ -317,6 +342,28 @@ export default function Booking() {
               No payment required · Cancel anytime
             </p>
           </form>
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Book this free inspection?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  We will submit your appointment request and contact you through the phone or email you provided.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={processing}>Review details</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={processing}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    void performSubmit();
+                  }}
+                >
+                  {processing ? "Booking..." : "Confirm Booking"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </section>

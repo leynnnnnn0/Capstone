@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, KeyRound, Loader2, ShieldCheck, UserRound } from "lucide-react";
 import { z } from "zod";
@@ -24,6 +24,7 @@ import {
   confirmTwoFactor,
   disableTwoFactor,
   enableTwoFactor,
+  fetchPasswordConfirmationStatus,
   fetchProfileUser,
   fetchTwoFactorQrCode,
   fetchTwoFactorRecoveryCodes,
@@ -42,6 +43,7 @@ import {
 } from "@/features/forms/validation";
 import { ApiError, type ApiValidationErrors } from "@/lib/api";
 import type { User } from "@/types/user";
+import { toast } from "sonner";
 
 type Tab = "profile" | "security";
 
@@ -69,21 +71,73 @@ const passwordSchema = z
     message: "Passwords do not match.",
   });
 
+const passwordConfirmationSchema = z.object({
+  password: z.string().min(1, "Password is required."),
+});
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("profile");
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordConfirmed, setPasswordConfirmed] = useState(false);
 
-  function reload() {
+  const reload = useCallback(() => {
     return fetchProfileUser().then((response) => setUser(response.data));
-  }
+  }, []);
+
+  const handlePasswordExpired = useCallback(() => {
+    setPasswordConfirmed(false);
+    setUser(null);
+    toast.error("Please confirm your password again to continue.");
+  }, []);
 
   useEffect(() => {
-    reload().finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+
+    async function boot() {
+      setLoading(true);
+
+      try {
+        const status = await fetchPasswordConfirmationStatus();
+        if (cancelled) return;
+
+        setPasswordConfirmed(status.confirmed);
+
+        if (status.confirmed) {
+          await reload();
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to load settings.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    boot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reload]);
 
   if (loading) {
     return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading settings...</div>;
+  }
+
+  if (!passwordConfirmed) {
+    return (
+      <SettingsPasswordGate
+        onConfirmed={async () => {
+          setLoading(true);
+          try {
+            await reload();
+            setPasswordConfirmed(true);
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+    );
   }
 
   return (
@@ -100,15 +154,86 @@ export default function SettingsPage() {
       </div>
 
       {tab === "profile" ? (
-        <ProfileSettings user={user} onSaved={reload} />
+        <ProfileSettings user={user} onSaved={reload} onPasswordExpired={handlePasswordExpired} />
       ) : (
-        <SecuritySettings user={user} onSaved={reload} />
+        <SecuritySettings user={user} onSaved={reload} onPasswordExpired={handlePasswordExpired} />
       )}
     </div>
   );
 }
 
-function ProfileSettings({ user, onSaved }: { user: User | null; onSaved: () => Promise<void> }) {
+function SettingsPasswordGate({ onConfirmed }: { onConfirmed: () => Promise<void> }) {
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<ApiValidationErrors>({});
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    setErrors({});
+
+    const parsed = passwordConfirmationSchema.safeParse({ password });
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as ApiValidationErrors);
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      await confirmPassword(parsed.data.password);
+      setPassword("");
+      await onConfirmed();
+      toast.success("Settings unlocked.");
+    } catch (error) {
+      setErrors(error instanceof ApiError ? error.errors ?? { password: error.message } : { password: "Unable to confirm password." });
+      toast.error(error instanceof Error ? error.message : "Unable to confirm password.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto flex min-h-[50vh] max-w-xl items-center">
+      <Card className="w-full">
+        <CardHeader>
+          <div className="mb-2 flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <KeyRound className="size-5" />
+          </div>
+          <CardTitle className="text-lg">Confirm your password</CardTitle>
+          <CardDescription>
+            Settings contain sensitive account and security controls. Confirm your password to continue.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
+            }}
+          >
+            <Field label="Password" error={fieldError(errors.password)}>
+              <Input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoFocus
+                autoComplete="current-password"
+              />
+            </Field>
+            {fieldError(errors.form) && <p className="text-sm text-destructive">{fieldError(errors.form)}</p>}
+            <Button type="submit" disabled={saving || !password}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+              Unlock Settings
+            </Button>
+            <p className="text-xs text-muted-foreground">You will stay unlocked for a short period on this device.</p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ProfileSettings({ user, onSaved, onPasswordExpired }: { user: User | null; onSaved: () => Promise<void>; onPasswordExpired: () => void }) {
   const [form, setForm] = useState<ProfilePayload>({
     username: user?.username ?? "",
     first_name: user?.first_name ?? "",
@@ -136,8 +261,15 @@ function ProfileSettings({ user, onSaved }: { user: User | null; onSaved: () => 
       await updateProfile(parsed.data as ProfilePayload);
       await onSaved();
       setSaved(true);
+      toast.success("Profile updated successfully.");
     } catch (error) {
+      if (error instanceof ApiError && error.status === 423) {
+        onPasswordExpired();
+        return;
+      }
+
       setErrors(error instanceof ApiError ? error.errors ?? { form: error.message } : { form: "Unable to update profile." });
+      toast.error(error instanceof Error ? error.message : "Unable to update profile.");
     } finally {
       setSaving(false);
     }
@@ -187,16 +319,16 @@ function ProfileSettings({ user, onSaved }: { user: User | null; onSaved: () => 
   );
 }
 
-function SecuritySettings({ user, onSaved }: { user: User | null; onSaved: () => Promise<void> }) {
+function SecuritySettings({ user, onSaved, onPasswordExpired }: { user: User | null; onSaved: () => Promise<void>; onPasswordExpired: () => void }) {
   return (
     <div className="grid gap-5 xl:grid-cols-2">
-      <PasswordSettings />
+      <PasswordSettings onPasswordExpired={onPasswordExpired} />
       <TwoFactorSettings enabled={Boolean(user?.two_factor_enabled)} onSaved={onSaved} />
     </div>
   );
 }
 
-function PasswordSettings() {
+function PasswordSettings({ onPasswordExpired }: { onPasswordExpired: () => void }) {
   const [form, setForm] = useState<PasswordPayload>({
     current_password: "",
     password: "",
@@ -222,8 +354,15 @@ function PasswordSettings() {
       await updatePassword(parsed.data as PasswordPayload);
       setForm({ current_password: "", password: "", password_confirmation: "" });
       setSaved(true);
+      toast.success("Password updated successfully.");
     } catch (error) {
+      if (error instanceof ApiError && error.status === 423) {
+        onPasswordExpired();
+        return;
+      }
+
       setErrors(error instanceof ApiError ? error.errors ?? { form: error.message } : { form: "Unable to update password." });
+      toast.error(error instanceof Error ? error.message : "Unable to update password.");
     } finally {
       setSaving(false);
     }
@@ -292,9 +431,11 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
       setQrSvg(qr.svg);
       setCodes(recoveryCodes);
       setSetupOpen(true);
+      toast.success("Two-factor setup started.");
     } catch (error) {
       if (error instanceof ApiError && error.status === 423) throw error;
       setError(error instanceof Error ? error.message : "Unable to start two-factor setup.");
+      toast.error(error instanceof Error ? error.message : "Unable to start two-factor setup.");
     } finally {
       setSaving(false);
     }
@@ -309,8 +450,10 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
       setSetupOpen(false);
       setCode("");
       await onSaved();
+      toast.success("Two-factor authentication enabled.");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Invalid authentication code.");
+      toast.error(error instanceof Error ? error.message : "Invalid authentication code.");
     } finally {
       setSaving(false);
     }
@@ -327,9 +470,11 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
     try {
       await disableTwoFactor();
       await onSaved();
+      toast.success("Two-factor authentication disabled.");
     } catch (error) {
       if (error instanceof ApiError && error.status === 423) throw error;
       setError(error instanceof Error ? error.message : "Unable to disable two-factor authentication.");
+      toast.error(error instanceof Error ? error.message : "Unable to disable two-factor authentication.");
     } finally {
       setSaving(false);
     }
@@ -347,9 +492,11 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
       await regenerateTwoFactorRecoveryCodes();
       setCodes(await fetchTwoFactorRecoveryCodes());
       setSetupOpen(true);
+      toast.success("Recovery codes regenerated.");
     } catch (error) {
       if (error instanceof ApiError && error.status === 423) throw error;
       setError(error instanceof Error ? error.message : "Unable to regenerate recovery codes.");
+      toast.error(error instanceof Error ? error.message : "Unable to regenerate recovery codes.");
     } finally {
       setSaving(false);
     }
@@ -386,6 +533,7 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
       setPendingAction(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unable to confirm password.");
+      toast.error(error instanceof Error ? error.message : "Unable to confirm password.");
     } finally {
       setSaving(false);
     }

@@ -7,6 +7,16 @@ import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +39,7 @@ import {
   quoteTotal,
   variantLabel,
 } from "@/features/quotes/quote-utils";
+import { toast } from "sonner";
 
 function createDefaultForm(): QuoteCheckoutFields {
   return {
@@ -60,6 +71,8 @@ export default function QuoteCheckoutForm({
   const [errors, setErrors] = useState<QuoteFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<AppointmentQuoteResponse | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingCheckout, setPendingCheckout] = useState<QuoteCheckoutFields | null>(null);
   const total = quoteTotal(cart);
 
   const setField = <K extends keyof QuoteCheckoutFields>(
@@ -86,9 +99,18 @@ export default function QuoteCheckoutForm({
       return;
     }
 
+    setPendingCheckout(parsed.success ? (parsed.data as QuoteCheckoutFields) : data);
+    setConfirmOpen(true);
+  }
+
+  async function performSubmit() {
+    if (!pendingCheckout) return;
+
     setSubmitting(true);
+    setErrors({});
+
     try {
-      const payloadData = parsed.success ? parsed.data : data;
+      const payloadData = pendingCheckout;
       const response = await submitQuoteRequest({
         ...payloadData,
         address_pinned: payloadData.address_pinned ?? "",
@@ -99,6 +121,9 @@ export default function QuoteCheckoutForm({
         items: cart.map(cartItemToPayload),
       });
       setSubmitted(response);
+      setConfirmOpen(false);
+      setPendingCheckout(null);
+      toast.success("Quote request submitted successfully.");
       onSuccess();
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
@@ -108,8 +133,10 @@ export default function QuoteCheckoutForm({
             return acc;
           }, {}),
         );
+        toast.error(error.message || "Unable to submit your quote request.");
       } else {
         setErrors({ form: "Unable to submit your quote request. Please try again." });
+        toast.error("Unable to submit your quote request. Please try again.");
       }
     } finally {
       setSubmitting(false);
@@ -275,6 +302,28 @@ export default function QuoteCheckoutForm({
           </div>
         </div>
       </form>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit this quote request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              We will send your selected items and contact details to the SOG team so they can schedule your free inspection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review details</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={(event) => {
+                event.preventDefault();
+                void performSubmit();
+              }}
+            >
+              {submitting ? "Submitting..." : "Submit Request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

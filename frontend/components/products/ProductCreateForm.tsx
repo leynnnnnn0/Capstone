@@ -2,8 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
 
 import { ApiError } from "@/lib/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -29,6 +40,7 @@ export default function ProductCreateForm({ categories }: { categories: Category
   const [data, setData] = useState<ProductFormState>(() => createInitialProductForm());
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const setField = <K extends keyof ProductFormState>(
     field: K,
@@ -65,11 +77,18 @@ export default function ProductCreateForm({ categories }: { categories: Category
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function createConfirmed() {
     setSubmitting(true);
     try {
       const product = await createProduct(appendProductFormData(data));
+      toast.success("Product created successfully.");
       router.push(`/dashboard/products/${product.id}`);
     } catch (error) {
+      setConfirmOpen(false);
+      toast.error(error instanceof Error ? error.message : "Failed to create product.");
       if (error instanceof ApiError && error.errors) {
         setErrors(
           Object.entries(error.errors).reduce<ProductFormErrors>(
@@ -173,6 +192,29 @@ export default function ProductCreateForm({ categories }: { categories: Category
           {submitting ? "Saving..." : "Create Product"}
         </Button>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will add the product, variants, option groups, images, and 3D model to the catalog.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={(event) => {
+                event.preventDefault();
+                void createConfirmed();
+              }}
+            >
+              {submitting ? "Creating..." : "Create Product"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

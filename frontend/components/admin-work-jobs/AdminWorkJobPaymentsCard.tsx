@@ -2,9 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Banknote, CreditCard, Loader2, WalletCards } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import NumericInput from "@/components/form/NumericInput";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +81,7 @@ export default function AdminWorkJobPaymentsCard({
 }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ManualPaymentForm>(() => defaultForm(workJob));
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<ManualPaymentErrors>({});
@@ -92,6 +104,7 @@ export default function AdminWorkJobPaymentsCard({
       setForm(defaultForm(workJob));
       setError(null);
       setFieldErrors({});
+      setConfirmOpen(false);
     }
   }, [open, workJob]);
 
@@ -105,6 +118,18 @@ export default function AdminWorkJobPaymentsCard({
     const parsed = manualPaymentSchema.safeParse(form);
 
     if (!parsed.success) {
+      setFieldErrors(zodIssuesToFieldErrors<keyof ManualPaymentForm | "form">(parsed.error.issues));
+      return;
+    }
+
+    setConfirmOpen(true);
+  }
+
+  async function recordPayment() {
+    const parsed = manualPaymentSchema.safeParse(form);
+
+    if (!parsed.success) {
+      setConfirmOpen(false);
       setFieldErrors(zodIssuesToFieldErrors<keyof ManualPaymentForm | "form">(parsed.error.issues));
       return;
     }
@@ -124,9 +149,14 @@ export default function AdminWorkJobPaymentsCard({
         remarks: validated.remarks || undefined,
       });
       onUpdated(response.data);
+      toast.success("Manual payment recorded successfully.");
+      setConfirmOpen(false);
       setOpen(false);
     } catch (error) {
-      setError(errorMessage(error));
+      const message = errorMessage(error);
+      setError(message);
+      toast.error(message);
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -362,6 +392,29 @@ export default function AdminWorkJobPaymentsCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Record this payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark {formatPeso(Number(form.amount || 0))} as received for this work job.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void recordPayment();
+              }}
+            >
+              {saving ? "Saving..." : "Record Payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

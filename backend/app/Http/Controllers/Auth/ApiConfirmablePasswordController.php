@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\Auth\PasswordConfirmationStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,9 +11,16 @@ use Illuminate\Validation\ValidationException;
 
 class ApiConfirmablePasswordController extends Controller
 {
-    public function status(): JsonResponse
+    public function __construct(private readonly PasswordConfirmationStore $passwordConfirmationStore)
     {
-        return response()->json(['confirmed' => true]);
+    }
+
+    public function status(Request $request): JsonResponse
+    {
+        return response()->json([
+            'confirmed' => $this->passwordConfirmationStore->confirmed($request),
+            'expires_in_minutes' => $this->passwordConfirmationStore->expiresInMinutes(),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -26,6 +34,8 @@ class ApiConfirmablePasswordController extends Controller
                 'password' => ['The provided password is incorrect.'],
             ]);
         }
+
+        $this->passwordConfirmationStore->confirm($request);
 
         return response()->json([
             'status' => true,

@@ -9,9 +9,20 @@ import {
   Loader2,
   Plus,
 } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -115,6 +126,7 @@ export default function AdminWorkJobBackJobsCard({
   const [open, setOpen] = useState(false);
   const [workers, setWorkers] = useState<AdminWorker[]>([]);
   const [form, setForm] = useState<AdminBackJobForm>(() => initialBackJobForm(workJob));
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [saving, setSaving] = useState(false);
 
@@ -132,6 +144,7 @@ export default function AdminWorkJobBackJobsCard({
 
     setForm(initialBackJobForm(workJob));
     setErrors({});
+    setConfirmOpen(false);
     fetchWorkJobWorkers().then((response) => setWorkers(response.data));
   }, [open, workJob]);
 
@@ -153,6 +166,18 @@ export default function AdminWorkJobBackJobsCard({
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function scheduleBackJob() {
+    const parsed = backJobFormSchema.safeParse(form);
+
+    if (!parsed.success) {
+      setConfirmOpen(false);
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as ApiValidationErrors);
+      return;
+    }
+
     setSaving(true);
     setErrors({});
 
@@ -160,13 +185,18 @@ export default function AdminWorkJobBackJobsCard({
       await createBackJob(workJob.id, parsed.data as AdminBackJobForm);
       const refreshed = await fetchAdminWorkJob(workJob.id);
       onUpdated(refreshed.data);
+      toast.success("Back job scheduled successfully.");
+      setConfirmOpen(false);
       setOpen(false);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.errors ?? { work_job: error.message });
+        toast.error(error.message);
       } else {
         setErrors({ work_job: "Unable to create back job." });
+        toast.error("Unable to create back job.");
       }
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -365,6 +395,29 @@ export default function AdminWorkJobBackJobsCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Schedule this back job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a linked return visit with the selected schedule and assigned workers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void scheduleBackJob();
+              }}
+            >
+              {saving ? "Scheduling..." : "Schedule Back Job"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

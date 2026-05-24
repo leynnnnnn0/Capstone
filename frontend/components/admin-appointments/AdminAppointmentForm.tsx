@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Loader2, Package, Plus, StickyNote, Users } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
@@ -13,6 +14,16 @@ import FormSelect from "@/components/form/FormSelect";
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,6 +163,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
   const [hasQuotation, setHasQuotation] = useState(false);
   const [quotationOpen, setQuotationOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const grandTotal = useMemo(() => items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0), [items]);
@@ -262,6 +274,24 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function saveAppointment() {
+    const parsed = adminAppointmentSchema.safeParse(data);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<string>(parsed.error.issues) as FieldErrors);
+      setConfirmOpen(false);
+      return;
+    }
+
+    const quoteErrors = hasQuotation ? validateLineItems(items) : {};
+    if (Object.keys(quoteErrors).length > 0) {
+      setErrors(quoteErrors as FieldErrors);
+      setConfirmOpen(false);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload: AdminAppointmentFormState = {
@@ -274,9 +304,13 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
       const response = appointmentId
         ? await updateAdminAppointment(appointmentId, payload)
         : await createAdminAppointment(payload);
+      toast.success(appointmentId ? "Appointment updated successfully." : "Appointment created successfully.");
       router.push(`/dashboard/appointments/${response.data.id}`);
     } catch (error) {
-      setErrors(toFieldErrors(error));
+      const nextErrors = toFieldErrors(error);
+      setErrors(nextErrors);
+      toast.error(nextErrors.form ?? "Unable to save appointment.");
+      setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
@@ -696,6 +730,31 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {appointmentId ? "Update this appointment?" : rebookId ? "Create this rebooked appointment?" : "Create this appointment?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Please confirm the customer details, schedule, assigned workers, and quotation before saving.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={saving}
+              onClick={(event) => {
+                event.preventDefault();
+                void saveAppointment();
+              }}
+            >
+              {saving ? "Saving..." : appointmentId ? "Update Appointment" : "Create Appointment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

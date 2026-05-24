@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { toast } from "sonner";
 
 import {
   FieldError,
@@ -13,6 +14,16 @@ import {
   VariantEditor,
   type ProductBasicsValue,
 } from "@/components/products/ProductFormParts";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,6 +49,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
   const [data, setData] = useState<ProductFormState>(() => createProductEditForm(product));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const visibleProductImages = productImages(product).filter(
     (image) => !data.deleted_image_ids.includes(image.id),
   );
@@ -80,11 +92,18 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function updateConfirmed() {
     setSubmitting(true);
     try {
       const updatedProduct = await updateProduct(product.id, appendProductFormData(data));
+      toast.success("Product updated successfully.");
       router.push(`/dashboard/products/${updatedProduct.id}`);
     } catch (error) {
+      setConfirmOpen(false);
+      toast.error(error instanceof Error ? error.message : "Failed to update product.");
       if (error instanceof ApiError && error.errors) {
         setErrors(
           Object.entries(error.errors).reduce<ProductFormErrors>(
@@ -238,6 +257,29 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
           {submitting ? "Saving..." : "Save Changes"}
         </Button>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save product changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will update product details, pricing, variants, options, images, and 3D model settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Review</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={(event) => {
+                event.preventDefault();
+                void updateConfirmed();
+              }}
+            >
+              {submitting ? "Saving..." : "Save Changes"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
