@@ -2,40 +2,23 @@ import { z } from "zod";
 
 import type { BookingForm, BookingFormErrors } from "./types";
 import { allowsMorning, minimumBookingDate } from "./booking-utils";
-
-const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]{2,50}$/;
-const phoneRegex = /^[0-9+\s().-]{10,20}$/;
+import {
+  personNameSchema,
+  philippineMobileSchema,
+  requiredDateSchema,
+  requiredEmailSchema,
+} from "@/features/forms/validation";
 
 export const bookingSchema = z.object({
-  first_name: z
-    .string()
-    .trim()
-    .min(1, "First name is required.")
-    .regex(
-      nameRegex,
-      "First name must be 2-50 characters and contain only letters.",
-    ),
-  last_name: z
-    .string()
-    .trim()
-    .min(1, "Last name is required.")
-    .regex(
-      nameRegex,
-      "Last name must be 2-50 characters and contain only letters.",
-    ),
-  phone_number: z
-    .string()
-    .trim()
-    .min(1, "Phone number is required.")
-    .regex(phoneRegex, "Enter a valid phone number."),
-  email: z.string().trim().email("Enter a valid email address."),
+  first_name: personNameSchema("First name"),
+  last_name: personNameSchema("Last name"),
+  phone_number: philippineMobileSchema(),
+  email: requiredEmailSchema(),
   address: z.string().trim().min(5, "Address is required."),
   address_pinned: z.string().optional(),
   address_lat: z.string().optional(),
   address_lng: z.string().optional(),
-  preferred_date: z
-    .string()
-    .min(1, "Preferred date is required.")
+  preferred_date: requiredDateSchema("Preferred date")
     .refine((value) => value >= minimumBookingDate(), "Date cannot be in the past."),
   preferred_time: z.enum(["morning", "afternoon"], {
     message: "Preferred time is required.",

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\Audit\AuthAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,10 @@ use Laravel\Fortify\Fortify;
 
 class ApiAuthenticatedSessionController extends Controller
 {
+    public function __construct(
+        private readonly AuthAuditLogger $authAuditLogger
+    ) {}
+
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -40,18 +45,44 @@ class ApiAuthenticatedSessionController extends Controller
                 'remember' => $request->boolean('remember'),
             ], now()->addMinutes(5));
 
+            $this->authAuditLogger->log(
+                request: $request,
+                event: 'staff_login_two_factor_challenge',
+                auditable: $user,
+                actor: $user,
+                newValues: [
+                    'role' => $this->roleName($user),
+                    'remember' => $request->boolean('remember'),
+                    'expires_in_minutes' => 5,
+                ]
+            );
+
             return response()->json([
                 'two_factor' => true,
                 'challenge_id' => $challengeId,
             ]);
         }
 
-        return $this->authenticatedResponse($user, $request->boolean('remember'));
+        return $this->authenticatedResponse($request, $user, $request->boolean('remember'), 'staff_login');
     }
 
     public function destroy(Request $request): JsonResponse
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+
+        if ($user instanceof User) {
+            $this->authAuditLogger->log(
+                request: $request,
+                event: $user->isCustomer() ? 'customer_logout' : 'staff_logout',
+                auditable: $user,
+                actor: $user,
+                newValues: [
+                    'role' => $this->roleName($user),
+                ]
+            );
+        }
+
+        $user?->currentAccessToken()?->delete();
 
         return response()
             ->json(['status' => true, 'message' => 'Logged out.'])
@@ -92,7 +123,7 @@ class ApiAuthenticatedSessionController extends Controller
 
         Cache::forget($cacheKey);
 
-        return $this->authenticatedResponse($user, (bool) $challenge['remember']);
+        return $this->authenticatedResponse($request, $user, (bool) $challenge['remember'], 'staff_login');
     }
 
     private function validTwoFactorCode(User $user, TwoFactorAuthenticationProvider $provider, array $input): bool
@@ -113,19 +144,31 @@ class ApiAuthenticatedSessionController extends Controller
         return false;
     }
 
-    private function authenticatedResponse(User $user, bool $remember): JsonResponse
+    private function authenticatedResponse(Request $request, User $user, bool $remember, string $event): JsonResponse
     {
         $minutes = $remember ? 60 * 24 * 14 : 60;
         $expiresAt = $remember ? now()->addDays(14) : now()->addHour();
         $token = $user->createToken('auth-token', ['*'], $expiresAt)->plainTextToken;
 
         $user->load('roles', 'permissions');
-        $role = $user->getRoleNames()->first() ?? $user->role;
+        $role = $this->roleName($user);
         $response = ['user' => UserResource::make($user)];
 
         if (! app()->environment('production')) {
             $response['token'] = $token;
         }
+
+        $this->authAuditLogger->log(
+            request: $request,
+            event: $event,
+            auditable: $user,
+            actor: $user,
+            newValues: [
+                'role' => $role,
+                'remember' => $remember,
+                'expires_at' => $expiresAt->toISOString(),
+            ]
+        );
 
         return response()
             ->json($response)
@@ -156,5 +199,12 @@ class ApiAuthenticatedSessionController extends Controller
     private function challengeCacheKey(string $challengeId): string
     {
         return "staff-login-two-factor:{$challengeId}";
+    }
+
+    private function roleName(User $user): string
+    {
+        return $user->relationLoaded('roles')
+            ? ($user->getRoleNames()->first() ?? $user->role)
+            : ($user->roles()->value('name') ?? $user->role);
     }
 }

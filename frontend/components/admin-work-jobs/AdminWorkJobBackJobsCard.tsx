@@ -9,6 +9,7 @@ import {
   Loader2,
   Plus,
 } from "lucide-react";
+import { z } from "zod";
 
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
 import { Badge } from "@/components/ui/badge";
@@ -51,8 +52,56 @@ import type {
   AdminWorkJobStatus,
 } from "@/features/admin-work-jobs/types";
 import type { AdminWorker } from "@/features/admin-appointments/types";
+import {
+  addScheduleIssues,
+  requiredDateSchema,
+  requiredTimeSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import { ApiError, type ApiValidationErrors } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+const backJobFormSchema = z
+  .object({
+    scheduled_date: requiredDateSchema("Scheduled date"),
+    scheduled_time_from: requiredTimeSchema("Start time"),
+    scheduled_time_until: requiredTimeSchema("End time"),
+    worker_ids: z.array(z.number()).min(1, "Please assign at least one worker."),
+    back_job_reason: z.enum([
+      "unfinished_work",
+      "warranty_claim",
+      "quality_issue",
+      "missing_parts",
+      "customer_request",
+      "other",
+    ]),
+    back_job_reason_other: z.string().trim().max(100, "Other reason must be 100 characters or fewer.").optional(),
+    back_job_details: z
+      .string()
+      .trim()
+      .min(5, "Details must be at least 5 characters.")
+      .max(2000, "Details must be 2000 characters or fewer."),
+    notes: z.string().trim().max(2000, "Internal notes must be 2000 characters or fewer.").optional(),
+  })
+  .superRefine((data, context) => {
+    addScheduleIssues(context, {
+      startDate: data.scheduled_date,
+      startDateField: "scheduled_date",
+      startTime: data.scheduled_time_from,
+      startTimeField: "scheduled_time_from",
+      endTime: data.scheduled_time_until,
+      endTimeField: "scheduled_time_until",
+      allowPastStartDate: true,
+    });
+
+    if (data.back_job_reason === "other" && !data.back_job_reason_other?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["back_job_reason_other"],
+        message: "Please enter the other reason.",
+      });
+    }
+  });
 
 export default function AdminWorkJobBackJobsCard({
   workJob,
@@ -86,12 +135,29 @@ export default function AdminWorkJobBackJobsCard({
     fetchWorkJobWorkers().then((response) => setWorkers(response.data));
   }, [open, workJob]);
 
+  function setField<K extends keyof AdminBackJobForm>(field: K, value: AdminBackJobForm[K]) {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[field as string];
+      delete next.work_job;
+      return next;
+    });
+  }
+
   async function submit() {
+    const parsed = backJobFormSchema.safeParse(form);
+
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as ApiValidationErrors);
+      return;
+    }
+
     setSaving(true);
     setErrors({});
 
     try {
-      await createBackJob(workJob.id, form);
+      await createBackJob(workJob.id, parsed.data as AdminBackJobForm);
       const refreshed = await fetchAdminWorkJob(workJob.id);
       onUpdated(refreshed.data);
       setOpen(false);
@@ -209,21 +275,21 @@ export default function AdminWorkJobBackJobsCard({
                 <Input
                   type="date"
                   value={form.scheduled_date}
-                  onChange={(event) => setForm((current) => ({ ...current, scheduled_date: event.target.value }))}
+                  onChange={(event) => setField("scheduled_date", event.target.value)}
                 />
               </FieldError>
               <FieldError label="From" error={errorFor(errors, "scheduled_time_from")}>
                 <Input
                   type="time"
                   value={form.scheduled_time_from}
-                  onChange={(event) => setForm((current) => ({ ...current, scheduled_time_from: event.target.value }))}
+                  onChange={(event) => setField("scheduled_time_from", event.target.value)}
                 />
               </FieldError>
               <FieldError label="Until" error={errorFor(errors, "scheduled_time_until")}>
                 <Input
                   type="time"
                   value={form.scheduled_time_until}
-                  onChange={(event) => setForm((current) => ({ ...current, scheduled_time_until: event.target.value }))}
+                  onChange={(event) => setField("scheduled_time_until", event.target.value)}
                 />
               </FieldError>
             </div>
@@ -231,7 +297,7 @@ export default function AdminWorkJobBackJobsCard({
             <WorkerMultiSelect
               workers={workers}
               value={form.worker_ids}
-              onChange={(value) => setForm((current) => ({ ...current, worker_ids: value }))}
+              onChange={(value) => setField("worker_ids", value)}
               label="Assigned Workers"
               error={errorFor(errors, "worker_ids")}
             />
@@ -240,10 +306,7 @@ export default function AdminWorkJobBackJobsCard({
               <Select
                 value={form.back_job_reason}
                 onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    back_job_reason: value as AdminBackJobReason,
-                  }))
+                  setField("back_job_reason", value as AdminBackJobReason)
                 }
               >
                 <SelectTrigger className="w-full">
@@ -266,7 +329,7 @@ export default function AdminWorkJobBackJobsCard({
               <FieldError label="Other Reason" error={errorFor(errors, "back_job_reason_other")}>
                 <Input
                   value={form.back_job_reason_other}
-                  onChange={(event) => setForm((current) => ({ ...current, back_job_reason_other: event.target.value }))}
+                  onChange={(event) => setField("back_job_reason_other", event.target.value)}
                   placeholder="Short reason"
                 />
               </FieldError>
@@ -275,7 +338,7 @@ export default function AdminWorkJobBackJobsCard({
             <FieldError label="Details" error={errorFor(errors, "back_job_details")}>
               <Textarea
                 value={form.back_job_details}
-                onChange={(event) => setForm((current) => ({ ...current, back_job_details: event.target.value }))}
+                onChange={(event) => setField("back_job_details", event.target.value)}
                 className="min-h-24 resize-none"
                 placeholder="What needs to be done when the team returns?"
               />
@@ -284,7 +347,7 @@ export default function AdminWorkJobBackJobsCard({
             <FieldError label="Internal Notes" error={errorFor(errors, "notes")}>
               <Textarea
                 value={form.notes}
-                onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+                onChange={(event) => setField("notes", event.target.value)}
                 className="min-h-20 resize-none"
                 placeholder="Access notes, parts to bring, or special reminders..."
               />

@@ -3,6 +3,8 @@
 import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Edit2, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +42,7 @@ import {
 } from "@/features/admin-users/admin-user-api";
 import { adminUserSchema } from "@/features/admin-users/admin-user-schema";
 import type { AdminUser, AdminUserForm, StaffRole, UserCollection, UserOptions } from "@/features/admin-users/types";
+import { zodIssuesToFieldErrors } from "@/features/forms/validation";
 
 const emptyForm: AdminUserForm = {
   username: "",
@@ -126,7 +129,7 @@ export default function AdminUsersPage() {
 
     const parsed = adminUserSchema.safeParse(form);
     if (!parsed.success) {
-      setErrors(Object.fromEntries(parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message])));
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as Record<string, string>);
       return;
     }
 
@@ -256,13 +259,13 @@ export default function AdminUsersPage() {
                 <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
               </Field>
               <Field label="First Name" error={errors.first_name}>
-                <Input value={form.first_name} onChange={(event) => setForm({ ...form, first_name: event.target.value })} />
+                <NameInput value={form.first_name} onValueChange={(value) => setForm({ ...form, first_name: value })} />
               </Field>
               <Field label="Last Name" error={errors.last_name}>
-                <Input value={form.last_name} onChange={(event) => setForm({ ...form, last_name: event.target.value })} />
+                <NameInput value={form.last_name} onValueChange={(value) => setForm({ ...form, last_name: value })} />
               </Field>
               <Field label="Phone" error={errors.phone_number}>
-                <Input value={form.phone_number} onChange={(event) => setForm({ ...form, phone_number: event.target.value })} />
+                <PhoneNumberInput value={form.phone_number} onValueChange={(value) => setForm({ ...form, phone_number: value })} />
               </Field>
               <Field label={editing ? "Password (optional)" : "Password"} error={errors.password}>
                 <Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />

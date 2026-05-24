@@ -117,9 +117,10 @@ export default function AdminPaymentsPage() {
   useRealtimeRefresh(() => loadPayments(), ["payment", "work_job"]);
 
   function applyFilter(next: Record<string, string>, options: { resetPage?: boolean } = {}) {
+    const cleanNext = normalizeDateRange(filters, next);
     const params = new URLSearchParams(searchParams.toString());
 
-    Object.entries(next).forEach(([key, value]) => {
+    Object.entries(cleanNext).forEach(([key, value]) => {
       if (!value || value === "all") params.delete(key);
       else params.set(key, value);
     });
@@ -390,4 +391,15 @@ function optionList(apiOptions: AdminPaymentOption[] | undefined, fallback: Admi
   if (!apiOptions || apiOptions.length === 0) return fallback;
 
   return [{ value: "all", label: "All" }, ...apiOptions];
+}
+
+function normalizeDateRange(current: { date_from: string; date_to: string }, next: Record<string, string>) {
+  const dateFrom = next.date_from ?? current.date_from;
+  const dateTo = next.date_to ?? current.date_to;
+
+  if (!dateFrom || !dateTo || dateTo >= dateFrom) return next;
+
+  return next.date_from !== undefined
+    ? { ...next, date_to: dateFrom }
+    : { ...next, date_from: dateTo };
 }

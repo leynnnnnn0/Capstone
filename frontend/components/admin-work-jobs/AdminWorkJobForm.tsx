@@ -9,6 +9,9 @@ import { z } from "zod";
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
+import NameInput from "@/components/form/NameInput";
+import NumericInput from "@/components/form/NumericInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,23 +48,52 @@ import {
   workJobFormFromAppointment,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
 import type { AdminWorkJobForm as WorkJobFormValues } from "@/features/admin-work-jobs/types";
+import {
+  addScheduleIssues,
+  optionalEmailSchema,
+  personNameSchema,
+  philippineMobileSchema,
+  requiredDateSchema,
+  requiredTimeSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 
 const workJobSchema = z.object({
-  first_name: z.string().min(1, "First name is required."),
-  last_name: z.string().min(1, "Last name is required."),
-  phone_number: z.string().min(1, "Phone number is required."),
-  email: z.string().email("Enter a valid email.").or(z.literal("")),
-  address: z.string().min(1, "Address is required."),
+  first_name: personNameSchema("First name"),
+  last_name: personNameSchema("Last name"),
+  phone_number: philippineMobileSchema(),
+  email: optionalEmailSchema(),
+  address: z.string().trim().min(5, "Address is required."),
   service_type: z.string().min(1, "Service type is required."),
-  scheduled_date: z.string().min(1, "Scheduled date is required."),
-  scheduled_time_from: z.string().min(1, "Start time is required."),
-  scheduled_time_until: z.string().min(1, "End time is required."),
+  service_type_other: z.string().trim().optional(),
+  scheduled_date: requiredDateSchema("Work job date"),
+  scheduled_time_from: requiredTimeSchema("Start time"),
+  scheduled_time_until: requiredTimeSchema("End time"),
   worker_ids: z.array(z.number()).min(1, "Assign at least one worker."),
   is_down_payment_required: z.boolean(),
-  down_payment_percentage: z.coerce.number().min(1).max(100),
-}).refine((value) => value.scheduled_time_until > value.scheduled_time_from, {
-  path: ["scheduled_time_until"],
-  message: "End time must be after start time.",
+  down_payment_percentage: z.coerce
+    .number()
+    .min(1, "Down payment must be at least 1%.")
+    .max(100, "Down payment cannot exceed 100%."),
+  notes: z.string().max(2000, "Notes must be 2000 characters or fewer.").optional(),
+}).superRefine((value, context) => {
+  if (value.service_type === "other" && !value.service_type_other?.trim()) {
+    context.addIssue({
+      code: "custom",
+      path: ["service_type_other"],
+      message: "Describe the service type.",
+    });
+  }
+
+  addScheduleIssues(context, {
+    startDate: value.scheduled_date,
+    startDateField: "scheduled_date",
+    startTime: value.scheduled_time_from,
+    startTimeField: "scheduled_time_from",
+    endTime: value.scheduled_time_until,
+    endTimeField: "scheduled_time_until",
+    allowPastStartDate: true,
+  });
 });
 
 const serviceOptions = [
@@ -123,15 +155,14 @@ export default function AdminWorkJobForm() {
 
     const parsed = workJobSchema.safeParse(data);
     if (!parsed.success) {
-      const fieldErrors = parsed.error.flatten().fieldErrors;
-      setErrors(Object.fromEntries(Object.entries(fieldErrors).map(([key, value]) => [key, value?.[0]])) as FormErrors);
+      setErrors(zodIssuesToFieldErrors<keyof WorkJobFormValues>(parsed.error.issues) as FormErrors);
       return;
     }
 
     setSaving(true);
     setErrors({});
     try {
-      const response = await createAdminWorkJob(data);
+      const response = await createAdminWorkJob({ ...data, ...parsed.data });
       router.push(`/dashboard/work-jobs/${response.data.id}`);
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
@@ -175,13 +206,13 @@ export default function AdminWorkJobForm() {
             <SectionTitle title="Customer Details" description="Basic contact and service information." />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <Field label="First Name" error={errors.first_name}>
-                <Input value={data.first_name} onChange={(event) => setField("first_name", event.target.value)} />
+                <NameInput value={data.first_name} onValueChange={(value) => setField("first_name", value)} />
               </Field>
               <Field label="Last Name" error={errors.last_name}>
-                <Input value={data.last_name} onChange={(event) => setField("last_name", event.target.value)} />
+                <NameInput value={data.last_name} onValueChange={(value) => setField("last_name", value)} />
               </Field>
               <Field label="Phone Number" error={errors.phone_number}>
-                <Input value={data.phone_number} onChange={(event) => setField("phone_number", event.target.value)} />
+                <PhoneNumberInput value={data.phone_number} onValueChange={(value) => setField("phone_number", value)} />
               </Field>
               <Field label="Email" error={errors.email}>
                 <Input type="email" value={data.email} onChange={(event) => setField("email", event.target.value)} />
@@ -287,13 +318,11 @@ export default function AdminWorkJobForm() {
                   <Label htmlFor="down_payment_percentage">Down Payment Percentage</Label>
                   <div className="relative">
                     <Percent className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                    <NumericInput
                       id="down_payment_percentage"
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={data.down_payment_percentage}
-                      onChange={(event) => setField("down_payment_percentage", Number(event.target.value))}
+                      allowDecimal={false}
+                      value={String(data.down_payment_percentage)}
+                      onValueChange={(value) => setField("down_payment_percentage", Number(value || 0))}
                       className="pr-9"
                     />
                   </div>

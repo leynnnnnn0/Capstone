@@ -1,20 +1,25 @@
 import { z } from "zod";
 
 import { allowsMorning, minimumBookingDate } from "@/features/booking/booking-utils";
+import {
+  personNameSchema,
+  philippineMobileSchema,
+  requiredDateSchema,
+  requiredEmailSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import type { QuoteCheckoutForm, QuoteFormErrors } from "./types";
 
 export const quoteCheckoutSchema = z.object({
-  first_name: z.string().trim().min(2, "First name is required.").max(100),
-  last_name: z.string().trim().min(2, "Last name is required.").max(100),
-  phone_number: z.string().trim().regex(/^\+?[0-9\s\-().]{7,20}$/, "Enter a valid phone number."),
-  email: z.string().trim().email("Enter a valid email address."),
+  first_name: personNameSchema("First name"),
+  last_name: personNameSchema("Last name"),
+  phone_number: philippineMobileSchema(),
+  email: requiredEmailSchema(),
   address: z.string().trim().min(5, "Service address is required."),
   address_pinned: z.string().optional(),
   address_lat: z.string().optional(),
   address_lng: z.string().optional(),
-  preferred_date: z
-    .string()
-    .min(1, "Preferred date is required.")
+  preferred_date: requiredDateSchema("Preferred date")
     .refine((value) => value >= minimumBookingDate(), "Date cannot be in the past."),
   preferred_time: z.enum(["morning", "afternoon"], {
     message: "Preferred time is required.",
@@ -31,13 +36,13 @@ export const quoteCheckoutSchema = z.object({
   }
 });
 
+export function parseQuoteCheckout(data: QuoteCheckoutForm) {
+  return quoteCheckoutSchema.safeParse(data);
+}
+
 export function validateQuoteCheckout(data: QuoteCheckoutForm): QuoteFormErrors {
-  const result = quoteCheckoutSchema.safeParse(data);
+  const result = parseQuoteCheckout(data);
   if (result.success) return {};
 
-  return result.error.issues.reduce<QuoteFormErrors>((errors, issue) => {
-    const key = issue.path.join(".") as keyof QuoteFormErrors;
-    errors[key] = issue.message;
-    return errors;
-  }, {});
+  return zodIssuesToFieldErrors<keyof QuoteFormErrors>(result.error.issues) as QuoteFormErrors;
 }

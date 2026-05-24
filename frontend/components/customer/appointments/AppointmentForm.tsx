@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
 import FormSelect from "@/components/form/FormSelect";
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
 import ProductConfigurator from "@/components/quote/ProductConfigurator";
 import QuoteCart from "@/components/quote/QuoteCart";
@@ -22,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
+import { allowsMorning, minimumBookingDate } from "@/features/booking/booking-utils";
 import {
   createCustomerAppointment,
   updateCustomerAppointment,
@@ -40,12 +44,61 @@ import type { Product } from "@/features/products/types";
 import type { QuoteCartItem } from "@/features/quotes/types";
 import { cartItemToPayload, quoteTotal } from "@/features/quotes/quote-utils";
 import { formatCurrency, productCover } from "@/features/products/product-utils";
+import {
+  personNameSchema,
+  philippineMobileSchema,
+  requiredDateSchema,
+  requiredEmailSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import type {
   CustomerAppointment,
   CustomerAppointmentForm,
 } from "@/features/customer/types";
 
 type FieldErrors = Partial<Record<keyof CustomerAppointmentForm | "items" | "form", string>>;
+
+const customerAppointmentSchema = z
+  .object({
+    first_name: personNameSchema("First name"),
+    last_name: personNameSchema("Last name"),
+    phone_number: philippineMobileSchema(),
+    email: requiredEmailSchema(),
+    address: z.string().trim().min(5, "Service address is required."),
+    address_pinned: z.string().optional(),
+    address_lat: z.string().optional(),
+    address_lng: z.string().optional(),
+    preferred_date: requiredDateSchema("Preferred date").refine(
+      (value) => value >= minimumBookingDate(),
+      "Date cannot be in the past.",
+    ),
+    preferred_time: z.enum(["morning", "afternoon"], {
+      message: "Preferred time is required.",
+    }),
+    service_type: z.string().min(1, "Service type is required."),
+    service_type_other: z.string().trim().optional(),
+    additional_notes: z.string().max(2000, "Notes must be 2000 characters or fewer.").optional(),
+    consent: z.literal(true, {
+      message: "You must agree to be contacted.",
+    }),
+  })
+  .superRefine((value, context) => {
+    if (value.preferred_time === "morning" && !allowsMorning(value.preferred_date)) {
+      context.addIssue({
+        code: "custom",
+        path: ["preferred_time"],
+        message: "Morning is no longer available for this date.",
+      });
+    }
+
+    if (value.service_type === "other" && !value.service_type_other?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["service_type_other"],
+        message: "Please describe the service needed.",
+      });
+    }
+  });
 
 function fieldError(error: unknown, fallback: string): FieldErrors {
   if (!(error instanceof ApiError)) return { form: fallback };
@@ -79,6 +132,7 @@ export default function AppointmentForm({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [validatedData, setValidatedData] = useState<CustomerAppointmentForm | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [quoteCart, setQuoteCart] = useState<QuoteCartItem[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -126,6 +180,13 @@ export default function AppointmentForm({
       return;
     }
 
+    const parsed = customerAppointmentSchema.safeParse(data);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof CustomerAppointmentForm | "items" | "form">(parsed.error.issues));
+      return;
+    }
+
+    setValidatedData(parsed.data as CustomerAppointmentForm);
     setConfirmOpen(true);
   }
 
@@ -135,7 +196,7 @@ export default function AppointmentForm({
 
     try {
       const payload = {
-        ...data,
+        ...(validatedData ?? data),
         ...(quoteCart.length > 0 ? { items: quoteCart.map(cartItemToPayload) } : {}),
       };
       const response = appointment
@@ -155,9 +216,9 @@ export default function AppointmentForm({
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label="First Name" value={data.first_name} error={errors.first_name} onChange={(value) => setField("first_name", value)} />
-          <TextField label="Last Name" value={data.last_name} error={errors.last_name} onChange={(value) => setField("last_name", value)} />
-          <TextField label="Phone Number" value={data.phone_number} error={errors.phone_number} onChange={(value) => setField("phone_number", value)} />
+          <TextField kind="name" label="First Name" value={data.first_name} error={errors.first_name} onChange={(value) => setField("first_name", value)} />
+          <TextField kind="name" label="Last Name" value={data.last_name} error={errors.last_name} onChange={(value) => setField("last_name", value)} />
+          <TextField kind="phone" label="Phone Number" value={data.phone_number} error={errors.phone_number} onChange={(value) => setField("phone_number", value)} />
           <TextField label="Email" value={data.email} error={errors.email} onChange={(value) => setField("email", value)} />
         </div>
 
@@ -411,18 +472,26 @@ function TextField({
   value,
   error,
   onChange,
+  kind,
 }: {
   label: string;
   value: string;
   error?: string;
   onChange: (value: string) => void;
+  kind?: "name" | "phone";
 }) {
   const id = label.toLowerCase().replaceAll(" ", "_");
 
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} value={value} onChange={(event) => onChange(event.target.value)} />
+      {kind === "name" ? (
+        <NameInput id={id} value={value} onValueChange={onChange} />
+      ) : kind === "phone" ? (
+        <PhoneNumberInput id={id} value={value} onValueChange={onChange} />
+      ) : (
+        <Input id={id} value={value} onChange={(event) => onChange(event.target.value)} />
+      )}
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );

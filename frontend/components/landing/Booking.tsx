@@ -5,6 +5,8 @@ import { FormEvent, useCallback, useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -86,7 +88,6 @@ export default function Booking() {
       setSuccess("Appointment booked successfully. We will contact you soon.");
       setData(createInitialBookingForm());
     } catch (error) {
-      console.log(error)
       if (error instanceof ApiError) {
         setErrors(flattenServerErrors(error));
       } else {
@@ -173,10 +174,10 @@ export default function Booking() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="first_name">First Name</Label>
-                <Input
+                <NameInput
                   id="first_name"
                   value={data.first_name}
-                  onChange={(event) => setField("first_name", event.target.value)}
+                  onValueChange={(value) => setField("first_name", value)}
                   placeholder="Juan"
                 />
                 {fieldError("first_name") && (
@@ -187,10 +188,10 @@ export default function Booking() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="last_name">Last Name</Label>
-                <Input
+                <NameInput
                   id="last_name"
                   value={data.last_name}
-                  onChange={(event) => setField("last_name", event.target.value)}
+                  onValueChange={(value) => setField("last_name", value)}
                   placeholder="dela Cruz"
                 />
                 {fieldError("last_name") && (
@@ -203,12 +204,10 @@ export default function Booking() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="phone_number">Phone Number</Label>
-              <Input
+              <PhoneNumberInput
                 id="phone_number"
                 value={data.phone_number}
-                onChange={(event) => setField("phone_number", event.target.value)}
-                type="tel"
-                placeholder="+63 9XX XXX XXXX"
+                onValueChange={(value) => setField("phone_number", value)}
               />
               {fieldError("phone_number") && (
                 <span className="text-xs text-red-500">

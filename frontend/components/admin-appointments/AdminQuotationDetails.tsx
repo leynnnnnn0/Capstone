@@ -324,14 +324,14 @@ function QuotationItemCard({
         </Button>
       </div>
 
-      {item.options.length > 0 && (
+      {(item.options?.length ?? 0) > 0 && (
         <div className="border-t px-3 py-2">
           <div className="mb-1.5 flex items-center gap-1">
             <Layers className="h-3 w-3 text-muted-foreground" />
             <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">Material Options</span>
           </div>
           <div className="space-y-1">
-            {item.options.map((option) => (
+            {item.options?.map((option) => (
               <div key={option.id} className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted-foreground">{option.group_name}:</span>

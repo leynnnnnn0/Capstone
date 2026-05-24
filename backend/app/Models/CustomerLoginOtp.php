@@ -20,6 +20,10 @@ class CustomerLoginOtp extends Model implements AuditableContract
         'user_agent',
     ];
 
+    protected $auditExclude = [
+        'code_hash',
+    ];
+
     protected $casts = [
         'expires_at' => 'datetime',
         'consumed_at' => 'datetime',

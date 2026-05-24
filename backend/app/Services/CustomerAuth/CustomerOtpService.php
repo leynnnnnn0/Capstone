@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\CustomerLoginOtp;
 use App\Models\User;
 use App\Models\WorkJob;
+use App\Services\Audit\AuthAuditLogger;
 use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -21,7 +22,8 @@ class CustomerOtpService
     private const MAX_ATTEMPTS = 5;
 
     public function __construct(
-        private readonly CustomerAccountResolver $customerAccountResolver
+        private readonly CustomerAccountResolver $customerAccountResolver,
+        private readonly AuthAuditLogger $authAuditLogger
     ) {}
 
     public function requestCode(string $contact, Request $request): array
@@ -38,7 +40,7 @@ class CustomerOtpService
             ->whereNull('consumed_at')
             ->update(['consumed_at' => now()]);
 
-        CustomerLoginOtp::create([
+        $otp = CustomerLoginOtp::create([
             'contact' => $contact,
             'contact_type' => $contactType,
             'code_hash' => Hash::make($code),
@@ -46,6 +48,18 @@ class CustomerOtpService
             'ip_address' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 1000),
         ]);
+
+        $this->authAuditLogger->log(
+            request: $request,
+            event: 'customer_otp_requested',
+            auditable: $otp,
+            newValues: [
+                'contact_type' => $contactType,
+                'contact' => $this->maskContact($contact, $contactType),
+                'expires_at' => $otp->expires_at?->toISOString(),
+                'delivery_channel' => $contactType === 'email' ? 'email' : 'sms',
+            ]
+        );
 
         $this->sendCode($contact, $contactType, $code);
 
@@ -227,5 +241,19 @@ class CustomerOtpService
         }
 
         return preg_replace('/[\s().-]+/', '', $phone);
+    }
+
+    private function maskContact(string $contact, string $contactType): string
+    {
+        if ($contactType === 'email') {
+            [$local, $domain] = explode('@', $contact, 2);
+            $visible = substr($local, 0, min(2, strlen($local)));
+
+            return $visible . str_repeat('*', max(3, strlen($local) - strlen($visible))) . '@' . $domain;
+        }
+
+        return strlen($contact) <= 6
+            ? str_repeat('*', strlen($contact))
+            : substr($contact, 0, 4) . str_repeat('*', max(3, strlen($contact) - 6)) . substr($contact, -2);
     }
 }

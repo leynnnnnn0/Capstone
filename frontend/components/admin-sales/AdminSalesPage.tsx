@@ -135,9 +135,10 @@ export default function AdminSalesPage() {
   }, [loadReport]);
 
   function applyFilter(next: SalesFilters) {
+    const cleanNext = normalizeSalesDateRange(filters, next);
     const params = new URLSearchParams(searchParams.toString());
 
-    Object.entries(next).forEach(([key, value]) => {
+    Object.entries(cleanNext).forEach(([key, value]) => {
       if (!value) params.delete(key);
       else params.set(key, String(value));
     });
@@ -403,6 +404,17 @@ function ChartLoading() {
 
 function EmptyChart({ label }: { label: string }) {
   return <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">{label}</div>;
+}
+
+function normalizeSalesDateRange(current: SalesFilters, next: SalesFilters): SalesFilters {
+  const dateFrom = next.date_from ?? current.date_from ?? "";
+  const dateTo = next.date_to ?? current.date_to ?? "";
+
+  if (!dateFrom || !dateTo || dateTo >= dateFrom) return next;
+
+  return next.date_from !== undefined
+    ? { ...next, date_to: dateFrom }
+    : { ...next, date_from: dateTo };
 }
 
 function BreakdownLegend<T extends SalesBreakdownPoint>({ data, labelKey }: { data: T[]; labelKey: keyof T }) {

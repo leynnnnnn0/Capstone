@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Banknote, CreditCard, Loader2, WalletCards } from "lucide-react";
+import { z } from "zod";
 
+import NumericInput from "@/components/form/NumericInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +30,11 @@ import { recordManualWorkJobPayment } from "@/features/admin-work-jobs/admin-wor
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import { formatPeso } from "@/features/customer/customer-utils";
 import type { CustomerPaymentMethod, CustomerPaymentType } from "@/features/customer/types";
+import {
+  positiveNumberStringSchema,
+  requiredDateSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import { ApiError } from "@/lib/api";
 
 type ManualPaymentForm = {
@@ -38,11 +45,21 @@ type ManualPaymentForm = {
   remarks: string;
 };
 
+type ManualPaymentErrors = Partial<Record<keyof ManualPaymentForm | "form", string>>;
+
 const methodOptions: Array<{ value: ManualPaymentForm["method"]; label: string }> = [
   { value: "cash", label: "Cash" },
   { value: "bank_transfer", label: "Bank Transfer" },
   { value: "other", label: "Other" },
 ];
+
+const manualPaymentSchema = z.object({
+  type: z.enum(["down_payment", "final_payment", "full_payment", "additional_charge"]),
+  method: z.enum(["cash", "bank_transfer", "other"]),
+  amount: positiveNumberStringSchema("Amount"),
+  paid_at: requiredDateSchema("Paid date"),
+  remarks: z.string().trim().max(1000, "Remarks must be 1000 characters or fewer.").optional(),
+});
 
 export default function AdminWorkJobPaymentsCard({
   workJob,
@@ -55,6 +72,7 @@ export default function AdminWorkJobPaymentsCard({
   const [form, setForm] = useState<ManualPaymentForm>(() => defaultForm(workJob));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ManualPaymentErrors>({});
   const summary = workJob.payment_summary;
   const payableTotal = summary.payable_total ?? summary.quotation_total;
   const paymentNotRequired = Boolean(summary.payment_not_required);
@@ -70,19 +88,40 @@ export default function AdminWorkJobPaymentsCard({
   const canRecord = summary.can_accept_payment && workJob.status !== "cancelled";
 
   useEffect(() => {
-    if (open) setForm(defaultForm(workJob));
+    if (open) {
+      setForm(defaultForm(workJob));
+      setError(null);
+      setFieldErrors({});
+    }
   }, [open, workJob]);
 
+  function setField<K extends keyof ManualPaymentForm>(field: K, value: ManualPaymentForm[K]) {
+    setForm((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
+    setError(null);
+  }
+
   async function submit() {
+    const parsed = manualPaymentSchema.safeParse(form);
+
+    if (!parsed.success) {
+      setFieldErrors(zodIssuesToFieldErrors<keyof ManualPaymentForm | "form">(parsed.error.issues));
+      return;
+    }
+
     setSaving(true);
     setError(null);
+    setFieldErrors({});
+
+    const validated = parsed.data;
+
     try {
       const response = await recordManualWorkJobPayment(workJob.id, {
-        type: form.type,
-        method: form.method,
-        amount: Number(form.amount),
-        paid_at: form.paid_at || undefined,
-        remarks: form.remarks || undefined,
+        type: validated.type,
+        method: validated.method,
+        amount: Number(validated.amount),
+        paid_at: validated.paid_at,
+        remarks: validated.remarks || undefined,
       });
       onUpdated(response.data);
       setOpen(false);
@@ -238,6 +277,7 @@ export default function AdminWorkJobPaymentsCard({
                 onValueChange={(value) => {
                   const nextType = value as CustomerPaymentType;
                   const option = options.find((item) => item.value === nextType);
+                  setFieldErrors((current) => ({ ...current, type: undefined, amount: undefined, form: undefined }));
                   setForm((current) => ({
                     ...current,
                     type: nextType,
@@ -256,13 +296,14 @@ export default function AdminWorkJobPaymentsCard({
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.type && <p className="text-xs text-red-500">{fieldErrors.type}</p>}
             </div>
 
             <div className="grid gap-1.5">
               <Label>Method</Label>
               <Select
                 value={form.method}
-                onValueChange={(value) => setForm((current) => ({ ...current, method: value as ManualPaymentForm["method"] }))}
+                onValueChange={(value) => setField("method", value as ManualPaymentForm["method"])}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -275,17 +316,17 @@ export default function AdminWorkJobPaymentsCard({
                   ))}
                 </SelectContent>
               </Select>
+              {fieldErrors.method && <p className="text-xs text-red-500">{fieldErrors.method}</p>}
             </div>
 
             <div className="grid gap-1.5">
               <Label>Amount</Label>
-              <Input
-                type="number"
-                min="0.01"
-                step="0.01"
+              <NumericInput
                 value={form.amount}
-                onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+                decimalScale={2}
+                onValueChange={(value) => setField("amount", value)}
               />
+              {fieldErrors.amount && <p className="text-xs text-red-500">{fieldErrors.amount}</p>}
             </div>
 
             <div className="grid gap-1.5">
@@ -293,18 +334,20 @@ export default function AdminWorkJobPaymentsCard({
               <Input
                 type="date"
                 value={form.paid_at}
-                onChange={(event) => setForm((current) => ({ ...current, paid_at: event.target.value }))}
+                onChange={(event) => setField("paid_at", event.target.value)}
               />
+              {fieldErrors.paid_at && <p className="text-xs text-red-500">{fieldErrors.paid_at}</p>}
             </div>
 
             <div className="grid gap-1.5">
               <Label>Remarks</Label>
               <Textarea
                 value={form.remarks}
-                onChange={(event) => setForm((current) => ({ ...current, remarks: event.target.value }))}
+                onChange={(event) => setField("remarks", event.target.value)}
                 placeholder="Receipt number, collector name, or payment note."
                 className="min-h-20 resize-none"
               />
+              {fieldErrors.remarks && <p className="text-xs text-red-500">{fieldErrors.remarks}</p>}
             </div>
           </div>
 

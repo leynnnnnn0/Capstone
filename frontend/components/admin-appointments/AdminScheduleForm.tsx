@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock, Loader2, Users } from "lucide-react";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
@@ -23,9 +24,35 @@ import {
 } from "@/features/admin-appointments/admin-appointment-api";
 import { formatAdminDate, formatAdminTime } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment, AdminWorker, SchedulePayload } from "@/features/admin-appointments/types";
+import {
+  addScheduleIssues,
+  requiredDateSchema,
+  requiredTimeSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import { ApiError } from "@/lib/api";
 
 type ScheduleErrors = Partial<Record<keyof SchedulePayload | "form", string>>;
+
+const scheduleSchema = z
+  .object({
+    appointment_date: requiredDateSchema("Appointment date"),
+    appointment_time_from: requiredTimeSchema("Start time"),
+    appointment_time_until: requiredTimeSchema("End time"),
+    worker_ids: z.array(z.number()).min(1, "Please assign at least one worker."),
+    remarks: z.string().trim().max(1000, "Remarks must be 1000 characters or fewer.").optional(),
+  })
+  .superRefine((data, context) => {
+    addScheduleIssues(context, {
+      startDate: data.appointment_date,
+      startDateField: "appointment_date",
+      startTime: data.appointment_time_from,
+      startTimeField: "appointment_time_from",
+      endTime: data.appointment_time_until,
+      endTimeField: "appointment_time_until",
+      allowPastStartDate: true,
+    });
+  });
 
 export default function AdminScheduleForm({
   appointment,
@@ -93,27 +120,36 @@ export default function AdminScheduleForm({
   }
 
   function validate() {
-    const nextErrors: ScheduleErrors = {};
-    if (!data.appointment_date) nextErrors.appointment_date = "Appointment date is required.";
-    if (!data.appointment_time_from) nextErrors.appointment_time_from = "Start time is required.";
-    if (!data.appointment_time_until) nextErrors.appointment_time_until = "End time is required.";
-    if (data.appointment_time_from && data.appointment_time_until && data.appointment_time_until <= data.appointment_time_from) {
-      nextErrors.appointment_time_until = "End time must be after the start time.";
+    const parsed = scheduleSchema.safeParse(data);
+
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof SchedulePayload | "form">(parsed.error.issues));
+      return false;
     }
-    if (data.worker_ids.length === 0) nextErrors.worker_ids = "Please assign at least one worker.";
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+
+    setErrors({});
+    return true;
   }
 
   async function saveSchedule() {
+    const parsed = scheduleSchema.safeParse(data);
+
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof SchedulePayload | "form">(parsed.error.issues));
+      setConfirmOpen(false);
+      return;
+    }
+
     setSaving(true);
     setErrors({});
+
+    const payload = parsed.data as SchedulePayload;
 
     try {
       const response =
         canSetSchedule
-          ? await confirmAppointment(appointment.id, data)
-          : await rescheduleAppointment(appointment.id, data);
+          ? await confirmAppointment(appointment.id, payload)
+          : await rescheduleAppointment(appointment.id, payload);
 
       onUpdated(response.data);
       setScheduleOpen(false);
@@ -177,7 +213,6 @@ export default function AdminScheduleForm({
               <Input
                 id="appointment_date"
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
                 value={data.appointment_date}
                 onChange={(event) => setField("appointment_date", event.target.value)}
               />

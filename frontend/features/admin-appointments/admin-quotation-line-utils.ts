@@ -53,7 +53,7 @@ export function customerItemToLineItem(item: CustomerQuotationItem): AdminLineIt
     options_amount: String(item.options_amount),
     total_amount: String(item.total_amount),
     notes: item.notes ?? "",
-    selected_options: item.options.map((option) => ({
+    selected_options: (item.options ?? []).map((option) => ({
       product_option_group_id: option.product_option_group_id,
       product_option_id: option.product_option_id,
       group_name: option.group_name,

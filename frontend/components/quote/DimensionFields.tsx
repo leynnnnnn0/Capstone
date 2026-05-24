@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import NumericInput from "@/components/form/NumericInput";
 import { Label } from "@/components/ui/label";
 import type { Product } from "@/features/products/types";
 import { parseNumber } from "@/features/quotes/quote-utils";
@@ -70,13 +70,11 @@ function NumberField({
       <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
         {label} {optional && <span className="font-normal normal-case text-slate-400">optional</span>}
       </Label>
-      <Input
-        type="number"
-        min="0"
-        step="0.01"
+      <NumericInput
         value={value}
         placeholder="0.00"
-        onChange={(event) => onChange(event.target.value)}
+        decimalScale={2}
+        onValueChange={onChange}
       />
     </div>
   );

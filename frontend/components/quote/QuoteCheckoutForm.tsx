@@ -4,6 +4,8 @@ import { useState } from "react";
 import type React from "react";
 
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -12,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import { minimumBookingDate } from "@/features/booking/booking-utils";
 import { submitQuoteRequest } from "@/features/quotes/quote-api";
-import { validateQuoteCheckout } from "@/features/quotes/quote-schema";
+import { parseQuoteCheckout, validateQuoteCheckout } from "@/features/quotes/quote-schema";
 import type {
   AppointmentQuoteResponse,
   QuoteCartItem,
@@ -76,7 +78,8 @@ export default function QuoteCheckoutForm({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const nextErrors = validateQuoteCheckout(data);
+    const parsed = parseQuoteCheckout(data);
+    const nextErrors = parsed.success ? {} : validateQuoteCheckout(data);
     if (cart.length === 0) nextErrors.items = "Add at least one product.";
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -85,8 +88,13 @@ export default function QuoteCheckoutForm({
 
     setSubmitting(true);
     try {
+      const payloadData = parsed.success ? parsed.data : data;
       const response = await submitQuoteRequest({
-        ...data,
+        ...payloadData,
+        address_pinned: payloadData.address_pinned ?? "",
+        address_lat: payloadData.address_lat ?? "",
+        address_lng: payloadData.address_lng ?? "",
+        additional_notes: payloadData.additional_notes ?? "",
         service_type: "quotation",
         items: cart.map(cartItemToPayload),
       });
@@ -158,15 +166,15 @@ export default function QuoteCheckoutForm({
 
             <div className="mb-4 grid grid-cols-2 gap-3">
               <FormField label="First Name" error={errors.first_name}>
-                <Input value={data.first_name} onChange={(event) => setField("first_name", event.target.value)} placeholder="Juan" />
+                <NameInput value={data.first_name} onValueChange={(value) => setField("first_name", value)} placeholder="Juan" />
               </FormField>
               <FormField label="Last Name" error={errors.last_name}>
-                <Input value={data.last_name} onChange={(event) => setField("last_name", event.target.value)} placeholder="Dela Cruz" />
+                <NameInput value={data.last_name} onValueChange={(value) => setField("last_name", value)} placeholder="Dela Cruz" />
               </FormField>
             </div>
 
             <FormField label="Phone / Viber" error={errors.phone_number}>
-              <Input type="tel" value={data.phone_number} onChange={(event) => setField("phone_number", event.target.value)} placeholder="+63 9XX XXX XXXX" />
+              <PhoneNumberInput value={data.phone_number} onValueChange={(value) => setField("phone_number", value)} />
             </FormField>
 
             <FormField label="Email" error={errors.email}>

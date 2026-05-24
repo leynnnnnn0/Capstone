@@ -4,13 +4,15 @@ namespace App\Http\Controllers\CustomerAuth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerAuth\VerifyCustomerOtpRequest;
+use App\Services\Audit\AuthAuditLogger;
 use App\Services\CustomerAuth\CustomerOtpService;
 
 class VerifyCustomerOtpController extends Controller
 {
     public function __invoke(
         VerifyCustomerOtpRequest $request,
-        CustomerOtpService $otpService
+        CustomerOtpService $otpService,
+        AuthAuditLogger $authAuditLogger
     ) {
         $validated = $request->validated();
         $user = $otpService->verifyCode($validated['contact'], $validated['code']);
@@ -25,6 +27,18 @@ class VerifyCustomerOtpController extends Controller
         if (app()->environment() !== 'production') {
             $response['token'] = $token;
         }
+
+        $authAuditLogger->log(
+            request: $request,
+            event: 'customer_login',
+            auditable: $user,
+            actor: $user,
+            newValues: [
+                'role' => $user->role,
+                'contact_type' => filter_var($validated['contact'], FILTER_VALIDATE_EMAIL) ? 'email' : 'phone',
+                'expires_at' => $expiresAt->toISOString(),
+            ]
+        );
 
         return response()
             ->json($response)

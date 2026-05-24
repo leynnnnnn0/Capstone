@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Loader2, Package, Plus, StickyNote, Users } from "lucide-react";
+import { z } from "zod";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
 import AdminQuotationLineItemRow from "@/components/admin-appointments/AdminQuotationLineItemRow";
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
 import FormSelect from "@/components/form/FormSelect";
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,8 +52,29 @@ import type { AdminAppointment, AdminAppointmentForm as AdminAppointmentFormStat
 import { fetchProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 import { ApiError } from "@/lib/api";
+import {
+  addScheduleIssues,
+  optionalEmailSchema,
+  personNameSchema,
+  philippineMobileSchema,
+  requiredDateSchema,
+  requiredTimeSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 
 type FieldErrors = Partial<Record<keyof AdminAppointmentFormState | "items" | "form", string>>;
+
+const adminAppointmentStatusValues = [
+  "pending",
+  "confirmed",
+  "rescheduled",
+  "on_the_way",
+  "in_progress",
+  "completed",
+  "cancelled",
+  "reopened",
+  "no_show",
+] as const;
 
 const statusOptions = [
   { value: "pending", label: "Pending" },
@@ -63,6 +87,55 @@ const statusOptions = [
   { value: "reopened", label: "Reopened" },
   { value: "no_show", label: "No Show" },
 ] as const;
+
+const adminAppointmentSchema = z.object({
+  first_name: personNameSchema("First name"),
+  last_name: personNameSchema("Last name"),
+  phone_number: philippineMobileSchema(),
+  email: optionalEmailSchema(),
+  address: z.string().trim().min(5, "Service address is required."),
+  address_pinned: z.string().optional(),
+  address_lat: z.string().optional(),
+  address_lng: z.string().optional(),
+  preferred_date: z.string().optional(),
+  preferred_time: z.enum(["morning", "afternoon"]),
+  service_type: z.string().min(1, "Service type is required."),
+  service_type_other: z.string().trim().optional(),
+  additional_notes: z.string().max(2000, "Notes must be 2000 characters or fewer.").optional(),
+  consent: z.boolean(),
+  status: z.enum(adminAppointmentStatusValues, { message: "Status is required." }),
+  appointment_date: requiredDateSchema("Appointment date"),
+  appointment_time_from: requiredTimeSchema("Start time"),
+  appointment_time_until: requiredTimeSchema("End time"),
+  worker_ids: z.array(z.number()),
+  quotation_notes: z.string().max(2000, "Quotation notes must be 2000 characters or fewer.").optional(),
+}).superRefine((value, context) => {
+  if (value.service_type === "other" && !value.service_type_other?.trim()) {
+    context.addIssue({
+      code: "custom",
+      path: ["service_type_other"],
+      message: "Describe the service type.",
+    });
+  }
+
+  if (value.status === "confirmed" && value.worker_ids.length === 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["worker_ids"],
+      message: "Assign at least one worker when confirming an appointment.",
+    });
+  }
+
+  addScheduleIssues(context, {
+    startDate: value.appointment_date,
+    startDateField: "appointment_date",
+    startTime: value.appointment_time_from,
+    startTimeField: "appointment_time_from",
+    endTime: value.appointment_time_until,
+    endTimeField: "appointment_time_until",
+    allowPastStartDate: true,
+  });
+});
 
 export default function AdminAppointmentForm({ appointmentId }: { appointmentId?: string }) {
   const router = useRouter();
@@ -175,21 +248,27 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
     setErrors({});
+
+    const parsed = adminAppointmentSchema.safeParse(data);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<string>(parsed.error.issues) as FieldErrors);
+      return;
+    }
 
     const quoteErrors = hasQuotation ? validateLineItems(items) : {};
     if (Object.keys(quoteErrors).length > 0) {
       setErrors(quoteErrors as FieldErrors);
-      setSaving(false);
       return;
     }
 
+    setSaving(true);
     try {
       const payload: AdminAppointmentFormState = {
         ...data,
-        preferred_date: data.appointment_date,
-        preferred_time: data.appointment_time_from < "12:00" ? "morning" : "afternoon",
+        ...parsed.data,
+        preferred_date: parsed.data.appointment_date,
+        preferred_time: parsed.data.appointment_time_from < "12:00" ? "morning" : "afternoon",
         ...(hasQuotation ? { items: items.map(lineItemToPayload) } : {}),
       };
       const response = appointmentId
@@ -256,18 +335,21 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <TextField
+                kind="name"
                 label="First Name"
                 value={data.first_name}
                 error={errors.first_name}
                 onChange={(value) => setField("first_name", value)}
               />
               <TextField
+                kind="name"
                 label="Last Name"
                 value={data.last_name}
                 error={errors.last_name}
                 onChange={(value) => setField("last_name", value)}
               />
               <TextField
+                kind="phone"
                 label="Phone Number"
                 value={data.phone_number}
                 error={errors.phone_number}
@@ -812,13 +894,33 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TextField({ label, type = "text", value, error, onChange }: { label: string; type?: string; value: string; error?: string; onChange: (value: string) => void }) {
+function TextField({
+  label,
+  type = "text",
+  value,
+  error,
+  onChange,
+  kind,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  error?: string;
+  onChange: (value: string) => void;
+  kind?: "name" | "phone";
+}) {
   const id = label.toLowerCase().replaceAll(" ", "_");
 
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      {kind === "name" ? (
+        <NameInput id={id} value={value} onValueChange={onChange} />
+      ) : kind === "phone" ? (
+        <PhoneNumberInput id={id} value={value} onValueChange={onChange} />
+      ) : (
+        <Input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      )}
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>
   );

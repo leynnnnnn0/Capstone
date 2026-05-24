@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown, ChevronUp, Layers, Trash2 } from "lucide-react";
 
+import NumericInput from "@/components/form/NumericInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,10 +132,18 @@ export default function AdminQuotationLineItemRow({
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <FieldError label="Width (cm)"><Input type="number" min="0" value={item.width} onChange={(event) => updateField("width", event.target.value)} /></FieldError>
-            <FieldError label="Height (cm)"><Input type="number" min="0" value={item.height} onChange={(event) => updateField("height", event.target.value)} /></FieldError>
-            <FieldError label="Thickness (mm)"><Input type="number" min="0" value={item.thickness} onChange={(event) => onUpdate(item.id, { thickness: event.target.value })} /></FieldError>
-            <FieldError label="Pieces" message={errors[`${errorPrefix}.pieces`]}><Input type="number" min="1" value={item.pieces} onChange={(event) => updateField("pieces", event.target.value)} /></FieldError>
+            <FieldError label="Width (cm)">
+              <NumericInput value={item.width} onValueChange={(value) => updateField("width", value)} />
+            </FieldError>
+            <FieldError label="Height (cm)">
+              <NumericInput value={item.height} onValueChange={(value) => updateField("height", value)} />
+            </FieldError>
+            <FieldError label="Thickness (mm)">
+              <NumericInput value={item.thickness} onValueChange={(value) => onUpdate(item.id, { thickness: value })} />
+            </FieldError>
+            <FieldError label="Pieces" message={errors[`${errorPrefix}.pieces`]}>
+              <NumericInput allowDecimal={false} value={item.pieces} onValueChange={(value) => updateField("pieces", value)} />
+            </FieldError>
           </div>
 
           {selectedProduct && groups.length > 0 && (
@@ -177,7 +186,7 @@ export default function AdminQuotationLineItemRow({
 
           <div className="grid gap-3 rounded-lg bg-muted/40 p-3 sm:grid-cols-3">
             <FieldError label="Base Price / Pc (₱)">
-              <Input type="number" min="0" step="0.01" value={item.amount_per_piece} onChange={(event) => updateField("amount_per_piece", event.target.value)} />
+              <NumericInput decimalScale={2} value={item.amount_per_piece} onValueChange={(value) => updateField("amount_per_piece", value)} />
             </FieldError>
             <FieldError label="Options Add-ons (₱)">
               <Input readOnly value={fmtPeso(item.options_amount)} className="cursor-not-allowed bg-muted" />

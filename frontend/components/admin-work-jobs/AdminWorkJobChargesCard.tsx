@@ -10,7 +10,9 @@ import {
   ReceiptText,
   Tags,
 } from "lucide-react";
+import { z } from "zod";
 
+import NumericInput from "@/components/form/NumericInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,6 +49,7 @@ import type {
 } from "@/features/customer/types";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { positiveNumberStringSchema, zodIssuesToFieldErrors } from "@/features/forms/validation";
 
 type ChargeForm = {
   title: string;
@@ -56,6 +59,8 @@ type ChargeForm = {
   amount: string;
   requires_customer_approval: boolean;
 };
+
+type ChargeFormErrors = Partial<Record<keyof ChargeForm | "form", string>>;
 
 const chargeTypes: Array<{ value: CustomerWorkJobChargeType; label: string }> = [
   { value: "service_fee", label: "Service Fee" },
@@ -74,6 +79,15 @@ const chargeStatuses: Array<{ value: CustomerWorkJobChargeStatus; label: string 
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const chargeSchema = z.object({
+  title: z.string().trim().min(2, "Charge title is required.").max(120, "Charge title is too long."),
+  description: z.string().trim().max(1000, "Description is too long.").optional(),
+  type: z.enum(["service_fee", "extra_material", "extra_labor", "delivery", "adjustment", "discount", "other"]),
+  status: z.enum(["approved", "pending_approval", "waived", "cancelled"]),
+  amount: positiveNumberStringSchema("Amount", { max: 9999999 }),
+  requires_customer_approval: z.boolean(),
+});
+
 export default function AdminWorkJobChargesCard({
   workJob,
   onUpdated,
@@ -86,6 +100,7 @@ export default function AdminWorkJobChargesCard({
   const [form, setForm] = useState<ChargeForm>(() => defaultForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<ChargeFormErrors>({});
   const charges = workJob.charges ?? [];
   const summary = workJob.payment_summary;
   const visibleCharges = useMemo(
@@ -102,6 +117,7 @@ export default function AdminWorkJobChargesCard({
     setEditingCharge(null);
     setForm(defaultForm());
     setError(null);
+    setErrors({});
     setOpen(true);
   }
 
@@ -109,25 +125,30 @@ export default function AdminWorkJobChargesCard({
     setEditingCharge(charge);
     setForm(formFromCharge(charge));
     setError(null);
+    setErrors({});
     setOpen(true);
   }
 
   async function submit() {
-    const amount = Number(form.amount);
+    const parsed = chargeSchema.safeParse(form);
 
-    if (!form.title.trim() || !Number.isFinite(amount) || amount <= 0) return;
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors<keyof ChargeForm | "form">(parsed.error.issues));
+      return;
+    }
 
     const payload: WorkJobChargePayload = {
-      title: form.title.trim(),
-      description: form.description.trim() || undefined,
-      type: form.type,
-      status: form.status,
-      amount,
-      requires_customer_approval: form.requires_customer_approval,
+      title: parsed.data.title,
+      description: parsed.data.description || undefined,
+      type: parsed.data.type,
+      status: parsed.data.status,
+      amount: Number(parsed.data.amount),
+      requires_customer_approval: parsed.data.requires_customer_approval,
     };
 
     setSaving(true);
     setError(null);
+    setErrors({});
     try {
       const response = editingCharge
         ? await updateWorkJobCharge(workJob.id, editingCharge.id, payload)
@@ -246,9 +267,13 @@ export default function AdminWorkJobChargesCard({
               <Input
                 id="charge-title"
                 value={form.title}
-                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                onChange={(event) => {
+                  setForm((current) => ({ ...current, title: event.target.value }));
+                  setErrors((current) => ({ ...current, title: undefined }));
+                }}
                 placeholder="Extra sealant, delivery fee, site protection..."
               />
+              <FieldError message={errors.title} />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -297,14 +322,16 @@ export default function AdminWorkJobChargesCard({
 
             <div className="grid gap-1.5">
               <Label htmlFor="charge-amount">Amount</Label>
-              <Input
+              <NumericInput
                 id="charge-amount"
-                type="number"
-                min="0.01"
-                step="0.01"
                 value={form.amount}
-                onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
+                decimalScale={2}
+                onValueChange={(value) => {
+                  setForm((current) => ({ ...current, amount: value }));
+                  setErrors((current) => ({ ...current, amount: undefined }));
+                }}
               />
+              <FieldError message={errors.amount} />
             </div>
 
             <label className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
@@ -328,10 +355,14 @@ export default function AdminWorkJobChargesCard({
               <Textarea
                 id="charge-description"
                 value={form.description}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                onChange={(event) => {
+                  setForm((current) => ({ ...current, description: event.target.value }));
+                  setErrors((current) => ({ ...current, description: undefined }));
+                }}
                 placeholder="Short reason for the extra fee or discount."
                 className="min-h-20 resize-none"
               />
+              <FieldError message={errors.description} />
             </div>
           </div>
 
@@ -352,6 +383,12 @@ export default function AdminWorkJobChargesCard({
       </Dialog>
     </section>
   );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+
+  return <p className="text-xs text-destructive">{message}</p>;
 }
 
 function defaultForm(): ChargeForm {

@@ -1,12 +1,10 @@
 import { z } from "zod";
 
+import {
+  nonNegativeNumberStringSchema,
+  positiveNumberStringSchema,
+} from "@/features/forms/validation";
 import type { ProductFormErrors, ProductFormState } from "./types";
-
-const positiveNumberString = z
-  .string()
-  .min(1, "Required.")
-  .refine((value) => !Number.isNaN(Number(value)), "Must be a valid number.")
-  .refine((value) => Number(value) >= 0, "Must not be negative.");
 
 export const productFormSchema = z.object({
   name: z.string().trim().min(1, "Product name is required.").max(255),
@@ -15,7 +13,7 @@ export const productFormSchema = z.object({
   unit: z.enum(["sqm", "meter", "piece", "set"], {
     message: "Select a unit.",
   }),
-  price_per_unit: positiveNumberString,
+  price_per_unit: nonNegativeNumberStringSchema("Price per unit"),
   is_active: z.boolean(),
   images: z.array(z.unknown()),
   deleted_image_ids: z.array(z.number()),
@@ -25,9 +23,9 @@ export const productFormSchema = z.object({
   variants: z.array(
     z.object({
       id: z.string(),
-      width: positiveNumberString.refine((value) => Number(value) > 0, "Must be greater than 0."),
-      height: positiveNumberString.refine((value) => Number(value) > 0, "Must be greater than 0."),
-      price: positiveNumberString,
+      width: positiveNumberStringSchema("Width"),
+      height: positiveNumberStringSchema("Height"),
+      price: nonNegativeNumberStringSchema("Variant price"),
       images: z.array(z.unknown()),
       existing_images: z.array(z.unknown()).optional(),
       deleted_image_ids: z.array(z.number()).optional(),
@@ -44,7 +42,7 @@ export const productFormSchema = z.object({
           z.object({
             id: z.string(),
             name: z.string().trim().min(1, "Option name is required."),
-            price_modifier: positiveNumberString,
+            price_modifier: nonNegativeNumberStringSchema("Price modifier"),
             sort_order: z.number(),
             is_active: z.boolean(),
           }),

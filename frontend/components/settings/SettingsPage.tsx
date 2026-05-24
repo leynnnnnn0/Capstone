@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { CheckCircle2, KeyRound, Loader2, ShieldCheck, UserRound } from "lucide-react";
+import { z } from "zod";
 
+import NameInput from "@/components/form/NameInput";
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,10 +33,29 @@ import {
   type PasswordPayload,
   type ProfilePayload,
 } from "@/features/settings/settings-api";
+import {
+  optionalPhilippineMobileSchema,
+  personNameSchema,
+  requiredEmailSchema,
+  zodIssuesToFieldErrors,
+} from "@/features/forms/validation";
 import { ApiError, type ApiValidationErrors } from "@/lib/api";
 import type { User } from "@/types/user";
 
 type Tab = "profile" | "security";
+
+const profileSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters.")
+    .max(50, "Username must be 50 characters or fewer.")
+    .regex(/^[a-zA-Z0-9._-]+$/, "Username can only contain letters, numbers, dots, underscores, and hyphens."),
+  first_name: personNameSchema("First name"),
+  last_name: personNameSchema("Last name"),
+  email: requiredEmailSchema(),
+  phone_number: optionalPhilippineMobileSchema(),
+});
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -87,12 +109,19 @@ function ProfileSettings({ user, onSaved }: { user: User | null; onSaved: () => 
   const [saving, setSaving] = useState(false);
 
   async function submit() {
-    setSaving(true);
     setErrors({});
     setSaved(false);
 
+    const parsed = profileSchema.safeParse(form);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as ApiValidationErrors);
+      return;
+    }
+
+    setSaving(true);
+
     try {
-      await updateProfile(form);
+      await updateProfile(parsed.data as ProfilePayload);
       await onSaved();
       setSaved(true);
     } catch (error) {
@@ -123,13 +152,13 @@ function ProfileSettings({ user, onSaved }: { user: User | null; onSaved: () => 
             <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
           </Field>
           <Field label="First Name" error={fieldError(errors.first_name)}>
-            <Input value={form.first_name} onChange={(event) => setForm({ ...form, first_name: event.target.value })} />
+            <NameInput value={form.first_name} onValueChange={(value) => setForm({ ...form, first_name: value })} />
           </Field>
           <Field label="Last Name" error={fieldError(errors.last_name)}>
-            <Input value={form.last_name} onChange={(event) => setForm({ ...form, last_name: event.target.value })} />
+            <NameInput value={form.last_name} onValueChange={(value) => setForm({ ...form, last_name: value })} />
           </Field>
           <Field label="Phone Number" error={fieldError(errors.phone_number)}>
-            <Input value={form.phone_number} onChange={(event) => setForm({ ...form, phone_number: event.target.value })} />
+            <PhoneNumberInput value={form.phone_number} onValueChange={(value) => setForm({ ...form, phone_number: value })} />
           </Field>
 
           <div className="flex items-center gap-3 md:col-span-2">

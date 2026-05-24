@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Box, ExternalLink, ImagePlus, Plus, Trash2, X } from "lucide-react";
 
 import FormSelect from "@/components/form/FormSelect";
+import NumericInput from "@/components/form/NumericInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -379,13 +380,11 @@ export function ProductBasicsCard({
           />
           <div className="space-y-1.5">
             <Label htmlFor="price_per_unit">Price per Unit</Label>
-            <Input
+            <NumericInput
               id="price_per_unit"
-              type="number"
-              min="0"
-              step="0.01"
               value={value.price_per_unit}
-              onChange={(event) => onChange("price_per_unit", event.target.value)}
+              decimalScale={2}
+              onValueChange={(nextValue) => onChange("price_per_unit", nextValue)}
               placeholder="0.00"
             />
             <FieldError message={errors.price_per_unit} />
@@ -476,26 +475,21 @@ export function VariantEditor({
                 </Button>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Input
-                  type="number"
-                  min="0"
+                <NumericInput
                   placeholder="Width (cm)"
                   value={variant.width}
-                  onChange={(event) => updateVariant(variant.id, { width: event.target.value })}
+                  onValueChange={(value) => updateVariant(variant.id, { width: value })}
                 />
-                <Input
-                  type="number"
-                  min="0"
+                <NumericInput
                   placeholder="Height (cm)"
                   value={variant.height}
-                  onChange={(event) => updateVariant(variant.id, { height: event.target.value })}
+                  onValueChange={(value) => updateVariant(variant.id, { height: value })}
                 />
-                <Input
-                  type="number"
-                  min="0"
+                <NumericInput
                   placeholder="Fixed Price"
                   value={variant.price}
-                  onChange={(event) => updateVariant(variant.id, { price: event.target.value })}
+                  decimalScale={2}
+                  onValueChange={(value) => updateVariant(variant.id, { price: value })}
                 />
               </div>
               <FieldError message={errors[`variants.${index}.width`]} />
@@ -608,13 +602,13 @@ export function OptionGroupEditor({
                         }}
                         placeholder={`Option ${optionIndex + 1}`}
                       />
-                      <Input
-                        type="number"
+                      <NumericInput
                         value={option.price_modifier}
-                        onChange={(event) => {
+                        decimalScale={2}
+                        onValueChange={(value) => {
                           const options = group.options.map((item) =>
                             item.id === option.id
-                              ? { ...item, price_modifier: event.target.value }
+                              ? { ...item, price_modifier: value }
                               : item,
                           );
                           updateGroup(group.id, { options });
