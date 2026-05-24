@@ -37,6 +37,7 @@ import {
   optionalPhilippineMobileSchema,
   personNameSchema,
   requiredEmailSchema,
+  strongPasswordSchema,
   zodIssuesToFieldErrors,
 } from "@/features/forms/validation";
 import { ApiError, type ApiValidationErrors } from "@/lib/api";
@@ -56,6 +57,17 @@ const profileSchema = z.object({
   email: requiredEmailSchema(),
   phone_number: optionalPhilippineMobileSchema(),
 });
+
+const passwordSchema = z
+  .object({
+    current_password: z.string().min(1, "Current password is required."),
+    password: strongPasswordSchema("New password"),
+    password_confirmation: z.string().min(1, "Confirm new password is required."),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    path: ["password_confirmation"],
+    message: "Passwords do not match.",
+  });
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -195,12 +207,19 @@ function PasswordSettings() {
   const [saving, setSaving] = useState(false);
 
   async function submit() {
-    setSaving(true);
     setErrors({});
     setSaved(false);
 
+    const parsed = passwordSchema.safeParse(form);
+    if (!parsed.success) {
+      setErrors(zodIssuesToFieldErrors(parsed.error.issues) as ApiValidationErrors);
+      return;
+    }
+
+    setSaving(true);
+
     try {
-      await updatePassword(form);
+      await updatePassword(parsed.data as PasswordPayload);
       setForm({ current_password: "", password: "", password_confirmation: "" });
       setSaved(true);
     } catch (error) {
@@ -229,6 +248,7 @@ function PasswordSettings() {
           </Field>
           <Field label="New Password" error={fieldError(errors.password)}>
             <Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+            <p className="text-xs text-muted-foreground">Use at least 8 characters with uppercase, lowercase, number, and symbol.</p>
           </Field>
           <Field label="Confirm New Password" error={fieldError(errors.password_confirmation)}>
             <Input type="password" value={form.password_confirmation} onChange={(event) => setForm({ ...form, password_confirmation: event.target.value })} />

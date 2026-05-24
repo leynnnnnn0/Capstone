@@ -8,6 +8,20 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { z } from "zod";
+import { requiredEmailSchema, strongPasswordSchema } from "@/features/forms/validation";
+
+const registerSchema = z
+  .object({
+    name: z.string().trim().min(2, "Name must be at least 2 characters."),
+    email: requiredEmailSchema(),
+    password: strongPasswordSchema(),
+    password_confirmation: z.string().min(1, "Confirm password is required."),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    path: ["password_confirmation"],
+    message: "Passwords do not match.",
+  });
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,19 +31,26 @@ export default function RegisterPage() {
   async function handleRegister(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
+    const parsed = registerSchema.safeParse({
+      name: form.get("name"),
+      email: form.get("email"),
+      password: form.get("password"),
+      password_confirmation: form.get("password_confirmation"),
+    });
+
+    if (!parsed.success) {
+      setError(firstIssue(parsed.error));
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await api("/api/register", {
         method: "POST",
-        body: JSON.stringify({
-          name: form.get("name"),
-          email: form.get("email"),
-          password: form.get("password"),
-          password_confirmation: form.get("password_confirmation"),
-        }),
+        body: JSON.stringify(parsed.data),
       });
 
       router.push("/dashboard");
@@ -65,6 +86,7 @@ export default function RegisterPage() {
           <div className="space-y-2 flex flex-col items-start w-full">
             <Label>Password</Label>
             <Input name="password" type="password" placeholder="••••••••" required />
+            <p className="text-xs text-muted-foreground">Use uppercase, lowercase, number, and symbol.</p>
           </div>
 
           <div className="space-y-2 flex flex-col items-start w-full">
@@ -88,4 +110,8 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function firstIssue(error: z.ZodError) {
+  return error.issues[0]?.message ?? "Please check the form.";
 }

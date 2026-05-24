@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
-import { Edit2, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { Edit2, Plus, RefreshCw, Search, ShieldCheck, Trash2 } from "lucide-react";
 
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
@@ -42,7 +42,7 @@ import {
 } from "@/features/admin-users/admin-user-api";
 import { adminUserSchema } from "@/features/admin-users/admin-user-schema";
 import type { AdminUser, AdminUserForm, StaffRole, UserCollection, UserOptions } from "@/features/admin-users/types";
-import { zodIssuesToFieldErrors } from "@/features/forms/validation";
+import { generateSecurePassword, zodIssuesToFieldErrors } from "@/features/forms/validation";
 
 const emptyForm: AdminUserForm = {
   username: "",
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, password: generateSecurePassword() });
     setErrors({});
     setDialogOpen(true);
   }
@@ -268,7 +268,24 @@ export default function AdminUsersPage() {
                 <PhoneNumberInput value={form.phone_number} onValueChange={(value) => setForm({ ...form, phone_number: value })} />
               </Field>
               <Field label={editing ? "Password (optional)" : "Password"} error={errors.password}>
-                <Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    className="font-mono"
+                    value={form.password}
+                    onChange={(event) => setForm({ ...form, password: event.target.value })}
+                    placeholder={editing ? "Leave blank to keep current password" : "Generated secure password"}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setForm({ ...form, password: generateSecurePassword() })}
+                  >
+                    <RefreshCw className="size-4" />
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Use uppercase, lowercase, number, and symbol.</p>
               </Field>
             </div>
 

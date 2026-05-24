@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  optionalStrongPasswordSchema,
   optionalPhilippineMobileSchema,
   personNameSchema,
   requiredEmailSchema,
@@ -17,7 +18,7 @@ export const adminUserSchema = z.object({
   last_name: personNameSchema("Last name"),
   email: requiredEmailSchema(),
   phone_number: optionalPhilippineMobileSchema(),
-  password: z.string().optional(),
+  password: optionalStrongPasswordSchema(),
   role: z.enum(["admin", "sub_admin", "worker", "customer"]),
   permissions: z.array(z.string()),
 });

@@ -3,6 +3,13 @@ import { z } from "zod";
 const PERSON_NAME_PATTERN = /^[\p{L}][\p{L}' -]*$/u;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
+const PASSWORD_LOWERCASE = /[a-z]/;
+const PASSWORD_UPPERCASE = /[A-Z]/;
+const PASSWORD_NUMBER = /\d/;
+const PASSWORD_SYMBOL = /[^A-Za-z0-9]/;
+
+export const STRONG_PASSWORD_MESSAGE =
+  "Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.";
 
 type ScheduleIssueContext = Pick<z.RefinementCtx, "addIssue">;
 
@@ -44,6 +51,37 @@ export function normalizePhilippineMobile(value: string) {
   const local = localPhilippineMobile(value);
 
   return local ? `+63${local}` : "";
+}
+
+export function isStrongPassword(value: string) {
+  return (
+    value.length >= 8 &&
+    PASSWORD_LOWERCASE.test(value) &&
+    PASSWORD_UPPERCASE.test(value) &&
+    PASSWORD_NUMBER.test(value) &&
+    PASSWORD_SYMBOL.test(value)
+  );
+}
+
+export function generateSecurePassword(length = 16) {
+  const lowercase = "abcdefghijkmnopqrstuvwxyz";
+  const uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const numbers = "23456789";
+  const symbols = "!@#$%^&*()-_=+[]{}?";
+  const all = `${lowercase}${uppercase}${numbers}${symbols}`;
+  const targetLength = Math.max(length, 12);
+  const required = [
+    randomChar(lowercase),
+    randomChar(uppercase),
+    randomChar(numbers),
+    randomChar(symbols),
+  ];
+
+  while (required.length < targetLength) {
+    required.push(randomChar(all));
+  }
+
+  return shuffle(required).join("");
 }
 
 export function sanitizeNumericInput(
@@ -93,6 +131,20 @@ export function requiredEmailSchema(label = "Email") {
     .toLowerCase()
     .min(1, `${label} is required.`)
     .email(`Enter a valid ${label.toLowerCase()} address.`);
+}
+
+export function strongPasswordSchema(label = "Password") {
+  return z
+    .string()
+    .min(1, `${label} is required.`)
+    .refine(isStrongPassword, STRONG_PASSWORD_MESSAGE);
+}
+
+export function optionalStrongPasswordSchema() {
+  return z
+    .string()
+    .optional()
+    .refine((value) => !value || isStrongPassword(value), STRONG_PASSWORD_MESSAGE);
 }
 
 export function optionalEmailSchema(label = "Email") {
@@ -245,4 +297,30 @@ function addCustomIssue(context: ScheduleIssueContext, field: string, message: s
     path: [field],
     message,
   });
+}
+
+function randomChar(chars: string) {
+  return chars[randomInt(chars.length)] ?? chars[0];
+}
+
+function randomInt(max: number) {
+  if (globalThis.crypto?.getRandomValues) {
+    const array = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(array);
+
+    return array[0] % max;
+  }
+
+  return Math.floor(Math.random() * max);
+}
+
+function shuffle<T>(items: T[]) {
+  const next = [...items];
+
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = randomInt(index + 1);
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+
+  return next;
 }

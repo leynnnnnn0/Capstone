@@ -1,25 +1,24 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, Mail, Phone } from "lucide-react";
 
+import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requestCustomerOtp, verifyCustomerOtp } from "@/features/customer-auth/customer-auth-api";
+import { normalizePhilippineMobile } from "@/features/forms/validation";
 import { ApiError } from "@/lib/api";
 
 type LoginStep = "contact" | "verify" | "success";
+type ContactMode = "phone" | "email";
 
 function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function isPhone(value: string) {
-  return /^[+0-9\s().-]{10,20}$/.test(value);
 }
 
 function apiFieldError(error: ApiError, fields: string[]) {
@@ -35,32 +34,41 @@ function apiFieldError(error: ApiError, fields: string[]) {
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>("contact");
-  const [contact, setContact] = useState("");
+  const [contactMode, setContactMode] = useState<ContactMode>("phone");
+  const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [submittedContact, setSubmittedContact] = useState("");
+  const [submittedContactLabel, setSubmittedContactLabel] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
-  const cleanedContact = contact.trim();
 
-  const contactType = useMemo(() => {
-    if (isEmail(cleanedContact)) return "email";
-    if (isPhone(cleanedContact)) return "phone";
-    return "contact";
-  }, [cleanedContact]);
+  const customerContact =
+    contactMode === "email" ? email.trim().toLowerCase() : normalizePhilippineMobile(phoneNumber);
+  const customerContactLabel =
+    contactMode === "email" ? customerContact : customerContact.replace("+63", "+63 ");
 
   async function handleRequestOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setNotice("");
 
-    if (!isEmail(cleanedContact) && !isPhone(cleanedContact)) {
-      setError("Enter a valid email address or mobile number.");
+    if (contactMode === "email" && !isEmail(customerContact)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    if (contactMode === "phone" && !/^\+639\d{9}$/.test(customerContact)) {
+      setError("Enter a valid 10-digit mobile number starting with 9.");
       return;
     }
 
     setLoading(true);
     try {
-      await requestCustomerOtp(cleanedContact);
+      await requestCustomerOtp(customerContact);
+      setSubmittedContact(customerContact);
+      setSubmittedContactLabel(customerContactLabel);
       setStep("verify");
     } catch (err) {
       setError(
@@ -83,9 +91,11 @@ export default function LoginPage() {
       return;
     }
 
+    const contactForVerification = submittedContact || customerContact;
+
     setLoading(true);
     try {
-      await verifyCustomerOtp(cleanedContact, otp);
+      await verifyCustomerOtp(contactForVerification, otp);
       setStep("success");
       router.push("/account");
     } catch (err) {
@@ -105,7 +115,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await requestCustomerOtp(cleanedContact);
+      await requestCustomerOtp(submittedContact || customerContact);
       setNotice("A new code has been sent.");
     } catch (err) {
       setError(
@@ -177,25 +187,64 @@ export default function LoginPage() {
 
               <form onSubmit={handleRequestOtp} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="contact">Email or mobile number</Label>
-                  <div className="relative">
-                    {contactType === "email" ? (
-                      <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                    ) : (
-                      <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                    )}
-                    <Input
-                      id="contact"
-                      value={contact}
-                      onChange={(event) => {
-                        setContact(event.target.value);
-                        setError("");
-                      }}
-                      placeholder="juan@example.com or +63 9XX XXX XXXX"
-                      className="h-11 pl-9"
-                      autoComplete="email"
-                    />
+                  <Label>Send code via</Label>
+                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+                    {(["phone", "email"] as ContactMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setContactMode(mode);
+                          setError("");
+                        }}
+                        className={`inline-flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium transition ${
+                          contactMode === mode
+                            ? "bg-white text-slate-950 shadow-sm"
+                            : "text-slate-500 hover:text-slate-900"
+                        }`}
+                      >
+                        {mode === "phone" ? <Phone className="size-4" /> : <Mail className="size-4" />}
+                        {mode === "phone" ? "Mobile" : "Email"}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  {contactMode === "phone" ? (
+                    <>
+                      <Label htmlFor="contact-phone">Mobile number</Label>
+                      <PhoneNumberInput
+                        id="contact-phone"
+                        value={phoneNumber}
+                        onValueChange={(value) => {
+                          setPhoneNumber(value);
+                          setError("");
+                        }}
+                        groupClassName="h-11"
+                        autoComplete="tel-national"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Label htmlFor="contact-email">Email address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          id="contact-email"
+                          type="email"
+                          value={email}
+                          onChange={(event) => {
+                            setEmail(event.target.value);
+                            setError("");
+                          }}
+                          placeholder="juan@example.com"
+                          className="h-11 pl-9"
+                          autoComplete="email"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {error && (
@@ -233,7 +282,9 @@ export default function LoginPage() {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   We sent a 6-digit code to{" "}
-                  <span className="font-semibold text-slate-800">{cleanedContact}</span>.
+                  <span className="font-semibold text-slate-800">
+                    {submittedContactLabel || customerContactLabel}
+                  </span>.
                 </p>
               </div>
 

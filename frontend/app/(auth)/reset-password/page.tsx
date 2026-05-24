@@ -7,6 +7,19 @@ import AppLogo from "@/components/ui/AppLogo";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { z } from "zod";
+import { requiredEmailSchema, strongPasswordSchema } from "@/features/forms/validation";
+
+const resetPasswordSchema = z
+  .object({
+    email: requiredEmailSchema(),
+    password: strongPasswordSchema("New password"),
+    password_confirmation: z.string().min(1, "Confirm new password is required."),
+  })
+  .refine((data) => data.password === data.password_confirmation, {
+    path: ["password_confirmation"],
+    message: "Passwords do not match.",
+  });
 
 export default function ResetPasswordPage() {
   return (
@@ -28,18 +41,32 @@ function ResetPasswordForm() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     const form = new FormData(e.currentTarget);
+    const parsed = resetPasswordSchema.safeParse({
+      email,
+      password: form.get("password"),
+      password_confirmation: form.get("password_confirmation"),
+    });
+
+    if (!token) {
+      setError("Reset token is missing.");
+      return;
+    }
+
+    if (!parsed.success) {
+      setError(firstIssue(parsed.error));
+      return;
+    }
+
+    setLoading(true);
 
     try {
       await api("/api/reset-password", {
         method: "POST",
         body: JSON.stringify({
           token,
-          email,
-          password: form.get("password"),
-          password_confirmation: form.get("password_confirmation"),
+          ...parsed.data,
         }),
       });
         
@@ -71,6 +98,7 @@ function ResetPasswordForm() {
               type="password"
               placeholder="••••••••"
             />
+            <p className="text-xs text-muted-foreground">Use uppercase, lowercase, number, and symbol.</p>
           </div>
 
           <div className="space-y-2 flex flex-col items-start w-full">
@@ -92,4 +120,8 @@ function ResetPasswordForm() {
       </div>
     </div>
   );
+}
+
+function firstIssue(error: z.ZodError) {
+  return error.issues[0]?.message ?? "Please check the form.";
 }

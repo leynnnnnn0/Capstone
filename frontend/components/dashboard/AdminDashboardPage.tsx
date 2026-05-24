@@ -27,19 +27,19 @@ import {
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
 import { adminStatusMeta, formatAdminDate } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
+import { fetchAdminPayments } from "@/features/admin-payments/admin-payment-api";
+import type { AdminPayment } from "@/features/admin-payments/types";
 import { fetchAdminWorkJobs } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import type { CustomerQuotationItem } from "@/features/customer/types";
-import { fetchProducts } from "@/features/products/product-api";
-import type { Product } from "@/features/products/types";
 
 const statusChartConfig = {
   count: { label: "Appointments", color: "#5f87b5" },
 } satisfies ChartConfig;
 
 const revenueChartConfig = {
-  approved: { label: "Approved Quote", color: "#0f8a4b" },
-  pipeline: { label: "Quote Pipeline", color: "#d49b25" },
+  paid: { label: "Paid Collections", color: "#0f8a4b" },
+  pending: { label: "Pending Payments", color: "#d49b25" },
 } satisfies ChartConfig;
 
 const workloadChartConfig = {
@@ -51,24 +51,24 @@ const pieColors = ["#5f87b5", "#0f8a4b", "#d49b25", "#c2410c", "#7a5af8", "#6474
 export default function AdminDashboardPage() {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [workJobs, setWorkJobs] = useState<AdminWorkJob[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetchAdminAppointments({ per_page: "250" }),
       fetchAdminWorkJobs({ per_page: "250" }),
-      fetchProducts({ per_page: "250" }),
+      fetchAdminPayments({ per_page: "250" }),
     ])
-      .then(([appointmentResponse, workJobResponse, productResponse]) => {
+      .then(([appointmentResponse, workJobResponse, paymentResponse]) => {
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
-        setProducts(productResponse.data);
+        setPayments(paymentResponse.data);
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const metrics = useMemo(() => buildMetrics(appointments, workJobs, products), [appointments, workJobs, products]);
+  const metrics = useMemo(() => buildMetrics(appointments, workJobs, payments), [appointments, workJobs, payments]);
 
   if (loading) {
     return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
@@ -79,17 +79,17 @@ export default function AdminDashboardPage() {
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">Business Overview</p>
         <h1 className="mt-2 text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Appointments, revenue pipeline, workload, and operational risks.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Collections, appointments, workload, and operational risks.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <TooltipProvider>
           <MetricCard
-            title="Approved Revenue"
-            value={peso(metrics.approvedRevenue)}
-            description={`${metrics.approvedItems} approved quote items`}
+            title="Collected Revenue"
+            value={peso(metrics.collectedRevenue)}
+            description={`${metrics.paidPayments} paid payments · ${peso(metrics.additionalChargesPaid)} add-ons`}
             icon={CircleDollarSign}
-            tooltip="Total value from quotation items marked approved."
+            tooltip="Paid records from PayPal, cash, bank transfers, and additional charges."
           />
           <MetricCard
             title="Open Appointments"
@@ -118,18 +118,18 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 xl:grid-cols-7">
         <Card className="xl:col-span-4">
           <CardHeader>
-            <CardTitle className="text-base">Revenue Pipeline</CardTitle>
-            <CardDescription>Approved totals versus open quotation value by month.</CardDescription>
+            <CardTitle className="text-base">Collections Trend</CardTitle>
+            <CardDescription>Paid collections versus pending payment requests by month.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={revenueChartConfig} className="h-[280px]">
-              <AreaChart data={metrics.revenueByMonth}>
+              <AreaChart data={metrics.collectionsByMonth}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Number(value) / 1000}k`} />
                 <Tooltip content={<ChartTooltipContent />} />
-                <Area dataKey="pipeline" type="monotone" fill="var(--color-pipeline)" fillOpacity={0.18} stroke="var(--color-pipeline)" />
-                <Area dataKey="approved" type="monotone" fill="var(--color-approved)" fillOpacity={0.22} stroke="var(--color-approved)" />
+                <Area dataKey="pending" type="monotone" fill="var(--color-pending)" fillOpacity={0.18} stroke="var(--color-pending)" />
+                <Area dataKey="paid" type="monotone" fill="var(--color-paid)" fillOpacity={0.22} stroke="var(--color-paid)" />
               </AreaChart>
             </ChartContainer>
           </CardContent>
@@ -176,8 +176,8 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Top Quoted Products</CardTitle>
-            <CardDescription>Most requested quotation line items.</CardDescription>
+            <CardTitle className="text-base">Top Work Job Products</CardTitle>
+            <CardDescription>Products appearing most often in customer work jobs.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -187,13 +187,13 @@ export default function AdminDashboardPage() {
                     <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span>
                     <div>
                       <p className="text-sm font-medium">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.count} quote item{item.count === 1 ? "" : "s"}</p>
+                      <p className="text-xs text-muted-foreground">{item.count} work job item{item.count === 1 ? "" : "s"}</p>
                     </div>
                   </div>
                   <Package className="size-4 text-muted-foreground" />
                 </div>
               )) : (
-                <p className="text-sm text-muted-foreground">No quotation items yet.</p>
+                <p className="text-sm text-muted-foreground">No work job quotation items yet.</p>
               )}
             </div>
           </CardContent>
@@ -288,25 +288,25 @@ function CompactSchedule({ title, code, date }: { title: string; code: string; d
   );
 }
 
-function buildMetrics(appointments: AdminAppointment[], workJobs: AdminWorkJob[], products: Product[]) {
+function buildMetrics(appointments: AdminAppointment[], workJobs: AdminWorkJob[], payments: AdminPayment[]) {
   const today = new Date().toISOString().slice(0, 10);
-  const allQuoteItems = appointments.flatMap((appointment) => appointment.quotation?.items ?? []);
-  const approvedItems = allQuoteItems.filter((item) => item.status === "approved");
-  const approvedRevenue = approvedItems.reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
-  const pipelineRevenue = allQuoteItems.reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
+  const paidPayments = payments.filter((payment) => payment.status === "paid");
+  const additionalChargePayments = paidPayments.filter((payment) => payment.type === "additional_charge");
+  const allWorkJobItems = workJobs.flatMap((workJob) => workJob.quotation?.items ?? []);
 
   return {
-    approvedRevenue,
-    approvedItems: approvedItems.length,
+    collectedRevenue: paidPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+    paidPayments: paidPayments.length,
+    additionalChargesPaid: additionalChargePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
     openAppointments: appointments.filter((item) => !["completed", "cancelled", "no_show"].includes(item.status)).length,
     pendingAppointments: appointments.filter((item) => item.status === "pending").length,
     todayAppointments: appointments.filter((item) => item.appointment_date === today).length,
     todayWorkJobs: workJobs.filter((item) => item.scheduled_date === today).length,
     serviceRisks: appointments.filter((item) => ["cancelled", "no_show"].includes(item.status)).length,
-    revenueByMonth: revenueByMonth(appointments),
+    collectionsByMonth: collectionsByMonth(payments),
     statusData: statusData(appointments),
     workerLoad: workerLoad(appointments, workJobs),
-    topProducts: topProducts(allQuoteItems),
+    topProducts: topProducts(allWorkJobItems),
     upcomingAppointments: appointments
       .filter((item) => item.appointment_date && !["cancelled", "no_show", "completed"].includes(item.status))
       .sort((a, b) => String(a.appointment_date).localeCompare(String(b.appointment_date)))
@@ -316,24 +316,21 @@ function buildMetrics(appointments: AdminAppointment[], workJobs: AdminWorkJob[]
       .sort((a, b) => String(a.scheduled_date).localeCompare(String(b.scheduled_date)))
       .slice(0, 4),
     serviceMix: serviceMix(appointments),
-    productCount: products.length,
-    pipelineRevenue,
   };
 }
 
-function revenueByMonth(appointments: AdminAppointment[]) {
-  const grouped = new Map<string, { month: string; approved: number; pipeline: number }>();
+function collectionsByMonth(payments: AdminPayment[]) {
+  const grouped = new Map<string, { month: string; paid: number; pending: number }>();
 
-  appointments.forEach((appointment) => {
-    const month = String(appointment.created_at ?? appointment.preferred_date).slice(0, 7);
-    if (!grouped.has(month)) grouped.set(month, { month, approved: 0, pipeline: 0 });
+  payments.forEach((payment) => {
+    const month = String(payment.paid_at ?? payment.created_at).slice(0, 7);
+    if (month.length < 7 || month === "null" || month === "undefined") return;
+    if (!grouped.has(month)) grouped.set(month, { month, paid: 0, pending: 0 });
     const row = grouped.get(month)!;
+    const amount = Number(payment.amount || 0);
 
-    appointment.quotation?.items.forEach((item) => {
-      const amount = Number(item.total_amount || 0);
-      row.pipeline += amount;
-      if (item.status === "approved") row.approved += amount;
-    });
+    if (payment.status === "paid") row.paid += amount;
+    if (payment.status === "pending") row.pending += amount;
   });
 
   return Array.from(grouped.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-6);
