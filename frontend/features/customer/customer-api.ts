@@ -77,6 +77,16 @@ export function getCustomerWorkJob(id: string | number) {
   return api<ResourceResponse<CustomerWorkJob>>(`/api/v1/customer/work-jobs/${id}`);
 }
 
+export function submitCustomerWorkJobRating(
+  workJobId: string | number,
+  payload: { rating: number; comment?: string },
+) {
+  return api<ResourceResponse<CustomerWorkJob>>(`/api/v1/customer/work-jobs/${workJobId}/rating`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export type CustomerPayPalConfig = {
   enabled: boolean;
   client_id: string | null;

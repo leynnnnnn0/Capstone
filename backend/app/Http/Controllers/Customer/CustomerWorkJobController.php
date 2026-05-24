@@ -31,6 +31,7 @@ class CustomerWorkJobController extends Controller
         'payments.creator',
         'charges.creator',
         'charges.approver',
+        'rating.customer',
     ];
 
     public function __construct(private readonly CustomerRecordAccess $recordAccess) {}

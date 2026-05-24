@@ -78,6 +78,10 @@ class WorkJobResource extends JsonResource
             'charges' => WorkJobChargeResource::collection(
                 $this->whenLoaded('charges')
             ),
+
+            'rating' => new WorkJobRatingResource(
+                $this->whenLoaded('rating')
+            ),
         ];
     }
 

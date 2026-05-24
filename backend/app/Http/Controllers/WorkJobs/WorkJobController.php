@@ -39,6 +39,7 @@ class WorkJobController extends Controller
                 'payments',
                 'charges.creator',
                 'charges.approver',
+                'rating.customer',
             ])
             ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
@@ -118,6 +119,7 @@ class WorkJobController extends Controller
             'charges.creator',
             'charges.approver',
             'remarks.user',
+            'rating.customer',
         ]);
 
         return response()->json([

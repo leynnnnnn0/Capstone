@@ -13,6 +13,7 @@ import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSumm
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/CustomerWorkJobBackJobsCard";
 import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/CustomerWorkJobPaymentCard";
+import CustomerWorkJobRatingCard from "@/components/customer/work-jobs/CustomerWorkJobRatingCard";
 import { Button } from "@/components/ui/button";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerDate, formatCustomerSchedule } from "@/features/customer/customer-utils";
@@ -95,6 +96,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
         <aside className="space-y-4">
           <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
+          <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
 
           <CustomerQuoteSummary
             quotation={quotation}

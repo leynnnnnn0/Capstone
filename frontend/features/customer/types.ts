@@ -95,6 +95,17 @@ export type CustomerWorkJobCharge = {
   approver?: CustomerWorker | null;
 };
 
+export type CustomerWorkJobRating = {
+  id: number;
+  work_job_id: number;
+  user_id: number;
+  rating: number;
+  comment: string | null;
+  submitted_at: string | null;
+  created_at: string;
+  customer?: CustomerWorker | null;
+};
+
 export type WorkJobPaymentSummary = {
   currency: string;
   quotation_total: number;
@@ -275,6 +286,7 @@ export type CustomerWorkJob = {
   quotation?: CustomerQuotation | null;
   payments: CustomerPayment[];
   charges?: CustomerWorkJobCharge[];
+  rating?: CustomerWorkJobRating | null;
   remarks: CustomerRemark[];
 };
 
