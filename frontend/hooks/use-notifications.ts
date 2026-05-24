@@ -14,6 +14,8 @@ import type {
 } from "@/features/notifications/types";
 import { REALTIME_NOTIFICATION_CREATED } from "@/hooks/use-realtime";
 
+const NOTIFICATION_FALLBACK_POLL_MS = 45_000;
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -22,23 +24,34 @@ export function useNotifications() {
   useEffect(() => {
     let active = true;
 
-    fetchNotifications()
-      .then((response) => {
+    async function loadNotifications(silent = false) {
+      if (!silent) setLoading(true);
+
+      try {
+        const response = await fetchNotifications();
         if (!active) return;
         setNotifications(response.data);
         setUnreadCount(response.unread_count);
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
-        setNotifications([]);
-        setUnreadCount(0);
-      })
-      .finally(() => {
+        if (!silent) {
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+
+    void loadNotifications();
+
+    const fallbackPoll = window.setInterval(() => {
+      void loadNotifications(true);
+    }, NOTIFICATION_FALLBACK_POLL_MS);
 
     return () => {
       active = false;
+      window.clearInterval(fallbackPoll);
     };
   }, []);
 

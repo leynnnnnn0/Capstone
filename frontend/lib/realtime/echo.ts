@@ -18,11 +18,19 @@ export function getEcho() {
 
   if (echo) return echo;
 
+  const key = process.env.NEXT_PUBLIC_REVERB_APP_KEY;
+
+  if (!key) {
+    console.warn("Reverb is disabled because NEXT_PUBLIC_REVERB_APP_KEY is missing.");
+    return null;
+  }
+
   window.Pusher = Pusher;
+  Pusher.logToConsole = process.env.NEXT_PUBLIC_REVERB_DEBUG === "true";
 
   echo = new Echo({
     broadcaster: "reverb",
-    key: process.env.NEXT_PUBLIC_REVERB_APP_KEY ?? "",
+    key,
     wsHost: process.env.NEXT_PUBLIC_REVERB_HOST ?? "localhost",
     wsPort: Number(process.env.NEXT_PUBLIC_REVERB_PORT ?? 8080),
     wssPort: Number(process.env.NEXT_PUBLIC_REVERB_PORT ?? 8080),

@@ -12,6 +12,8 @@ use App\Models\WorkJob;
 use App\Notifications\SystemNotification;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class RealtimeNotificationService
 {
@@ -191,10 +193,12 @@ class RealtimeNotificationService
                 $notification = $user->notifications()->latest()->first();
 
                 if ($notification && ! app()->environment('testing')) {
-                    SystemNotificationCreated::dispatch(
-                        $user->id,
-                        $notification,
-                        $user->unreadNotifications()->count()
+                    $this->safelyBroadcast(
+                        fn () => SystemNotificationCreated::dispatch(
+                            $user->id,
+                            $notification,
+                            $user->unreadNotifications()->count()
+                        )
                     );
                 }
             });
@@ -327,9 +331,23 @@ class RealtimeNotificationService
             return;
         }
 
-        RecordsChanged::dispatch($channels, [
+        $this->safelyBroadcast(fn () => RecordsChanged::dispatch($channels, [
             ...$payload,
             'occurred_at' => now()->toISOString(),
-        ]);
+        ]));
+    }
+
+    private function safelyBroadcast(callable $broadcast): void
+    {
+        try {
+            $broadcast();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Log::warning('Realtime broadcast failed. Database notification was kept.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 }

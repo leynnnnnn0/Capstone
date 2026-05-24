@@ -49,8 +49,8 @@ export function useRealtimeSubscriptions(user: User | null | undefined) {
     });
 
     return () => {
-      echo.leave(`private-users.${user.id}`);
-      if (isStaff) echo.leave("private-staff");
+      echo.leave(`users.${user.id}`);
+      if (isStaff) echo.leave("staff");
     };
   }, [user?.id, user?.roles]);
 }
