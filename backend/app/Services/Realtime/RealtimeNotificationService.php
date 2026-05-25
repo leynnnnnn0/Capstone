@@ -6,6 +6,7 @@ use App\Events\RecordsChanged;
 use App\Events\SystemNotificationCreated;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Models\WorkJob;
@@ -178,6 +179,49 @@ class RealtimeNotificationService
             'type' => 'work_job',
             'action' => 'payment_paid',
             'id' => $workJob->id,
+            'number' => $workJob->work_job_number,
+        ]);
+    }
+
+    public function paymentRefunded(
+        Payment $payment,
+        PaymentRefund $refund,
+        WorkJob $workJob,
+        string $message,
+        ?User $actor = null
+    ): void {
+        $workJob->loadMissing(['appointment']);
+
+        $payload = [
+            'type' => 'payment',
+            'action' => 'refunded',
+            'title' => 'Payment refunded',
+            'message' => $message,
+            'record_id' => $refund->id,
+            'record_number' => $refund->refund_number,
+            'href' => "/dashboard/work-jobs/{$workJob->id}",
+        ];
+
+        $staff = $this->staffUsers('payments.view');
+        $customer = $this->customerUserForWorkJob($workJob);
+
+        if ($this->shouldNotifyStaff($actor)) {
+            $this->notify($this->withoutActor($staff, $actor), $payload);
+        }
+
+        if ($customer && $this->shouldNotifyCustomer($actor)) {
+            $this->notify(collect([$customer]), [
+                ...$payload,
+                'href' => "/account/work-jobs/{$workJob->id}",
+            ]);
+        }
+
+        $this->broadcastChange($this->channels($staff, $customer), [
+            'type' => 'work_job',
+            'action' => 'payment_refunded',
+            'id' => $workJob->id,
+            'payment_id' => $payment->id,
+            'refund_id' => $refund->id,
             'number' => $workJob->work_job_number,
         ]);
     }

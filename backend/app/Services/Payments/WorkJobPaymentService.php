@@ -25,7 +25,7 @@ class WorkJobPaymentService
     {
         $workJob->load([
             'quotation.quotation_items',
-            'payments',
+            'payments.refunds',
             'charges',
         ]);
 
@@ -36,7 +36,7 @@ class WorkJobPaymentService
         $discountTotal = $this->approvedDiscountTotal($workJob);
         $pendingChargesTotal = $this->pendingChargesTotal($workJob);
         $payableTotal = max($quotationTotal + $approvedChargesTotal - $discountTotal, 0);
-        $paid = $this->paidPayments($workJob)->sum(fn (Payment $payment) => (float) $payment->amount);
+        $paid = $this->paidPayments($workJob)->sum(fn (Payment $payment) => $payment->netAmount());
         $pending = $this->pendingPayments($workJob)->sum(fn (Payment $payment) => (float) $payment->amount);
         $remaining = max($payableTotal - $paid, 0);
         $downPaymentRequired = ! $isBackJob && (bool) $workJob->is_down_payment_required;
@@ -557,8 +557,15 @@ class WorkJobPaymentService
     private function paidPayments(WorkJob $workJob)
     {
         return $workJob->relationLoaded('payments')
-            ? $workJob->payments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Paid)
-            : $workJob->payments()->where('status', PaymentStatus::Paid->value)->get();
+            ? $workJob->payments->filter(fn (Payment $payment) => $payment->capturedForRevenue())
+            : $workJob->payments()
+                ->with('refunds')
+                ->whereIn('status', [
+                    PaymentStatus::Paid->value,
+                    PaymentStatus::PartiallyRefunded->value,
+                    PaymentStatus::Refunded->value,
+                ])
+                ->get();
     }
 
     private function pendingPayments(WorkJob $workJob)
@@ -653,6 +660,7 @@ class WorkJobPaymentService
             'quotation.quotation_items.after_images',
             'payments.payer',
             'payments.creator',
+            'payments.refunds.creator',
             'charges.creator',
             'charges.approver',
             'remarks.user',

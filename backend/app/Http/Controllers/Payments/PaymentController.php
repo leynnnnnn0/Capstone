@@ -8,8 +8,10 @@ use App\Enums\PaymentType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
+use App\Services\Payments\PaymentRefundService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
@@ -23,6 +25,7 @@ class PaymentController extends Controller
             ->with([
                 'creator',
                 'payer',
+                'refunds.creator',
                 'quotation',
                 'workJob.workers',
                 'workJob.appointment',
@@ -77,6 +80,9 @@ class PaymentController extends Controller
             ->latest('created_at')
             ->paginate($perPage);
 
+        $summaryPayments = $summaryQuery->get();
+        $capturedPayments = $summaryPayments->filter(fn (Payment $payment) => $payment->capturedForRevenue());
+
         return response()->json([
             'data' => PaymentResource::collection($payments->getCollection())->resolve($request),
             'meta' => [
@@ -88,12 +94,13 @@ class PaymentController extends Controller
                 'to' => $payments->lastItem(),
             ],
             'summary' => [
-                'total_count' => (clone $summaryQuery)->count(),
-                'paid_count' => (clone $summaryQuery)->where('status', PaymentStatus::Paid->value)->count(),
-                'pending_count' => (clone $summaryQuery)->where('status', PaymentStatus::Pending->value)->count(),
-                'failed_count' => (clone $summaryQuery)->where('status', PaymentStatus::Failed->value)->count(),
-                'refunded_count' => (clone $summaryQuery)->where('status', PaymentStatus::Refunded->value)->count(),
-                'total_paid' => (float) (clone $summaryQuery)->where('status', PaymentStatus::Paid->value)->sum('amount'),
+                'total_count' => $summaryPayments->count(),
+                'paid_count' => $capturedPayments->count(),
+                'pending_count' => $summaryPayments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Pending)->count(),
+                'failed_count' => $summaryPayments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Failed)->count(),
+                'refunded_count' => $summaryPayments->filter(fn (Payment $payment) => $payment->refundedAmount() > 0)->count(),
+                'total_paid' => round($capturedPayments->sum(fn (Payment $payment) => $payment->netAmount()), 2),
+                'refunded_amount' => round($capturedPayments->sum(fn (Payment $payment) => $payment->refundedAmount()), 2),
             ],
             'options' => [
                 'statuses' => collect(PaymentStatus::cases())->map(fn (PaymentStatus $status) => [
@@ -109,6 +116,23 @@ class PaymentController extends Controller
                     'label' => $type->label(),
                 ])->values(),
             ],
+        ]);
+    }
+
+    public function refund(Payment $payment, Request $request, PaymentRefundService $refunds): JsonResponse
+    {
+        abort_unless($request->user()?->can('payments.refund'), 403);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'method' => ['nullable', Rule::enum(PaymentMethod::class)],
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $payment = $refunds->refund($payment, $data, $request->user());
+
+        return response()->json([
+            'data' => (new PaymentResource($payment))->resolve($request),
         ]);
     }
 }

@@ -74,4 +74,56 @@ class Payment extends Model implements AuditableContract
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function refunds()
+    {
+        return $this->hasMany(PaymentRefund::class);
+    }
+
+    public function completedRefunds()
+    {
+        return $this->hasMany(PaymentRefund::class)
+            ->where('status', PaymentRefund::STATUS_COMPLETED);
+    }
+
+    public function capturedForRevenue(): bool
+    {
+        return in_array($this->status, [
+            PaymentStatus::Paid,
+            PaymentStatus::PartiallyRefunded,
+            PaymentStatus::Refunded,
+        ], true);
+    }
+
+    public function refundedAmount(): float
+    {
+        $refunds = $this->relationLoaded('refunds')
+            ? $this->refunds
+            : $this->completedRefunds()->get();
+
+        return (float) $refunds
+            ->filter(fn (PaymentRefund $refund) => $refund->status === PaymentRefund::STATUS_COMPLETED)
+            ->sum(fn (PaymentRefund $refund) => (float) $refund->amount);
+    }
+
+    public function netAmount(): float
+    {
+        if (! $this->capturedForRevenue()) {
+            return 0;
+        }
+
+        return max((float) $this->amount - $this->refundedAmount(), 0);
+    }
+
+    public function refundableAmount(): float
+    {
+        return $this->capturedForRevenue()
+            ? $this->netAmount()
+            : 0;
+    }
+
+    public function canRefund(): bool
+    {
+        return $this->refundableAmount() > 0;
+    }
 }

@@ -22,43 +22,44 @@ class SalesReportService
         $groupBy = ($filters['group_by'] ?? null) === 'month' ? 'month' : 'day';
         $payments = $this->payments($filters);
 
-        $paidPayments = $payments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Paid);
+        $capturedPayments = $this->capturedPayments($payments);
         $pendingPayments = $payments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Pending);
-        $refundedPayments = $payments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Refunded);
+        $refundedPayments = $this->refundedPayments($capturedPayments);
         $outstandingWorkJobs = $this->outstandingWorkJobs();
 
-        $paidSales = $this->sumAmount($paidPayments);
+        $grossSales = $this->sumAmount($capturedPayments);
+        $netSales = $this->sumNetAmount($capturedPayments);
         $pendingAmount = $this->sumAmount($pendingPayments);
-        $refundedAmount = $this->sumAmount($refundedPayments);
+        $refundedAmount = $this->sumRefundedAmount($capturedPayments);
         $outstandingAmount = $outstandingWorkJobs->sum('remaining_amount');
-        $paidCount = $paidPayments->count();
+        $paidCount = $capturedPayments->count();
 
         return [
             'summary' => [
-                'gross_sales' => round($paidSales, 2),
-                'net_sales' => round(max($paidSales - $refundedAmount, 0), 2),
+                'gross_sales' => round($grossSales, 2),
+                'net_sales' => round($netSales, 2),
                 'pending_amount' => round($pendingAmount, 2),
                 'refunded_amount' => round($refundedAmount, 2),
                 'outstanding_amount' => round($outstandingAmount, 2),
-                'additional_charges_paid' => round($this->additionalChargesPaid($paidPayments), 2),
+                'additional_charges_paid' => round($this->additionalChargesPaid($capturedPayments), 2),
                 'paid_count' => $paidCount,
                 'pending_count' => $pendingPayments->count(),
                 'failed_count' => $payments->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Failed)->count(),
                 'refunded_count' => $refundedPayments->count(),
-                'average_payment' => round($paidCount > 0 ? $paidSales / $paidCount : 0, 2),
-                'collection_rate' => round(($paidSales + $outstandingAmount) > 0 ? ($paidSales / ($paidSales + $outstandingAmount)) * 100 : 0, 2),
+                'average_payment' => round($paidCount > 0 ? $netSales / $paidCount : 0, 2),
+                'collection_rate' => round(($netSales + $outstandingAmount) > 0 ? ($netSales / ($netSales + $outstandingAmount)) * 100 : 0, 2),
             ],
             'charts' => [
                 'sales_by_period' => $this->salesByPeriod($payments, $groupBy),
-                'payment_methods' => $this->paymentMethodBreakdown($paidPayments),
-                'payment_types' => $this->paymentTypeBreakdown($paidPayments),
+                'payment_methods' => $this->paymentMethodBreakdown($capturedPayments),
+                'payment_types' => $this->paymentTypeBreakdown($capturedPayments),
                 'status_breakdown' => $this->statusBreakdown($payments),
-                'top_products' => $this->topProducts($paidPayments),
+                'top_products' => $this->topProducts($capturedPayments),
             ],
             'tables' => [
                 'recent_payments' => $this->recentPayments($payments),
-                'top_customers' => $this->topCustomers($paidPayments),
-                'top_work_jobs' => $this->topWorkJobs($paidPayments),
+                'top_customers' => $this->topCustomers($capturedPayments),
+                'top_work_jobs' => $this->topWorkJobs($capturedPayments),
                 'outstanding_work_jobs' => $outstandingWorkJobs->take(10)->values(),
             ],
             'export_rows' => $this->exportRows($payments),
@@ -76,6 +77,7 @@ class SalesReportService
             ->with([
                 'creator',
                 'payer',
+                'refunds.creator',
                 'quotation',
                 'workJob.workers',
                 'workJob.appointment',
@@ -97,12 +99,16 @@ class SalesReportService
     {
         return $payments
             ->groupBy(fn (Payment $payment) => $this->periodKey($payment, $groupBy))
-            ->map(fn (Collection $group, string $period) => [
-                'period' => $this->periodLabel($period, $groupBy),
-                'sales' => round($this->sumAmount($group->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Paid)), 2),
-                'pending' => round($this->sumAmount($group->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Pending)), 2),
-                'payments' => $group->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Paid)->count(),
-            ])
+            ->map(function (Collection $group, string $period) use ($groupBy) {
+                $capturedPayments = $this->capturedPayments($group);
+
+                return [
+                    'period' => $this->periodLabel($period, $groupBy),
+                    'sales' => round($this->sumNetAmount($capturedPayments), 2),
+                    'pending' => round($this->sumAmount($group->filter(fn (Payment $payment) => $payment->status === PaymentStatus::Pending)), 2),
+                    'payments' => $capturedPayments->count(),
+                ];
+            })
             ->sortKeys()
             ->values()
             ->all();
@@ -116,7 +122,7 @@ class SalesReportService
 
                 return [
                     'method' => $method->label(),
-                    'value' => round($this->sumAmount($payments), 2),
+                    'value' => round($this->sumNetAmount($payments), 2),
                     'count' => $payments->count(),
                 ];
             })
@@ -133,7 +139,7 @@ class SalesReportService
 
                 return [
                     'type' => $type->label(),
-                    'value' => round($this->sumAmount($payments), 2),
+                    'value' => round($this->sumNetAmount($payments), 2),
                     'count' => $payments->count(),
                 ];
             })
@@ -151,7 +157,7 @@ class SalesReportService
 
                 return [
                     'status' => $status->label(),
-                    'value' => round($this->sumAmount($statusPayments), 2),
+                    'value' => round($this->statusBreakdownAmount($status, $statusPayments), 2),
                     'count' => $statusPayments->count(),
                 ];
             })
@@ -215,7 +221,7 @@ class SalesReportService
                     'name' => $workJob?->full_name ?: $payment->provider_payer_email ?: 'Unknown Customer',
                     'contact' => $workJob?->phone_number ?: $workJob?->email ?: $payment->provider_payer_email,
                     'payments' => $payments->count(),
-                    'total_paid' => round($this->sumAmount($payments), 2),
+                    'total_paid' => round($this->sumNetAmount($payments), 2),
                 ];
             })
             ->sortByDesc('total_paid')
@@ -240,7 +246,7 @@ class SalesReportService
                     'customer' => $workJob?->full_name ?: $payment->provider_payer_email,
                     'schedule' => $this->workJobSchedule($workJob),
                     'payments' => $payments->count(),
-                    'total_paid' => round($this->sumAmount($payments), 2),
+                    'total_paid' => round($this->sumNetAmount($payments), 2),
                 ];
             })
             ->sortByDesc('total_paid')
@@ -254,7 +260,7 @@ class SalesReportService
         return WorkJob::query()
             ->with([
                 'quotation.quotation_items',
-                'payments',
+                'payments.refunds',
                 'charges',
             ])
             ->where('status', '!=', WorkJobStatus::Cancelled->value)
@@ -296,7 +302,9 @@ class SalesReportService
                     'Type' => $row['type_label'],
                     'Method' => $row['method_label'],
                     'Status' => $row['status_label'],
-                    'Amount' => $row['amount'],
+                    'Gross Amount' => $row['amount'],
+                    'Refunded Amount' => $row['refunded_amount'],
+                    'Net Amount' => $row['net_amount'],
                     'Currency' => $row['currency'],
                     'Provider Capture ID' => $row['provider_capture_id'],
                     'Recorded At' => $row['recorded_at'],
@@ -325,6 +333,9 @@ class SalesReportService
             'status' => $payment->status?->value,
             'status_label' => $payment->status?->label(),
             'amount' => (float) $payment->amount,
+            'refunded_amount' => $payment->refundedAmount(),
+            'net_amount' => $payment->netAmount(),
+            'refundable_amount' => $payment->refundableAmount(),
             'currency' => $payment->currency,
             'provider_capture_id' => $payment->provider_capture_id,
             'recorded_at' => optional($payment->paid_at ?? $payment->created_at)->toISOString(),
@@ -334,14 +345,45 @@ class SalesReportService
 
     private function additionalChargesPaid(Collection $paidPayments): float
     {
-        return $this->sumAmount(
+        return $this->sumNetAmount(
             $paidPayments->filter(fn (Payment $payment) => $payment->type === PaymentType::AdditionalCharge)
         );
+    }
+
+    private function capturedPayments(Collection $payments): Collection
+    {
+        return $payments->filter(fn (Payment $payment) => $payment->capturedForRevenue());
+    }
+
+    private function refundedPayments(Collection $payments): Collection
+    {
+        return $payments->filter(fn (Payment $payment) => $payment->refundedAmount() > 0);
     }
 
     private function sumAmount(Collection $payments): float
     {
         return $payments->sum(fn (Payment $payment) => (float) $payment->amount);
+    }
+
+    private function sumNetAmount(Collection $payments): float
+    {
+        return $payments->sum(fn (Payment $payment) => $payment->netAmount());
+    }
+
+    private function sumRefundedAmount(Collection $payments): float
+    {
+        return $payments->sum(fn (Payment $payment) => $payment->refundedAmount());
+    }
+
+    private function statusBreakdownAmount(PaymentStatus $status, Collection $payments): float
+    {
+        return in_array($status, [
+            PaymentStatus::Paid,
+            PaymentStatus::PartiallyRefunded,
+            PaymentStatus::Refunded,
+        ], true)
+            ? $this->sumNetAmount($payments)
+            : $this->sumAmount($payments);
     }
 
     private function periodKey(Payment $payment, string $groupBy): string

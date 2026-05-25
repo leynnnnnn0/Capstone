@@ -10,16 +10,31 @@ import {
   Banknote,
   CreditCard,
   Eye,
+  Loader2,
   ReceiptText,
   RotateCcw,
   Search,
   SlidersHorizontal,
   WalletCards,
 } from "lucide-react";
+import { toast } from "sonner";
+import { z } from "zod";
 
+import NumericInput from "@/components/form/NumericInput";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
   Select,
@@ -36,7 +51,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchAdminPayments } from "@/features/admin-payments/admin-payment-api";
+import { Textarea } from "@/components/ui/textarea";
+import { fetchAdminPayments, refundAdminPayment } from "@/features/admin-payments/admin-payment-api";
 import {
   defaultPaymentMethodOptions,
   defaultPaymentStatusOptions,
@@ -59,7 +75,23 @@ import type {
   CustomerPaymentType,
 } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+type RefundErrors = {
+  amount?: string;
+  reason?: string;
+  form?: string;
+};
+
+const refundSchema = z.object({
+  amount: z.coerce.number().positive("Refund amount must be greater than zero."),
+  reason: z
+    .string()
+    .trim()
+    .min(3, "Reason is required.")
+    .max(500, "Reason must be 500 characters or fewer."),
+});
 
 export default function AdminPaymentsPage() {
   const router = useRouter();
@@ -69,6 +101,11 @@ export default function AdminPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [refundPayment, setRefundPayment] = useState<AdminPayment | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSaving, setRefundSaving] = useState(false);
+  const [refundErrors, setRefundErrors] = useState<RefundErrors>({});
 
   const filters = useMemo(
     () => ({
@@ -135,6 +172,62 @@ export default function AdminPaymentsPage() {
     router.push("/dashboard/payments");
   }
 
+  function openRefundDialog(payment: AdminPayment) {
+    setRefundPayment(payment);
+    setRefundAmount(String(payment.refundable_amount ?? 0));
+    setRefundReason("");
+    setRefundErrors({});
+  }
+
+  async function confirmRefund() {
+    if (!refundPayment) return;
+
+    const parsed = refundSchema.safeParse({
+      amount: refundAmount,
+      reason: refundReason,
+    });
+
+    if (!parsed.success) {
+      const nextErrors: RefundErrors = {};
+
+      parsed.error.issues.forEach((issue) => {
+        const key = issue.path[0] as keyof RefundErrors | undefined;
+        if (key && !nextErrors[key]) nextErrors[key] = issue.message;
+      });
+
+      setRefundErrors(nextErrors);
+      return;
+    }
+
+    if (parsed.data.amount > (refundPayment.refundable_amount ?? 0)) {
+      setRefundErrors({
+        amount: `Refund cannot exceed ${formatPeso(refundPayment.refundable_amount ?? 0)}.`,
+      });
+      return;
+    }
+
+    setRefundSaving(true);
+    setRefundErrors({});
+
+    try {
+      await refundAdminPayment(refundPayment.id, {
+        amount: parsed.data.amount,
+        reason: parsed.data.reason,
+      });
+      toast.success("Refund recorded.");
+      setRefundPayment(null);
+      setRefundAmount("");
+      setRefundReason("");
+      loadPayments();
+    } catch (error) {
+      const message = refundErrorMessage(error);
+      setRefundErrors({ form: message });
+      toast.error(message);
+    } finally {
+      setRefundSaving(false);
+    }
+  }
+
   const payments = response?.data ?? [];
   const meta = response?.meta;
   const summary = response?.summary;
@@ -163,12 +256,13 @@ export default function AdminPaymentsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         <StatCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} />
         <StatCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} />
         <StatCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} />
         <StatCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} />
         <StatCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} />
+        <StatCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} />
       </div>
 
       <div className="rounded-lg border bg-card p-3">
@@ -246,7 +340,7 @@ export default function AdminPaymentsPage() {
                 </TableCell>
               </TableRow>
             ) : payments.length > 0 ? (
-              payments.map((payment) => <PaymentRow key={payment.id} payment={payment} />)
+              payments.map((payment) => <PaymentRow key={payment.id} payment={payment} onRefund={openRefundDialog} />)
             ) : (
               <TableRow>
                 <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
@@ -265,11 +359,83 @@ export default function AdminPaymentsPage() {
           onPageChange={(page) => applyFilter({ page: String(page) }, { resetPage: false })}
         />
       )}
+
+      <AlertDialog
+        open={Boolean(refundPayment)}
+        onOpenChange={(open) => {
+          if (!open && !refundSaving) setRefundPayment(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refund payment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Record a refund against {refundPayment?.payment_number ?? `PAY-${refundPayment?.id ?? ""}`}.
+              Refundable balance: {formatPeso(refundPayment?.refundable_amount ?? 0)}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {refundErrors.form && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              {refundErrors.form}
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label>Refund Amount</Label>
+              <NumericInput
+                value={refundAmount}
+                decimalScale={2}
+                onValueChange={(value) => {
+                  setRefundAmount(value);
+                  setRefundErrors((current) => ({ ...current, amount: undefined, form: undefined }));
+                }}
+              />
+              {refundErrors.amount && <p className="text-xs text-red-500">{refundErrors.amount}</p>}
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label>Reason</Label>
+              <Textarea
+                value={refundReason}
+                onChange={(event) => {
+                  setRefundReason(event.target.value);
+                  setRefundErrors((current) => ({ ...current, reason: undefined, form: undefined }));
+                }}
+                placeholder="Why is this payment being refunded?"
+                className="min-h-20 resize-none"
+              />
+              {refundErrors.reason && <p className="text-xs text-red-500">{refundErrors.reason}</p>}
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={refundSaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={refundSaving}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmRefund();
+              }}
+            >
+              {refundSaving ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Recording...
+                </>
+              ) : (
+                "Record Refund"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function PaymentRow({ payment }: { payment: AdminPayment }) {
+function PaymentRow({ payment, onRefund }: { payment: AdminPayment; onRefund: (payment: AdminPayment) => void }) {
   const workJob = payment.work_job;
   const recordedAt = payment.paid_at ?? payment.created_at;
 
@@ -314,7 +480,12 @@ function PaymentRow({ payment }: { payment: AdminPayment }) {
       <TableCell>
         <PaymentBadge className={paymentStatusStyle[payment.status]}>{payment.status_label}</PaymentBadge>
       </TableCell>
-      <TableCell className="text-right font-medium">{formatPeso(payment.amount)}</TableCell>
+      <TableCell className="text-right">
+        <p className="font-medium">{formatPeso(payment.net_amount ?? payment.amount)}</p>
+        {(payment.refunded_amount ?? 0) > 0 && (
+          <p className="text-xs text-muted-foreground">{formatPeso(payment.refunded_amount)} refunded</p>
+        )}
+      </TableCell>
       <TableCell>
         <div className="space-y-1">
           <p>{formatPaymentDate(recordedAt)}</p>
@@ -324,13 +495,26 @@ function PaymentRow({ payment }: { payment: AdminPayment }) {
         </div>
       </TableCell>
       <TableCell className="text-right">
-        {workJob && (
-          <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${workJob.work_job_number}`}>
-            <Link href={`/dashboard/work-jobs/${workJob.id}`}>
-              <Eye className="size-4" />
-            </Link>
-          </Button>
-        )}
+        <div className="flex justify-end gap-1">
+          {payment.can_refund && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onRefund(payment)}
+              aria-label={`Refund ${payment.payment_number ?? payment.id}`}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+          )}
+          {workJob && (
+            <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${workJob.work_job_number}`}>
+              <Link href={`/dashboard/work-jobs/${workJob.id}`}>
+                <Eye className="size-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   );
@@ -402,4 +586,11 @@ function normalizeDateRange(current: { date_from: string; date_to: string }, nex
   return next.date_from !== undefined
     ? { ...next, date_to: dateFrom }
     : { ...next, date_from: dateTo };
+}
+
+function refundErrorMessage(error: unknown) {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error) return error.message;
+
+  return "Refund could not be recorded.";
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Customer\CustomerRecordOwnershipBackfill;
+use App\Services\Payments\PaymentReconciliationService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
@@ -32,3 +33,12 @@ Artisan::command('customers:backfill-record-owners', function (CustomerRecordOwn
 
     return 0;
 })->purpose('Assign legacy appointments and work jobs to customer accounts');
+
+Artisan::command('payments:reconcile {--minutes=60}', function (PaymentReconciliationService $reconciliation) {
+    $minutes = max(1, (int) $this->option('minutes'));
+    $count = $reconciliation->cancelStalePendingPayPalPayments($minutes);
+
+    $this->info("Cancelled {$count} stale pending PayPal payment(s).");
+
+    return 0;
+})->purpose('Cancel stale pending PayPal checkout records');

@@ -33,7 +33,28 @@ export type CustomerPaymentStatus =
   | "paid"
   | "failed"
   | "cancelled"
+  | "partially_refunded"
   | "refunded";
+
+export type CustomerPaymentRefund = {
+  id: number;
+  refund_number: string | null;
+  payment_id: number;
+  work_job_id: number;
+  method: CustomerPaymentMethod;
+  method_label: string;
+  status: string;
+  status_label: string;
+  amount: number;
+  currency: string;
+  provider: string | null;
+  provider_refund_id: string | null;
+  provider_capture_id: string | null;
+  reason: string | null;
+  refunded_at: string | null;
+  created_at: string;
+  creator?: CustomerWorker | null;
+};
 
 export type CustomerPayment = {
   id: number;
@@ -47,6 +68,10 @@ export type CustomerPayment = {
   status: CustomerPaymentStatus;
   status_label: string;
   amount: number;
+  refunded_amount: number;
+  net_amount: number;
+  refundable_amount: number;
+  can_refund: boolean;
   currency: string;
   provider: string | null;
   provider_order_id: string | null;
@@ -57,6 +82,7 @@ export type CustomerPayment = {
   created_at: string;
   payer?: CustomerWorker | null;
   creator?: CustomerWorker | null;
+  refunds?: CustomerPaymentRefund[];
 };
 
 export type CustomerWorkJobChargeType =

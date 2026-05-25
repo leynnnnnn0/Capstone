@@ -9,6 +9,7 @@ use App\Events\AppointmentRescheduled;
 use App\Events\AppointmentStatusChanged;
 use App\Events\AppointmentUpdated;
 use App\Events\PaymentRecorded;
+use App\Events\PaymentRefunded;
 use App\Events\QuotationChanged;
 use App\Events\QuotationSigned;
 use App\Events\QuotationSignatureInvalidated;
@@ -68,6 +69,13 @@ class DispatchRealtimeNotification
             ),
             $event instanceof PaymentRecorded => $this->realtime->paymentRecorded(
                 $event->payment,
+                $event->workJob,
+                $event->message,
+                $event->actor
+            ),
+            $event instanceof PaymentRefunded => $this->realtime->paymentRefunded(
+                $event->payment,
+                $event->refund,
                 $event->workJob,
                 $event->message,
                 $event->actor

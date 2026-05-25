@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\Payment;
+use App\Models\PaymentRefund;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -78,6 +79,33 @@ class PayPalClient
         $this->throwIfFailed($response, 'capture_order', [
             'payment_id' => $payment?->id,
             'order_id' => $orderId,
+        ]);
+
+        return $response->json();
+    }
+
+    /**
+     * @throws RequestException
+     */
+    public function refundCapture(Payment $payment, PaymentRefund $refund): array
+    {
+        $response = Http::withToken($this->accessToken())
+            ->acceptJson()
+            ->asJson()
+            ->withHeaders([
+                'PayPal-Request-Id' => "payment-{$payment->id}-refund-{$refund->id}",
+            ])
+            ->post($this->baseUrl() . "/v2/payments/captures/{$payment->provider_capture_id}/refund", [
+                'amount' => [
+                    'currency_code' => $payment->currency,
+                    'value' => number_format((float) $refund->amount, 2, '.', ''),
+                ],
+                'note_to_payer' => $refund->reason ?: "Refund for {$payment->payment_number}",
+            ]);
+
+        $this->throwIfFailed($response, 'refund_capture', [
+            'payment_id' => $payment->id,
+            'refund_id' => $refund->id,
         ]);
 
         return $response->json();

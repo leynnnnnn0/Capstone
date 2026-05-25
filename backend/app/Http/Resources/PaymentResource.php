@@ -26,9 +26,14 @@ class PaymentResource extends JsonResource
             'provider_order_id' => $this->provider_order_id,
             'provider_capture_id' => $this->provider_capture_id,
             'provider_payer_email' => $this->provider_payer_email,
+            'refunded_amount' => $this->refundedAmount(),
+            'net_amount' => $this->netAmount(),
+            'refundable_amount' => $this->refundableAmount(),
+            'can_refund' => $this->canRefund(),
             'paid_at' => $this->paid_at,
             'remarks' => $this->remarks,
             'created_at' => $this->created_at,
+            'refunds' => PaymentRefundResource::collection($this->whenLoaded('refunds')),
 
             'work_job' => $this->whenLoaded('workJob', fn () => [
                 'id' => $this->workJob->id,

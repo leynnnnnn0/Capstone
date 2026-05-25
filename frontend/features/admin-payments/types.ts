@@ -1,5 +1,6 @@
 import type {
   CustomerPaymentMethod,
+  CustomerPaymentRefund,
   CustomerPaymentStatus,
   CustomerPaymentType,
   CustomerWorker,
@@ -36,6 +37,10 @@ export type AdminPayment = {
   status: CustomerPaymentStatus;
   status_label: string;
   amount: number;
+  refunded_amount: number;
+  net_amount: number;
+  refundable_amount: number;
+  can_refund: boolean;
   currency: string;
   provider: string | null;
   provider_order_id: string | null;
@@ -48,6 +53,7 @@ export type AdminPayment = {
   quotation?: AdminPaymentQuotation | null;
   payer?: CustomerWorker | null;
   creator?: CustomerWorker | null;
+  refunds?: CustomerPaymentRefund[];
 };
 
 export type AdminPaymentSummary = {
@@ -57,6 +63,7 @@ export type AdminPaymentSummary = {
   failed_count: number;
   refunded_count: number;
   total_paid: number;
+  refunded_amount: number;
 };
 
 export type AdminPaymentOption = {

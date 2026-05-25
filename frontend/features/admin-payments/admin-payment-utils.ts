@@ -6,6 +6,7 @@ export const defaultPaymentStatusOptions = [
   { value: "paid", label: "Paid" },
   { value: "failed", label: "Failed" },
   { value: "cancelled", label: "Cancelled" },
+  { value: "partially_refunded", label: "Partially Refunded" },
   { value: "refunded", label: "Refunded" },
 ];
 
@@ -30,6 +31,7 @@ export const paymentStatusStyle: Record<CustomerPaymentStatus, string> = {
   paid: "border-emerald-200 bg-emerald-50 text-emerald-700",
   failed: "border-red-200 bg-red-50 text-red-700",
   cancelled: "border-slate-200 bg-slate-50 text-slate-600",
+  partially_refunded: "border-sky-200 bg-sky-50 text-sky-700",
   refunded: "border-blue-200 bg-blue-50 text-blue-700",
 };
 

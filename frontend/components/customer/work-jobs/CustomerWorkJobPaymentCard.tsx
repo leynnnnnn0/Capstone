@@ -21,7 +21,12 @@ import {
   type CustomerPayPalConfig,
 } from "@/features/customer/customer-api";
 import { formatPeso } from "@/features/customer/customer-utils";
-import type { CustomerPaymentType, CustomerWorkJob } from "@/features/customer/types";
+import type {
+  CustomerPayment,
+  CustomerPaymentStatus,
+  CustomerPaymentType,
+  CustomerWorkJob,
+} from "@/features/customer/types";
 import { ApiError } from "@/lib/api";
 
 type PaymentAction = {
@@ -71,7 +76,7 @@ export default function CustomerWorkJobPaymentCard({
       (summary.pending_charges_total ?? 0) > 0,
   );
   const actions = useMemo(() => paymentActions(workJob), [workJob]);
-  const paidPayments = (workJob.payments ?? []).filter((payment) => payment.status === "paid");
+  const paidPayments = (workJob.payments ?? []).filter((payment) => isCapturedPaymentStatus(payment.status));
   const canPayOnline = Boolean(config?.enabled && config.client_id && summary.can_accept_payment);
 
   return (
@@ -216,7 +221,14 @@ export default function CustomerWorkJobPaymentCard({
                     {payment.paid_at ? ` · ${formatDate(payment.paid_at)}` : ""}
                   </p>
                 </div>
-                <p className="font-semibold text-emerald-600">{formatPeso(payment.amount)}</p>
+                <div className="text-right">
+                  <p className="font-semibold text-emerald-600">{formatPeso(paymentNetAmount(payment))}</p>
+                  {(payment.refunded_amount ?? 0) > 0 && (
+                    <p className="text-[11px] text-slate-500">
+                      {formatPeso(payment.refunded_amount)} refunded
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -302,6 +314,14 @@ export default function CustomerWorkJobPaymentCard({
       </Dialog>
     </section>
   );
+}
+
+function isCapturedPaymentStatus(status: CustomerPaymentStatus) {
+  return status === "paid" || status === "partially_refunded" || status === "refunded";
+}
+
+function paymentNetAmount(payment: CustomerPayment) {
+  return Number(payment.net_amount ?? payment.amount ?? 0);
 }
 
 function paymentActions(workJob: CustomerWorkJob): PaymentAction[] {
