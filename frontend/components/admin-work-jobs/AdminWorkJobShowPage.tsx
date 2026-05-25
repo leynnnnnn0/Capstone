@@ -12,6 +12,7 @@ import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader"
 import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobPaymentsCard";
 import AdminWorkJobRatingCard from "@/components/admin-work-jobs/AdminWorkJobRatingCard";
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
+import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { hasRole } from "@/features/auth/current-user-api";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
@@ -60,6 +61,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
           <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />
           <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
           <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
+          <WorkJobWarrantyCard workJob={workJob} />
           <AdminWorkJobRatingCard workJob={workJob} />
           <AssignedWorkers workers={workJob.workers} />
           <AdminQuotationDetails

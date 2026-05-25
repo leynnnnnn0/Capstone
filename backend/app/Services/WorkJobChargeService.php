@@ -138,6 +138,7 @@ class WorkJobChargeService
             'payments.creator',
             'charges.creator',
             'charges.approver',
+            'warranty.issuedBy',
             'remarks.user',
         ];
     }

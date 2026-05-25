@@ -132,6 +132,26 @@ export type CustomerWorkJobRating = {
   customer?: CustomerWorker | null;
 };
 
+export type CustomerWorkJobWarrantyStatus = "active" | "expired" | "voided";
+
+export type CustomerWorkJobWarranty = {
+  id: number;
+  warranty_number: string | null;
+  work_job_id: number;
+  user_id: number | null;
+  issued_by_id: number | null;
+  status: CustomerWorkJobWarrantyStatus;
+  status_label: string;
+  starts_at: string | null;
+  expires_at: string | null;
+  duration_months: number;
+  coverage: string | null;
+  terms: string | null;
+  notes: string | null;
+  created_at: string;
+  issued_by?: CustomerWorker | null;
+};
+
 export type WorkJobPaymentSummary = {
   currency: string;
   quotation_total: number;
@@ -312,6 +332,7 @@ export type CustomerWorkJob = {
   quotation?: CustomerQuotation | null;
   payments: CustomerPayment[];
   charges?: CustomerWorkJobCharge[];
+  warranty?: CustomerWorkJobWarranty | null;
   rating?: CustomerWorkJobRating | null;
   remarks: CustomerRemark[];
 };

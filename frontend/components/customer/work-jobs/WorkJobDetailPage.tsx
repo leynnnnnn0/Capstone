@@ -15,6 +15,7 @@ import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/Custome
 import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/CustomerWorkJobPaymentCard";
 import CustomerWorkJobRatingCard from "@/components/customer/work-jobs/CustomerWorkJobRatingCard";
 import { Button } from "@/components/ui/button";
+import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerDate, formatCustomerSchedule } from "@/features/customer/customer-utils";
 import type { CustomerWorkJob } from "@/features/customer/types";
@@ -96,6 +97,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
         <aside className="space-y-4">
           <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
+          <WorkJobWarrantyCard workJob={workJob} />
           <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
 
           <CustomerQuoteSummary

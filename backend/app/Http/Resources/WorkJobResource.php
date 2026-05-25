@@ -79,6 +79,10 @@ class WorkJobResource extends JsonResource
                 $this->whenLoaded('charges')
             ),
 
+            'warranty' => new WorkJobWarrantyResource(
+                $this->whenLoaded('warranty')
+            ),
+
             'rating' => new WorkJobRatingResource(
                 $this->whenLoaded('rating')
             ),

@@ -31,6 +31,7 @@ class CustomerWorkJobController extends Controller
         'payments.creator',
         'charges.creator',
         'charges.approver',
+        'warranty.issuedBy',
         'rating.customer',
     ];
 

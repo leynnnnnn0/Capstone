@@ -17,7 +17,8 @@ use Illuminate\Validation\ValidationException;
 class WorkJobService
 {
     public function __construct(
-        private readonly CustomerAccountResolver $customerAccountResolver
+        private readonly CustomerAccountResolver $customerAccountResolver,
+        private readonly WorkJobWarrantyService $warrantyService
     ) {}
 
     public function create(array $data, ?User $actor = null): WorkJob
@@ -191,6 +192,8 @@ class WorkJobService
             ]);
         });
 
+        $this->warrantyService->issueForCompletedWorkJob($workJob->fresh(), $actor);
+
         $workJob = $workJob->fresh()->load($this->relations());
         WorkJobChanged::dispatch($workJob, WorkJobStatus::Completed->value, $remarks ?: 'Work job completed.', $actor);
 
@@ -279,6 +282,7 @@ class WorkJobService
             'quotation.quotation_items.after_images',
             'payments.payer',
             'payments.creator',
+            'warranty.issuedBy',
             'remarks.user',
         ];
     }

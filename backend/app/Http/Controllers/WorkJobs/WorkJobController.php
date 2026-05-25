@@ -39,6 +39,7 @@ class WorkJobController extends Controller
                 'payments',
                 'charges.creator',
                 'charges.approver',
+                'warranty.issuedBy',
                 'rating.customer',
             ])
             ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
@@ -118,6 +119,7 @@ class WorkJobController extends Controller
             'payments.creator',
             'charges.creator',
             'charges.approver',
+            'warranty.issuedBy',
             'remarks.user',
             'rating.customer',
         ]);

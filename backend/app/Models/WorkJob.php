@@ -126,4 +126,9 @@ class WorkJob extends Model implements AuditableContract
     {
         return $this->hasOne(WorkJobRating::class);
     }
+
+    public function warranty()
+    {
+        return $this->hasOne(WorkJobWarranty::class);
+    }
 }

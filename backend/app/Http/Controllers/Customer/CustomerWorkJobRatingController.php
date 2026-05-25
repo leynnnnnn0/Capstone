@@ -68,6 +68,7 @@ class CustomerWorkJobRatingController extends Controller
             'payments.creator',
             'charges.creator',
             'charges.approver',
+            'warranty.issuedBy',
             'remarks.user',
             'rating.customer',
         ]);
