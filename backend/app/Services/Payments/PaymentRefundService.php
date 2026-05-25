@@ -63,7 +63,9 @@ class PaymentRefundService
                     ],
                 ]);
 
-                throw $exception;
+                throw ValidationException::withMessages([
+                    'method' => $this->paypalRefundFailureMessage($exception),
+                ]);
             }
 
             return DB::transaction(function () use ($payment, $refund, $providerRefund, $actor) {
@@ -166,5 +168,16 @@ class PaymentRefundService
         $reason = $refund->reason ? " Reason: {$refund->reason}" : '';
 
         return "Refund recorded for {$payment->payment_number}: {$payment->currency} {$amount} via {$method}.{$reason}";
+    }
+
+    private function paypalRefundFailureMessage(RequestException $exception): string
+    {
+        $response = $exception->response?->json();
+        $message = data_get($response, 'message')
+            ?: data_get($response, 'details.0.description')
+            ?: 'PayPal rejected the refund request.';
+        $debugId = data_get($response, 'debug_id');
+
+        return $debugId ? "{$message} PayPal debug ID: {$debugId}." : $message;
     }
 }

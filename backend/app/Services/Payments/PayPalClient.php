@@ -100,7 +100,7 @@ class PayPalClient
                     'currency_code' => $payment->currency,
                     'value' => number_format((float) $refund->amount, 2, '.', ''),
                 ],
-                'note_to_payer' => $refund->reason ?: "Refund for {$payment->payment_number}",
+                'note_to_payer' => str((string) ($refund->reason ?: "Refund for {$payment->payment_number}"))->limit(255, '')->toString(),
             ]);
 
         $this->throwIfFailed($response, 'refund_capture', [

@@ -80,12 +80,16 @@ import { cn } from "@/lib/utils";
 
 type RefundErrors = {
   amount?: string;
+  method?: string;
   reason?: string;
   form?: string;
 };
 
 const refundSchema = z.object({
   amount: z.coerce.number().positive("Refund amount must be greater than zero."),
+  method: z.enum(["paypal", "cash", "bank_transfer", "other"], {
+    message: "Select how this refund will be processed.",
+  }),
   reason: z
     .string()
     .trim()
@@ -103,6 +107,7 @@ export default function AdminPaymentsPage() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [refundPayment, setRefundPayment] = useState<AdminPayment | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
+  const [refundMethod, setRefundMethod] = useState<CustomerPaymentMethod>("cash");
   const [refundReason, setRefundReason] = useState("");
   const [refundSaving, setRefundSaving] = useState(false);
   const [refundErrors, setRefundErrors] = useState<RefundErrors>({});
@@ -175,6 +180,7 @@ export default function AdminPaymentsPage() {
   function openRefundDialog(payment: AdminPayment) {
     setRefundPayment(payment);
     setRefundAmount(String(payment.refundable_amount ?? 0));
+    setRefundMethod(defaultRefundMethod(payment));
     setRefundReason("");
     setRefundErrors({});
   }
@@ -184,6 +190,7 @@ export default function AdminPaymentsPage() {
 
     const parsed = refundSchema.safeParse({
       amount: refundAmount,
+      method: refundMethod,
       reason: refundReason,
     });
 
@@ -212,11 +219,13 @@ export default function AdminPaymentsPage() {
     try {
       await refundAdminPayment(refundPayment.id, {
         amount: parsed.data.amount,
+        method: parsed.data.method,
         reason: parsed.data.reason,
       });
       toast.success("Refund recorded.");
       setRefundPayment(null);
       setRefundAmount("");
+      setRefundMethod("cash");
       setRefundReason("");
       loadPayments();
     } catch (error) {
@@ -393,6 +402,38 @@ export default function AdminPaymentsPage() {
                 }}
               />
               {refundErrors.amount && <p className="text-xs text-red-500">{refundErrors.amount}</p>}
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label>Refund Method</Label>
+              <Select
+                value={refundMethod}
+                onValueChange={(value) => {
+                  setRefundMethod(value as CustomerPaymentMethod);
+                  setRefundErrors((current) => ({ ...current, method: undefined, form: undefined }));
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select refund method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {refundMethodOptions(refundPayment).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {refundMethod === "paypal" ? (
+                <p className="text-xs text-muted-foreground">
+                  This sends the refund to PayPal using the original capture ID.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  This records an offline refund, such as cash or bank transfer, without calling PayPal.
+                </p>
+              )}
+              {refundErrors.method && <p className="text-xs text-red-500">{refundErrors.method}</p>}
             </div>
 
             <div className="grid gap-1.5">
@@ -575,6 +616,30 @@ function optionList(apiOptions: AdminPaymentOption[] | undefined, fallback: Admi
   if (!apiOptions || apiOptions.length === 0) return fallback;
 
   return [{ value: "all", label: "All" }, ...apiOptions];
+}
+
+function defaultRefundMethod(payment: AdminPayment): CustomerPaymentMethod {
+  if (payment.method === "paypal" && payment.provider_capture_id) return "paypal";
+  if (payment.method === "bank_transfer") return "bank_transfer";
+  if (payment.method === "cash") return "cash";
+
+  return "cash";
+}
+
+function refundMethodOptions(payment: AdminPayment | null): Array<{ value: CustomerPaymentMethod; label: string }> {
+  const options: Array<{ value: CustomerPaymentMethod; label: string }> = [];
+
+  if (payment?.method === "paypal" && payment.provider_capture_id) {
+    options.push({ value: "paypal", label: "Refund through PayPal" });
+  }
+
+  options.push(
+    { value: "cash", label: "Cash refund" },
+    { value: "bank_transfer", label: "Bank transfer refund" },
+    { value: "other", label: "Other / manual refund" },
+  );
+
+  return options;
 }
 
 function normalizeDateRange(current: { date_from: string; date_to: string }, next: Record<string, string>) {
