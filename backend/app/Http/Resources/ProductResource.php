@@ -35,6 +35,13 @@ class ProductResource extends JsonResource
                     : null
             ),
 
+            'warranty' => $this->whenLoaded(
+                'product_warranty',
+                fn() => $this->product_warranty
+                    ? new ProductWarrantyResource($this->product_warranty)
+                    : null
+            ),
+
             'variants' => ProductVariantResource::collection(
                 $this->whenLoaded('product_variants')
             ),

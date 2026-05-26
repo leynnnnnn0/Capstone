@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { Box, ExternalLink, ImageIcon, Package, Ruler, Settings2 } from "lucide-react";
+import { Box, ExternalLink, ImageIcon, Package, Ruler, Settings2, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import {
   productImages,
   productOptionGroups,
   productVariants,
+  productWarranty,
 } from "@/features/products/product-utils";
 
 export default function ProductDetails({ product }: { product: Product }) {
@@ -33,6 +34,7 @@ export default function ProductDetails({ product }: { product: Product }) {
   const optionGroups = productOptionGroups(product);
   const cover = productCover(product);
   const model3D = product3DModel(product);
+  const warranty = productWarranty(product);
 
   return (
     <div className="space-y-6">
@@ -139,6 +141,58 @@ export default function ProductDetails({ product }: { product: Product }) {
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <CardTitle>Warranty Default</CardTitle>
+            </div>
+            <Badge variant={warranty?.is_active ? "default" : "secondary"}>
+              {warranty?.is_active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+          <CardDescription>
+            Default warranty terms used when work jobs are completed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!warranty ? (
+            <p className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
+              No warranty policy configured.
+            </p>
+          ) : (
+            <>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Duration
+                </p>
+                <p className="mt-1 text-sm font-medium">
+                  {warranty.duration_months} month
+                  {Number(warranty.duration_months) === 1 ? "" : "s"}
+                </p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Coverage
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                  {warranty.coverage || "No coverage notes added."}
+                </p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Terms
+                </p>
+                <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                  {warranty.terms || "No terms added."}
+                </p>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

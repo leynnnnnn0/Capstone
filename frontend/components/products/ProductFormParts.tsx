@@ -3,7 +3,16 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Box, ExternalLink, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import {
+  AlertCircle,
+  Box,
+  ExternalLink,
+  ImagePlus,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import FormSelect from "@/components/form/FormSelect";
 import NumericInput from "@/components/form/NumericInput";
@@ -25,6 +34,7 @@ import type {
   ProductOptionGroupDraft,
   ProductUnit,
   ProductVariantDraft,
+  ProductWarrantyFormState,
 } from "@/features/products/types";
 import {
   calcArea,
@@ -317,6 +327,83 @@ export function CategoryPicker({
       />
       <FieldError message={error} />
     </div>
+  );
+}
+
+export function ProductWarrantyCard({
+  value,
+  errors,
+  onChange,
+}: {
+  value: ProductWarrantyFormState;
+  errors: ProductFormErrors;
+  onChange: <K extends keyof ProductWarrantyFormState>(
+    field: K,
+    nextValue: ProductWarrantyFormState[K],
+  ) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          <CardTitle>Warranty Default</CardTitle>
+        </div>
+        <CardDescription>
+          Used when a completed work job issues a warranty for this product.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <label className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+          <Checkbox
+            checked={value.is_active}
+            onCheckedChange={(checked) => onChange("is_active", checked === true)}
+          />
+          <span>
+            <Label className="font-medium">Warranty active</Label>
+            <span className="block text-xs text-muted-foreground">
+              Completed work jobs can inherit this product warranty.
+            </span>
+          </span>
+        </label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="warranty-duration">Duration (months)</Label>
+          <NumericInput
+            id="warranty-duration"
+            value={value.duration_months}
+            decimalScale={0}
+            onValueChange={(nextValue) => onChange("duration_months", nextValue)}
+            placeholder="12"
+          />
+          <FieldError message={errors["warranty.duration_months"]} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="warranty-coverage">Coverage</Label>
+          <Textarea
+            id="warranty-coverage"
+            rows={3}
+            value={value.coverage}
+            placeholder="Describe what is covered by this product warranty."
+            onChange={(event) => onChange("coverage", event.target.value)}
+          />
+          <FieldError message={errors["warranty.coverage"]} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="warranty-terms">Terms and exclusions</Label>
+          <Textarea
+            id="warranty-terms"
+            rows={4}
+            value={value.terms}
+            placeholder="Add warranty terms, exclusions, and claim conditions."
+            onChange={(event) => onChange("terms", event.target.value)}
+          />
+          <FieldError message={errors["warranty.terms"]} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -684,6 +771,8 @@ export function ProductSummaryCard({
   optionGroups,
   images,
   model3D,
+  warrantyMonths,
+  warrantyActive,
 }: {
   name: string;
   unit: string;
@@ -693,6 +782,8 @@ export function ProductSummaryCard({
   optionGroups: number;
   images: number;
   model3D?: boolean;
+  warrantyMonths?: string;
+  warrantyActive?: boolean;
 }) {
   if (!name && categories.length === 0 && variants === 0 && optionGroups === 0) return null;
 
@@ -708,6 +799,10 @@ export function ProductSummaryCard({
         <SummaryRow label="Categories" value={String(categories.length)} />
         <SummaryRow label="Images" value={String(images)} />
         <SummaryRow label="3D Model" value={model3D ? "Attached" : "None"} />
+        <SummaryRow
+          label="Warranty"
+          value={warrantyActive ? `${warrantyMonths || "0"} months` : "Inactive"}
+        />
         <SummaryRow label="Variants" value={String(variants)} />
         <SummaryRow label="Option Groups" value={String(optionGroups)} />
       </CardContent>

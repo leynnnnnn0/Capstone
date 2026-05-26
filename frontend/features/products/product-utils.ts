@@ -8,6 +8,7 @@ import type {
   UpdateProductPayload,
   ProductUnit,
   ProductVariant,
+  ProductWarranty,
 } from "./types";
 
 export const PRODUCT_UNITS: Array<{ label: string; value: ProductUnit }> = [
@@ -28,6 +29,13 @@ export const ALLOWED_IMAGE_TYPES = [
   "image/webp",
 ];
 export const ALLOWED_3D_MODEL_EXTENSIONS = [".glb", ".gltf"];
+export const DEFAULT_PRODUCT_WARRANTY = {
+  duration_months: "12",
+  is_active: true,
+  coverage: "Covers workmanship concerns found after installation or service completion.",
+  terms:
+    "Warranty claims are subject to SOG Glass & Aluminum inspection and do not cover misuse, accidental damage, or third-party alterations.",
+};
 
 export function generateId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -50,12 +58,15 @@ export function createInitialProductForm(): ProductFormState {
     model_3d: null,
     existing_3d_model: null,
     delete_3d_model: false,
+    warranty: { ...DEFAULT_PRODUCT_WARRANTY },
     variants: [],
     option_groups: [],
   };
 }
 
 export function createProductEditForm(product: Product): ProductFormState {
+  const warranty = productWarranty(product);
+
   return {
     name: product.name,
     description: product.description ?? "",
@@ -68,6 +79,14 @@ export function createProductEditForm(product: Product): ProductFormState {
     model_3d: null,
     existing_3d_model: product3DModel(product),
     delete_3d_model: false,
+    warranty: {
+      duration_months: String(
+        warranty?.duration_months ?? DEFAULT_PRODUCT_WARRANTY.duration_months,
+      ),
+      is_active: warranty?.is_active ?? DEFAULT_PRODUCT_WARRANTY.is_active,
+      coverage: warranty?.coverage ?? DEFAULT_PRODUCT_WARRANTY.coverage,
+      terms: warranty?.terms ?? DEFAULT_PRODUCT_WARRANTY.terms,
+    },
     variants: productVariants(product).map((variant) => ({
       id: String(variant.id),
       width: String(variant.width ?? ""),
@@ -158,6 +177,10 @@ export function product3DModel(product: Product): Product3DModel | null {
   return product.model_3d ?? product.product_3d_model ?? null;
 }
 
+export function productWarranty(product: Product): ProductWarranty | null {
+  return product.warranty ?? product.product_warranty ?? null;
+}
+
 export function productVariants(product: Product): ProductVariant[] {
   return unwrapCollection(product.variants ?? product.product_variants);
 }
@@ -244,6 +267,10 @@ export function appendProductFormData(data: ProductFormState) {
   formData.append("unit", data.unit);
   formData.append("price_per_unit", data.price_per_unit);
   formData.append("is_active", data.is_active ? "1" : "0");
+  formData.append("warranty[duration_months]", data.warranty.duration_months);
+  formData.append("warranty[is_active]", data.warranty.is_active ? "1" : "0");
+  formData.append("warranty[coverage]", data.warranty.coverage);
+  formData.append("warranty[terms]", data.warranty.terms);
 
   data.category_ids.forEach((categoryId) => {
     formData.append("category_ids[]", String(categoryId));

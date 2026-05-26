@@ -20,6 +20,24 @@ export const productFormSchema = z.object({
   model_3d: z.unknown().nullable(),
   existing_3d_model: z.unknown().nullable(),
   delete_3d_model: z.boolean(),
+  warranty: z.object({
+    duration_months: z
+      .string()
+      .trim()
+      .min(1, "Warranty duration is required.")
+      .regex(/^\d+$/, "Warranty duration must be a whole number.")
+      .refine((value) => Number(value) >= 1, "Warranty duration must be at least 1 month.")
+      .refine((value) => Number(value) <= 120, "Warranty duration cannot exceed 120 months."),
+    is_active: z.boolean(),
+    coverage: z
+      .string()
+      .trim()
+      .max(5000, "Warranty coverage must be 5,000 characters or less."),
+    terms: z
+      .string()
+      .trim()
+      .max(5000, "Warranty terms must be 5,000 characters or less."),
+  }),
   variants: z.array(
     z.object({
       id: z.string(),

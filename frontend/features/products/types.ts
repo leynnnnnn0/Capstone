@@ -21,6 +21,17 @@ export type Product3DModel = {
   material_targets?: unknown;
 };
 
+export type ProductWarranty = {
+  id: number;
+  product_id?: number;
+  duration_months: number | string;
+  is_active: boolean;
+  coverage?: string | null;
+  terms?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
 export type ResourceCollection<T> = T[] | { data: T[] };
 
 export type ProductOption = {
@@ -61,6 +72,8 @@ export type Product = {
   categories?: ResourceCollection<Category>;
   model_3d?: Product3DModel | null;
   product_3d_model?: Product3DModel | null;
+  warranty?: ProductWarranty | null;
+  product_warranty?: ProductWarranty | null;
   images?: ResourceCollection<ProductImage>;
   product_images?: ResourceCollection<ProductImage>;
   variants?: ResourceCollection<ProductVariant>;
@@ -123,6 +136,13 @@ export type ProductOptionGroupDraft = {
   options: ProductOptionDraft[];
 };
 
+export type ProductWarrantyFormState = {
+  duration_months: string;
+  is_active: boolean;
+  coverage: string;
+  terms: string;
+};
+
 export type ProductFormState = {
   name: string;
   description: string;
@@ -135,6 +155,7 @@ export type ProductFormState = {
   model_3d: File | null;
   existing_3d_model: Product3DModel | null;
   delete_3d_model: boolean;
+  warranty: ProductWarrantyFormState;
   variants: ProductVariantDraft[];
   option_groups: ProductOptionGroupDraft[];
 };
@@ -143,6 +164,7 @@ export type ProductFormErrors = Partial<
   Record<
     | keyof ProductFormState
     | "form"
+    | `warranty.${string}`
     | `variants.${number}.${string}`
     | `option_groups.${number}.${string}`,
     string

@@ -35,6 +35,12 @@ class UpdateProductRequest extends FormRequest
             ],
             'delete_3d_model'    => ['sometimes', 'boolean'],
 
+            'warranty'                 => ['sometimes', 'array'],
+            'warranty.duration_months' => ['required_with:warranty', 'integer', 'min:1', 'max:120'],
+            'warranty.is_active'       => ['sometimes', 'boolean'],
+            'warranty.coverage'        => ['nullable', 'string', 'max:5000'],
+            'warranty.terms'           => ['nullable', 'string', 'max:5000'],
+
             'variants'              => ['sometimes', 'array'],
             'variants.*.id'         => ['sometimes', 'integer', 'exists:product_variants,id'],
             'variants.*.width'      => ['required_with:variants', 'numeric', 'min:0'],
@@ -68,6 +74,12 @@ class UpdateProductRequest extends FormRequest
             'model_3d.extensions' => 'The 3D model must use a .glb or .gltf extension.',
             'model_3d.mimes' => 'The 3D model must be a GLB or GLTF file.',
             'model_3d.max'   => 'The 3D model must not exceed 50MB.',
+            'warranty.duration_months.required_with' => 'Warranty duration is required.',
+            'warranty.duration_months.integer' => 'Warranty duration must be a whole number of months.',
+            'warranty.duration_months.min' => 'Warranty duration must be at least 1 month.',
+            'warranty.duration_months.max' => 'Warranty duration cannot exceed 120 months.',
+            'warranty.coverage.max' => 'Warranty coverage must be 5,000 characters or less.',
+            'warranty.terms.max' => 'Warranty terms must be 5,000 characters or less.',
         ];
     }
 }

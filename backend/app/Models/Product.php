@@ -50,6 +50,11 @@ class Product extends Model implements AuditableContract
         return $this->hasOne(Product3DModel::class);
     }
 
+    public function product_warranty()
+    {
+        return $this->hasOne(ProductWarranty::class);
+    }
+
     // Cover image convenience accessor
     public function getCoverImageAttribute(): ?string
     {

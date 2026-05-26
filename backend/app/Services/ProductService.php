@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductService
 {
+    private const DEFAULT_WARRANTY_DURATION_MONTHS = 12;
+    private const DEFAULT_WARRANTY_COVERAGE = 'Covers workmanship concerns found after installation or service completion.';
+    private const DEFAULT_WARRANTY_TERMS = 'Warranty claims are subject to SOG Glass & Aluminum inspection and do not cover misuse, accidental damage, or third-party alterations.';
+
     public function create(array $data, array $files = []): Product
     {
         return DB::transaction(function () use ($data, $files) {
@@ -27,6 +31,8 @@ class ProductService
             if (!empty($data['category_ids'])) {
                 $product->categories()->sync($data['category_ids']);
             }
+
+            $this->syncWarranty($product, $data['warranty'] ?? []);
 
             // 3 — Upload product images
             if (!empty($files['images'])) {
@@ -103,6 +109,10 @@ class ProductService
 
             if (isset($data['category_ids'])) {
                 $product->categories()->sync($data['category_ids']);
+            }
+
+            if (array_key_exists('warranty', $data)) {
+                $this->syncWarranty($product, $data['warranty'] ?? []);
             }
 
             if (!empty($files['images'])) {
@@ -314,12 +324,32 @@ class ProductService
         $model->delete();
     }
 
+    private function syncWarranty(Product $product, array $data = []): void
+    {
+        $active = filter_var(
+            $data['is_active'] ?? true,
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+
+        $product->product_warranty()->updateOrCreate(
+            ['product_id' => $product->id],
+            [
+                'duration_months' => (int) ($data['duration_months'] ?? self::DEFAULT_WARRANTY_DURATION_MONTHS),
+                'is_active' => $active ?? true,
+                'coverage' => $data['coverage'] ?? self::DEFAULT_WARRANTY_COVERAGE,
+                'terms' => $data['terms'] ?? self::DEFAULT_WARRANTY_TERMS,
+            ],
+        );
+    }
+
     private function productRelations(): array
     {
         return [
             'categories',
             'product_images',
             'product_3d_model',
+            'product_warranty',
             'product_variants.product_variant_images',
             'product_option_groups.product_options',
         ];

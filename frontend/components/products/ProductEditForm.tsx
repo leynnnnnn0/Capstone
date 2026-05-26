@@ -11,6 +11,7 @@ import {
   ProductBasicsCard,
   Product3DModelUploader,
   ProductSummaryCard,
+  ProductWarrantyCard,
   VariantEditor,
   type ProductBasicsValue,
 } from "@/components/products/ProductFormParts";
@@ -78,6 +79,22 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
     setErrors((current) => {
       const next = { ...current };
       delete next[field];
+      delete next.form;
+      return next;
+    });
+  };
+
+  const setWarrantyField = <K extends keyof ProductFormState["warranty"]>(
+    field: K,
+    value: ProductFormState["warranty"][K],
+  ) => {
+    setData((current) => ({
+      ...current,
+      warranty: { ...current.warranty, [field]: value },
+    }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[`warranty.${field}` as keyof ProductFormErrors];
       delete next.form;
       return next;
     });
@@ -230,6 +247,12 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
             </CardContent>
           </Card>
 
+          <ProductWarrantyCard
+            value={data.warranty}
+            errors={errors}
+            onChange={setWarrantyField}
+          />
+
           <ProductSummaryCard
             name={data.name}
             unit={data.unit}
@@ -239,6 +262,8 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
             optionGroups={data.option_groups.length}
             images={visibleProductImages.length + data.images.length}
             model3D={hasVisible3DModel}
+            warrantyMonths={data.warranty.duration_months}
+            warrantyActive={data.warranty.is_active}
           />
         </div>
       </div>
@@ -263,7 +288,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
           <AlertDialogHeader>
             <AlertDialogTitle>Save product changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will update product details, pricing, variants, options, images, and 3D model settings.
+              This will update product details, pricing, warranty policy, variants, options, images, and 3D model settings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

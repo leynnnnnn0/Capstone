@@ -24,6 +24,7 @@ import {
   ProductBasicsCard,
   Product3DModelUploader,
   ProductSummaryCard,
+  ProductWarrantyCard,
   VariantEditor,
 } from "@/components/products/ProductFormParts";
 import { createProduct } from "@/features/products/product-api";
@@ -63,6 +64,22 @@ export default function ProductCreateForm({ categories }: { categories: Category
     setErrors((current) => {
       const next = { ...current };
       delete next[field];
+      delete next.form;
+      return next;
+    });
+  };
+
+  const setWarrantyField = <K extends keyof ProductFormState["warranty"]>(
+    field: K,
+    value: ProductFormState["warranty"][K],
+  ) => {
+    setData((current) => ({
+      ...current,
+      warranty: { ...current.warranty, [field]: value },
+    }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[`warranty.${field}` as keyof ProductFormErrors];
       delete next.form;
       return next;
     });
@@ -169,6 +186,12 @@ export default function ProductCreateForm({ categories }: { categories: Category
             </CardContent>
           </Card>
 
+          <ProductWarrantyCard
+            value={data.warranty}
+            errors={errors}
+            onChange={setWarrantyField}
+          />
+
           <ProductSummaryCard
             name={data.name}
             unit={data.unit}
@@ -178,6 +201,8 @@ export default function ProductCreateForm({ categories }: { categories: Category
             optionGroups={data.option_groups.length}
             images={data.images.length}
             model3D={Boolean(data.model_3d)}
+            warrantyMonths={data.warranty.duration_months}
+            warrantyActive={data.warranty.is_active}
           />
         </div>
       </div>
@@ -198,7 +223,7 @@ export default function ProductCreateForm({ categories }: { categories: Category
           <AlertDialogHeader>
             <AlertDialogTitle>Create product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will add the product, variants, option groups, images, and 3D model to the catalog.
+              This will add the product, warranty policy, variants, option groups, images, and 3D model to the catalog.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
