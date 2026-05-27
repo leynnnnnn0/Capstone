@@ -4,15 +4,23 @@ import {
   Box,
   CheckCircle2,
   ChevronRight,
+  ChevronsDown,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronsUp,
   Layers3,
   Menu,
+  Minus,
   MousePointerClick,
   Move3D,
   PanelRightOpen,
   Play,
+  Plus,
   Ruler,
   ScanLine,
   RotateCcw,
+  RotateCcwSquare,
+  RotateCwSquare,
   Search,
   SlidersHorizontal,
   Smartphone,
@@ -52,6 +60,7 @@ import {
 } from "./features/measurement/scene";
 import type {
   MeasuredObject,
+  MeasurementDimensions,
   MeasurementPoint,
   MeasurementSegment,
   ObjectType,
@@ -74,9 +83,27 @@ import { cn } from "./lib/utils";
 
 const VERSION = "react-vite-tier1-2026-05-17";
 const PREVIEW_MODEL_DEPTH_METERS = 0.012;
+const V2_DEFAULT_WIDTH_CM = 120;
+const V2_DEFAULT_HEIGHT_CM = 210;
+const V2_DEFAULT_DEPTH_CM = 12;
+const V2_NUDGE_METERS = 0.05;
+const V2_ROTATE_RADIANS = THREE.MathUtils.degToRad(7.5);
+const V2_WALL_BACK_OFFSET_METERS = 0.0762;
+const V2_MAX_WALL_NORMAL_Y = 0.18;
 type CapturePhase = "shape" | "height";
+type FlowVersion = "v1" | "v2";
+type V2Mode = "scanWall" | "place" | "edit";
 const gltfLoader = new GLTFLoader();
 const modelCache = new Map<string, Promise<THREE.Group>>();
+
+type XRAnchorLike = {
+  anchorSpace: XRSpace;
+  delete?: () => void;
+};
+
+type XRHitTestResultWithAnchor = XRHitTestResult & {
+  createAnchor?: () => Promise<XRAnchorLike>;
+};
 
 interface ArQuoteTransferItem {
   productId: number;
@@ -95,6 +122,22 @@ interface ArQuoteTransferPayload {
   items: ArQuoteTransferItem[];
 }
 
+interface V2PlacedObject {
+  id: number;
+  type: ObjectType;
+  modelId: string;
+  root: THREE.Group;
+  model: THREE.Object3D;
+  label: THREE.Sprite;
+  anchor: THREE.Vector3;
+  anchorOffset: THREE.Vector3;
+  xrAnchor: XRAnchorLike | null;
+  widthDir: THREE.Vector3;
+  heightDir: THREE.Vector3;
+  depthDir: THREE.Vector3;
+  dimensions: MeasurementDimensions & { depthCm: number };
+}
+
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -106,7 +149,9 @@ export default function App() {
   const currentHitPositionRef = useRef<THREE.Vector3 | null>(null);
   const currentHitNormalRef = useRef<THREE.Vector3 | null>(null);
   const currentHitPlaneRef = useRef<MeasurementPlane | null>(null);
+  const currentHitResultRef = useRef<XRHitTestResultWithAnchor | null>(null);
   const shapePlaneRef = useRef<MeasurementPlane | null>(null);
+  const v2LockedWallRef = useRef<MeasurementPlane | null>(null);
   const confidenceRef = useRef<ReticleConfidence>("none");
   const noSurfaceSinceRef = useRef<number | null>(null);
   const lastViewerPositionRef = useRef<THREE.Vector3 | null>(null);
@@ -120,7 +165,11 @@ export default function App() {
   const lastPlacementPositionRef = useRef<THREE.Vector3 | null>(null);
   const hitStreakRef = useRef(0);
   const nextObjectIdRef = useRef(1);
+  const nextV2ObjectIdRef = useRef(1);
 
+  const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
+    window.location.pathname.startsWith("/v2") ? "v2" : "v1",
+  );
   const [status, setStatus] = useState("Ready. Tap Start AR.");
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
   const [isActive, setIsActive] = useState(false);
@@ -146,6 +195,11 @@ export default function App() {
   const segmentsRef = useRef<MeasurementSegment[]>([]);
   const [objects, setObjects] = useState<MeasuredObject[]>([]);
   const objectsRef = useRef<MeasuredObject[]>([]);
+  const [v2Objects, setV2Objects] = useState<V2PlacedObject[]>([]);
+  const v2ObjectsRef = useRef<V2PlacedObject[]>([]);
+  const [selectedV2ObjectId, setSelectedV2ObjectId] = useState<number | null>(null);
+  const [v2WallLocked, setV2WallLocked] = useState(false);
+  const [v2Mode, setV2ModeState] = useState<V2Mode>("scanWall");
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -155,10 +209,18 @@ export default function App() {
   const showArGuideRef = useRef(false);
   const showMovementCoachRef = useRef(false);
   const modelCatalogRef = useRef<ModelDefinition[]>(MODEL_CATALOG);
+  const flowVersionRef = useRef<FlowVersion>(flowVersion);
+  const v2ModeRef = useRef<V2Mode>("scanWall");
   const selectedModel = getModelById(modelCatalog, selectedModelId);
+  const isV2 = flowVersion === "v2";
+  const activeObjectCount = isV2 ? v2Objects.length : objects.length;
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectedObjectId) ?? null,
     [objects, selectedObjectId],
+  );
+  const selectedV2Object = useMemo(
+    () => v2Objects.find((object) => object.id === selectedV2ObjectId) ?? null,
+    [selectedV2ObjectId, v2Objects],
   );
 
   useEffect(() => {
@@ -199,12 +261,15 @@ export default function App() {
   }, []);
 
   const confidenceCopy = useMemo(() => {
+    if (isV2 && v2Mode === "scanWall") return "Scan the reference wall, then tap or press Lock Wall.";
+    if (isV2 && v2Mode === "place") return "Wall locked. Tap any detected floor or wall area to place the model.";
+    if (isV2 && v2Mode === "edit") return "Model placed. Use controls or tap Do Another.";
     if (capturePhase === "height") return "Height point: tap the top/end of the vertical height.";
     if (confidence === "high") return "Surface locked. Tap to place a point.";
     if (confidence === "medium") return "Surface detected. Hold steady or tap.";
     if (confidence === "weak") return "Weak surface detection. Placement may be less accurate.";
     return "Shape points snap straight or 90-degree. Tap the outline, then press Finish Shape.";
-  }, [capturePhase, confidence]);
+  }, [capturePhase, confidence, isV2, v2Mode]);
 
   useEffect(() => {
     confidenceRef.current = confidence;
@@ -221,6 +286,14 @@ export default function App() {
   useEffect(() => {
     capturePhaseRef.current = capturePhase;
   }, [capturePhase]);
+
+  useEffect(() => {
+    flowVersionRef.current = flowVersion;
+  }, [flowVersion]);
+
+  useEffect(() => {
+    v2ModeRef.current = v2Mode;
+  }, [v2Mode]);
 
   useEffect(() => {
     sessionPanelOpenRef.current = sessionPanelOpen;
@@ -245,6 +318,29 @@ export default function App() {
 
   const markUiInteraction = useCallback(() => {
     ignorePlacementUntilRef.current = performance.now() + 900;
+  }, []);
+
+  const setFlowVersion = useCallback(
+    (version: FlowVersion) => {
+      markUiInteraction();
+      flowVersionRef.current = version;
+      setFlowVersionState(version);
+      window.history.replaceState(null, "", version === "v2" ? "/v2" : "/");
+      setSessionPanelOpen(false);
+      setCatalogOpen(false);
+      setSummaryOpen(false);
+      setStatus(
+        version === "v2"
+          ? "V2 ready. Tap Start AR, then tap once to place the selected model."
+          : "V1 ready. Tap Start AR to measure with points.",
+      );
+    },
+    [markUiInteraction],
+  );
+
+  const setV2Mode = useCallback((mode: V2Mode) => {
+    v2ModeRef.current = mode;
+    setV2ModeState(mode);
   }, []);
 
   const setArGuideVisible = useCallback((visible: boolean) => {
@@ -277,7 +373,11 @@ export default function App() {
         setCatalogOpen(false);
       }
 
-      setStatus(`${model.label} selected. Measure the shape, then height.`);
+      setStatus(
+        flowVersionRef.current === "v2"
+          ? `${model.label} selected. Tap once in AR to place it.`
+          : `${model.label} selected. Measure the shape, then height.`,
+      );
     },
     [],
   );
@@ -445,13 +545,20 @@ export default function App() {
       setSummaryOpen(false);
       setCapturePhase("shape");
       capturePhaseRef.current = "shape";
+      v2LockedWallRef.current = null;
+      setV2WallLocked(false);
+      setV2Mode("scanWall");
       setArGuideVisible(true);
       setMovementCoachVisible(false);
       noSurfaceSinceRef.current = null;
       lastViewerPositionRef.current = null;
       lastViewerMovementAtRef.current = performance.now();
       movementCoachCooldownUntilRef.current = performance.now() + 2500;
-      setStatus("Item 1: tap the outline. Segments snap straight or 90-degree.");
+      setStatus(
+        flowVersionRef.current === "v2"
+          ? "V2: scan the reference wall first. Tap or press Lock Wall when the reticle is steady."
+          : "Item 1: tap the outline. Segments snap straight or 90-degree.",
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       log(`start failed: ${message}`);
@@ -517,6 +624,26 @@ export default function App() {
     }
   };
 
+  const updateV2Anchors = (frame: XRFrame, referenceSpace: XRReferenceSpace) => {
+    for (const object of v2ObjectsRef.current) {
+      if (!object.xrAnchor) continue;
+
+      const anchorPose = frame.getPose(object.xrAnchor.anchorSpace, referenceSpace);
+      if (!anchorPose) continue;
+
+      object.anchor.copy(
+        new THREE.Vector3().setFromMatrixPosition(
+          new THREE.Matrix4().fromArray(anchorPose.transform.matrix),
+        ),
+      );
+      setV2RootTransform(object.root, object.anchor.clone().add(object.anchorOffset), {
+        widthDir: object.widthDir,
+        heightDir: object.heightDir,
+        depthDir: object.depthDir,
+      });
+    }
+  };
+
   const renderFrame = (_time: number, frame?: XRFrame) => {
     const measurementScene = sceneRef.current;
     const localSpace = localSpaceRef.current;
@@ -527,15 +654,20 @@ export default function App() {
     trackViewerMotion(frame, localSpace, now);
 
     const results = frame.getHitTestResults(hitTestSource);
+    const shouldShowPlacementReticle =
+      flowVersionRef.current !== "v2" || v2ModeRef.current !== "edit";
+
     if (results.length === 0) {
       hitStreakRef.current = 0;
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
       currentHitPlaneRef.current = null;
+      currentHitResultRef.current = null;
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
       noteNoSurfaceFrame(now);
+      updateV2Anchors(frame, localSpace);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
       return;
     }
@@ -546,10 +678,12 @@ export default function App() {
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
       currentHitPlaneRef.current = null;
+      currentHitResultRef.current = null;
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
       setConfidence("none");
       noteNoSurfaceFrame(now);
+      updateV2Anchors(frame, localSpace);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
       return;
     }
@@ -571,7 +705,8 @@ export default function App() {
     currentHitPositionRef.current = cleanPosition;
     currentHitNormalRef.current = activePlane.normal;
     currentHitPlaneRef.current = activePlane;
-    measurementScene.reticle.visible = true;
+    currentHitResultRef.current = results[0] as XRHitTestResultWithAnchor;
+    measurementScene.reticle.visible = shouldShowPlacementReticle;
     measurementScene.reticle.matrix.copy(
       createPlaneReticleMatrix(cleanPosition, activePlane),
     );
@@ -581,6 +716,7 @@ export default function App() {
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
     setReticleColor(measurementScene.reticle, nextConfidence);
     noteSurfaceFrame();
+    updateV2Anchors(frame, localSpace);
     measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
   };
 
@@ -612,6 +748,21 @@ export default function App() {
     if (!measurementScene || !position || activeConfidence === "none") {
       setStatus("No surface detected yet. Move camera slowly.");
       log("tap ignored: no active hit-test surface");
+      return;
+    }
+
+    if (flowVersionRef.current === "v2") {
+      if (v2ModeRef.current === "edit") {
+        setStatus("Model placed. Tap Do Another before placing another item.");
+        return;
+      }
+
+      if (v2ModeRef.current === "scanWall" || !v2LockedWallRef.current) {
+        lockV2WallFromHit();
+        return;
+      }
+
+      void placeV2ObjectFromHit(position);
       return;
     }
 
@@ -699,6 +850,279 @@ export default function App() {
     setStatus(
       `Shape point ${pointNumber} placed. Locked to a straight ${activePlane.kind} plane.`,
     );
+  };
+
+  const lockV2WallFromHit = () => {
+    const activePlane = currentHitPlaneRef.current;
+    const position = currentHitPositionRef.current;
+
+    if (!activePlane || !position) {
+      setStatus("No wall detected yet. Move the phone slowly across the reference wall.");
+      return;
+    }
+
+    if (activePlane.kind !== "wall") {
+      setStatus("Lock a wall first. After that you can place on the floor or wall.");
+      return;
+    }
+
+    const cleanPlane = createCleanV2WallPlane(activePlane, position);
+    if (!cleanPlane) {
+      setStatus("Wall looks too slanted. Aim straight at a vertical wall edge and try again.");
+      return;
+    }
+
+    v2LockedWallRef.current = cleanPlane;
+    setV2WallLocked(true);
+    setV2Mode("place");
+    setStatus("Reference wall locked. Now tap the floor or wall where the model should go.");
+  };
+
+  const rescanV2Wall = () => {
+    markUiInteraction();
+    v2LockedWallRef.current = null;
+    setV2WallLocked(false);
+    setV2Mode("scanWall");
+    setStatus("Wall scan reset. Aim at the reference wall and lock it again.");
+  };
+
+  const doAnotherV2Object = () => {
+    markUiInteraction();
+
+    if (!v2LockedWallRef.current) {
+      setV2Mode("scanWall");
+      setStatus("Scan and lock a reference wall before placing another item.");
+      return;
+    }
+
+    setV2Mode("place");
+    setSessionPanelOpen(false);
+    setCatalogOpen(false);
+    setSummaryOpen(false);
+    setStatus("Ready for another item. Tap the floor or wall to place it.");
+  };
+
+  const placeV2ObjectFromHit = async (position: THREE.Vector3) => {
+    const measurementScene = sceneRef.current;
+    const hitPlane = currentHitPlaneRef.current;
+    const localSpace = localSpaceRef.current;
+    const hitResult = currentHitResultRef.current;
+
+    if (!measurementScene || !hitPlane) {
+      setStatus("No surface detected yet. Move camera slowly.");
+      return;
+    }
+
+    const lockedWall = v2LockedWallRef.current;
+    if (!lockedWall) {
+      setStatus("Lock a reference wall first.");
+      return;
+    }
+
+    const placementPlane = createCleanV2PlacementPlane(hitPlane, position);
+    if (!placementPlane) {
+      setStatus("Wall looks too slanted. Aim at a straighter wall area or tap the floor.");
+      return;
+    }
+
+    const selectedModel = findModel(selectedModelIdRef.current);
+    const type = selectedModel.type;
+    const axes = createPlacementAxes(lockedWall, measurementScene.camera);
+    const dimensions = defaultV2DimensionsForModel(selectedModel);
+    const root = new THREE.Group();
+    const wallPosition = projectPointToPlane(position, placementPlane);
+    const placementOffset = axes.depthDir.clone().multiplyScalar(-V2_WALL_BACK_OFFSET_METERS);
+    setV2RootTransform(root, wallPosition.clone().add(placementOffset), axes);
+    const model = createV2ObjectModel(dimensions, selectedModel);
+    const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions);
+
+    root.name = `v2-placed-object-${nextV2ObjectIdRef.current}`;
+    root.add(model);
+    root.add(label);
+    measurementScene.scene.add(root);
+
+    const xrAnchor =
+      localSpace && hitResult?.createAnchor
+        ? await createV2XrAnchor(hitResult).catch((error) => {
+            log(`v2 anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+          })
+        : null;
+
+    const object: V2PlacedObject = {
+      id: nextV2ObjectIdRef.current,
+      type,
+      modelId: selectedModel.id,
+      root,
+      model,
+      label,
+      anchor: wallPosition.clone(),
+      anchorOffset: placementOffset,
+      xrAnchor,
+      widthDir: axes.widthDir,
+      heightDir: axes.heightDir,
+      depthDir: axes.depthDir,
+      dimensions,
+    };
+
+    nextV2ObjectIdRef.current += 1;
+    v2ObjectsRef.current = [...v2ObjectsRef.current, object];
+    setV2Objects(v2ObjectsRef.current);
+    setSelectedV2ObjectId(object.id);
+    setV2Mode("edit");
+    setStatus(
+      xrAnchor
+        ? `Item ${object.id} anchored. Adjust it, or tap Do Another.`
+        : `Item ${object.id} placed. Adjust it, or tap Do Another.`,
+    );
+    log(`v2 item ${object.id} placed`);
+  };
+
+  const updateV2ObjectDimensions = (
+    objectId: number,
+    patch: Partial<V2PlacedObject["dimensions"]>,
+  ) => {
+    const measurementScene = sceneRef.current;
+    const currentObject = v2ObjectsRef.current.find((object) => object.id === objectId);
+
+    if (!measurementScene || !currentObject) return;
+
+    ignorePlacementUntilRef.current = performance.now() + 700;
+    const nextDimensions = normalizeV2Dimensions({
+      ...currentObject.dimensions,
+      ...patch,
+    });
+    const selectedModel = findModel(currentObject.modelId);
+
+    currentObject.root.remove(currentObject.model);
+    disposeObject(currentObject.model);
+    currentObject.root.remove(currentObject.label);
+    disposeObject(currentObject.label);
+
+    const nextModel = createV2ObjectModel(nextDimensions, selectedModel);
+    const nextLabel = createV2ObjectLabel(
+      currentObject.id,
+      selectedModel,
+      nextDimensions,
+    );
+    currentObject.root.add(nextModel);
+    currentObject.root.add(nextLabel);
+
+    const updatedObject: V2PlacedObject = {
+      ...currentObject,
+      model: nextModel,
+      label: nextLabel,
+      dimensions: nextDimensions,
+    };
+
+    v2ObjectsRef.current = v2ObjectsRef.current.map((object) =>
+      object.id === objectId ? updatedObject : object,
+    );
+    setV2Objects(v2ObjectsRef.current);
+    setStatus(`Item ${objectId}: ${formatV2Dimensions(nextDimensions)}.`);
+  };
+
+  const updateV2ObjectTransform = (
+    objectId: number,
+    transform: (object: V2PlacedObject) => Partial<
+      Pick<V2PlacedObject, "anchor" | "anchorOffset" | "widthDir" | "heightDir" | "depthDir">
+    >,
+  ) => {
+    const currentObject = v2ObjectsRef.current.find((object) => object.id === objectId);
+    if (!currentObject) return;
+
+    ignorePlacementUntilRef.current = performance.now() + 700;
+    const nextTransform = transform(currentObject);
+    const updatedObject: V2PlacedObject = {
+      ...currentObject,
+      ...nextTransform,
+    };
+
+    rebuildV2ObjectVisuals(updatedObject);
+
+    v2ObjectsRef.current = v2ObjectsRef.current.map((object) =>
+      object.id === objectId ? updatedObject : object,
+    );
+    setV2Objects(v2ObjectsRef.current);
+    setStatus(`Item ${objectId} adjusted.`);
+  };
+
+  const rebuildV2ObjectVisuals = (object: V2PlacedObject) => {
+    object.root.remove(object.model);
+    disposeObject(object.model);
+    object.root.remove(object.label);
+    disposeObject(object.label);
+
+    const selectedModel = findModel(object.modelId);
+    const axes: V2PlacementAxes = {
+      widthDir: object.widthDir,
+      heightDir: object.heightDir,
+      depthDir: object.depthDir,
+    };
+    setV2RootTransform(object.root, object.anchor.clone().add(object.anchorOffset), axes);
+    const nextModel = createV2ObjectModel(object.dimensions, selectedModel);
+    const nextLabel = createV2ObjectLabel(
+      object.id,
+      selectedModel,
+      object.dimensions,
+    );
+
+    object.root.add(nextModel);
+    object.root.add(nextLabel);
+    object.model = nextModel;
+    object.label = nextLabel;
+  };
+
+  const selectV2Object = (object: V2PlacedObject) => {
+    ignorePlacementUntilRef.current = performance.now() + 900;
+    setSelectedV2ObjectId(object.id);
+    setReassignCategoryId(findModel(object.modelId).category);
+    setStatus(`Item ${object.id} selected. Adjust width, height, or depth.`);
+  };
+
+  const changeV2ObjectModel = (objectId: number, model: ModelDefinition) => {
+    const currentObject = v2ObjectsRef.current.find((object) => object.id === objectId);
+    if (!currentObject) return;
+
+    ignorePlacementUntilRef.current = performance.now() + 900;
+
+    const updatedObject: V2PlacedObject = {
+      ...currentObject,
+      type: model.type,
+      modelId: model.id,
+      dimensions: normalizeV2Dimensions({
+        ...currentObject.dimensions,
+        depthCm: defaultV2DimensionsForModel(model).depthCm,
+      }),
+    };
+
+    rebuildV2ObjectVisuals(updatedObject);
+
+    v2ObjectsRef.current = v2ObjectsRef.current.map((object) =>
+      object.id === objectId ? updatedObject : object,
+    );
+    setV2Objects(v2ObjectsRef.current);
+    setSelectedV2ObjectId(objectId);
+    setReassignCategoryId(model.category);
+    setStatus(`Item ${objectId} changed to ${model.label}.`);
+  };
+
+  const deleteV2Object = (objectId: number) => {
+    const currentObject = v2ObjectsRef.current.find((object) => object.id === objectId);
+    if (!currentObject) return;
+
+    ignorePlacementUntilRef.current = performance.now() + 900;
+    sceneRef.current?.scene.remove(currentObject.root);
+    disposeObject(currentObject.root);
+
+    const nextObjects = v2ObjectsRef.current.filter((object) => object.id !== objectId);
+    currentObject.xrAnchor?.delete?.();
+    v2ObjectsRef.current = nextObjects;
+    setV2Objects(nextObjects);
+    setSelectedV2ObjectId((currentId) =>
+      currentId === objectId ? nextObjects.at(-1)?.id ?? null : currentId,
+    );
+    setStatus(`Item ${objectId} deleted.`);
   };
 
   const finishShape = () => {
@@ -841,12 +1265,24 @@ export default function App() {
     pointsRef.current = [];
     segmentsRef.current = [];
     objectsRef.current = [];
+    v2ObjectsRef.current.forEach((object) => {
+      object.xrAnchor?.delete?.();
+      measurementScene.scene.remove(object.root);
+      disposeObject(object.root);
+    });
+    v2ObjectsRef.current = [];
     shapePlaneRef.current = null;
+    v2LockedWallRef.current = null;
     lastPlacementPositionRef.current = null;
     nextObjectIdRef.current = 1;
+    nextV2ObjectIdRef.current = 1;
     setPoints([]);
     setObjects([]);
+    setV2Objects([]);
     setSelectedObjectId(null);
+    setSelectedV2ObjectId(null);
+    setV2WallLocked(false);
+    setV2Mode("scanWall");
     setReassignCategoryId(DEFAULT_MODEL.category);
     capturePhaseRef.current = "shape";
     setCapturePhase("shape");
@@ -862,9 +1298,14 @@ export default function App() {
   const proceedToQuoteRequest = () => {
     markUiInteraction();
 
-    const items = objectsRef.current
-      .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
-      .filter((item): item is ArQuoteTransferItem => Boolean(item));
+    const items =
+      flowVersionRef.current === "v2"
+        ? v2ObjectsRef.current
+            .map((object) => v2ObjectToQuoteTransferItem(object, findModel(object.modelId)))
+            .filter((item): item is ArQuoteTransferItem => Boolean(item))
+        : objectsRef.current
+            .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
+            .filter((item): item is ArQuoteTransferItem => Boolean(item));
 
     if (items.length === 0) {
       setStatus("Choose an uploaded product model before sending measurements to quote.");
@@ -904,6 +1345,7 @@ export default function App() {
     currentHitPositionRef.current = null;
     currentHitNormalRef.current = null;
     currentHitPlaneRef.current = null;
+    currentHitResultRef.current = null;
     lastPlacementPositionRef.current = null;
     noSurfaceSinceRef.current = null;
     lastViewerPositionRef.current = null;
@@ -938,14 +1380,20 @@ export default function App() {
             <div>
               <p className="eyebrow">SOG AR</p>
               <strong>
-                {capturePhase === "shape"
-                  ? "Tap outline points"
-                  : "Tap height point"}
+                {isV2
+                  ? v2Mode === "edit"
+                    ? "Edit item"
+                    : v2Mode === "place"
+                      ? "Tap to place"
+                      : "Scan wall"
+                  : capturePhase === "shape"
+                    ? "Tap outline points"
+                    : "Tap height point"}
               </strong>
             </div>
             <span>{selectedModel.label}</span>
-            <span>{points.length} pts</span>
-            <span>{objects.length} obj</span>
+            <span>{isV2 ? "V2" : `${points.length} pts`}</span>
+            <span>{activeObjectCount} obj</span>
           </section>
         ) : (
           <section
@@ -969,7 +1417,7 @@ export default function App() {
                     SOG
                   </strong>
                   <small className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    AR Measure
+                    {isV2 ? "AR Resize" : "AR Measure"}
                   </small>
                 </div>
                 <Button
@@ -1114,11 +1562,30 @@ export default function App() {
                     {selectedModel.description}
                   </p>
 
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={isV2 ? "outline" : "secondary"}
+                      className="rounded-2xl"
+                      onClick={() => setFlowVersion("v1")}
+                    >
+                      V1 Measure
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={isV2 ? "secondary" : "outline"}
+                      className="rounded-2xl"
+                      onClick={() => setFlowVersion("v2")}
+                    >
+                      V2 Place
+                    </Button>
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="muted" className="max-w-full truncate">
                       {catalogStatus}
                     </Badge>
-                    <Badge variant="outline">{objects.length} captured</Badge>
+                    <Badge variant="outline">{activeObjectCount} captured</Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -1139,7 +1606,7 @@ export default function App() {
                       onClick={startSession}
                     >
                       <Play className="size-4" />
-                      Start AR
+                      {isV2 ? "Start V2" : "Start AR"}
                     </Button>
                   </div>
                 </CardContent>
@@ -1177,7 +1644,7 @@ export default function App() {
                 shop
               />
 
-              {objects.length > 0 && (
+              {activeObjectCount > 0 && (
                 <Button
                   type="button"
                   variant="dark"
@@ -1234,16 +1701,19 @@ export default function App() {
                       <article>
                         <ScanLine className="size-5" />
                         <span>
-                          <strong>Tap the outline</strong>
-                          Place points along the shape. Lines will snap straight or
-                          90-degree where possible.
+                          <strong>{isV2 ? "Lock the wall" : "Tap the outline"}</strong>
+                          {isV2
+                            ? "Aim at the reference wall first, then tap or press Lock Wall."
+                            : "Place points along the shape. Lines will snap straight or 90-degree where possible."}
                         </span>
                       </article>
                       <article>
                         <Ruler className="size-5" />
                         <span>
-                          <strong>Finish, then height</strong>
-                          Press Finish Shape, then tap the height point for the item.
+                          <strong>{isV2 ? "Adjust size" : "Finish, then height"}</strong>
+                          {isV2
+                            ? "After the wall is locked, tap to place and use the size controls."
+                            : "Press Finish Shape, then tap the height point for the item."}
                         </span>
                       </article>
                       <article>
@@ -1256,9 +1726,9 @@ export default function App() {
                     </div>
 
                     <div className="ar-guide-note">
-                      Tip: start with the bottom edge, then trace the remaining
-                      outline. For best results, keep the phone moving gently until
-                      the surface locks.
+                      {isV2
+                        ? "Tip: the wall is only the reference. After locking it, tap the floor or wall where the model should sit."
+                        : "Tip: start with the bottom edge, then trace the remaining outline. For best results, keep the phone moving gently until the surface locks."}
                     </div>
 
                     <Button
@@ -1298,7 +1768,7 @@ export default function App() {
           </>
         )}
 
-        {isActive && (
+        {isActive && (!isV2 || v2Mode !== "edit") && (
           <div className={`reticle ${confidence}`}>
             <span />
             <p>{confidenceCopy}</p>
@@ -1311,14 +1781,38 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <Button type="button" className="primary" onClick={finishShape}>
-              <CheckCircle2 className="size-4" />
-              {capturePhase === "shape" ? "Finish Shape" : "Tap Height"}
-            </Button>
-            <Button type="button" onClick={undoPoint}>
-              <Undo2 className="size-4" />
-              Undo
-            </Button>
+            {!isV2 && (
+              <>
+                <Button type="button" className="primary" onClick={finishShape}>
+                  <CheckCircle2 className="size-4" />
+                  {capturePhase === "shape" ? "Finish Shape" : "Tap Height"}
+                </Button>
+                <Button type="button" onClick={undoPoint}>
+                  <Undo2 className="size-4" />
+                  Undo
+                </Button>
+              </>
+            )}
+            {isV2 && (
+              <Button
+                type="button"
+                className="primary"
+                onClick={
+                  v2Mode === "edit"
+                    ? doAnotherV2Object
+                    : v2WallLocked
+                      ? rescanV2Wall
+                      : lockV2WallFromHit
+                }
+              >
+                {v2Mode === "edit" ? (
+                  <Plus className="size-4" />
+                ) : (
+                  <ScanLine className="size-4" />
+                )}
+                {v2Mode === "edit" ? "Do Another" : v2WallLocked ? "Rescan Wall" : "Lock Wall"}
+              </Button>
+            )}
             <Button
               type="button"
               onClick={() => {
@@ -1330,7 +1824,7 @@ export default function App() {
               }}
             >
               <Layers3 className="size-4" />
-              Objects {objects.length}
+              Objects {activeObjectCount}
             </Button>
             <Button
               type="button"
@@ -1352,6 +1846,162 @@ export default function App() {
               End
             </Button>
           </div>
+        )}
+
+        {isActive &&
+          isV2 &&
+          selectedV2Object &&
+          !sessionPanelOpen &&
+          !catalogOpen &&
+          !summaryOpen &&
+          !showArGuide &&
+          !showMovementCoach && (
+          <section
+            className="v2-size-panel"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
+            <div className="v2-size-panel-header">
+              <div>
+                <p className="eyebrow">Item {selectedV2Object.id}</p>
+                <strong>{findModel(selectedV2Object.modelId).label}</strong>
+              </div>
+              <span>{formatV2Dimensions(selectedV2Object.dimensions)}</span>
+            </div>
+            <V2DimensionControl
+              label="Width"
+              value={selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM}
+              onChange={(value) =>
+                updateV2ObjectDimensions(selectedV2Object.id, {
+                  segmentsCm: [value],
+                })
+              }
+            />
+            <V2DimensionControl
+              label="Height"
+              value={selectedV2Object.dimensions.heightCm}
+              onChange={(value) =>
+                updateV2ObjectDimensions(selectedV2Object.id, {
+                  heightCm: value,
+                })
+              }
+            />
+            <V2DimensionControl
+              label="Depth"
+              value={selectedV2Object.dimensions.depthCm}
+              onChange={(value) =>
+                updateV2ObjectDimensions(selectedV2Object.id, {
+                  depthCm: value,
+                })
+              }
+            />
+            <div className="v2-transform-grid">
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Rotate left"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    rotateV2ObjectAxes(object, V2_ROTATE_RADIANS),
+                  )
+                }
+              >
+                <RotateCcwSquare className="size-4" />
+                Rotate
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Rotate right"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    rotateV2ObjectAxes(object, -V2_ROTATE_RADIANS),
+                  )
+                }
+              >
+                <RotateCwSquare className="size-4" />
+                Rotate
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move left"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.widthDir, -V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <ChevronsLeft className="size-4" />
+                Left
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move right"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.widthDir, V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <ChevronsRight className="size-4" />
+                Right
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move up"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.heightDir, V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <ChevronsUp className="size-4" />
+                Up
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move down"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.heightDir, -V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <ChevronsDown className="size-4" />
+                Down
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move inward"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.depthDir, -V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <Minus className="size-4" />
+                In
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Move outward"
+                onClick={() =>
+                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
+                    nudgeV2Object(object, object.depthDir, V2_NUDGE_METERS),
+                  )
+                }
+              >
+                <Plus className="size-4" />
+                Out
+              </Button>
+            </div>
+          </section>
         )}
 
         {isActive && catalogOpen && (
@@ -1397,7 +2047,7 @@ export default function App() {
             <div className="session-panel-header">
               <div>
                 <h2>Session objects</h2>
-                <p>{objects.length} captured</p>
+                <p>{activeObjectCount} captured</p>
               </div>
               {isActive && (
                 <Button
@@ -1413,8 +2063,39 @@ export default function App() {
               )}
             </div>
             <div className="object-list">
-              {objects.length === 0 ? (
+              {activeObjectCount === 0 ? (
                 <div className="empty">Finished objects will appear here.</div>
+              ) : isV2 ? (
+                v2Objects.map((object) => (
+                  <article
+                    key={object.id}
+                    className={selectedV2ObjectId === object.id ? "selected" : ""}
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="object-select-button"
+                      onClick={() => selectV2Object(object)}
+                    >
+                      <span>
+                        <strong>{`Item ${object.id}`}</strong>
+                        <em>{findModel(object.modelId).label}</em>
+                        <small>{formatV2Dimensions(object.dimensions)}</small>
+                      </span>
+                      <i style={{ background: OBJECT_TYPES[object.type].color }} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="object-delete-button"
+                      onClick={() => deleteV2Object(object.id)}
+                    >
+                      <Trash2 className="size-4" />
+                      Delete
+                    </Button>
+                  </article>
+                ))
               ) : (
                 objects.map((object) => (
                   <article
@@ -1448,6 +2129,29 @@ export default function App() {
                 ))
               )}
             </div>
+
+            {isV2 && selectedV2Object && (
+              <div className="object-model-editor">
+                <div className="object-model-editor-header">
+                  <div>
+                    <p className="eyebrow">Change Displayed Model</p>
+                    <strong>{`Item ${selectedV2Object.id}`}</strong>
+                  </div>
+                  <span>{findModel(selectedV2Object.modelId).label}</span>
+                </div>
+                <ModelCatalogPanel
+                  categories={modelCategories}
+                  models={modelCatalog}
+                  activeCategoryId={reassignCategoryId}
+                  selectedModelId={selectedV2Object.modelId}
+                  onCategoryChange={setReassignCategoryId}
+                  onSelectModel={(model) =>
+                    changeV2ObjectModel(selectedV2Object.id, model)
+                  }
+                  compact
+                />
+              </div>
+            )}
 
             {selectedObject && (
               <div className="object-model-editor">
@@ -1488,8 +2192,21 @@ export default function App() {
               </p>
 
               <div className="summary-list">
-                {objects.length === 0 ? (
+                {activeObjectCount === 0 ? (
                   <div className="summary-empty">No objects captured yet.</div>
+                ) : isV2 ? (
+                  v2Objects.map((object) => (
+                    <article key={object.id}>
+                      <div>
+                        <strong>{`Item ${object.id}`}</strong>
+                        <small>{findModel(object.modelId).label}</small>
+                        <p>{formatV2Dimensions(object.dimensions)}</p>
+                      </div>
+                      <span style={{ background: OBJECT_TYPES[object.type].color }}>
+                        Sized
+                      </span>
+                    </article>
+                  ))
                 ) : (
                   objects.map((object) => (
                     <article key={object.id}>
@@ -1510,7 +2227,7 @@ export default function App() {
                 <Button
                   type="button"
                   onClick={proceedToQuoteRequest}
-                  disabled={objects.length === 0}
+                  disabled={activeObjectCount === 0}
                 >
                   Continue to Quote Request
                 </Button>
@@ -1539,6 +2256,224 @@ function getConfidence(
   if (planeQuality === "slanted") return "medium";
   if (streak < 24) return "medium";
   return "high";
+}
+
+interface V2PlacementAxes {
+  widthDir: THREE.Vector3;
+  heightDir: THREE.Vector3;
+  depthDir: THREE.Vector3;
+}
+
+function createPlacementAxes(
+  plane: MeasurementPlane,
+  camera: THREE.Camera,
+): V2PlacementAxes {
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const normal = plane.normal
+    .clone()
+    .addScaledVector(worldUp, -plane.normal.dot(worldUp))
+    .normalize();
+
+  if (plane.kind === "wall" && normal.lengthSq() > 0.0001) {
+    const heightDir = worldUp.clone();
+    const widthDir = new THREE.Vector3().crossVectors(heightDir, normal).normalize();
+    return {
+      widthDir,
+      heightDir,
+      depthDir: normal,
+    };
+  }
+
+  const cameraForward = new THREE.Vector3();
+  camera.getWorldDirection(cameraForward);
+  const depthDir = cameraForward
+    .clone()
+    .setY(0)
+    .multiplyScalar(-1);
+
+  if (depthDir.lengthSq() < 0.0001) {
+    depthDir.set(0, 0, 1);
+  }
+
+  depthDir.normalize();
+  const widthDir = new THREE.Vector3().crossVectors(worldUp, depthDir).normalize();
+
+  return {
+    widthDir,
+    heightDir: worldUp,
+    depthDir,
+  };
+}
+
+function createCleanV2WallPlane(
+  plane: MeasurementPlane,
+  anchor: THREE.Vector3,
+): MeasurementPlane | null {
+  const horizontalNormal = plane.normal.clone();
+
+  if (Math.abs(horizontalNormal.y) > V2_MAX_WALL_NORMAL_Y) {
+    return null;
+  }
+
+  horizontalNormal.y = 0;
+
+  if (horizontalNormal.lengthSq() < 0.0001) {
+    return null;
+  }
+
+  return {
+    anchor: anchor.clone(),
+    kind: "wall",
+    normal: horizontalNormal.normalize(),
+    quality: "stable",
+  };
+}
+
+function createCleanV2PlacementPlane(
+  plane: MeasurementPlane,
+  anchor: THREE.Vector3,
+): MeasurementPlane | null {
+  if (plane.kind === "floor") {
+    return copyMeasurementPlane(plane, anchor);
+  }
+
+  return createCleanV2WallPlane(plane, anchor);
+}
+
+function setV2RootTransform(
+  root: THREE.Group,
+  anchor: THREE.Vector3,
+  axes: V2PlacementAxes,
+) {
+  root.position.copy(anchor);
+  root.quaternion.setFromRotationMatrix(
+    new THREE.Matrix4().makeBasis(
+      axes.widthDir.clone().normalize(),
+      axes.heightDir.clone().normalize(),
+      axes.depthDir.clone().normalize(),
+    ),
+  );
+}
+
+async function createV2XrAnchor(
+  hitResult: XRHitTestResultWithAnchor,
+) {
+  return hitResult.createAnchor?.() ?? null;
+}
+
+function defaultV2DimensionsForModel(
+  model: ModelDefinition,
+): V2PlacedObject["dimensions"] {
+  const depth =
+    model.type === "cabinet"
+      ? 45
+      : model.type === "door" || model.type === "window"
+        ? 8
+        : V2_DEFAULT_DEPTH_CM;
+
+  return normalizeV2Dimensions({
+    segmentsCm: [V2_DEFAULT_WIDTH_CM],
+    heightCm: model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM,
+    depthCm: depth,
+  });
+}
+
+function normalizeV2Dimensions(
+  dimensions: V2PlacedObject["dimensions"],
+): V2PlacedObject["dimensions"] {
+  return {
+    segmentsCm: [clampDimension(dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM, 20, 600)],
+    heightCm: clampDimension(dimensions.heightCm, 20, 400),
+    depthCm: clampDimension(dimensions.depthCm, 2, 180),
+  };
+}
+
+function clampDimension(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function formatV2Dimensions(dimensions: V2PlacedObject["dimensions"]) {
+  return `${dimensions.segmentsCm[0]} x ${dimensions.heightCm} x ${dimensions.depthCm} cm`;
+}
+
+function nudgeV2Object(
+  object: V2PlacedObject,
+  axis: THREE.Vector3,
+  distance: number,
+) {
+  const offsetKey = object.xrAnchor ? "anchorOffset" : "anchor";
+
+  return {
+    [offsetKey]: object[offsetKey]
+      .clone()
+      .add(axis.clone().normalize().multiplyScalar(distance)),
+  };
+}
+
+function rotateV2ObjectAxes(object: V2PlacedObject, radians: number) {
+  const rotation = new THREE.Quaternion().setFromAxisAngle(
+    object.heightDir.clone().normalize(),
+    radians,
+  );
+
+  return {
+    widthDir: object.widthDir.clone().applyQuaternion(rotation).normalize(),
+    depthDir: object.depthDir.clone().applyQuaternion(rotation).normalize(),
+  };
+}
+
+function V2DimensionControl({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="v2-dimension-control">
+      <span>{label}</span>
+      <div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Decrease ${label}`}
+          onClick={() => onChange(value - 5)}
+        >
+          <Minus className="size-4" />
+        </Button>
+        <strong>{value} cm</strong>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Increase ${label}`}
+          onClick={() => onChange(value + 5)}
+        >
+          <Plus className="size-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function v2ObjectToQuoteTransferItem(
+  object: V2PlacedObject,
+  model: ModelDefinition,
+): ArQuoteTransferItem | null {
+  if (!model.productId) return null;
+
+  return {
+    productId: model.productId,
+    modelId: model.id,
+    label: model.label,
+    description: model.description,
+    segmentsCm: object.dimensions.segmentsCm,
+    widthCm: object.dimensions.segmentsCm[0] ?? 0,
+    heightCm: object.dimensions.heightCm,
+  };
 }
 
 function objectToQuoteTransferItem(
@@ -1896,6 +2831,62 @@ function createObjectLabel(
   label.position.y += 0.12;
 
   return label;
+}
+
+function createV2ObjectLabel(
+  id: number,
+  model: ModelDefinition,
+  dimensions: V2PlacedObject["dimensions"],
+) {
+  const label = createLabel(`${model.label} ${id}`, OBJECT_TYPES[model.type].color);
+  label.position.set(0, dimensions.heightCm / 100 + 0.12, 0);
+
+  return label;
+}
+
+function createV2ObjectModel(
+  dimensions: V2PlacedObject["dimensions"],
+  model: ModelDefinition,
+) {
+  const widthMeters = Math.max(0.05, dimensions.segmentsCm[0] / 100);
+  const heightMeters = Math.max(0.05, dimensions.heightCm / 100);
+  const depthMeters = Math.max(0.01, dimensions.depthCm / 100);
+  const color = OBJECT_TYPES[model.type].color;
+  const group = new THREE.Group();
+  const center = new THREE.Vector3(0, heightMeters / 2, depthMeters / 2);
+
+  group.add(
+    createPanelMesh(
+      widthMeters,
+      heightMeters,
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+      center,
+      color,
+    ),
+  );
+
+  const frame: ModelFrame = {
+    center,
+    widthDir: new THREE.Vector3(1, 0, 0),
+    heightDir: new THREE.Vector3(0, 1, 0),
+    depthDir: new THREE.Vector3(0, 0, 1),
+    width: widthMeters,
+    height: heightMeters,
+    depth: depthMeters,
+  };
+
+  loadCatalogModel(model.file)
+    .then((catalogModel) => {
+      const fittedModel = fitCatalogModel(catalogModel, frame);
+      group.add(fittedModel);
+    })
+    .catch((error) => {
+      console.warn(`Unable to load model ${model.file}`, error);
+    });
+
+  return group;
 }
 
 function createGlassModel(points: MeasurementPoint[], model: ModelDefinition) {

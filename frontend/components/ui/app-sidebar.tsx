@@ -103,7 +103,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard" prefetch>
-                <span className="text-sm text-center font-bold">Next.js / Laravel Starter Kit</span>
+                <span className="text-sm text-center font-bold">SOG Glass And Alumninum</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

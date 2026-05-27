@@ -179,6 +179,7 @@ input {
   border-radius: 999px;
   padding: 0.45rem;
   background: rgba(2, 6, 23, 0.56);
+  z-index: 30;
 }
 
 .ar-action-bar button {
@@ -198,6 +199,115 @@ input {
   border-color: transparent;
   background: var(--primary);
   color: var(--primary-foreground);
+}
+
+.v2-size-panel {
+  position: absolute;
+  z-index: 22;
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.25rem);
+  display: grid;
+  gap: 0.55rem;
+  max-height: min(17rem, 42vh);
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: rgba(2, 6, 23, 0.72);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.v2-size-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.v2-size-panel-header strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: white;
+  font-size: 0.92rem;
+}
+
+.v2-size-panel-header span {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  background: rgba(245, 184, 17, 0.18);
+  color: #fef3c7;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.v2-dimension-control {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.v2-dimension-control > span {
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.v2-dimension-control > div {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) 2.25rem;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.v2-dimension-control button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.68);
+  color: white;
+}
+
+.v2-dimension-control strong {
+  display: grid;
+  min-height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.84rem;
+}
+
+.v2-transform-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.v2-transform-grid button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.68);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 420px) {
+  .v2-transform-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .top-panel {

@@ -9,7 +9,7 @@ export async function requestHitTestSession(overlayRoot?: Element | null) {
 
   const withOverlay: XRSessionInit = {
     requiredFeatures: ["hit-test"],
-    optionalFeatures: ["local-floor", "dom-overlay"],
+    optionalFeatures: ["local-floor", "dom-overlay", "anchors"],
     ...(overlayRoot ? { domOverlay: { root: overlayRoot } } : {}),
   };
 
@@ -18,7 +18,7 @@ export async function requestHitTestSession(overlayRoot?: Element | null) {
   } catch {
     return navigator.xr.requestSession("immersive-ar", {
       requiredFeatures: ["hit-test"],
-      optionalFeatures: ["local-floor"],
+      optionalFeatures: ["local-floor", "anchors"],
     });
   }
 }
