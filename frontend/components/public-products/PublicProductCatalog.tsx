@@ -9,12 +9,15 @@ import { useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
+import ProductArButton from "@/components/public-products/ProductArButton";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
 import {
   formatCurrency,
+  model3DUrl,
   productCategories,
   productCover,
+  product3DModel,
 } from "@/features/products/product-utils";
 
 const gradients = [
@@ -167,28 +170,35 @@ export default function PublicProductCatalog() {
                 const cover = productCover(product);
                 const category = productCategories(product)[0];
                 const gradient = gradients[index % gradients.length];
+                const modelSrc = model3DUrl(product3DModel(product));
 
                 return (
-                  <Link
+                  <article
                     key={product.id}
-                    href={`/products/${product.id}`}
                     className="group block overflow-hidden rounded-2xl border border-slate-100 bg-white no-underline shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div
-                      className="flex h-48 items-center justify-center overflow-hidden"
+                      className="relative flex h-48 items-center justify-center overflow-hidden"
                       style={{ background: cover ? "#f8fafc" : gradient }}
                     >
-                      {cover ? (
-                        <img
-                          src={cover}
-                          alt={product.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <span className="text-[32px] font-black text-white opacity-30">
-                          {product.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      )}
+                      <Link href={`/products/${product.id}`} className="block h-full w-full">
+                        {cover ? (
+                          <img
+                            src={cover}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-[32px] font-black text-white opacity-30">
+                            {product.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                      </Link>
+                      <ProductArButton
+                        productId={product.id}
+                        productName={product.name}
+                        modelSrc={modelSrc}
+                      />
                     </div>
 
                     <div className="p-4">
@@ -210,12 +220,15 @@ export default function PublicProductCatalog() {
                             /{product.unit}
                           </span>
                         </span>
-                        <span className="text-[11px] font-bold text-slate-400 transition-colors group-hover:text-primary">
+                        <Link
+                          href={`/products/${product.id}`}
+                          className="text-[11px] font-bold text-slate-400 transition-colors group-hover:text-primary"
+                        >
                           View →
-                        </span>
+                        </Link>
                       </div>
                     </div>
-                  </Link>
+                  </article>
                 );
               })}
             </div>

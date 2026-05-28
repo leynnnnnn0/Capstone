@@ -10,13 +10,16 @@ import { useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
+import ProductArButton from "@/components/public-products/ProductArButton";
 import { fetchProduct, fetchProducts } from "@/features/products/product-api";
 import type { Product, ProductImage, ProductVariant } from "@/features/products/types";
 import {
   formatCurrency,
   imageUrl,
+  model3DUrl,
   optionGroupOptions,
   productCategories,
+  product3DModel,
   productImages,
   productOptionGroups,
   productVariants,
@@ -95,13 +98,19 @@ export default function PublicProductShow() {
   const categories = productCategories(product);
   const optionGroups = productOptionGroups(product);
   const variants = productVariants(product);
+  const modelSrc = model3DUrl(product3DModel(product));
 
   return (
     <Shell>
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-20">
           <div className="order-1 lg:sticky lg:top-24 lg:order-2">
-            <ImageGallery images={productImages(product)} productName={product.name} />
+            <ImageGallery
+              images={productImages(product)}
+              productName={product.name}
+              productId={product.id}
+              modelSrc={modelSrc}
+            />
           </div>
 
           <div className="order-2 lg:order-1">
@@ -283,7 +292,17 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ImageGallery({ images, productName }: { images: ProductImage[]; productName: string }) {
+function ImageGallery({
+  images,
+  productName,
+  productId,
+  modelSrc,
+}: {
+  images: ProductImage[];
+  productName: string;
+  productId: number;
+  modelSrc?: string;
+}) {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
 
@@ -330,6 +349,13 @@ function ImageGallery({ images, productName }: { images: ProductImage[]; product
             <GalleryButton side="right" onClick={() => setActive((currentIndex) => (currentIndex + 1) % normalizedImages.length)} />
           </>
         )}
+
+        <ProductArButton
+          productId={productId}
+          productName={productName}
+          modelSrc={modelSrc}
+          className="absolute bottom-4 right-4 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-primary/90"
+        />
       </div>
 
       {normalizedImages.length > 1 && (

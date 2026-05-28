@@ -11,6 +11,7 @@ type Product3DModelViewerProps = {
   description?: string;
   className?: string;
   compact?: boolean;
+  hideHeader?: boolean;
 };
 
 export default function Product3DModelViewer({
@@ -19,6 +20,7 @@ export default function Product3DModelViewer({
   description = "Drag to rotate. Pinch or scroll to zoom.",
   className,
   compact = false,
+  hideHeader = false,
 }: Product3DModelViewerProps) {
   const [ready, setReady] = useState(false);
 
@@ -54,10 +56,12 @@ export default function Product3DModelViewer({
 
   return (
     <div className={cn("overflow-hidden rounded-lg border bg-muted/20", className)}>
-      <div className="border-b px-3 py-2">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
+      {!hideHeader && (
+        <div className="border-b px-3 py-2">
+          <p className="text-sm font-medium">{title}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      )}
       <div className={compact ? "h-48" : "h-80"}>
         {ready ? (
           createElement("model-viewer", {
