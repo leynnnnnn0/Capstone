@@ -95,6 +95,10 @@ export default function Welcome() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsError, setProductsError] = useState("");
 
+  function openAr() {
+    window.location.href = `${window.location.protocol}//${window.location.hostname}:5173/ar/v2`;
+  }
+
   useEffect(() => {
     let mounted = true;
 
@@ -144,12 +148,13 @@ export default function Welcome() {
             >
               Get a Quote Now
             </a>
-            <a
-              href="#ar"
+            <button
+              type="button"
+              onClick={openAr}
               className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-8 py-4 text-sm font-bold text-primary transition-all hover:border-primary hover:bg-slate-50"
             >
               View in AR
-            </a>
+            </button>
           </div>
           <div className="flex flex-wrap gap-3 pt-2 text-[10px] font-black uppercase tracking-widest text-slate-300 sm:text-[11px]">
             <span>Precision Crafted</span>
