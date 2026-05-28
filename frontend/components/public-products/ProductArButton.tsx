@@ -81,7 +81,7 @@ export default function ProductArButton({
               <div>
                 <p className="text-sm font-bold text-slate-900">{productName}</p>
                 <p className="text-xs text-slate-500">
-                  3D preview is shown because full AR placement is not supported on this device.
+                  Use the AR button in the viewer if your device supports native AR.
                 </p>
               </div>
               <button
@@ -98,6 +98,7 @@ export default function ProductArButton({
               title={productName}
               description="Rotate and zoom the model before opening full AR on a supported device."
               hideHeader
+              ar
               className="rounded-none border-0"
             />
           </div>

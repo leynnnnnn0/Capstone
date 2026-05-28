@@ -222,7 +222,7 @@ export function optionGroupOptions(group: ProductOptionGroup) {
 export function normalizeAssetUrl(url?: string | null) {
   if (!url) return "";
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim();
 
   if (url.startsWith("/storage/")) {
     return `${apiBase.replace(/\/$/, "")}${url}`;
@@ -231,15 +231,14 @@ export function normalizeAssetUrl(url?: string | null) {
   try {
     const parsed = new URL(url);
     const api = new URL(apiBase);
-    const localHostWithoutPort =
-      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") &&
-      !parsed.port &&
-      Boolean(api.port);
+    const localBackendHost =
+      parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    const backendAssetPath =
+      parsed.pathname.startsWith("/storage/") ||
+      parsed.pathname.startsWith("/api/v1/product-3d-models/");
 
-    if (localHostWithoutPort) {
-      parsed.protocol = api.protocol;
-      parsed.host = api.host;
-      return parsed.toString();
+    if (localBackendHost && backendAssetPath) {
+      return `${api.origin}${parsed.pathname}${parsed.search}`;
     }
   } catch {
     return url;
