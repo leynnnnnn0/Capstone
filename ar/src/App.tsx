@@ -81,7 +81,7 @@ const V2_ROTATE_RADIANS = THREE.MathUtils.degToRad(7.5);
 const V2_WALL_BACK_OFFSET_METERS = 0.0762;
 const V2_MAX_WALL_NORMAL_Y = 0.18;
 type CapturePhase = "shape" | "height";
-type FlowVersion = "v1" | "v2";
+type FlowVersion = "v1" | "v2" | "v3";
 type V2Mode = "scanWall" | "place" | "edit";
 const gltfLoader = new GLTFLoader();
 const modelCache = new Map<string, Promise<THREE.Group>>();
@@ -140,6 +140,7 @@ interface V2PlacedObject {
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const v3GestureLayerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<MeasurementScene | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const localSpaceRef = useRef<XRReferenceSpace | null>(null);
@@ -167,7 +168,7 @@ export default function App() {
   const nextV2ObjectIdRef = useRef(1);
 
   const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
-    isV1Path(window.location.pathname) ? "v1" : "v2",
+    flowVersionFromPath(window.location.pathname),
   );
   const [status, setStatus] = useState("Ready. Tap Start AR.");
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
@@ -198,6 +199,7 @@ export default function App() {
   const [v2Objects, setV2Objects] = useState<V2PlacedObject[]>([]);
   const v2ObjectsRef = useRef<V2PlacedObject[]>([]);
   const [selectedV2ObjectId, setSelectedV2ObjectId] = useState<number | null>(null);
+  const selectedV2ObjectIdRef = useRef<number | null>(null);
   const [v2WallLocked, setV2WallLocked] = useState(false);
   const [v2Mode, setV2ModeState] = useState<V2Mode>("scanWall");
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
@@ -212,9 +214,24 @@ export default function App() {
   const modelCatalogRef = useRef<ModelDefinition[]>(MODEL_CATALOG);
   const flowVersionRef = useRef<FlowVersion>(flowVersion);
   const v2ModeRef = useRef<V2Mode>("scanWall");
+  const v3AutoPlacePendingRef = useRef(false);
+  const v3PinchRef = useRef<{
+    distance: number;
+    widthCm: number;
+    heightCm: number;
+  } | null>(null);
+  const v3DragRef = useRef<{
+    startX: number;
+    startY: number;
+    moved: boolean;
+    anchor: THREE.Vector3;
+    anchorOffset: THREE.Vector3;
+  } | null>(null);
   const selectedModel = getModelById(modelCatalog, selectedModelId);
   const isV2 = flowVersion === "v2";
-  const activeObjectCount = isV2 ? v2Objects.length : objects.length;
+  const isV3 = flowVersion === "v3";
+  const isPlacementFlow = isV2 || isV3;
+  const activeObjectCount = isPlacementFlow ? v2Objects.length : objects.length;
   const relatedShopModels = useMemo(() => {
     const activeModel = shopDetailModel ?? selectedModel;
     const sameCategoryModels = modelCatalog.filter(
@@ -277,13 +294,14 @@ export default function App() {
   const confidenceCopy = useMemo(() => {
     if (isV2 && v2Mode === "scanWall") return "Scan the reference wall, then tap or press Lock Wall.";
     if (isV2 && v2Mode === "place") return "Wall locked. Tap any detected floor or wall area to place the model.";
-    if (isV2 && v2Mode === "edit") return "Model placed. Use controls or tap Do Another.";
+    if (isV3 && v2Mode === "place") return "Tap a wall or floor to place the next model.";
+    if (isPlacementFlow && v2Mode === "edit") return "Pinch to resize. Tap a wall or floor to move the model.";
     if (capturePhase === "height") return "Height point: tap the top/end of the vertical height.";
     if (confidence === "high") return "Surface locked. Tap to place a point.";
     if (confidence === "medium") return "Surface detected. Hold steady or tap.";
     if (confidence === "weak") return "Weak surface detection. Placement may be less accurate.";
     return "Shape points snap straight or 90-degree. Tap the outline, then press Finish Shape.";
-  }, [capturePhase, confidence, isV2, v2Mode]);
+  }, [capturePhase, confidence, isPlacementFlow, isV2, isV3, v2Mode]);
 
   useEffect(() => {
     confidenceRef.current = confidence;
@@ -310,6 +328,10 @@ export default function App() {
   }, [v2Mode]);
 
   useEffect(() => {
+    selectedV2ObjectIdRef.current = selectedV2ObjectId;
+  }, [selectedV2ObjectId]);
+
+  useEffect(() => {
     sessionPanelOpenRef.current = sessionPanelOpen;
   }, [sessionPanelOpen]);
 
@@ -327,7 +349,7 @@ export default function App() {
   );
 
   const measuredQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
-    if (isV2) {
+    if (isPlacementFlow) {
       return v2Objects.map((object) => {
         const model = findModel(object.modelId);
 
@@ -363,7 +385,7 @@ export default function App() {
         price: estimateQuotePrice(widthCm, object.dimensions.heightCm, model),
       };
     });
-  }, [findModel, isV2, objects, v2Objects]);
+  }, [findModel, isPlacementFlow, objects, v2Objects]);
 
   const summaryQuoteItems = useMemo(
     () => [
@@ -475,7 +497,7 @@ export default function App() {
       }
 
       setStatus(
-        flowVersionRef.current === "v2"
+        flowVersionRef.current === "v2" || flowVersionRef.current === "v3"
           ? `${model.label} selected. Tap once in AR to place it.`
           : `${model.label} selected. Measure the shape, then height.`,
       );
@@ -602,6 +624,146 @@ export default function App() {
     };
   }, [markUiInteraction]);
 
+  useEffect(() => {
+    const targets = [canvasRef.current, v3GestureLayerRef.current].filter(
+      (target): target is HTMLCanvasElement | HTMLDivElement => Boolean(target),
+    );
+    if (targets.length === 0) return;
+
+    const touchDistance = (touches: TouchList) => {
+      const first = touches.item(0);
+      const second = touches.item(1);
+      if (!first || !second) return 0;
+
+      return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
+    };
+
+    const startTouchGesture = (event: TouchEvent) => {
+      if (
+        flowVersionRef.current !== "v3" ||
+        v2ModeRef.current !== "edit" ||
+        !selectedV2Object
+      ) {
+        return;
+      }
+
+      if (event.touches.length === 1) {
+        const touch = event.touches.item(0);
+        if (!touch) return;
+
+        v3DragRef.current = {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          moved: false,
+          anchor: selectedV2Object.anchor.clone(),
+          anchorOffset: selectedV2Object.anchorOffset.clone(),
+        };
+        v3PinchRef.current = null;
+      } else if (event.touches.length === 2) {
+        v3PinchRef.current = {
+          distance: touchDistance(event.touches),
+          widthCm: selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM,
+          heightCm: selectedV2Object.dimensions.heightCm,
+        };
+        v3DragRef.current = null;
+      }
+
+      markUiInteraction();
+    };
+
+    const moveTouchGesture = (event: TouchEvent) => {
+      const pinch = v3PinchRef.current;
+      const drag = v3DragRef.current;
+      if (
+        flowVersionRef.current !== "v3" ||
+        v2ModeRef.current !== "edit" ||
+        !selectedV2Object
+      ) {
+        return;
+      }
+
+      if (event.touches.length === 1 && drag) {
+        const touch = event.touches.item(0);
+        if (!touch) return;
+
+        event.preventDefault();
+        const dx = touch.clientX - drag.startX;
+        const dy = touch.clientY - drag.startY;
+        drag.moved = drag.moved || Math.hypot(dx, dy) > 6;
+        const distancePerPixel = v3DragDistancePerPixel(selectedV2Object);
+        const horizontalMove = selectedV2Object.widthDir
+          .clone()
+          .normalize()
+          .multiplyScalar(dx * distancePerPixel);
+        const verticalMove = selectedV2Object.heightDir
+          .clone()
+          .normalize()
+          .multiplyScalar(-dy * distancePerPixel);
+        const nextOffset = horizontalMove.add(verticalMove);
+
+        updateV2ObjectTransform(selectedV2Object.id, (object) =>
+          object.xrAnchor
+            ? {
+                anchorOffset: drag.anchorOffset.clone().add(nextOffset),
+              }
+            : {
+                anchor: drag.anchor.clone().add(nextOffset),
+              },
+        );
+        return;
+      }
+
+      if (event.touches.length === 2 && pinch) {
+        const distance = touchDistance(event.touches);
+        if (pinch.distance <= 0 || distance <= 0) return;
+
+        event.preventDefault();
+        const scale = distance / pinch.distance;
+        updateV2ObjectDimensions(selectedV2Object.id, {
+          segmentsCm: [pinch.widthCm * scale],
+          heightCm: pinch.heightCm * scale,
+        });
+      }
+    };
+
+    const endTouchGesture = () => {
+      const drag = v3DragRef.current;
+      if (
+        flowVersionRef.current === "v3" &&
+        v2ModeRef.current === "edit" &&
+        drag &&
+        !drag.moved &&
+        currentHitPositionRef.current
+      ) {
+        void placeV3ObjectFromHit(currentHitPositionRef.current);
+      }
+
+      v3PinchRef.current = null;
+      v3DragRef.current = null;
+    };
+
+    const startTouchListener: EventListener = (event) =>
+      startTouchGesture(event as TouchEvent);
+    const moveTouchListener: EventListener = (event) =>
+      moveTouchGesture(event as TouchEvent);
+
+    targets.forEach((target) => {
+      target.addEventListener("touchstart", startTouchListener, { passive: true });
+      target.addEventListener("touchmove", moveTouchListener, { passive: false });
+      target.addEventListener("touchend", endTouchGesture);
+      target.addEventListener("touchcancel", endTouchGesture);
+    });
+
+    return () => {
+      targets.forEach((target) => {
+        target.removeEventListener("touchstart", startTouchListener);
+        target.removeEventListener("touchmove", moveTouchListener);
+        target.removeEventListener("touchend", endTouchGesture);
+        target.removeEventListener("touchcancel", endTouchGesture);
+      });
+    };
+  }, [isActive, isV3, markUiInteraction, selectedV2Object]);
+
   const startSession = async () => {
     if (!canvasRef.current || sessionRef.current) return;
 
@@ -648,7 +810,8 @@ export default function App() {
       capturePhaseRef.current = "shape";
       v2LockedWallRef.current = null;
       setV2WallLocked(false);
-      setV2Mode("scanWall");
+      v3AutoPlacePendingRef.current = flowVersionRef.current === "v3";
+      setV2Mode(flowVersionRef.current === "v3" ? "place" : "scanWall");
       setArGuideVisible(true);
       setMovementCoachVisible(false);
       noSurfaceSinceRef.current = null;
@@ -656,7 +819,9 @@ export default function App() {
       lastViewerMovementAtRef.current = performance.now();
       movementCoachCooldownUntilRef.current = performance.now() + 2500;
       setStatus(
-        flowVersionRef.current === "v2"
+        flowVersionRef.current === "v3"
+          ? "V3: model will appear in front of you. Pinch to resize or tap a wall/floor to move it."
+          : flowVersionRef.current === "v2"
           ? "V2: scan the reference wall first. Tap or press Lock Wall when the reticle is steady."
           : "Item 1: tap the outline. Segments snap straight or 90-degree.",
       );
@@ -701,7 +866,10 @@ export default function App() {
   };
 
   const noteNoSurfaceFrame = (now: number) => {
-    if (flowVersionRef.current === "v2" && v2ModeRef.current === "edit") {
+    if (
+      (flowVersionRef.current === "v2" || flowVersionRef.current === "v3") &&
+      v2ModeRef.current === "edit"
+    ) {
       noSurfaceSinceRef.current = null;
       if (showMovementCoachRef.current) {
         setMovementCoachVisible(false);
@@ -761,6 +929,7 @@ export default function App() {
 
     const now = performance.now();
     trackViewerMotion(frame, localSpace, now);
+    placeV3InitialObjectIfNeeded();
 
     const results = frame.getHitTestResults(hitTestSource);
     const shouldShowPlacementReticle =
@@ -857,6 +1026,11 @@ export default function App() {
     if (!measurementScene || !position || activeConfidence === "none") {
       setStatus("No surface detected yet. Move camera slowly.");
       log("tap ignored: no active hit-test surface");
+      return;
+    }
+
+    if (flowVersionRef.current === "v3") {
+      void placeV3ObjectFromHit(position);
       return;
     }
 
@@ -998,6 +1172,18 @@ export default function App() {
   const doAnotherV2Object = () => {
     markUiInteraction();
 
+    if (flowVersionRef.current === "v3") {
+      setV2Mode("place");
+      selectedV2ObjectIdRef.current = null;
+      setSelectedV2ObjectId(null);
+      v3AutoPlacePendingRef.current = true;
+      setSessionPanelOpen(false);
+      setCatalogOpen(false);
+      setSummaryOpen(false);
+      setStatus("Ready for another item. Tap a wall or floor, or wait for it to appear in front of you.");
+      return;
+    }
+
     if (!v2LockedWallRef.current) {
       setV2Mode("scanWall");
       setStatus("Scan and lock a reference wall before placing another item.");
@@ -1009,6 +1195,115 @@ export default function App() {
     setCatalogOpen(false);
     setSummaryOpen(false);
     setStatus("Ready for another item. Tap the floor or wall to place it.");
+  };
+
+  const createPlacedObject = async (
+    anchor: THREE.Vector3,
+    axes: V2PlacementAxes,
+    hitResult?: XRHitTestResultWithAnchor | null,
+  ) => {
+    const measurementScene = sceneRef.current;
+    const localSpace = localSpaceRef.current;
+    if (!measurementScene) return null;
+
+    const selectedModel = findModel(selectedModelIdRef.current);
+    const dimensions = defaultV2DimensionsForModel(selectedModel);
+    const root = new THREE.Group();
+    const model = createV2ObjectModel(dimensions, selectedModel);
+    const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions);
+    const anchorOffset =
+      flowVersionRef.current === "v2"
+        ? axes.depthDir.clone().multiplyScalar(-V2_WALL_BACK_OFFSET_METERS)
+        : new THREE.Vector3();
+
+    setV2RootTransform(root, anchor.clone().add(anchorOffset), axes);
+    root.name = `${flowVersionRef.current}-placed-object-${nextV2ObjectIdRef.current}`;
+    root.add(model);
+    root.add(label);
+    measurementScene.scene.add(root);
+
+    const xrAnchor =
+      localSpace && hitResult?.createAnchor
+        ? await createV2XrAnchor(hitResult).catch((error) => {
+            log(`anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
+            return null;
+          })
+        : null;
+
+    const object: V2PlacedObject = {
+      id: nextV2ObjectIdRef.current,
+      type: selectedModel.type,
+      modelId: selectedModel.id,
+      root,
+      model,
+      label,
+      anchor: anchor.clone(),
+      anchorOffset,
+      xrAnchor,
+      widthDir: axes.widthDir,
+      heightDir: axes.heightDir,
+      depthDir: axes.depthDir,
+      dimensions,
+    };
+
+    nextV2ObjectIdRef.current += 1;
+    v2ObjectsRef.current = [...v2ObjectsRef.current, object];
+    setV2Objects(v2ObjectsRef.current);
+    selectedV2ObjectIdRef.current = object.id;
+    setSelectedV2ObjectId(object.id);
+    setV2Mode("edit");
+    setStatus(`Item ${object.id} placed. Pinch or use controls to resize.`);
+    return object;
+  };
+
+  const placeV3InitialObjectIfNeeded = () => {
+    const measurementScene = sceneRef.current;
+    if (
+      flowVersionRef.current !== "v3" ||
+      !v3AutoPlacePendingRef.current ||
+      !measurementScene
+    ) {
+      return;
+    }
+
+    const anchor = getPointInFrontOfCamera(measurementScene.camera, 1.25);
+    const axes = createCameraFacingPlacementAxes(measurementScene.camera);
+    v3AutoPlacePendingRef.current = false;
+    void createPlacedObject(anchor, axes);
+  };
+
+  const placeV3ObjectFromHit = async (position: THREE.Vector3) => {
+    const measurementScene = sceneRef.current;
+    const hitPlane = currentHitPlaneRef.current;
+    const hitResult = currentHitResultRef.current;
+
+    if (!measurementScene || !hitPlane) {
+      setStatus("No surface detected yet. Move camera slowly.");
+      return;
+    }
+
+    const placementPlane =
+      hitPlane.kind === "floor"
+        ? copyMeasurementPlane(hitPlane, position)
+        : createCleanV2WallPlane(hitPlane, position) ?? copyMeasurementPlane(hitPlane, position);
+    const anchor = projectPointToPlane(position, placementPlane);
+    const axes = createPlacementAxes(placementPlane, measurementScene.camera);
+
+    const selectedObjectId = selectedV2ObjectIdRef.current;
+
+    if (v2ModeRef.current === "edit" && selectedObjectId != null) {
+      updateV2ObjectTransform(selectedObjectId, (object) => ({
+        anchor,
+        anchorOffset: new THREE.Vector3(),
+        widthDir: axes.widthDir,
+        heightDir: axes.heightDir,
+        depthDir: axes.depthDir,
+      }));
+      setStatus("Item moved to the detected surface.");
+      return;
+    }
+
+    await createPlacedObject(anchor, axes, hitResult);
   };
 
   const placeV2ObjectFromHit = async (position: THREE.Vector3) => {
@@ -1077,6 +1372,7 @@ export default function App() {
     nextV2ObjectIdRef.current += 1;
     v2ObjectsRef.current = [...v2ObjectsRef.current, object];
     setV2Objects(v2ObjectsRef.current);
+    selectedV2ObjectIdRef.current = object.id;
     setSelectedV2ObjectId(object.id);
     setV2Mode("edit");
     setStatus(
@@ -1184,6 +1480,7 @@ export default function App() {
 
   const selectV2Object = (object: V2PlacedObject) => {
     ignorePlacementUntilRef.current = performance.now() + 900;
+    selectedV2ObjectIdRef.current = object.id;
     setSelectedV2ObjectId(object.id);
     setReassignCategoryId(findModel(object.modelId).category);
     setStatus(`Item ${object.id} selected. Adjust width, height, or depth.`);
@@ -1211,6 +1508,7 @@ export default function App() {
       object.id === objectId ? updatedObject : object,
     );
     setV2Objects(v2ObjectsRef.current);
+    selectedV2ObjectIdRef.current = objectId;
     setSelectedV2ObjectId(objectId);
     setReassignCategoryId(model.category);
     setStatus(`Item ${objectId} changed to ${model.label}.`);
@@ -1228,6 +1526,10 @@ export default function App() {
     currentObject.xrAnchor?.delete?.();
     v2ObjectsRef.current = nextObjects;
     setV2Objects(nextObjects);
+    selectedV2ObjectIdRef.current =
+      selectedV2ObjectIdRef.current === objectId
+        ? nextObjects.at(-1)?.id ?? null
+        : selectedV2ObjectIdRef.current;
     setSelectedV2ObjectId((currentId) =>
       currentId === objectId ? nextObjects.at(-1)?.id ?? null : currentId,
     );
@@ -1382,6 +1684,9 @@ export default function App() {
     v2ObjectsRef.current = [];
     shapePlaneRef.current = null;
     v2LockedWallRef.current = null;
+    v3AutoPlacePendingRef.current = false;
+    v3PinchRef.current = null;
+    v3DragRef.current = null;
     lastPlacementPositionRef.current = null;
     nextObjectIdRef.current = 1;
     nextV2ObjectIdRef.current = 1;
@@ -1389,6 +1694,7 @@ export default function App() {
     setObjects([]);
     setV2Objects([]);
     setSelectedObjectId(null);
+    selectedV2ObjectIdRef.current = null;
     setSelectedV2ObjectId(null);
     setV2WallLocked(false);
     setV2Mode("scanWall");
@@ -1408,7 +1714,7 @@ export default function App() {
     markUiInteraction();
 
     const items =
-      flowVersionRef.current === "v2"
+      flowVersionRef.current === "v2" || flowVersionRef.current === "v3"
         ? [
             ...manualQuoteItems,
             ...v2ObjectsRef.current
@@ -1483,6 +1789,14 @@ export default function App() {
           }
         }}
       >
+        {isActive && isV3 && selectedV2Object && (
+          <div
+            ref={v3GestureLayerRef}
+            className="v3-gesture-layer"
+            aria-hidden="true"
+          />
+        )}
+
         {isActive ? (
           <section
             className="ar-compact-panel"
@@ -1492,8 +1806,12 @@ export default function App() {
             <div>
               <p className="eyebrow">SOG AR</p>
               <strong>
-                {isV2
-                  ? v2Mode === "edit"
+                {isPlacementFlow
+                  ? isV3
+                    ? v2Mode === "edit"
+                      ? "Adjust item"
+                      : "Auto place"
+                    : v2Mode === "edit"
                     ? "Edit item"
                     : v2Mode === "place"
                       ? "Tap to place"
@@ -1504,7 +1822,7 @@ export default function App() {
               </strong>
             </div>
             <span>{selectedModel.label}</span>
-            <span>{isV2 ? "V2" : `${points.length} pts`}</span>
+            <span>{isV3 ? "V3" : isV2 ? "V2" : `${points.length} pts`}</span>
             <span>{activeObjectCount} obj</span>
           </section>
         ) : (
@@ -1575,8 +1893,10 @@ export default function App() {
                       <article>
                         <ScanLine className="size-5" />
                         <span>
-                          <strong>{isV2 ? "Lock the wall" : "Tap the outline"}</strong>
-                          {isV2
+                          <strong>{isV3 ? "Place naturally" : isV2 ? "Lock the wall" : "Tap the outline"}</strong>
+                          {isV3
+                            ? "The model appears in front first. Tap a wall or floor to move and orient it."
+                            : isV2
                             ? "Aim at the reference wall first, then tap or press Lock Wall."
                             : "Place points along the shape. Lines will snap straight or 90-degree where possible."}
                         </span>
@@ -1584,8 +1904,10 @@ export default function App() {
                       <article>
                         <Ruler className="size-5" />
                         <span>
-                          <strong>{isV2 ? "Adjust size" : "Finish, then height"}</strong>
-                          {isV2
+                          <strong>{isPlacementFlow ? "Adjust size" : "Finish, then height"}</strong>
+                          {isV3
+                            ? "Pinch the screen to resize. Width and height labels update with the model."
+                            : isV2
                             ? "After the wall is locked, tap to place and use the size controls."
                             : "Press Finish Shape, then tap the height point for the item."}
                         </span>
@@ -1600,7 +1922,9 @@ export default function App() {
                     </div>
 
                     <div className="ar-guide-note">
-                      {isV2
+                      {isV3
+                        ? "Tip: tap any detected wall or floor to move the selected model. Use Do Another for multiple items."
+                        : isV2
                         ? "Tip: the wall is only the reference. After locking it, tap the floor or wall where the model should sit."
                         : "Tip: start with the bottom edge, then trace the remaining outline. For best results, keep the phone moving gently until the surface locks."}
                     </div>
@@ -1655,7 +1979,7 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            {!isV2 && (
+            {!isPlacementFlow && (
               <>
                 <Button type="button" className="primary" onClick={finishShape}>
                   <CheckCircle2 className="size-4" />
@@ -1667,12 +1991,14 @@ export default function App() {
                 </Button>
               </>
             )}
-            {isV2 && (
+            {isPlacementFlow && (
               <Button
                 type="button"
                 className="primary"
                 onClick={
-                  v2Mode === "edit"
+                  isV3
+                    ? doAnotherV2Object
+                    : v2Mode === "edit"
                     ? doAnotherV2Object
                     : v2WallLocked
                       ? rescanV2Wall
@@ -1684,7 +2010,13 @@ export default function App() {
                 ) : (
                   <ScanLine className="size-4" />
                 )}
-                {v2Mode === "edit" ? "Do Another" : v2WallLocked ? "Rescan Wall" : "Lock Wall"}
+                {isV3
+                  ? "Do Another"
+                  : v2Mode === "edit"
+                    ? "Do Another"
+                    : v2WallLocked
+                      ? "Rescan Wall"
+                      : "Lock Wall"}
               </Button>
             )}
             <Button
@@ -1723,7 +2055,7 @@ export default function App() {
         )}
 
         {isActive &&
-          isV2 &&
+          isPlacementFlow &&
           selectedV2Object &&
           !sessionPanelOpen &&
           !catalogOpen &&
@@ -1939,7 +2271,7 @@ export default function App() {
             <div className="object-list">
               {activeObjectCount === 0 ? (
                 <div className="empty">Finished objects will appear here.</div>
-              ) : isV2 ? (
+              ) : isPlacementFlow ? (
                 v2Objects.map((object) => (
                   <article
                     key={object.id}
@@ -2004,7 +2336,7 @@ export default function App() {
               )}
             </div>
 
-            {isV2 && selectedV2Object && (
+            {isPlacementFlow && selectedV2Object && (
               <div className="object-model-editor">
                 <div className="object-model-editor-header">
                   <div>
@@ -2140,6 +2472,13 @@ function createPlacementAxes(
     .normalize();
 
   if (plane.kind === "wall" && normal.lengthSq() > 0.0001) {
+    const cameraPosition = new THREE.Vector3();
+    camera.getWorldPosition(cameraPosition);
+    const cameraDirection = cameraPosition.sub(plane.anchor);
+    if (normal.dot(cameraDirection) < 0) {
+      normal.multiplyScalar(-1);
+    }
+
     const heightDir = worldUp.clone();
     const widthDir = new THREE.Vector3().crossVectors(heightDir, normal).normalize();
     return {
@@ -2336,6 +2675,14 @@ function rotateV2ObjectAxes(object: V2PlacedObject, radians: number) {
     widthDir: object.widthDir.clone().applyQuaternion(rotation).normalize(),
     depthDir: object.depthDir.clone().applyQuaternion(rotation).normalize(),
   };
+}
+
+function v3DragDistancePerPixel(object: V2PlacedObject) {
+  const widthMeters = (object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM) / 100;
+  const heightMeters = object.dimensions.heightCm / 100;
+  const sizeFactor = Math.max(widthMeters, heightMeters, 1);
+
+  return THREE.MathUtils.clamp(sizeFactor / 650, 0.0015, 0.006);
 }
 
 function V2DimensionControl({
@@ -3001,14 +3348,49 @@ function findDepthDirection(
   return fallback.normalize();
 }
 
-function isV1Path(pathname: string) {
-  return pathname === "/v1" || pathname.endsWith("/v1");
+function flowVersionFromPath(pathname: string): FlowVersion {
+  if (pathname === "/v1" || pathname.endsWith("/v1")) return "v1";
+  if (pathname === "/v3" || pathname.endsWith("/v3")) return "v3";
+  return "v2";
 }
 
 function flowPath(version: FlowVersion) {
   const prefix = window.location.pathname.startsWith("/ar") ? "/ar" : "";
 
   return `${prefix}/${version}`;
+}
+
+function getPointInFrontOfCamera(camera: THREE.Camera, distance: number) {
+  const position = new THREE.Vector3();
+  const forward = new THREE.Vector3();
+  camera.getWorldPosition(position);
+  camera.getWorldDirection(forward);
+
+  if (forward.lengthSq() < 0.0001) {
+    forward.set(0, 0, -1);
+  }
+
+  return position.add(forward.normalize().multiplyScalar(distance));
+}
+
+function createCameraFacingPlacementAxes(camera: THREE.Camera): V2PlacementAxes {
+  const worldUp = new THREE.Vector3(0, 1, 0);
+  const cameraForward = new THREE.Vector3();
+  camera.getWorldDirection(cameraForward);
+
+  const depthDir = cameraForward.clone().setY(0).multiplyScalar(-1);
+  if (depthDir.lengthSq() < 0.0001) {
+    depthDir.set(0, 0, 1);
+  }
+
+  depthDir.normalize();
+  const widthDir = new THREE.Vector3().crossVectors(worldUp, depthDir).normalize();
+
+  return {
+    widthDir,
+    heightDir: worldUp,
+    depthDir,
+  };
 }
 
 function fitCatalogModel(source: THREE.Group, frame: ModelFrame) {

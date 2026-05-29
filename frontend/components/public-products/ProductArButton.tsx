@@ -18,8 +18,8 @@ function arUrl(productId: number) {
   const base =
     configured ||
     (window.location.port === "3000"
-      ? `${window.location.protocol}//${window.location.hostname}:5173/ar/v2`
-      : "/ar/v2");
+      ? `${window.location.protocol}//${window.location.hostname}:5173/ar/v3`
+      : "/ar/v3");
 
   return `${base}?product=${productId}`;
 }
