@@ -47,6 +47,7 @@ import {
   getModelById,
   MODEL_CATALOG,
   MODEL_CATEGORIES,
+  normalizeCatalogAssetUrl,
   type ModelCategoryId,
   type ModelCategory,
   type ModelDefinition,
@@ -120,6 +121,14 @@ interface ArQuoteTransferPayload {
   version: 1;
   createdAt: string;
   items: ArQuoteTransferItem[];
+}
+
+interface SummaryQuoteItem {
+  id: number;
+  label: string;
+  description: string;
+  dimensionsText: string;
+  price: number | null;
 }
 
 interface V2PlacedObject {
@@ -310,6 +319,54 @@ export default function App() {
   const findModel = useCallback(
     (id: string) => getModelById(modelCatalogRef.current, id),
     [],
+  );
+
+  const summaryQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
+    if (isV2) {
+      return v2Objects.map((object) => {
+        const model = findModel(object.modelId);
+
+        return {
+          id: object.id,
+          label: model.label,
+          description: model.description,
+          dimensionsText: formatQuoteDimensions(
+            object.dimensions.segmentsCm[0] ?? 0,
+            object.dimensions.heightCm,
+          ),
+          price: estimateQuotePrice(
+            object.dimensions.segmentsCm[0] ?? 0,
+            object.dimensions.heightCm,
+            model,
+          ),
+        };
+      });
+    }
+
+    return objects.map((object) => {
+      const model = findModel(object.modelId);
+      const widthCm = object.dimensions.segmentsCm.reduce(
+        (sum, segment) => sum + segment,
+        0,
+      );
+
+      return {
+        id: object.id,
+        label: model.label,
+        description: model.description,
+        dimensionsText: formatQuoteDimensions(widthCm, object.dimensions.heightCm),
+        price: estimateQuotePrice(widthCm, object.dimensions.heightCm, model),
+      };
+    });
+  }, [findModel, isV2, objects, v2Objects]);
+
+  const summaryEstimatedTotal = useMemo(
+    () =>
+      summaryQuoteItems.reduce(
+        (total, item) => total + (item.price == null ? 0 : item.price),
+        0,
+      ),
+    [summaryQuoteItems],
   );
 
   const log = useCallback((message: string) => {
@@ -600,6 +657,14 @@ export default function App() {
   };
 
   const noteNoSurfaceFrame = (now: number) => {
+    if (flowVersionRef.current === "v2" && v2ModeRef.current === "edit") {
+      noSurfaceSinceRef.current = null;
+      if (showMovementCoachRef.current) {
+        setMovementCoachVisible(false);
+      }
+      return;
+    }
+
     if (showArGuideRef.current || now < movementCoachCooldownUntilRef.current) {
       noSurfaceSinceRef.current = null;
       return;
@@ -1501,7 +1566,7 @@ export default function App() {
                   <div className="grid h-32 place-items-center overflow-hidden rounded-2xl bg-muted">
                     {selectedModel.thumbnail ? (
                       <img
-                        src={selectedModel.thumbnail}
+                        src={normalizeCatalogAssetUrl(selectedModel.thumbnail)}
                         alt=""
                         className="max-h-full max-w-full object-contain"
                       />
@@ -1520,7 +1585,7 @@ export default function App() {
                   <div className="relative grid min-h-72 place-items-center overflow-hidden rounded-[1.4rem] bg-gradient-to-b from-slate-200 to-white">
                     {selectedModel.thumbnail ? (
                       <img
-                        src={selectedModel.thumbnail}
+                        src={normalizeCatalogAssetUrl(selectedModel.thumbnail)}
                         alt=""
                         className="max-h-64 max-w-[86%] object-contain drop-shadow-2xl"
                       />
@@ -2185,42 +2250,33 @@ export default function App() {
             onPointerDown={markUiInteraction}
           >
             <div className="summary-card">
-              <p className="eyebrow">Measurement Summary</p>
-              <h2>Captured objects</h2>
-              <p className="summary-note">
-                Measurements are field estimates and should be confirmed during the ocular visit.
-              </p>
+              <p className="eyebrow">Quote Summary</p>
 
               <div className="summary-list">
                 {activeObjectCount === 0 ? (
                   <div className="summary-empty">No objects captured yet.</div>
-                ) : isV2 ? (
-                  v2Objects.map((object) => (
-                    <article key={object.id}>
-                      <div>
-                        <strong>{`Item ${object.id}`}</strong>
-                        <small>{findModel(object.modelId).label}</small>
-                        <p>{formatV2Dimensions(object.dimensions)}</p>
-                      </div>
-                      <span style={{ background: OBJECT_TYPES[object.type].color }}>
-                        Sized
-                      </span>
-                    </article>
-                  ))
                 ) : (
-                  objects.map((object) => (
-                    <article key={object.id}>
-                      <div>
-                        <strong>{`Item ${object.id}`}</strong>
-                        <small>{findModel(object.modelId).label}</small>
-                        <p>{formatDimensions(object.dimensions)}</p>
+                  summaryQuoteItems.map((item) => (
+                    <article key={item.id}>
+                      <div className="summary-item-copy">
+                        <strong>{item.label}</strong>
+                        <small>AR measured item</small>
+                        <p>{item.dimensionsText}</p>
+                        <p>1 pc</p>
                       </div>
-                      <span style={{ background: OBJECT_TYPES[object.type].color }}>
-                        Measured
-                      </span>
+                      <strong className="summary-item-price">
+                        {item.price == null
+                          ? "Price pending"
+                          : formatQuoteCurrency(item.price)}
+                      </strong>
                     </article>
                   ))
                 )}
+              </div>
+
+              <div className="summary-total">
+                <strong>Estimated Total</strong>
+                <span>{formatQuoteCurrency(summaryEstimatedTotal)}</span>
               </div>
 
               <div className="summary-actions">
@@ -2229,7 +2285,7 @@ export default function App() {
                   onClick={proceedToQuoteRequest}
                   disabled={activeObjectCount === 0}
                 >
-                  Continue to Quote Request
+                  Book an ocular visit
                 </Button>
               </div>
               <Button
@@ -2372,8 +2428,8 @@ function defaultV2DimensionsForModel(
         : V2_DEFAULT_DEPTH_CM;
 
   return normalizeV2Dimensions({
-    segmentsCm: [V2_DEFAULT_WIDTH_CM],
-    heightCm: model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM,
+    segmentsCm: [model.type === "door" ? 80 : V2_DEFAULT_WIDTH_CM],
+    heightCm: model.type === "door" ? 200 : model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM,
     depthCm: depth,
   });
 }
@@ -2394,6 +2450,42 @@ function clampDimension(value: number, min: number, max: number) {
 
 function formatV2Dimensions(dimensions: V2PlacedObject["dimensions"]) {
   return `${dimensions.segmentsCm[0]} x ${dimensions.heightCm} x ${dimensions.depthCm} cm`;
+}
+
+function formatQuoteDimensions(widthCm: number, heightCm: number) {
+  return `${formatMeters(widthCm)} x ${formatMeters(heightCm)}`;
+}
+
+function formatMeters(valueCm: number) {
+  const meters = valueCm / 100;
+  const formatted = new Intl.NumberFormat("en-PH", {
+    maximumFractionDigits: 2,
+  }).format(meters);
+
+  return `${formatted}m`;
+}
+
+function estimateQuotePrice(
+  widthCm: number,
+  heightCm: number,
+  model: ModelDefinition,
+) {
+  if (model.price == null) return null;
+
+  const unit = model.unit?.toLowerCase() ?? "";
+  if (unit.includes("sqm") || unit.includes("sq m")) {
+    return Math.round((widthCm / 100) * (heightCm / 100) * model.price);
+  }
+
+  return Math.round(model.price);
+}
+
+function formatQuoteCurrency(value: number) {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function nudgeV2Object(
@@ -2704,7 +2796,7 @@ function ModelCatalogPanel({
                     >
                       {model.thumbnail ? (
                         <img
-                          src={model.thumbnail}
+                          src={normalizeCatalogAssetUrl(model.thumbnail)}
                           alt=""
                           className="h-full w-full object-contain p-2"
                         />
@@ -2877,13 +2969,15 @@ function createV2ObjectModel(
     depth: depthMeters,
   };
 
-  loadCatalogModel(model.file)
+  const modelFile = normalizeCatalogAssetUrl(model.file);
+
+  loadCatalogModel(modelFile)
     .then((catalogModel) => {
       const fittedModel = fitCatalogModel(catalogModel, frame);
       group.add(fittedModel);
     })
     .catch((error) => {
-      console.warn(`Unable to load model ${model.file}`, error);
+      console.warn(`Unable to load model ${modelFile}`, error);
     });
 
   return group;
@@ -2938,13 +3032,15 @@ function createGlassModel(points: MeasurementPoint[], model: ModelDefinition) {
   });
 
   const frame = createModelFrame(points, model, heightDir, heightMeters);
-  loadCatalogModel(model.file)
+  const modelFile = normalizeCatalogAssetUrl(model.file);
+
+  loadCatalogModel(modelFile)
     .then((catalogModel) => {
       const fittedModel = fitCatalogModel(catalogModel, frame);
       group.add(fittedModel);
     })
     .catch((error) => {
-      console.warn(`Unable to load model ${model.file}`, error);
+      console.warn(`Unable to load model ${modelFile}`, error);
     });
 
   return group;
@@ -3143,6 +3239,7 @@ function createPanelMesh(
     emissiveIntensity: 0.08,
     transparent: true,
     opacity: 0.16,
+    depthWrite: false,
     roughness: 0.15,
     metalness: 0.05,
   });

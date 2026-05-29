@@ -96,7 +96,7 @@ export default function Welcome() {
   const [productsError, setProductsError] = useState("");
 
   function openAr() {
-    window.location.href = `${window.location.protocol}//${window.location.hostname}:5173/ar/v2`;
+    window.location.href = process.env.NEXT_PUBLIC_AR_URL || "/ar/v2";
   }
 
   useEffect(() => {

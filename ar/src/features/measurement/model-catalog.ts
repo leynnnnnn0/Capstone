@@ -143,7 +143,12 @@ export async function fetchProductModelCatalog(): Promise<ProductModelCatalogRes
 function getApiBaseUrl() {
   const env = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
   const configured = env?.VITE_API_URL;
-  return (configured?.trim() || "http://localhost:8000")
+  const fallback =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "http://localhost:8000"
+      : window.location.origin;
+
+  return (configured?.trim() || fallback)
     .replace(/\/+$/, "")
     .replace(/\/api\/v1$/, "")
     .replace(/\/api$/, "");
@@ -189,7 +194,7 @@ function productToModel(
     type,
     label: productName,
     description,
-    file: absoluteUrl(fileUrl, apiBase),
+    file: normalizeCatalogAssetUrl(fileUrl, apiBase),
     thumbnail: productThumbnail(product, apiBase),
     price: product.price_per_unit == null ? null : Number(product.price_per_unit),
     unit: product.unit ?? null,
@@ -226,14 +231,17 @@ function buildCategories(models: ModelDefinition[]): ModelCategory[] {
 function productThumbnail(product: ProductPayload, apiBase: string) {
   const firstImage = product.images?.[0]?.image_url;
   const url = product.cover_image || firstImage;
-  return url ? absoluteUrl(url, apiBase) : null;
+  return url ? normalizeCatalogAssetUrl(url, apiBase) : null;
 }
 
-function absoluteUrl(url: string, apiBase: string) {
+export function normalizeCatalogAssetUrl(url: string, apiBase = getApiBaseUrl()) {
   const parsed = new URL(url, apiBase);
   const api = new URL(apiBase);
 
-  if (isLocalHost(parsed.hostname) && !isLocalHost(api.hostname)) {
+  if (
+    !isLocalHost(api.hostname) &&
+    (isLocalHost(parsed.hostname) || parsed.port === "8000")
+  ) {
     parsed.protocol = api.protocol;
     parsed.host = api.host;
   }

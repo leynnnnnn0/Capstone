@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class QuotationResource extends JsonResource
 {
@@ -27,7 +28,7 @@ class QuotationResource extends JsonResource
             'customer_signed_at' => $this->customer_signed_at,
             'customer_signature_name' => $this->customer_signature_name,
             'customer_signature_url' => $this->customer_signature_path
-                ? asset('storage/' . $this->customer_signature_path)
+                ? Storage::disk('public')->url($this->customer_signature_path)
                 : null,
             'signature_invalidated_at' => $this->signature_invalidated_at,
             'signature_invalidated_reason' => $this->signature_invalidated_reason,
