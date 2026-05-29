@@ -8,6 +8,15 @@ export interface ModelCategory {
   description: string;
 }
 
+export interface ModelVariantDefinition {
+  id: string;
+  label: string;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  price?: number | null;
+  thumbnail?: string | null;
+}
+
 export interface ModelDefinition {
   id: string;
   category: ModelCategoryId;
@@ -16,6 +25,10 @@ export interface ModelDefinition {
   description: string;
   file: string;
   thumbnail?: string | null;
+  images?: string[];
+  variants?: ModelVariantDefinition[];
+  defaultWidthCm?: number | null;
+  defaultHeightCm?: number | null;
   price?: number | null;
   unit?: string | null;
   productId?: number;
@@ -37,6 +50,15 @@ interface Product3DModelPayload {
   original_name?: string | null;
 }
 
+interface ProductVariantPayload {
+  id?: number;
+  name?: string | null;
+  width?: number | string | null;
+  height?: number | string | null;
+  price?: number | string | null;
+  images?: ProductImagePayload[];
+}
+
 interface ProductPayload {
   id: number;
   name?: string | null;
@@ -47,6 +69,7 @@ interface ProductPayload {
   cover_image?: string | null;
   categories?: ProductCategoryPayload[];
   images?: ProductImagePayload[];
+  variants?: ProductVariantPayload[];
   model_3d?: Product3DModelPayload | null;
 }
 
@@ -187,6 +210,7 @@ function productToModel(
   const category = categoryIdFor(type, categoryName);
   const productName = cleanText(product.name) || `Product ${product.id}`;
   const description = cleanText(product.description) || "AR-ready 3D product model.";
+  const images = productImageUrls(product, apiBase);
 
   return {
     id: `product-${product.id}`,
@@ -195,7 +219,9 @@ function productToModel(
     label: productName,
     description,
     file: normalizeCatalogAssetUrl(fileUrl, apiBase),
-    thumbnail: productThumbnail(product, apiBase),
+    thumbnail: images[0] ?? null,
+    images,
+    variants: productVariants(product, apiBase),
     price: product.price_per_unit == null ? null : Number(product.price_per_unit),
     unit: product.unit ?? null,
     productId: product.id,
@@ -228,10 +254,37 @@ function buildCategories(models: ModelDefinition[]): ModelCategory[] {
   return [...categories.values()];
 }
 
-function productThumbnail(product: ProductPayload, apiBase: string) {
-  const firstImage = product.images?.[0]?.image_url;
-  const url = product.cover_image || firstImage;
-  return url ? normalizeCatalogAssetUrl(url, apiBase) : null;
+function productImageUrls(product: ProductPayload, apiBase: string) {
+  const urls = [
+    product.cover_image,
+    ...(product.images?.map((image) => image.image_url) ?? []),
+  ].filter((url): url is string => Boolean(cleanText(url)));
+
+  return [...new Set(urls.map((url) => normalizeCatalogAssetUrl(url, apiBase)))];
+}
+
+function productVariants(product: ProductPayload, apiBase: string) {
+  return (product.variants ?? []).map((variant, index) => {
+    const widthCm = Number(variant.width);
+    const heightCm = Number(variant.height);
+    const price = Number(variant.price);
+    const thumbnail = variant.images?.[0]?.image_url;
+
+    return {
+      id: `variant-${product.id}-${variant.id ?? index}`,
+      label: cleanText(variant.name) || variantSizeLabel(widthCm, heightCm) || `Variant ${index + 1}`,
+      widthCm: Number.isFinite(widthCm) ? widthCm : null,
+      heightCm: Number.isFinite(heightCm) ? heightCm : null,
+      price: Number.isFinite(price) ? price : null,
+      thumbnail: thumbnail ? normalizeCatalogAssetUrl(thumbnail, apiBase) : null,
+    };
+  });
+}
+
+function variantSizeLabel(widthCm: number, heightCm: number) {
+  if (!Number.isFinite(widthCm) || !Number.isFinite(heightCm)) return "";
+
+  return `${widthCm} x ${heightCm} cm`;
 }
 
 export function normalizeCatalogAssetUrl(url: string, apiBase = getApiBaseUrl()) {

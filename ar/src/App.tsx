@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
   Box,
   CheckCircle2,
-  ChevronRight,
   ChevronsDown,
   ChevronsLeft,
   ChevronsRight,
   ChevronsUp,
   Layers3,
-  Menu,
   Minus,
   MousePointerClick,
   Move3D,
@@ -18,11 +15,8 @@ import {
   Plus,
   Ruler,
   ScanLine,
-  RotateCcw,
   RotateCcwSquare,
   RotateCwSquare,
-  Search,
-  SlidersHorizontal,
   Smartphone,
   Trash2,
   Undo2,
@@ -30,15 +24,10 @@ import {
 } from "lucide-react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { ArShop } from "./components/shop/ArShop";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "./components/ui/card";
-import { Input } from "./components/ui/input";
+import { Card, CardContent } from "./components/ui/card";
 import { computeDimensions, formatDimensions } from "./features/measurement/dimensions";
 import { createLabel } from "./features/measurement/labels";
 import {
@@ -114,6 +103,7 @@ interface ArQuoteTransferItem {
   segmentsCm: number[];
   widthCm: number;
   heightCm: number;
+  price?: number | null;
 }
 
 interface ArQuoteTransferPayload {
@@ -177,7 +167,7 @@ export default function App() {
   const nextV2ObjectIdRef = useRef(1);
 
   const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
-    window.location.pathname.startsWith("/v2") ? "v2" : "v1",
+    isV1Path(window.location.pathname) ? "v1" : "v2",
   );
   const [status, setStatus] = useState("Ready. Tap Start AR.");
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
@@ -199,6 +189,7 @@ export default function App() {
   );
   const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
   const [productSearch, setProductSearch] = useState("");
+  const [shopDetailModel, setShopDetailModel] = useState<ModelDefinition | null>(null);
   const [points, setPoints] = useState<MeasurementPoint[]>([]);
   const pointsRef = useRef<MeasurementPoint[]>([]);
   const segmentsRef = useRef<MeasurementSegment[]>([]);
@@ -212,6 +203,7 @@ export default function App() {
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [manualQuoteItems, setManualQuoteItems] = useState<ArQuoteTransferItem[]>([]);
   const sessionPanelOpenRef = useRef(false);
   const summaryOpenRef = useRef(false);
   const catalogOpenRef = useRef(false);
@@ -223,6 +215,19 @@ export default function App() {
   const selectedModel = getModelById(modelCatalog, selectedModelId);
   const isV2 = flowVersion === "v2";
   const activeObjectCount = isV2 ? v2Objects.length : objects.length;
+  const relatedShopModels = useMemo(() => {
+    const activeModel = shopDetailModel ?? selectedModel;
+    const sameCategoryModels = modelCatalog.filter(
+      (model) =>
+        model.id !== activeModel.id &&
+        (model.category === activeModel.category || model.type === activeModel.type),
+    );
+
+    return (sameCategoryModels.length
+      ? sameCategoryModels
+      : modelCatalog.filter((model) => model.id !== activeModel.id)
+    ).slice(0, 4);
+  }, [modelCatalog, selectedModel, shopDetailModel]);
   const selectedObject = useMemo(
     () => objects.find((object) => object.id === selectedObjectId) ?? null,
     [objects, selectedObjectId],
@@ -321,7 +326,7 @@ export default function App() {
     [],
   );
 
-  const summaryQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
+  const measuredQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
     if (isV2) {
       return v2Objects.map((object) => {
         const model = findModel(object.modelId);
@@ -360,6 +365,14 @@ export default function App() {
     });
   }, [findModel, isV2, objects, v2Objects]);
 
+  const summaryQuoteItems = useMemo(
+    () => [
+      ...manualQuoteItems.map((item, index) => transferItemToSummaryQuoteItem(item, index)),
+      ...measuredQuoteItems,
+    ],
+    [manualQuoteItems, measuredQuoteItems],
+  );
+
   const summaryEstimatedTotal = useMemo(
     () =>
       summaryQuoteItems.reduce(
@@ -382,7 +395,7 @@ export default function App() {
       markUiInteraction();
       flowVersionRef.current = version;
       setFlowVersionState(version);
-      window.history.replaceState(null, "", version === "v2" ? "/v2" : "/");
+      window.history.replaceState(null, "", flowPath(version));
       setSessionPanelOpen(false);
       setCatalogOpen(false);
       setSummaryOpen(false);
@@ -399,6 +412,34 @@ export default function App() {
     v2ModeRef.current = mode;
     setV2ModeState(mode);
   }, []);
+
+  const addModelToQuote = useCallback((model: ModelDefinition) => {
+    markUiInteraction();
+    const productId = model.productId;
+
+    if (!productId) {
+      setStatus("Choose an uploaded product before adding it to quote.");
+      return;
+    }
+
+    const dimensions = defaultV2DimensionsForModel(model);
+    const widthCm = dimensions.segmentsCm[0] ?? 0;
+
+    setManualQuoteItems((items) => [
+      ...items,
+      {
+        productId,
+        modelId: model.id,
+        label: model.label,
+        description: model.description,
+        segmentsCm: dimensions.segmentsCm,
+        widthCm,
+        heightCm: dimensions.heightCm,
+        price: estimateQuotePrice(widthCm, dimensions.heightCm, model),
+      },
+    ]);
+    setStatus(`${model.label} added to quote.`);
+  }, [markUiInteraction]);
 
   const setArGuideVisible = useCallback((visible: boolean) => {
     showArGuideRef.current = visible;
@@ -421,6 +462,9 @@ export default function App() {
   const selectModel = useCallback(
     (model: ModelDefinition, closeCatalog = false) => {
       ignorePlacementUntilRef.current = performance.now() + 1200;
+      if (!modelCatalogRef.current.some((catalogModel) => catalogModel.id === model.id)) {
+        modelCatalogRef.current = [...modelCatalogRef.current, model];
+      }
       selectedModelIdRef.current = model.id;
       selectedTypeRef.current = model.type;
       setSelectedModelId(model.id);
@@ -1365,9 +1409,12 @@ export default function App() {
 
     const items =
       flowVersionRef.current === "v2"
-        ? v2ObjectsRef.current
-            .map((object) => v2ObjectToQuoteTransferItem(object, findModel(object.modelId)))
-            .filter((item): item is ArQuoteTransferItem => Boolean(item))
+        ? [
+            ...manualQuoteItems,
+            ...v2ObjectsRef.current
+              .map((object) => v2ObjectToQuoteTransferItem(object, findModel(object.modelId)))
+              .filter((item): item is ArQuoteTransferItem => Boolean(item)),
+          ]
         : objectsRef.current
             .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
             .filter((item): item is ArQuoteTransferItem => Boolean(item));
@@ -1461,268 +1508,30 @@ export default function App() {
             <span>{activeObjectCount} obj</span>
           </section>
         ) : (
-          <section
-            className="shop-screen"
-            data-xr-ui="true"
-            onPointerDown={markUiInteraction}
-          >
-            <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-5 pb-5">
-              <header className="flex items-center justify-between gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 rounded-full border border-border bg-card shadow-sm"
-                  aria-label="Menu"
-                >
-                  <Menu className="size-5" />
-                </Button>
-                <div className="grid justify-items-center leading-none">
-                  <strong className="text-xl font-black tracking-[0.08em] text-primary">
-                    SOG
-                  </strong>
-                  <small className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                    {isV2 ? "AR Resize" : "AR Measure"}
-                  </small>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="relative size-11 rounded-full border border-border bg-card shadow-sm"
-                  aria-label="Notifications"
-                >
-                  <Bell className="size-5" />
-                  <span className="absolute right-2 top-2 size-2 rounded-full bg-secondary" />
-                </Button>
-              </header>
-
-              <div className="grid grid-cols-[1fr_auto] gap-3">
-                <label className="relative">
-                  <span className="sr-only">Search</span>
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    value={productSearch}
-                    placeholder="Search product models"
-                    className="h-12 rounded-2xl border-border bg-card pl-10 shadow-sm"
-                    onChange={(event) => setProductSearch(event.target.value)}
-                  />
-                </label>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="size-12 rounded-2xl shadow-sm"
-                  aria-label="Filters"
-                >
-                  <SlidersHorizontal className="size-5" />
-                </Button>
-              </div>
-
-              <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {modelCategories.map((category) => (
-                  <Button
-                    type="button"
-                    key={category.id}
-                    variant={category.id === selectedCategoryId ? "secondary" : "outline"}
-                    className={cn(
-                      "h-14 shrink-0 rounded-full px-5",
-                      category.id !== selectedCategoryId &&
-                        "bg-card text-muted-foreground",
-                    )}
-                    onClick={() => setSelectedCategoryId(category.id)}
-                  >
-                    {category.label}
-                  </Button>
-                ))}
-              </div>
-
-              <Card className="overflow-hidden rounded-[1.75rem] border-border/80 bg-card shadow-xl shadow-slate-200/70">
-                <CardContent className="grid grid-cols-[minmax(0,1fr)_8.5rem] items-center gap-3 p-4">
-                  <div className="space-y-3">
-                    <Badge variant="secondary" className="w-max">
-                      AR ready
-                    </Badge>
-                    <div>
-                      <CardTitle className="text-xl leading-tight">
-                        {selectedModel.label}
-                      </CardTitle>
-                      <CardDescription className="mt-2 line-clamp-2">
-                        {selectedModel.description}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="dark"
-                      size="sm"
-                      className="rounded-full"
-                      onClick={startSession}
-                    >
-                      <Play className="size-4" />
-                      View in AR
-                    </Button>
-                  </div>
-                  <div className="grid h-32 place-items-center overflow-hidden rounded-2xl bg-muted">
-                    {selectedModel.thumbnail ? (
-                      <img
-                        src={normalizeCatalogAssetUrl(selectedModel.thumbnail)}
-                        alt=""
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <Box
-                        className="size-12"
-                        style={{ color: OBJECT_TYPES[selectedModel.type].color }}
-                      />
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="overflow-hidden rounded-[2rem] border-border/80 bg-card shadow-xl shadow-slate-200/80">
-                <CardContent className="space-y-5 p-4">
-                  <div className="relative grid min-h-72 place-items-center overflow-hidden rounded-[1.4rem] bg-gradient-to-b from-slate-200 to-white">
-                    {selectedModel.thumbnail ? (
-                      <img
-                        src={normalizeCatalogAssetUrl(selectedModel.thumbnail)}
-                        alt=""
-                        className="max-h-64 max-w-[86%] object-contain drop-shadow-2xl"
-                      />
-                    ) : (
-                      <div className="grid size-40 place-items-center rounded-[2rem] bg-white shadow-xl">
-                        <Box
-                          className="size-16"
-                          style={{ color: OBJECT_TYPES[selectedModel.type].color }}
-                        />
-                      </div>
-                    )}
-                    <div className="pointer-events-none absolute bottom-8 h-9 w-48 rounded-b-full border-b border-slate-400/70">
-                      <span className="absolute -bottom-1 left-0 size-2 rounded-full bg-slate-400" />
-                      <span className="absolute -bottom-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-slate-400" />
-                      <span className="absolute -bottom-1 right-0 size-2 rounded-full bg-slate-400" />
-                      <small className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium text-muted-foreground">
-                        360
-                      </small>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">
-                        Selected Product
-                      </p>
-                      <h1 className="mt-2 text-3xl font-black leading-tight tracking-normal text-foreground">
-                        {selectedModel.label}
-                      </h1>
-                    </div>
-                    {selectedModel.price != null && (
-                      <strong className="shrink-0 text-xl font-black text-secondary">
-                        {formatModelPrice(selectedModel.price, selectedModel.unit)}
-                      </strong>
-                    )}
-                  </div>
-
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {selectedModel.description}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={isV2 ? "outline" : "secondary"}
-                      className="rounded-2xl"
-                      onClick={() => setFlowVersion("v1")}
-                    >
-                      V1 Measure
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={isV2 ? "secondary" : "outline"}
-                      className="rounded-2xl"
-                      onClick={() => setFlowVersion("v2")}
-                    >
-                      V2 Place
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="muted" className="max-w-full truncate">
-                      {catalogStatus}
-                    </Badge>
-                    <Badge variant="outline">{activeObjectCount} captured</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="rounded-2xl border-primary text-primary"
-                      onClick={resetAll}
-                    >
-                      <RotateCcw className="size-4" />
-                      Reset
-                    </Button>
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="rounded-2xl"
-                      onClick={startSession}
-                    >
-                      <Play className="size-4" />
-                      {isV2 ? "Start V2" : "Start AR"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">
-                    Available models
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Choose the model before measuring.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary"
-                  onClick={() => setSelectedCategoryId("all")}
-                >
-                  See all
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
-
-              <ModelCatalogPanel
-                categories={modelCategories}
-                models={modelCatalog}
-                activeCategoryId={selectedCategoryId}
-                selectedModelId={selectedModelId}
-                searchQuery={productSearch}
-                onCategoryChange={setSelectedCategoryId}
-                onSelectModel={(model) => selectModel(model)}
-                shop
-              />
-
-              {activeObjectCount > 0 && (
-                <Button
-                  type="button"
-                  variant="dark"
-                  size="lg"
-                  className="rounded-2xl"
-                  onClick={openSummary}
-                >
-                  <Layers3 className="size-4" />
-                  Review captured objects
-                </Button>
-              )}
-            </div>
-          </section>
+          <ArShop
+            categories={modelCategories}
+            models={modelCatalog}
+            activeCategoryId={selectedCategoryId}
+            selectedModel={selectedModel}
+            selectedModelId={selectedModelId}
+            searchQuery={productSearch}
+            isV2={isV2}
+            catalogStatus={catalogStatus}
+            activeObjectCount={activeObjectCount}
+            relatedModels={relatedShopModels}
+            detailModel={shopDetailModel}
+            onCategoryChange={setSelectedCategoryId}
+            onSearchChange={setProductSearch}
+            onSelectModel={selectModel}
+            onOpenDetail={(model) => {
+              selectModel(model);
+              setShopDetailModel(model);
+            }}
+            onCloseDetail={() => setShopDetailModel(null)}
+            onStartSession={startSession}
+            onOpenSummary={openSummary}
+            onAddToQuote={addModelToQuote}
+          />
         )}
 
         {isActive && (
@@ -2253,7 +2062,7 @@ export default function App() {
               <p className="eyebrow">Quote Summary</p>
 
               <div className="summary-list">
-                {activeObjectCount === 0 ? (
+                {summaryQuoteItems.length === 0 ? (
                   <div className="summary-empty">No objects captured yet.</div>
                 ) : (
                   summaryQuoteItems.map((item) => (
@@ -2283,7 +2092,7 @@ export default function App() {
                 <Button
                   type="button"
                   onClick={proceedToQuoteRequest}
-                  disabled={activeObjectCount === 0}
+                  disabled={summaryQuoteItems.length === 0}
                 >
                   Book an ocular visit
                 </Button>
@@ -2428,8 +2237,10 @@ function defaultV2DimensionsForModel(
         : V2_DEFAULT_DEPTH_CM;
 
   return normalizeV2Dimensions({
-    segmentsCm: [model.type === "door" ? 80 : V2_DEFAULT_WIDTH_CM],
-    heightCm: model.type === "door" ? 200 : model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM,
+    segmentsCm: [model.defaultWidthCm ?? (model.type === "door" ? 80 : V2_DEFAULT_WIDTH_CM)],
+    heightCm:
+      model.defaultHeightCm ??
+      (model.type === "door" ? 200 : model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM),
     depthCm: depth,
   });
 }
@@ -2454,6 +2265,19 @@ function formatV2Dimensions(dimensions: V2PlacedObject["dimensions"]) {
 
 function formatQuoteDimensions(widthCm: number, heightCm: number) {
   return `${formatMeters(widthCm)} x ${formatMeters(heightCm)}`;
+}
+
+function transferItemToSummaryQuoteItem(
+  item: ArQuoteTransferItem,
+  index: number,
+): SummaryQuoteItem {
+  return {
+    id: -index - 1,
+    label: item.label,
+    description: item.description,
+    dimensionsText: formatQuoteDimensions(item.widthCm, item.heightCm),
+    price: item.price ?? null,
+  };
 }
 
 function formatMeters(valueCm: number) {
@@ -3175,6 +2999,16 @@ function findDepthDirection(
   }
 
   return fallback.normalize();
+}
+
+function isV1Path(pathname: string) {
+  return pathname === "/v1" || pathname.endsWith("/v1");
+}
+
+function flowPath(version: FlowVersion) {
+  const prefix = window.location.pathname.startsWith("/ar") ? "/ar" : "";
+
+  return `${prefix}/${version}`;
 }
 
 function fitCatalogModel(source: THREE.Group, frame: ModelFrame) {
