@@ -140,7 +140,7 @@ interface V2PlacedObject {
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const v3GestureLayerRef = useRef<HTMLDivElement | null>(null);
+  const placementGestureLayerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<MeasurementScene | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const localSpaceRef = useRef<XRReferenceSpace | null>(null);
@@ -625,119 +625,77 @@ export default function App() {
   }, [markUiInteraction]);
 
   useEffect(() => {
-    const targets = [canvasRef.current, v3GestureLayerRef.current].filter(
+    const targets = [canvasRef.current, placementGestureLayerRef.current].filter(
       (target): target is HTMLCanvasElement | HTMLDivElement => Boolean(target),
     );
     if (targets.length === 0) return;
 
-    const touchDistance = (touches: TouchList) => {
-      const first = touches.item(0);
-      const second = touches.item(1);
-      if (!first || !second) return 0;
-
-      return Math.hypot(first.clientX - second.clientX, first.clientY - second.clientY);
-    };
-
     const startTouchGesture = (event: TouchEvent) => {
       if (
-        flowVersionRef.current !== "v3" ||
+        flowVersionRef.current !== "v2" ||
         v2ModeRef.current !== "edit" ||
-        !selectedV2Object
+        !selectedV2Object ||
+        event.touches.length !== 1
       ) {
         return;
       }
 
-      if (event.touches.length === 1) {
-        const touch = event.touches.item(0);
-        if (!touch) return;
+      const touch = event.touches.item(0);
+      if (!touch) return;
 
-        v3DragRef.current = {
-          startX: touch.clientX,
-          startY: touch.clientY,
-          moved: false,
-          anchor: selectedV2Object.anchor.clone(),
-          anchorOffset: selectedV2Object.anchorOffset.clone(),
-        };
-        v3PinchRef.current = null;
-      } else if (event.touches.length === 2) {
-        v3PinchRef.current = {
-          distance: touchDistance(event.touches),
-          widthCm: selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM,
-          heightCm: selectedV2Object.dimensions.heightCm,
-        };
-        v3DragRef.current = null;
-      }
-
+      v3DragRef.current = {
+        startX: touch.clientX,
+        startY: touch.clientY,
+        moved: false,
+        anchor: selectedV2Object.anchor.clone(),
+        anchorOffset: selectedV2Object.anchorOffset.clone(),
+      };
+      v3PinchRef.current = null;
       markUiInteraction();
     };
 
     const moveTouchGesture = (event: TouchEvent) => {
-      const pinch = v3PinchRef.current;
       const drag = v3DragRef.current;
       if (
-        flowVersionRef.current !== "v3" ||
+        flowVersionRef.current !== "v2" ||
         v2ModeRef.current !== "edit" ||
-        !selectedV2Object
+        !selectedV2Object ||
+        event.touches.length !== 1 ||
+        !drag
       ) {
         return;
       }
 
-      if (event.touches.length === 1 && drag) {
-        const touch = event.touches.item(0);
-        if (!touch) return;
+      const touch = event.touches.item(0);
+      if (!touch) return;
 
-        event.preventDefault();
-        const dx = touch.clientX - drag.startX;
-        const dy = touch.clientY - drag.startY;
-        drag.moved = drag.moved || Math.hypot(dx, dy) > 6;
-        const distancePerPixel = v3DragDistancePerPixel(selectedV2Object);
-        const horizontalMove = selectedV2Object.widthDir
-          .clone()
-          .normalize()
-          .multiplyScalar(dx * distancePerPixel);
-        const verticalMove = selectedV2Object.heightDir
-          .clone()
-          .normalize()
-          .multiplyScalar(-dy * distancePerPixel);
-        const nextOffset = horizontalMove.add(verticalMove);
+      event.preventDefault();
+      const dx = touch.clientX - drag.startX;
+      const dy = touch.clientY - drag.startY;
+      drag.moved = drag.moved || Math.hypot(dx, dy) > 6;
+      const distancePerPixel = v3DragDistancePerPixel(selectedV2Object);
+      const horizontalMove = selectedV2Object.widthDir
+        .clone()
+        .normalize()
+        .multiplyScalar(dx * distancePerPixel);
+      const verticalMove = selectedV2Object.heightDir
+        .clone()
+        .normalize()
+        .multiplyScalar(-dy * distancePerPixel);
+      const nextOffset = horizontalMove.add(verticalMove);
 
-        updateV2ObjectTransform(selectedV2Object.id, (object) =>
-          object.xrAnchor
-            ? {
-                anchorOffset: drag.anchorOffset.clone().add(nextOffset),
-              }
-            : {
-                anchor: drag.anchor.clone().add(nextOffset),
-              },
-        );
-        return;
-      }
-
-      if (event.touches.length === 2 && pinch) {
-        const distance = touchDistance(event.touches);
-        if (pinch.distance <= 0 || distance <= 0) return;
-
-        event.preventDefault();
-        const scale = distance / pinch.distance;
-        updateV2ObjectDimensions(selectedV2Object.id, {
-          segmentsCm: [pinch.widthCm * scale],
-          heightCm: pinch.heightCm * scale,
-        });
-      }
+      updateV2ObjectTransform(selectedV2Object.id, (object) =>
+        object.xrAnchor
+          ? {
+              anchorOffset: drag.anchorOffset.clone().add(nextOffset),
+            }
+          : {
+              anchor: drag.anchor.clone().add(nextOffset),
+            },
+      );
     };
 
     const endTouchGesture = () => {
-      const drag = v3DragRef.current;
-      if (
-        flowVersionRef.current === "v3" &&
-        v2ModeRef.current === "edit" &&
-        drag &&
-        !drag.moved &&
-        currentHitPositionRef.current
-      ) {
-        void placeV3ObjectFromHit(currentHitPositionRef.current);
-      }
-
       v3PinchRef.current = null;
       v3DragRef.current = null;
     };
@@ -762,7 +720,7 @@ export default function App() {
         target.removeEventListener("touchcancel", endTouchGesture);
       });
     };
-  }, [isActive, isV3, markUiInteraction, selectedV2Object]);
+  }, [isActive, isV2, markUiInteraction, selectedV2Object]);
 
   const startSession = async () => {
     if (!canvasRef.current || sessionRef.current) return;
@@ -1789,10 +1747,10 @@ export default function App() {
           }
         }}
       >
-        {isActive && isV3 && selectedV2Object && (
+        {isActive && isV2 && v2Mode === "edit" && selectedV2Object && (
           <div
-            ref={v3GestureLayerRef}
-            className="v3-gesture-layer"
+            ref={placementGestureLayerRef}
+            className="placement-gesture-layer"
             aria-hidden="true"
           />
         )}

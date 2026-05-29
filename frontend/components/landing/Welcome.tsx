@@ -90,13 +90,22 @@ function productImage(product: Product) {
   return productCover(product) || null;
 }
 
+function arUrl() {
+  const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
+  const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
+
+  if (!configured) return `/ar/${version}`;
+
+  return configured.replace(/\/ar(?:\/v[123])?$/, "") + `/ar/${version}`;
+}
+
 export default function Welcome() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsError, setProductsError] = useState("");
 
   function openAr() {
-    window.location.href = process.env.NEXT_PUBLIC_AR_URL || "/ar/v3";
+    window.location.href = arUrl();
   }
 
   useEffect(() => {

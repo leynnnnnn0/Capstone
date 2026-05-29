@@ -14,12 +14,13 @@ type ProductArButtonProps = {
 };
 
 function arUrl(productId: number) {
+  const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
   const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
-  const base =
-    configured ||
-    (window.location.port === "3000"
-      ? `${window.location.protocol}//${window.location.hostname}:5173/ar/v3`
-      : "/ar/v3");
+  const base = configured
+    ? configured.replace(/\/ar(?:\/v[123])?$/, "") + `/ar/${version}`
+    : window.location.port === "3000"
+      ? `${window.location.protocol}//${window.location.hostname}:5173/ar/${version}`
+      : `/ar/${version}`;
 
   return `${base}?product=${productId}`;
 }
