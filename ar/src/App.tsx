@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowLeft,
   Box,
   CheckCircle2,
   ChevronsDown,
   ChevronsLeft,
   ChevronsRight,
   ChevronsUp,
+  CircleHelp,
+  ClipboardList,
+  Grid3X3,
   Layers3,
   Minus,
   MousePointerClick,
@@ -28,6 +32,13 @@ import { ArShop } from "./components/shop/ArShop";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
 import { Card, CardContent } from "./components/ui/card";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "./components/ui/drawer";
 import { computeDimensions, formatDimensions } from "./features/measurement/dimensions";
 import { createLabel } from "./features/measurement/labels";
 import {
@@ -40,6 +51,7 @@ import {
   type ModelCategoryId,
   type ModelCategory,
   type ModelDefinition,
+  type ModelVariantDefinition,
 } from "./features/measurement/model-catalog";
 import { OBJECT_TYPES } from "./features/measurement/object-types";
 import {
@@ -1142,17 +1154,16 @@ export default function App() {
       return;
     }
 
-    if (!v2LockedWallRef.current) {
-      setV2Mode("scanWall");
-      setStatus("Scan and lock a reference wall before placing another item.");
-      return;
-    }
-
-    setV2Mode("place");
+    v2LockedWallRef.current = null;
+    setV2WallLocked(false);
+    selectedV2ObjectIdRef.current = null;
+    setSelectedV2ObjectId(null);
+    setV2Mode("scanWall");
     setSessionPanelOpen(false);
-    setCatalogOpen(false);
+    setShopDetailModel(null);
+    setCatalogOpen(true);
     setSummaryOpen(false);
-    setStatus("Ready for another item. Tap the floor or wall to place it.");
+    setStatus("Choose the next product, then scan and lock its reference wall.");
   };
 
   const createPlacedObject = async (
@@ -1662,9 +1673,10 @@ export default function App() {
     setStatus("Session cleared.");
   };
 
-  const openSummary = async () => {
-    await endSession();
+  const openSummary = () => {
+    markUiInteraction();
     setSessionPanelOpen(false);
+    setCatalogOpen(false);
     setSummaryOpen(true);
   };
 
@@ -1756,33 +1768,22 @@ export default function App() {
         )}
 
         {isActive ? (
-          <section
-            className="ar-compact-panel"
+          <header
+            className="ar-mobile-header"
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
+            <button type="button" aria-label="End AR session" onClick={endSession}>
+              <ArrowLeft className="size-5" />
+            </button>
             <div>
-              <p className="eyebrow">SOG AR</p>
-              <strong>
-                {isPlacementFlow
-                  ? isV3
-                    ? v2Mode === "edit"
-                      ? "Adjust item"
-                      : "Auto place"
-                    : v2Mode === "edit"
-                    ? "Edit item"
-                    : v2Mode === "place"
-                      ? "Tap to place"
-                      : "Scan wall"
-                  : capturePhase === "shape"
-                    ? "Tap outline points"
-                    : "Tap height point"}
-              </strong>
+              <strong>{selectedV2Object ? findModel(selectedV2Object.modelId).label : selectedModel.label}</strong>
+              <span>Current item. Tap to change.</span>
             </div>
-            <span>{selectedModel.label}</span>
-            <span>{isV3 ? "V3" : isV2 ? "V2" : `${points.length} pts`}</span>
-            <span>{activeObjectCount} obj</span>
-          </section>
+            <button type="button" aria-label="Open guide" onClick={() => setArGuideVisible(true)}>
+              <CircleHelp className="size-5" />
+            </button>
+          </header>
         ) : (
           <ArShop
             categories={modelCategories}
@@ -1924,6 +1925,10 @@ export default function App() {
           </>
         )}
 
+        {isActive && isPlacementFlow && v2Mode === "edit" && selectedV2Object && (
+          <p className="ar-move-hint">Hold and move the item if needed</p>
+        )}
+
         {isActive && (!isV2 || v2Mode !== "edit") && (
           <div className={`reticle ${confidence}`}>
             <span />
@@ -1933,64 +1938,24 @@ export default function App() {
 
         {isActive && (
           <div
-            className="ar-action-bar"
+            className="ar-bottom-nav"
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            {!isPlacementFlow && (
-              <>
-                <Button type="button" className="primary" onClick={finishShape}>
-                  <CheckCircle2 className="size-4" />
-                  {capturePhase === "shape" ? "Finish Shape" : "Tap Height"}
-                </Button>
-                <Button type="button" onClick={undoPoint}>
-                  <Undo2 className="size-4" />
-                  Undo
-                </Button>
-              </>
-            )}
-            {isPlacementFlow && (
-              <Button
-                type="button"
-                className="primary"
-                onClick={
-                  isV3
-                    ? doAnotherV2Object
-                    : v2Mode === "edit"
-                    ? doAnotherV2Object
-                    : v2WallLocked
-                      ? rescanV2Wall
-                      : lockV2WallFromHit
-                }
-              >
-                {v2Mode === "edit" ? (
-                  <Plus className="size-4" />
-                ) : (
-                  <ScanLine className="size-4" />
-                )}
-                {isV3
-                  ? "Do Another"
-                  : v2Mode === "edit"
-                    ? "Do Another"
-                    : v2WallLocked
-                      ? "Rescan Wall"
-                      : "Lock Wall"}
-              </Button>
-            )}
-            <Button
+            <button
               type="button"
               onClick={() => {
-                setSessionPanelOpen((open) => {
-                  const nextOpen = !open;
-                  if (nextOpen) setCatalogOpen(false);
-                  return nextOpen;
-                });
+                if (isPlacementFlow) {
+                  if (selectedV2Object) deleteV2Object(selectedV2Object.id);
+                  return;
+                }
+                undoPoint();
               }}
             >
-              <Layers3 className="size-4" />
-              Objects {activeObjectCount}
-            </Button>
-            <Button
+              <Undo2 className="size-5" />
+              <span>Undo</span>
+            </button>
+            <button
               type="button"
               onClick={() => {
                 setCatalogOpen((open) => {
@@ -2000,15 +1965,42 @@ export default function App() {
                 });
               }}
             >
-              <PanelRightOpen className="size-4" />
-              Models
-            </Button>
-            <Button type="button" onClick={openSummary}>
-              Done
-            </Button>
-            <Button type="button" onClick={endSession}>
-              End
-            </Button>
+              <Grid3X3 className="size-5" />
+              <span>Products</span>
+            </button>
+            <button
+              type="button"
+              className="ar-capture-button"
+              onClick={() => {
+                if (!isPlacementFlow) {
+                  finishShape();
+                  return;
+                }
+
+                if (isV3 || v2Mode === "edit") {
+                  doAnotherV2Object();
+                  return;
+                }
+
+                if (v2WallLocked) {
+                  rescanV2Wall();
+                  return;
+                }
+
+                lockV2WallFromHit();
+              }}
+            >
+              <span />
+            </button>
+            <button type="button" onClick={openSummary}>
+              <ClipboardList className="size-5" />
+              <span>Quote Items</span>
+              {activeObjectCount > 0 && <i>{activeObjectCount}</i>}
+            </button>
+            <button type="button" onClick={resetAll}>
+              <Trash2 className="size-5" />
+              <span>Reset</span>
+            </button>
           </div>
         )}
 
@@ -2020,27 +2012,37 @@ export default function App() {
           !summaryOpen &&
           !showArGuide &&
           !showMovementCoach && (
-          <section
-            className="v2-size-panel"
-            data-xr-ui="true"
-            onPointerDown={markUiInteraction}
-          >
-            <div className="v2-size-panel-header">
-              <div>
-                <p className="eyebrow">Item {selectedV2Object.id}</p>
-                <strong>{findModel(selectedV2Object.modelId).label}</strong>
+            <section
+              className="v2-size-panel"
+              data-xr-ui="true"
+              onPointerDown={markUiInteraction}
+            >
+              <div className="v2-size-panel-actions">
+                <button type="button" onClick={() => setSelectedV2ObjectId(null)}>
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShopDetailModel(null);
+                    setCatalogOpen(true);
+                  }}
+                >
+                  Change Model
+                </button>
+                <button type="button" onClick={doAnotherV2Object}>
+                  Add New Product
+                </button>
               </div>
-              <span>{formatV2Dimensions(selectedV2Object.dimensions)}</span>
-            </div>
-            <V2DimensionControl
-              label="Width"
-              value={selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM}
-              onChange={(value) =>
-                updateV2ObjectDimensions(selectedV2Object.id, {
-                  segmentsCm: [value],
-                })
-              }
-            />
+              <div className="v2-size-panel-header">
+                <div>
+                  <small>Glass</small>
+                  <strong>{findModel(selectedV2Object.modelId).label}</strong>
+                </div>
+                <span>
+                  {selectedV2Object.dimensions.segmentsCm[0]}x{selectedV2Object.dimensions.heightCm}
+                </span>
+              </div>
             <V2DimensionControl
               label="Height"
               value={selectedV2Object.dimensions.heightCm}
@@ -2051,11 +2053,11 @@ export default function App() {
               }
             />
             <V2DimensionControl
-              label="Depth"
-              value={selectedV2Object.dimensions.depthCm}
+              label="Width"
+              value={selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM}
               onChange={(value) =>
                 updateV2ObjectDimensions(selectedV2Object.id, {
-                  depthCm: value,
+                  segmentsCm: [value],
                 })
               }
             />
@@ -2071,7 +2073,7 @@ export default function App() {
                 }
               >
                 <RotateCcwSquare className="size-4" />
-                Rotate
+                Rotate L
               </Button>
               <Button
                 type="button"
@@ -2084,7 +2086,7 @@ export default function App() {
                 }
               >
                 <RotateCwSquare className="size-4" />
-                Rotate
+                Rotate R
               </Button>
               <Button
                 type="button"
@@ -2168,39 +2170,92 @@ export default function App() {
           </section>
         )}
 
-        {isActive && catalogOpen && (
-          <section
-            className="model-catalog model-catalog--active"
+        <Drawer open={isActive && catalogOpen} onOpenChange={setCatalogOpen}>
+          <DrawerContent
+            className="grid gap-4 ar-product-drawer"
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <div className="model-catalog-header">
+            <DrawerHeader>
               <div>
-                <p className="eyebrow">Model Catalog</p>
-                <h2>Choose a product</h2>
+                <DrawerTitle>
+                  {shopDetailModel ? shopDetailModel.label : "Discover products"}
+                </DrawerTitle>
+                <DrawerDescription>
+                  {shopDetailModel
+                    ? "Review details, variants, then select it for AR."
+                    : "Pick the model before placing it."}
+                </DrawerDescription>
               </div>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
-                className="rounded-full text-slate-100"
-                onClick={() => setCatalogOpen(false)}
+                size="icon"
+                className="rounded-full text-slate-500"
+                onClick={() => {
+                  if (shopDetailModel) {
+                    setShopDetailModel(null);
+                    return;
+                  }
+                  setCatalogOpen(false);
+                }}
               >
-                <X className="size-4" />
-                Close
+                {shopDetailModel ? (
+                  <ArrowLeft className="size-5" />
+                ) : (
+                  <X className="size-5" />
+                )}
               </Button>
-            </div>
-            <ModelCatalogPanel
-              categories={modelCategories}
-              models={modelCatalog}
-              activeCategoryId={selectedCategoryId}
-              selectedModelId={selectedModelId}
-              onCategoryChange={setSelectedCategoryId}
-              onSelectModel={(model) => selectModel(model, true)}
-              compact
-            />
-          </section>
-        )}
+            </DrawerHeader>
+            {shopDetailModel ? (
+              <ArProductDrawerDetail
+                model={shopDetailModel}
+                relatedModels={relatedShopModels}
+                onSelect={(model) => {
+                  if (selectedV2Object) {
+                    changeV2ObjectModel(selectedV2Object.id, model);
+                    setCatalogOpen(false);
+                  } else {
+                    selectModel(model, true);
+                  }
+                  setShopDetailModel(null);
+                }}
+                onOpenDetail={(model) => setShopDetailModel(model)}
+              />
+            ) : (
+              <>
+                <label className="ar-drawer-search">
+                  <ScanLine className="size-5" />
+                  <input
+                    value={productSearch}
+                    onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder="Search for product"
+                  />
+                </label>
+                <ModelCatalogPanel
+                  categories={modelCategories}
+                  models={modelCatalog}
+                  activeCategoryId={selectedCategoryId}
+                  selectedModelId={selectedModelId}
+                  onCategoryChange={setSelectedCategoryId}
+                  onSelectModel={(model) => {
+                    if (selectedV2Object) {
+                      changeV2ObjectModel(selectedV2Object.id, model);
+                      setCatalogOpen(false);
+                      setShopDetailModel(null);
+                    } else {
+                      selectModel(model);
+                      setShopDetailModel(model);
+                    }
+                  }}
+                  searchQuery={productSearch}
+                  compact
+                  shop
+                />
+              </>
+            )}
+          </DrawerContent>
+        </Drawer>
 
         {isActive && sessionPanelOpen && (
           <aside
@@ -2342,33 +2397,75 @@ export default function App() {
           </aside>
         )}
 
-        {summaryOpen && (
-          <section
-            className="summary"
+        <Drawer open={summaryOpen} onOpenChange={setSummaryOpen}>
+          <DrawerContent
+            className="grid gap-4 ar-quote-drawer"
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <div className="summary-card">
-              <p className="eyebrow">Quote Summary</p>
+            <DrawerHeader>
+              <div>
+                <DrawerTitle>Quote Summary</DrawerTitle>
+                <DrawerDescription>
+                  Tap an AR item to go back and modify it.
+                </DrawerDescription>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-slate-500"
+                onClick={() => setSummaryOpen(false)}
+              >
+                <X className="size-5" />
+              </Button>
+            </DrawerHeader>
 
+            <div className="summary-card">
               <div className="summary-list">
                 {summaryQuoteItems.length === 0 ? (
                   <div className="summary-empty">No objects captured yet.</div>
                 ) : (
                   summaryQuoteItems.map((item) => (
-                    <article key={item.id}>
-                      <div className="summary-item-copy">
+                    <button
+                      type="button"
+                      key={item.id}
+                      className="summary-item-button"
+                      onClick={() => {
+                        if (item.id > 0 && isPlacementFlow) {
+                          const object = v2ObjectsRef.current.find(
+                            (candidate) => candidate.id === item.id,
+                          );
+                          if (object) {
+                            selectV2Object(object);
+                            setSummaryOpen(false);
+                          }
+                          return;
+                        }
+
+                        if (item.id > 0) {
+                          const object = objectsRef.current.find(
+                            (candidate) => candidate.id === item.id,
+                          );
+                          if (object) {
+                            selectCompletedObject(object);
+                            setSummaryOpen(false);
+                          }
+                        }
+                      }}
+                    >
+                      <span className="summary-item-copy">
                         <strong>{item.label}</strong>
-                        <small>AR measured item</small>
+                        <small>{item.id > 0 ? "AR measured item" : "Selected product"}</small>
                         <p>{item.dimensionsText}</p>
                         <p>1 pc</p>
-                      </div>
+                      </span>
                       <strong className="summary-item-price">
                         {item.price == null
                           ? "Price pending"
                           : formatQuoteCurrency(item.price)}
                       </strong>
-                    </article>
+                    </button>
                   ))
                 )}
               </div>
@@ -2387,17 +2484,9 @@ export default function App() {
                   Book an ocular visit
                 </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="back-button"
-                onClick={() => setSummaryOpen(false)}
-              >
-                Go Back
-              </Button>
             </div>
-          </section>
-        )}
+          </DrawerContent>
+        </Drawer>
       </div>
     </main>
   );
@@ -2661,7 +2750,7 @@ function V2DimensionControl({
           variant="ghost"
           size="icon"
           aria-label={`Decrease ${label}`}
-          onClick={() => onChange(value - 5)}
+          onClick={() => onChange(Math.max(5, value - 5))}
         >
           <Minus className="size-4" />
         </Button>
@@ -2678,6 +2767,158 @@ function V2DimensionControl({
       </div>
     </div>
   );
+}
+
+function ArProductDrawerDetail({
+  model,
+  relatedModels,
+  onSelect,
+  onOpenDetail,
+}: {
+  model: ModelDefinition;
+  relatedModels: ModelDefinition[];
+  onSelect: (model: ModelDefinition) => void;
+  onOpenDetail: (model: ModelDefinition) => void;
+}) {
+  const images = drawerProductImages(model);
+  const [selectedImage, setSelectedImage] = useState(images[0] ?? null);
+
+  useEffect(() => {
+    setSelectedImage(images[0] ?? null);
+  }, [model.id, images[0]]);
+
+  return (
+    <div className="ar-product-detail">
+      <div className="ar-product-hero">
+        {selectedImage ? (
+          <img src={normalizeCatalogAssetUrl(selectedImage)} alt="" />
+        ) : (
+          <Box className="size-14 text-slate-400" />
+        )}
+      </div>
+
+      {images.length > 1 && (
+        <div className="ar-product-thumbs">
+          {images.slice(0, 5).map((image) => (
+            <button
+              type="button"
+              key={normalizeCatalogAssetUrl(image)}
+              className={image === selectedImage ? "selected" : ""}
+              onClick={() => setSelectedImage(image)}
+            >
+              <img src={normalizeCatalogAssetUrl(image)} alt="" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="ar-product-copy">
+        <div>
+          <p>{OBJECT_TYPES[model.type].label}</p>
+          <h3>{model.label}</h3>
+        </div>
+        {model.defaultWidthCm && model.defaultHeightCm && (
+          <strong>{model.defaultWidthCm}x{model.defaultHeightCm}</strong>
+        )}
+      </div>
+      <p className="ar-product-description">{model.description}</p>
+
+      {model.variants?.length ? (
+        <div className="ar-product-section">
+          <h4>Variants</h4>
+          <div className="ar-variant-list">
+            {model.variants.slice(0, 6).map((variant) => {
+              const variantModel = variantToModel(model, variant);
+
+              return (
+                <button
+                  type="button"
+                  key={variant.id}
+                  onClick={() => onOpenDetail(variantModel)}
+                >
+                  {variant.thumbnail ? (
+                    <img src={normalizeCatalogAssetUrl(variant.thumbnail)} alt="" />
+                  ) : (
+                    <Box className="size-7 text-white" />
+                  )}
+                  <span>
+                    <strong>{variant.label}</strong>
+                    <small>
+                      {[variant.widthCm, variant.heightCm].filter(Boolean).join("x")}
+                    </small>
+                  </span>
+                  <ChevronsRight className="size-5" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {relatedModels.length > 0 && (
+        <div className="ar-product-section">
+          <h4>Related products</h4>
+          <div className="ar-related-list">
+            {relatedModels.map((relatedModel) => (
+              <button
+                type="button"
+                key={relatedModel.id}
+                onClick={() => onOpenDetail(relatedModel)}
+              >
+                {relatedModel.thumbnail ? (
+                  <img src={normalizeCatalogAssetUrl(relatedModel.thumbnail)} alt="" />
+                ) : (
+                  <Box className="size-9 text-slate-400" />
+                )}
+                <strong>{relatedModel.label}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Button
+        type="button"
+        size="lg"
+        className="h-14 rounded-full bg-[#91abeb] text-base font-black text-white hover:bg-[#7f9ce2]"
+        onClick={() => onSelect(model)}
+      >
+        Select
+      </Button>
+    </div>
+  );
+}
+
+function drawerProductImages(model: ModelDefinition) {
+  const images = [
+    model.thumbnail,
+    ...(model.images ?? []),
+    ...(model.variants?.map((variant) => variant.thumbnail) ?? []),
+  ].filter((image): image is string => Boolean(image));
+
+  return [...new Map(images.map((image) => [normalizeCatalogAssetUrl(image), image])).values()];
+}
+
+function variantToModel(
+  parent: ModelDefinition,
+  variant: ModelVariantDefinition,
+): ModelDefinition {
+  return {
+    ...parent,
+    id: `${parent.id}-${variant.id}`,
+    label: variant.label || parent.label,
+    description:
+      variant.widthCm && variant.heightCm
+        ? `${parent.label} variant sized ${variant.widthCm} x ${variant.heightCm} cm.`
+        : parent.description,
+    thumbnail: variant.thumbnail ?? parent.thumbnail ?? null,
+    images: variant.thumbnail ? [variant.thumbnail] : parent.images,
+    variants: [],
+    defaultWidthCm: variant.widthCm ?? parent.defaultWidthCm ?? null,
+    defaultHeightCm: variant.heightCm ?? parent.defaultHeightCm ?? null,
+    price: variant.price ?? parent.price ?? null,
+    unit: variant.price == null ? parent.unit : null,
+  };
 }
 
 function v2ObjectToQuoteTransferItem(
@@ -2842,36 +3083,45 @@ function ModelCatalogPanel({
 
   return (
     <div className={cn("grid gap-3", compact && "gap-2")}>
-      {!shop && (
-        <div
-          className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          aria-label="Model categories"
-        >
-          {categories.map((category) => (
-            <Button
-              type="button"
-              key={category.id}
-              variant={category.id === activeCategoryId ? "secondary" : "dark"}
-              size={compact ? "sm" : "default"}
-              className={cn(
-                "h-auto shrink-0 rounded-full px-4 py-2 text-left",
-                category.id !== activeCategoryId &&
-                  "border border-white/10 bg-slate-950/60 text-slate-200",
+      <div
+        className={cn(
+          "flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          shop && "gap-3 py-1",
+        )}
+        aria-label="Model categories"
+      >
+        {categories.map((category) => (
+          <Button
+            type="button"
+            key={category.id}
+            variant={shop ? "ghost" : category.id === activeCategoryId ? "secondary" : "dark"}
+            size={compact ? "sm" : "default"}
+            className={cn(
+              "h-auto shrink-0 rounded-full px-4 py-2 text-left",
+              shop && "min-h-12 px-5 text-base shadow-sm",
+              category.id !== activeCategoryId &&
+                (shop
+                  ? "border border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  : "border border-white/10 bg-slate-950/60 text-slate-200"),
+              category.id === activeCategoryId &&
+                shop &&
+                "bg-[#608db9] text-white hover:bg-[#527fa9]",
+            )}
+            onClick={() => onCategoryChange(category.id)}
+          >
+            <span className="grid gap-0.5">
+              <strong className={cn("text-xs leading-none", shop && "text-base")}>
+                {category.label}
+              </strong>
+              {!compact && (
+                <span className="text-[10px] font-medium text-current/70">
+                  {category.description}
+                </span>
               )}
-              onClick={() => onCategoryChange(category.id)}
-            >
-              <span className="grid gap-0.5">
-                <strong className="text-xs leading-none">{category.label}</strong>
-                {!compact && (
-                  <span className="text-[10px] font-medium text-current/70">
-                    {category.description}
-                  </span>
-                )}
-              </span>
-            </Button>
-          ))}
-        </div>
-      )}
+            </span>
+          </Button>
+        ))}
+      </div>
 
       <div
         className={cn(
@@ -2919,7 +3169,9 @@ function ModelCatalogPanel({
                     <div
                       className={cn(
                         "relative grid overflow-hidden rounded-xl",
-                        shop ? "h-32 place-items-center bg-muted" : "h-24 place-items-center bg-white/10",
+                        shop
+                          ? "h-40 place-items-center bg-muted"
+                          : "h-24 place-items-center bg-white/10",
                       )}
                       style={{ border: `1px solid ${isSelected ? color : "transparent"}` }}
                     >
@@ -2946,6 +3198,7 @@ function ModelCatalogPanel({
                       <strong
                         className={cn(
                           "truncate text-sm font-bold",
+                          shop && "text-lg",
                           shop ? "text-foreground" : "text-white",
                         )}
                       >
@@ -2954,13 +3207,14 @@ function ModelCatalogPanel({
                       <small
                         className={cn(
                           "line-clamp-2 min-h-9 text-xs leading-snug",
+                          shop && "text-sm",
                           shop ? "text-muted-foreground" : "text-slate-300",
                         )}
                       >
                         {model.description}
                       </small>
                       {model.price != null && (
-                        <b className="mt-1 text-sm font-black text-primary">
+                        <b className={cn("mt-1 text-sm font-black text-primary", shop && "text-base")}>
                           {formatModelPrice(model.price, model.unit)}
                         </b>
                       )}
@@ -3102,7 +3356,7 @@ function createV2ObjectModel(
 
   loadCatalogModel(modelFile)
     .then((catalogModel) => {
-      const fittedModel = fitCatalogModel(catalogModel, frame);
+      const fittedModel = fitCatalogModel(catalogModel, frame, model);
       group.add(fittedModel);
     })
     .catch((error) => {
@@ -3165,7 +3419,7 @@ function createGlassModel(points: MeasurementPoint[], model: ModelDefinition) {
 
   loadCatalogModel(modelFile)
     .then((catalogModel) => {
-      const fittedModel = fitCatalogModel(catalogModel, frame);
+      const fittedModel = fitCatalogModel(catalogModel, frame, model);
       group.add(fittedModel);
     })
     .catch((error) => {
@@ -3351,10 +3605,16 @@ function createCameraFacingPlacementAxes(camera: THREE.Camera): V2PlacementAxes 
   };
 }
 
-function fitCatalogModel(source: THREE.Group, frame: ModelFrame) {
+function fitCatalogModel(
+  source: THREE.Group,
+  frame: ModelFrame,
+  definition: ModelDefinition,
+) {
   const wrapper = new THREE.Group();
   const model = cloneModel(source);
 
+  removeCatalogModelArtifacts(model);
+  orientCatalogModelForFrame(model, definition);
   model.updateMatrixWorld(true);
   const bounds = new THREE.Box3().setFromObject(model);
   const modelSize = new THREE.Vector3();
@@ -3377,6 +3637,72 @@ function fitCatalogModel(source: THREE.Group, frame: ModelFrame) {
   wrapper.userData.isCatalogModel = true;
 
   return wrapper;
+}
+
+function orientCatalogModelForFrame(
+  model: THREE.Group,
+  definition: ModelDefinition,
+) {
+  if (definition.type !== "window") {
+    return;
+  }
+
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const size = new THREE.Vector3();
+  bounds.getSize(size);
+
+  if (size.z > size.x * 1.2) {
+    model.rotateY(Math.PI / 2);
+    model.updateMatrixWorld(true);
+  }
+}
+
+function removeCatalogModelArtifacts(model: THREE.Group) {
+  model.updateMatrixWorld(true);
+
+  const meshes: THREE.Mesh[] = [];
+  model.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (mesh.isMesh) meshes.push(mesh);
+  });
+
+  if (meshes.length < 2) return;
+
+  const meshSizes = meshes.map((mesh) => {
+    const box = new THREE.Box3().setFromObject(mesh);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+
+    return {
+      mesh,
+      size,
+      maxDimension: Math.max(size.x, size.y, size.z),
+      minDimension: Math.min(size.x, size.y, size.z),
+    };
+  });
+
+  const sortedMaxDimensions = meshSizes
+    .map((entry) => entry.maxDimension)
+    .sort((a, b) => a - b);
+  const medianMaxDimension =
+    sortedMaxDimensions[Math.floor(sortedMaxDimensions.length / 2)] || 0;
+
+  for (const entry of meshSizes) {
+    const geometry = entry.mesh.geometry;
+    const triangleCount = geometry.index
+      ? geometry.index.count / 3
+      : (geometry.attributes.position?.count ?? 0) / 3;
+    const isFlat = entry.minDimension < 0.001;
+    const isOversized =
+      medianMaxDimension > 0 && entry.maxDimension > medianMaxDimension * 4;
+
+    if (isFlat && isOversized && triangleCount <= 12) {
+      entry.mesh.parent?.remove(entry.mesh);
+    }
+  }
+
+  model.updateMatrixWorld(true);
 }
 
 function cloneModel(source: THREE.Group) {
