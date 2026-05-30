@@ -93,10 +93,11 @@ function productImage(product: Product) {
 function arUrl() {
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
   const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
+  const directParam = "direct=ar";
 
-  if (!configured) return `/ar/${version}`;
+  if (!configured) return `/ar/${version}?${directParam}`;
 
-  return configured.replace(/\/ar(?:\/v[123])?$/, "") + `/ar/${version}`;
+  return `${configured.replace(/\/ar(?:\/v[123])?$/, "")}/ar/${version}?${directParam}`;
 }
 
 export default function Welcome() {

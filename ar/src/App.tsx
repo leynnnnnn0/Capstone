@@ -92,6 +92,7 @@ const V2_NUDGE_METERS = 0.05;
 const V2_ROTATE_RADIANS = THREE.MathUtils.degToRad(7.5);
 const V2_WALL_BACK_OFFSET_METERS = 0.0762;
 const V2_MAX_WALL_NORMAL_Y = 0.18;
+const SAVED_AR_QUOTE_KEY = "sog-ar-saved-quote";
 type CapturePhase = "shape" | "height";
 type FlowVersion = "v1" | "v2" | "v3";
 type V2Mode = "scanWall" | "place" | "edit";
@@ -182,6 +183,9 @@ export default function App() {
   const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
     flowVersionFromPath(window.location.pathname),
   );
+  const [directArEntry] = useState(
+    () => new URLSearchParams(window.location.search).get("direct") === "ar",
+  );
   const [status, setStatus] = useState("Ready. Tap Start AR.");
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
   const [isActive, setIsActive] = useState(false);
@@ -216,6 +220,7 @@ export default function App() {
   const [v2Mode, setV2ModeState] = useState<V2Mode>("scanWall");
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [exitPromptOpen, setExitPromptOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [manualQuoteItems, setManualQuoteItems] = useState<ArQuoteTransferItem[]>([]);
   const sessionPanelOpenRef = useRef(false);
@@ -301,6 +306,14 @@ export default function App() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const savedItems = readSavedArQuoteItems();
+
+    if (savedItems.length > 0) {
+      setManualQuoteItems(savedItems);
+    }
   }, []);
 
   const confidenceCopy = useMemo(() => {
@@ -805,6 +818,10 @@ export default function App() {
 
   const endSession = async () => {
     await sessionRef.current?.end().catch(() => undefined);
+  };
+
+  const navigateToFrontendHome = () => {
+    window.location.assign(new URL("/", frontendQuoteBaseUrl()).toString());
   };
 
   const trackViewerMotion = (
@@ -1677,13 +1694,11 @@ export default function App() {
     markUiInteraction();
     setSessionPanelOpen(false);
     setCatalogOpen(false);
+    setExitPromptOpen(false);
     setSummaryOpen(true);
   };
 
-  const proceedToQuoteRequest = () => {
-    markUiInteraction();
-
-    const items =
+  const getQuoteTransferItems = () =>
       flowVersionRef.current === "v2" || flowVersionRef.current === "v3"
         ? [
             ...manualQuoteItems,
@@ -1694,6 +1709,61 @@ export default function App() {
         : objectsRef.current
             .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
             .filter((item): item is ArQuoteTransferItem => Boolean(item));
+
+  const requestExitSession = () => {
+    markUiInteraction();
+
+    if (summaryQuoteItems.length > 0) {
+      setSessionPanelOpen(false);
+      setCatalogOpen(false);
+      setSummaryOpen(false);
+      setExitPromptOpen(true);
+      return;
+    }
+
+    void endSession().then(navigateToFrontendHome);
+  };
+
+  const saveQuoteForLaterAndExit = () => {
+    markUiInteraction();
+
+    const items = getQuoteTransferItems();
+    if (items.length > 0) {
+      try {
+        localStorage.setItem(
+          SAVED_AR_QUOTE_KEY,
+          JSON.stringify({
+            source: "sog-ar",
+            version: 1,
+            createdAt: new Date().toISOString(),
+            items,
+          } satisfies ArQuoteTransferPayload),
+        );
+      } catch {
+        setStatus("Could not save quote items on this device.");
+      }
+    }
+
+    setExitPromptOpen(false);
+    void endSession().then(navigateToFrontendHome);
+  };
+
+  const discardQuoteAndExit = () => {
+    markUiInteraction();
+    try {
+      localStorage.removeItem(SAVED_AR_QUOTE_KEY);
+    } catch {
+      void 0;
+    }
+    setManualQuoteItems([]);
+    setExitPromptOpen(false);
+    void endSession().then(navigateToFrontendHome);
+  };
+
+  const proceedToQuoteRequest = () => {
+    markUiInteraction();
+
+    const items = getQuoteTransferItems();
 
     if (items.length === 0) {
       setStatus("Choose an uploaded product model before sending measurements to quote.");
@@ -1773,7 +1843,7 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <button type="button" aria-label="End AR session" onClick={endSession}>
+            <button type="button" aria-label="End AR session" onClick={requestExitSession}>
               <ArrowLeft className="size-5" />
             </button>
             <div>
@@ -1784,6 +1854,12 @@ export default function App() {
               <CircleHelp className="size-5" />
             </button>
           </header>
+        ) : directArEntry ? (
+          <DirectArEntry
+            selectedModel={selectedModel}
+            catalogStatus={catalogStatus}
+            onStartSession={startSession}
+          />
         ) : (
           <ArShop
             categories={modelCategories}
@@ -2487,6 +2563,54 @@ export default function App() {
             </div>
           </DrawerContent>
         </Drawer>
+
+        <Drawer open={exitPromptOpen} onOpenChange={setExitPromptOpen}>
+          <DrawerContent
+            className="grid gap-4 ar-exit-drawer"
+            data-xr-ui="true"
+            onPointerDown={markUiInteraction}
+          >
+            <DrawerHeader>
+              <div>
+                <DrawerTitle>Keep your quote items?</DrawerTitle>
+                <DrawerDescription>
+                  You have {summaryQuoteItems.length} item
+                  {summaryQuoteItems.length === 1 ? "" : "s"} in this AR session.
+                </DrawerDescription>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-slate-500"
+                onClick={() => setExitPromptOpen(false)}
+              >
+                <X className="size-5" />
+              </Button>
+            </DrawerHeader>
+
+            <div className="ar-exit-card">
+              <div>
+                <strong>Save for later</strong>
+                <p>
+                  Keep these AR quote items on this device and return to the main site.
+                </p>
+              </div>
+              <div className="ar-exit-actions">
+                <Button type="button" onClick={saveQuoteForLaterAndExit}>
+                  Save for later
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={discardQuoteAndExit}
+                >
+                  Discard and Exit
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
     </main>
   );
@@ -2769,6 +2893,38 @@ function V2DimensionControl({
   );
 }
 
+function DirectArEntry({
+  selectedModel,
+  catalogStatus,
+  onStartSession,
+}: {
+  selectedModel: ModelDefinition;
+  catalogStatus: string;
+  onStartSession: () => void;
+}) {
+  return (
+    <section className="direct-ar-entry">
+      <div className="direct-ar-card">
+        <span className="direct-ar-eyebrow">SOG AR preview</span>
+        <h1>Place products in your space.</h1>
+        <p>
+          Start AR now. Products, quote items, and adjustments are available inside
+          the AR toolbar.
+        </p>
+        <div className="direct-ar-selected">
+          <Box className="size-5" />
+          <span>{selectedModel.label}</span>
+        </div>
+        <button type="button" onClick={onStartSession}>
+          <Play className="size-5" />
+          Start AR
+        </button>
+        <small>{catalogStatus}</small>
+      </div>
+    </section>
+  );
+}
+
 function ArProductDrawerDetail({
   model,
   relatedModels,
@@ -2973,6 +3129,36 @@ function encodeArQuoteTransfer(payload: ArQuoteTransferPayload) {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
+}
+
+function readSavedArQuoteItems() {
+  try {
+    const raw = localStorage.getItem(SAVED_AR_QUOTE_KEY);
+    if (!raw) return [];
+
+    const payload = JSON.parse(raw) as Partial<ArQuoteTransferPayload>;
+    if (payload.source !== "sog-ar" || !Array.isArray(payload.items)) return [];
+
+    return payload.items.filter(isArQuoteTransferItem);
+  } catch {
+    return [];
+  }
+}
+
+function isArQuoteTransferItem(item: unknown): item is ArQuoteTransferItem {
+  if (!item || typeof item !== "object") return false;
+
+  const value = item as Record<string, unknown>;
+  return (
+    typeof value.productId === "number" &&
+    typeof value.modelId === "string" &&
+    typeof value.label === "string" &&
+    typeof value.description === "string" &&
+    Array.isArray(value.segmentsCm) &&
+    value.segmentsCm.every((segment) => typeof segment === "number") &&
+    typeof value.widthCm === "number" &&
+    typeof value.heightCm === "number"
+  );
 }
 
 function frontendQuoteBaseUrl() {
