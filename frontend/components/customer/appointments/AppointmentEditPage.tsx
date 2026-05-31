@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
+import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerAppointment } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
 
@@ -15,11 +16,7 @@ export default function AppointmentEditPage({ appointmentId }: { appointmentId: 
   }, [appointmentId]);
 
   if (!appointment) {
-    return (
-      <>
-        <p className="text-sm text-slate-500">Loading appointment...</p>
-      </>
-    );
+    return <FormPageSkeleton />;
   }
 
   return (

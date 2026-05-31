@@ -39,6 +39,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -127,7 +129,7 @@ export default function AdminSalesPage() {
 
   useEffect(() => {
     let ignored = false;
-    loadReport(() => ignored);
+    void Promise.resolve().then(() => loadReport(() => ignored));
 
     return () => {
       ignored = true;
@@ -395,9 +397,10 @@ function FilterDate({ label, value, onChange }: { label: string; value: string; 
 
 function ChartLoading() {
   return (
-    <div className="flex h-[240px] items-center justify-center text-sm text-muted-foreground">
-      <Loader2 className="mr-2 size-4 animate-spin" />
-      Loading chart...
+    <div className="flex h-[240px] items-end justify-center gap-4 rounded-lg bg-muted/35 p-6">
+      {[48, 76, 58, 88, 66, 82].map((height, index) => (
+        <Skeleton key={index} className="w-8 sm:w-10" style={{ height: `${height}%` }} />
+      ))}
     </div>
   );
 }
@@ -458,9 +461,7 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Loading payments...</TableCell>
-                </TableRow>
+                <TableSkeletonRows columns={4} rows={4} />
               ) : payments.length > 0 ? (
                 payments.map((payment) => (
                   <TableRow key={payment.id}>
@@ -575,7 +576,15 @@ function TopListSection({
       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">{title}</p>
       <div className="space-y-2">
         {loading ? (
-          <div className="rounded-lg border border-dashed py-4 text-center text-sm text-muted-foreground">Loading...</div>
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-40" />
+              </div>
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))
         ) : rows.length > 0 ? (
           rows.slice(0, 4).map((row) => (
             <div key={row.key} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2">
@@ -625,9 +634,7 @@ function OutstandingTable({
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Loading balances...</TableCell>
-                </TableRow>
+                <TableSkeletonRows columns={5} rows={4} />
               ) : rows.length > 0 ? (
                 rows.map((row) => (
                   <TableRow key={row.id}>

@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { deleteProduct, fetchProducts } from "@/features/products/product-api";
 import type { PaginatedResponse, Product } from "@/features/products/types";
@@ -144,11 +145,7 @@ export default function ProductList() {
           </TableHeader>
           <TableBody>
             {!response ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
-                  Loading products...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={7} />
             ) : products.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">

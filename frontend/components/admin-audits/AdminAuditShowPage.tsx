@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAudit } from "@/features/audits/audit-api";
 import type { AuditRecord } from "@/features/audits/types";
 
@@ -20,7 +21,7 @@ export default function AdminAuditShowPage({ auditId }: { auditId: string }) {
   }, [auditId]);
 
   if (!audit) {
-    return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading audit...</div>;
+    return <DetailPageSkeleton />;
   }
 
   return (

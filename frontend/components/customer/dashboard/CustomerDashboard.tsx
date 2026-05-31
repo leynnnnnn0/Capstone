@@ -12,6 +12,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   getCustomerAppointments,
   getCustomerWorkJobs,
@@ -99,9 +101,11 @@ export default function CustomerDashboard() {
                     <p className="text-sm font-medium text-slate-500">{stat.label}</p>
                     <div className="mt-2 flex items-center gap-2">
                       <Icon className="size-5 text-primary" />
-                      <p className="text-sm font-medium text-slate-950">
-                        {loading ? "-" : stat.value}
-                      </p>
+                      {loading ? (
+                        <Skeleton className="h-4 w-8" />
+                      ) : (
+                        <p className="text-sm font-medium text-slate-950">{stat.value}</p>
+                      )}
                     </div>
                   </div>
                 </TooltipTrigger>
@@ -121,10 +125,16 @@ export default function CustomerDashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {appointments.slice(0, 3).map((appointment) => (
-              <AppointmentCard key={appointment.id} appointment={appointment} />
-            ))}
-            {!loading && appointments.length === 0 && <EmptyState label="No appointments yet." />}
+            {loading ? (
+              <CustomerCardGridSkeleton count={3} />
+            ) : (
+              <>
+                {appointments.slice(0, 3).map((appointment) => (
+                  <AppointmentCard key={appointment.id} appointment={appointment} />
+                ))}
+                {appointments.length === 0 && <EmptyState label="No appointments yet." />}
+              </>
+            )}
           </div>
         </section>
 
@@ -136,10 +146,16 @@ export default function CustomerDashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {workJobs.slice(0, 3).map((workJob) => (
-              <WorkJobCard key={workJob.id} workJob={workJob} />
-            ))}
-            {!loading && workJobs.length === 0 && <EmptyState label="No work jobs yet." />}
+            {loading ? (
+              <CustomerCardGridSkeleton count={3} />
+            ) : (
+              <>
+                {workJobs.slice(0, 3).map((workJob) => (
+                  <WorkJobCard key={workJob.id} workJob={workJob} />
+                ))}
+                {workJobs.length === 0 && <EmptyState label="No work jobs yet." />}
+              </>
+            )}
           </div>
         </section>
       </div>

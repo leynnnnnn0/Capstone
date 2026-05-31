@@ -18,6 +18,7 @@ import { CalendarCheck, CircleDollarSign, ClipboardList, Package, TriangleAlert,
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip as UiTooltip,
   TooltipContent,
@@ -71,7 +72,7 @@ export default function AdminDashboardPage() {
   const metrics = useMemo(() => buildMetrics(appointments, workJobs, payments), [appointments, workJobs, payments]);
 
   if (loading) {
-    return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
+    return <AdminDashboardSkeleton />;
   }
 
   return (
@@ -241,6 +242,103 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export function AdminDashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-label="Loading dashboard">
+      <div className="space-y-2">
+        <Skeleton className="h-3 w-36" />
+        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-4 w-80 max-w-full" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="size-4 rounded-full" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="mt-2 h-3 w-40 max-w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-7">
+        <DashboardChartSkeleton className="xl:col-span-4" />
+        <DashboardChartSkeleton className="xl:col-span-3" variant="pie" />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <DashboardChartSkeleton />
+        <Card>
+          <DashboardCardHeading />
+          <CardContent className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="size-7 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="size-4 rounded-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, cardIndex) => (
+          <Card key={cardIndex}>
+            <DashboardCardHeading />
+            <CardContent className="space-y-3">
+              {Array.from({ length: 3 }).map((_, rowIndex) => (
+                <div key={rowIndex} className="space-y-2 rounded-lg border px-3 py-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardChartSkeleton({ className, variant = "bars" }: { className?: string; variant?: "bars" | "pie" }) {
+  return (
+    <Card className={className}>
+      <DashboardCardHeading />
+      <CardContent>
+        <div className="flex h-[280px] items-end justify-center gap-4 rounded-lg bg-muted/35 p-6">
+          {variant === "pie" ? (
+            <Skeleton className="size-40 rounded-full" />
+          ) : (
+            [42, 64, 48, 78, 58, 86, 68].map((height, index) => (
+              <Skeleton key={index} className="w-8 sm:w-10" style={{ height: `${height}%` }} />
+            ))
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DashboardCardHeading() {
+  return (
+    <CardHeader>
+      <Skeleton className="h-4 w-36" />
+      <Skeleton className="h-3 w-56 max-w-full" />
+    </CardHeader>
   );
 }
 

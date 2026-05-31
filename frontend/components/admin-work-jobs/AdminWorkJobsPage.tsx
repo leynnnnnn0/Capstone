@@ -19,6 +19,7 @@ import AdminWorkJobStatusBadge from "@/components/admin-work-jobs/AdminWorkJobSt
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import {
   Select,
   SelectContent,
@@ -182,9 +183,7 @@ export default function AdminWorkJobsPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">Loading work jobs...</TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={7} />
             ) : workJobs.length > 0 ? (
               workJobs.map((workJob) => <WorkJobRow key={workJob.id} workJob={workJob} />)
             ) : (

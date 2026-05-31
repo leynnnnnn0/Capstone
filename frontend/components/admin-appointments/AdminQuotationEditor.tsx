@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Calculator, FileText, Loader2, Package, Plus, RotateCcw, StickyNote } from "lucide-react";
+import { Calculator, FileText, Package, Plus, RotateCcw, StickyNote } from "lucide-react";
 
 import AdminQuotationLineItemRow from "@/components/admin-appointments/AdminQuotationLineItemRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -126,9 +127,11 @@ export default function AdminQuotationEditor({
         </SheetHeader>
 
         {loading ? (
-          <div className="flex h-60 items-center justify-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 size-4 animate-spin" />
-            Loading quotation editor...
+          <div className="space-y-4 px-6 py-5">
+            <Skeleton className="h-16 w-full" />
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={index} className="h-20 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
           <div className="h-[calc(86vh-145px)] space-y-5 overflow-y-auto px-6 py-5">

@@ -51,6 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchAdminPayments, refundAdminPayment } from "@/features/admin-payments/admin-payment-api";
 import {
@@ -71,8 +72,6 @@ import type {
 } from "@/features/admin-payments/types";
 import type {
   CustomerPaymentMethod,
-  CustomerPaymentStatus,
-  CustomerPaymentType,
 } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { ApiError } from "@/lib/api";
@@ -149,7 +148,7 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     let ignored = false;
-    loadPayments(() => ignored);
+    void Promise.resolve().then(() => loadPayments(() => ignored));
 
     return () => {
       ignored = true;
@@ -337,11 +336,7 @@ export default function AdminPaymentsPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
-                  Loading payments...
-                </TableCell>
-              </TableRow>
+              <TableSkeletonRows columns={9} />
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={9} className="py-8 text-center text-destructive">

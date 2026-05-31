@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
+import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import {
   getCustomerAppointment,
   getCustomerAppointments,
@@ -76,9 +77,7 @@ export default function AppointmentCreatePage() {
       </div>
 
       {loading ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
-          Loading appointment details...
-        </div>
+        <FormPageSkeleton />
       ) : (
         <AppointmentForm
           prefillAppointment={prefillAppointment}

@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 
 import AdminSalesPage from "@/components/admin-sales/AdminSalesPage";
+import { AdminDashboardSkeleton } from "@/components/dashboard/AdminDashboardPage";
 
 export default function DashboardSalesRoute() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading sales report...</div>}>
+    <Suspense fallback={<AdminDashboardSkeleton />}>
       <AdminSalesPage />
     </Suspense>
   );

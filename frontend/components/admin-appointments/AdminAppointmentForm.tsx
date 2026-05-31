@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Loader2, Package, Plus, StickyNote, Users } from "lucide-react";
+import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, Plus, StickyNote, Users } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -683,9 +684,10 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               )}
 
               {loading ? (
-                <div className="rounded-lg border bg-muted/40 p-5 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 inline size-4 animate-spin" />
-                  Loading quotation editor...
+                <div className="space-y-3 rounded-lg border bg-muted/40 p-5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-20 w-full rounded-lg" />
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-3">

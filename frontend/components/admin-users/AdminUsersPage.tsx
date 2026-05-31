@@ -28,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import {
   Select,
   SelectContent,
@@ -244,7 +245,7 @@ export default function AdminUsersPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Loading users...</TableCell></TableRow>
+              <TableSkeletonRows columns={4} />
             ) : users.length ? users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>

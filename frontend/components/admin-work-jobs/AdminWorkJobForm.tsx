@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,7 +201,7 @@ export default function AdminWorkJobForm() {
   }
 
   if (loadingAppointment) {
-    return <p className="text-sm text-muted-foreground">Loading appointment details...</p>;
+    return <FormPageSkeleton />;
   }
 
   return (

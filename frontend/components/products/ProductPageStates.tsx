@@ -1,12 +1,7 @@
-import { Package } from "lucide-react";
+import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 
 export function ProductLoadingState({ label = "Loading products..." }: { label?: string }) {
-  return (
-    <div className="flex min-h-72 flex-col items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-      <Package className="mb-2 h-8 w-8 opacity-40" />
-      {label}
-    </div>
-  );
+  return <FormPageSkeleton key={label} />;
 }
 
 export function ProductErrorState({ message }: { message: string }) {

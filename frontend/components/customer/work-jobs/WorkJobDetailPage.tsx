@@ -15,6 +15,7 @@ import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/Custome
 import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/CustomerWorkJobPaymentCard";
 import CustomerWorkJobRatingCard from "@/components/customer/work-jobs/CustomerWorkJobRatingCard";
 import { Button } from "@/components/ui/button";
+import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerDate, formatCustomerSchedule } from "@/features/customer/customer-utils";
@@ -43,11 +44,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
   }, ["work_job"]);
 
   if (!workJob) {
-    return (
-      <>
-        <p className="text-sm text-slate-500">Loading work job...</p>
-      </>
-    );
+    return <DetailPageSkeleton customer />;
   }
 
   const quotation = workJob.quotation ?? workJob.appointment?.quotation;

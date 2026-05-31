@@ -11,6 +11,7 @@ import AdminProceedToWorkJob from "@/components/admin-appointments/AdminProceedT
 import AdminScheduleForm from "@/components/admin-appointments/AdminScheduleForm";
 import AdminStatusActions from "@/components/admin-appointments/AdminStatusActions";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
+import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAdminAppointment, fetchWorkers } from "@/features/admin-appointments/admin-appointment-api";
 import { hasRole } from "@/features/auth/current-user-api";
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
@@ -39,7 +40,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
   }, [appointmentId, reload]);
 
   if (!appointment) {
-    return <p className="text-sm text-muted-foreground">Loading appointment...</p>;
+    return <DetailPageSkeleton />;
   }
 
   const isWorker = hasRole(user, "worker");

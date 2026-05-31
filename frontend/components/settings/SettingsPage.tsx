@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SettingsPageSkeleton } from "@/components/ui/page-skeletons";
 import {
   Dialog,
   DialogContent,
@@ -121,7 +122,7 @@ export default function SettingsPage() {
   }, [reload]);
 
   if (loading) {
-    return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading settings...</div>;
+    return <SettingsPageSkeleton />;
   }
 
   if (!passwordConfirmed) {

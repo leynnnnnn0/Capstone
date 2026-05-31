@@ -12,6 +12,7 @@ import CustomerQuoteImageList from "@/components/customer/shared/CustomerQuoteIm
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { Button } from "@/components/ui/button";
+import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import {
   Dialog,
   DialogContent,
@@ -92,11 +93,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   }
 
   if (!appointment) {
-    return (
-      <>
-        <p className="text-sm text-slate-500">Loading appointment...</p>
-      </>
-    );
+    return <DetailPageSkeleton customer />;
   }
 
   const quotationCanBeSigned =

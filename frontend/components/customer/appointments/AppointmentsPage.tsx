@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
 import { Button } from "@/components/ui/button";
+import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerAppointments } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
 import type { PaginatedResponse } from "@/features/products/types";
@@ -27,11 +28,10 @@ export default function AppointmentsPage() {
   }, [page]);
 
   useEffect(() => {
-    reload();
+    void Promise.resolve().then(reload);
   }, [reload]);
 
   useRealtimeRefresh(() => {
-    setLoading(true);
     reload();
   }, ["appointment", "quotation"]);
 
@@ -51,9 +51,13 @@ export default function AppointmentsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {appointments.map((appointment) => (
-          <AppointmentCard key={appointment.id} appointment={appointment} />
-        ))}
+        {loading ? (
+          <CustomerCardGridSkeleton />
+        ) : (
+          appointments.map((appointment) => (
+            <AppointmentCard key={appointment.id} appointment={appointment} />
+          ))
+        )}
       </div>
 
       {!loading && appointments.length === 0 && (

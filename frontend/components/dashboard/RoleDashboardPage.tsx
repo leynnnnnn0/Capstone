@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BriefcaseBusiness, CalendarDays, Loader2, type LucideIcon } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, type LucideIcon } from "lucide-react";
 
-import AdminDashboardPage from "@/components/dashboard/AdminDashboardPage";
+import AdminDashboardPage, { AdminDashboardSkeleton } from "@/components/dashboard/AdminDashboardPage";
 import WorkerDashboardPage from "@/components/dashboard/WorkerDashboardPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,7 @@ export default function RoleDashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="mr-2 size-4 animate-spin" />
-        Loading dashboard...
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   const role = primaryRole(user);

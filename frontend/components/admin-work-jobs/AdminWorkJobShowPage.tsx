@@ -13,6 +13,7 @@ import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobP
 import AdminWorkJobRatingCard from "@/components/admin-work-jobs/AdminWorkJobRatingCard";
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
 import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
+import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { hasRole } from "@/features/auth/current-user-api";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
@@ -41,7 +42,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
   }, ["work_job"]);
 
   if (!workJob) {
-    return <p className="text-sm text-muted-foreground">Loading work job...</p>;
+    return <DetailPageSkeleton />;
   }
 
   const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(workJob.status);

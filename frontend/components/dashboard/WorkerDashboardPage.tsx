@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { BriefcaseBusiness, CalendarCheck, CheckCircle2, ClipboardList } from "lucide-react";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
+import { AdminDashboardSkeleton } from "@/components/dashboard/AdminDashboardPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
   const metrics = useMemo(() => buildWorkerMetrics(appointments, workJobs), [appointments, workJobs]);
 
   if (loading) {
-    return <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading dashboard...</div>;
+    return <AdminDashboardSkeleton />;
   }
 
   return (

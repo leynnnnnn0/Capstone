@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
+import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchAudits } from "@/features/audits/audit-api";
 import type { AuditRecord } from "@/features/audits/types";
@@ -19,13 +20,15 @@ export default function AdminAuditsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    fetchAudits({ page, per_page: 25 })
-      .then((response) => {
-        setAudits(response.data);
-        setMeta(response.meta);
-      })
-      .finally(() => setLoading(false));
+    void Promise.resolve().then(() => {
+      setLoading(true);
+      fetchAudits({ page, per_page: 25 })
+        .then((response) => {
+          setAudits(response.data);
+          setMeta(response.meta);
+        })
+        .finally(() => setLoading(false));
+    });
   }, [page]);
 
   return (
@@ -58,9 +61,7 @@ export default function AdminAuditsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-muted-foreground">Loading audits...</TableCell>
-                </TableRow>
+                <TableSkeletonRows columns={7} />
               ) : audits.length ? audits.map((audit) => (
                 <TableRow key={audit.id}>
                   <TableCell><Badge variant="outline">{audit.event}</Badge></TableCell>

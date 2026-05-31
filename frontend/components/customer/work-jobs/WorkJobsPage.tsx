@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
 import { Button } from "@/components/ui/button";
+import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerWorkJobs } from "@/features/customer/customer-api";
 import type { CustomerWorkJob } from "@/features/customer/types";
 import type { PaginatedResponse } from "@/features/products/types";
@@ -26,11 +27,10 @@ export default function WorkJobsPage() {
   }, [page]);
 
   useEffect(() => {
-    reload();
+    void Promise.resolve().then(reload);
   }, [reload]);
 
   useRealtimeRefresh(() => {
-    setLoading(true);
     reload();
   }, ["work_job"]);
 
@@ -45,9 +45,13 @@ export default function WorkJobsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {workJobs.map((workJob) => (
-          <WorkJobCard key={workJob.id} workJob={workJob} />
-        ))}
+        {loading ? (
+          <CustomerCardGridSkeleton />
+        ) : (
+          workJobs.map((workJob) => (
+            <WorkJobCard key={workJob.id} workJob={workJob} />
+          ))
+        )}
       </div>
 
       {!loading && workJobs.length === 0 && (

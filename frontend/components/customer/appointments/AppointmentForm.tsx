@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ApiError } from "@/lib/api";
 import { allowsMorning, minimumBookingDate } from "@/features/booking/booking-utils";
@@ -306,8 +307,14 @@ export default function AppointmentForm({
               </p>
             </div>
             {productsLoading ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm font-medium text-slate-500">
-                Loading quote products...
+              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-5">
+                <Skeleton className="h-5 w-40" />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <Skeleton key={index} className="h-24 rounded-lg" />
+                  ))}
+                </div>
+                <Skeleton className="h-40 w-full rounded-lg" />
               </div>
             ) : (
               <div className="space-y-5">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
+import { CalendarPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
 import { hasRole } from "@/features/auth/current-user-api";
@@ -41,7 +42,7 @@ export default function AdminCalendarPage() {
       </div>
 
       {loading ? (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">Loading calendar...</div>
+        <CalendarPageSkeleton />
       ) : (
         <AdminAppointmentCalendar
           appointments={appointments}

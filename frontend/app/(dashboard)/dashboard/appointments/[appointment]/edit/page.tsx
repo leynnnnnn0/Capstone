@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import AdminAppointmentForm from "@/components/admin-appointments/AdminAppointmentForm";
+import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 
 export default async function DashboardAppointmentEditRoute({
   params,
@@ -10,7 +11,7 @@ export default async function DashboardAppointmentEditRoute({
   const { appointment } = await params;
 
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading appointment form...</p>}>
+    <Suspense fallback={<FormPageSkeleton />}>
       <AdminAppointmentForm appointmentId={appointment} />
     </Suspense>
   );
