@@ -12,11 +12,8 @@ const PUBLIC_ROUTES = [
   "/get-quote",
   "/track",
 ];
-const AUTH_ROUTES = ["/login", "/staff/login", "/register", "/forgot-password"];
-
 export default function middleware(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
-  const role = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
   const isPublic =
@@ -25,13 +22,6 @@ export default function middleware(request: NextRequest) {
 
   if (!token && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
-
-  if (token && isAuthRoute) {
-    const destination = role === "customer" ? "/account" : "/dashboard";
-    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return NextResponse.next();

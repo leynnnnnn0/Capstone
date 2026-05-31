@@ -86,8 +86,8 @@ class ApiAuthenticatedSessionController extends Controller
 
         return response()
             ->json(['status' => true, 'message' => 'Logged out.'])
-            ->withoutCookie('auth_token', '/', env('SESSION_DOMAIN', ''))
-            ->withoutCookie('user_role', '/', env('SESSION_DOMAIN', ''));
+            ->withoutCookie('auth_token', '/', config('session.domain'))
+            ->withoutCookie('user_role', '/', config('session.domain'));
     }
 
     public function twoFactorChallenge(Request $request, TwoFactorAuthenticationProvider $provider): JsonResponse
@@ -177,7 +177,7 @@ class ApiAuthenticatedSessionController extends Controller
                 $token,
                 $minutes,
                 '/',
-                env('SESSION_DOMAIN', ''),
+                config('session.domain'),
                 app()->environment('production'),
                 true,
                 false,
@@ -188,7 +188,7 @@ class ApiAuthenticatedSessionController extends Controller
                 $role,
                 $minutes,
                 '/',
-                env('SESSION_DOMAIN', ''),
+                config('session.domain'),
                 app()->environment('production'),
                 false,
                 false,

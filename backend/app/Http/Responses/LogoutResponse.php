@@ -17,7 +17,7 @@ class LogoutResponse implements LogoutResponseContract
                 '',
                 -1,  // expire immediately
                 '/',
-                env('SESSION_DOMAIN', 'localhost'),
+                config('session.domain'),
                 env('APP_ENV') === 'production',
                 true,
                 false,
@@ -28,7 +28,7 @@ class LogoutResponse implements LogoutResponseContract
                 '',
                 -1,
                 '/',
-                env('SESSION_DOMAIN', 'localhost'),
+                config('session.domain'),
                 env('APP_ENV') === 'production',
                 false,
                 false,

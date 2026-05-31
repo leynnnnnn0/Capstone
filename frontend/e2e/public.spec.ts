@@ -26,7 +26,8 @@ test("tracking page looks up an appointment reference", async ({ page }) => {
 test("customer OTP login moves from contact entry to verification", async ({ page }) => {
   await page.goto("/login");
 
-  await page.getByLabel(/email or mobile number/i).fill("nathaniel@example.com");
+  await page.getByRole("button", { name: /^email$/i }).click();
+  await page.getByLabel(/email address/i).fill("nathaniel@example.com");
   await page.getByRole("button", { name: /send otp/i }).click();
 
   await expect(page.getByRole("heading", { name: /enter verification code/i })).toBeVisible();
@@ -40,4 +41,15 @@ test("staff login opens the two-factor challenge when required", async ({ page }
   await page.getByRole("button", { name: /sign in/i }).click();
 
   await expect(page.getByLabel(/authentication code/i)).toBeVisible();
+});
+
+test("stale auth cookies do not block the staff login page", async ({ context, page }) => {
+  await context.addCookies([
+    { name: "auth_token", value: "expired-token", domain: "127.0.0.1", path: "/" },
+    { name: "user_role", value: "admin", domain: "127.0.0.1", path: "/" },
+  ]);
+
+  await page.goto("/staff/login");
+
+  await expect(page.getByRole("heading", { name: /sign in to manage sog/i })).toBeVisible();
 });
