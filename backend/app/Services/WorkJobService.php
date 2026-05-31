@@ -21,6 +21,13 @@ class WorkJobService
         private readonly WorkJobWarrantyService $warrantyService
     ) {}
 
+    /**
+     * Create an installation/service work job.
+     *
+     * Work jobs are the operational record after quotation/appointment approval:
+     * assigned workers, schedule, customer location, payment requirements, and
+     * status tracking all live here.
+     */
     public function create(array $data, ?User $actor = null): WorkJob
     {
         $customerId = $this->resolveCustomerId($data, $actor);
@@ -69,6 +76,9 @@ class WorkJobService
         return $workJob;
     }
 
+    /**
+     * Convert a confirmed appointment into a work job using appointment details.
+     */
     public function createFromAppointment(Appointment $appointment, ?User $actor = null): WorkJob
     {
         $appointment->load(['workers', 'quotation']);
@@ -95,6 +105,12 @@ class WorkJobService
         ], $actor);
     }
 
+    /**
+     * Create follow-up work connected to an existing work job.
+     *
+     * Back jobs are used for unfinished work, repairs, warranty follow-ups, or
+     * other return visits while keeping the original job history intact.
+     */
     public function createBackJob(WorkJob $source, array $data, User $actor): WorkJob
     {
         $this->ensureCanCreateBackJob($source, WorkJobBackJobReason::from($data['back_job_reason']));
@@ -160,6 +176,9 @@ class WorkJobService
         return $backJob;
     }
 
+    /**
+     * Move the job into active work and add a status remark.
+     */
     public function markInProgress(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
     {
         $this->ensureCanTransition($workJob, WorkJobStatus::InProgress);
@@ -179,6 +198,9 @@ class WorkJobService
         return $workJob;
     }
 
+    /**
+     * Complete a job and issue warranty coverage.
+     */
     public function complete(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
     {
         $this->ensureCanTransition($workJob, WorkJobStatus::Completed);
@@ -200,6 +222,9 @@ class WorkJobService
         return $workJob;
     }
 
+    /**
+     * Cancel a scheduled or active work job.
+     */
     public function cancel(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
     {
         $this->ensureCanTransition($workJob, WorkJobStatus::Cancelled);
@@ -219,6 +244,9 @@ class WorkJobService
         return $workJob;
     }
 
+    /**
+     * Guard status transitions using the WorkJobStatus enum rules.
+     */
     private function ensureCanTransition(WorkJob $workJob, WorkJobStatus $next): void
     {
         if (!$workJob->status->canTransitionTo($next)) {
@@ -228,6 +256,9 @@ class WorkJobService
         }
     }
 
+    /**
+     * Guard when back jobs are allowed and which reasons are valid.
+     */
     private function ensureCanCreateBackJob(WorkJob $source, WorkJobBackJobReason $reason): void
     {
         if (! in_array($source->status, [WorkJobStatus::InProgress, WorkJobStatus::Completed], true)) {

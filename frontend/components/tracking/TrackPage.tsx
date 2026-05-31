@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
 import TrackingResultCard from "@/components/tracking/TrackingResultCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api";
 import { trackReference } from "@/features/tracking/tracking-api";
 import type { TrackingResult } from "@/features/tracking/types";
@@ -110,7 +111,9 @@ export default function TrackPage() {
           </form>
         </div>
 
-        {result ? (
+        {loading ? (
+          <TrackingResultSkeleton />
+        ) : result ? (
           <TrackingResultCard result={result} />
         ) : (
           !error && (
@@ -157,6 +160,28 @@ export default function TrackPage() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function TrackingResultSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 sm:px-6">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-primary/10">
+        <div className="space-y-3 bg-primary px-6 py-5">
+          <Skeleton className="h-3 w-20 bg-white/20" />
+          <Skeleton className="h-7 w-56 bg-white/20" />
+          <Skeleton className="h-4 w-32 bg-white/20" />
+        </div>
+        <div className="grid grid-cols-1 gap-5 px-6 py-5 sm:grid-cols-2">
+          {Array.from({ length: 6 }, (_, index) => (
+            <div key={index} className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-4 w-4/5" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

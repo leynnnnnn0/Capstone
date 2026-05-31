@@ -20,6 +20,12 @@ class ProductController extends Controller
         private readonly ProductService $productService
     ) {}
 
+    /**
+     * List products for both admin and public/AR consumers.
+     *
+     * Filters are deliberately query-string driven so the frontend can reuse the
+     * same endpoint for catalog search, active products, and category tabs.
+     */
     public function index(Request $request): JsonResponse
     {
         $products = Product::query()
@@ -56,6 +62,13 @@ class ProductController extends Controller
         return response()->json(ProductResource::collection($products));
     }
 
+    /**
+     * Create a product and all nested product data in one request.
+     *
+     * The controller only validates and handles HTTP responses; ProductService
+     * owns the transaction, file storage, 3D model, variants, warranty, and
+     * option group sync.
+     */
     public function store(StoreProductRequest $request): JsonResponse
     {
         try {
@@ -80,6 +93,10 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Show one product with the same nested relationships needed by details,
+     * quote builder, model-viewer fallback, and AR.
+     */
     public function show(Product $product): JsonResponse
     {
         $product->load([
@@ -96,6 +113,13 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Update product metadata and nested records.
+     *
+     * Laravel cannot PUT multipart uploads cleanly in every client, so the
+     * frontend may send POST + _method=PUT. The validated payload is normalized
+     * here before ProductService performs the actual sync.
+     */
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
         try {
@@ -130,6 +154,9 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Delete product records and let ProductService clean related storage.
+     */
     public function destroy(Product $product): JsonResponse
     {
         try {

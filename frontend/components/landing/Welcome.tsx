@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import type { Product } from "@/features/products/types";
@@ -13,6 +14,7 @@ import { api } from "@/lib/api";
 import Booking from "./Booking";
 import Footer from "./Footer";
 import Navbar from "./Navbar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ProductsResponse =
   | Product[]
@@ -75,6 +77,18 @@ const stats = [
   },
 ];
 
+const reveal = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const viewport = { once: true, amount: 0.2 };
+
 function fmt(n: number | string) {
   return Number(n).toLocaleString("en-PH", { minimumFractionDigits: 0 });
 }
@@ -104,6 +118,9 @@ export default function Welcome() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsError, setProductsError] = useState("");
+  const [productsLoading, setProductsLoading] = useState(true);
+  const prefersReducedMotion = useReducedMotion();
+  const revealInitial = prefersReducedMotion ? false : "hidden";
 
   function openAr() {
     window.location.href = arUrl();
@@ -120,6 +137,9 @@ export default function Welcome() {
       })
       .catch(() => {
         if (mounted) setProductsError("Products are unavailable right now.");
+      })
+      .finally(() => {
+        if (mounted) setProductsLoading(false);
       });
 
     return () => {
@@ -135,23 +155,40 @@ export default function Welcome() {
         id="home"
         className="mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-10 sm:px-6 md:grid-cols-2 md:px-6 md:pb-28 md:pt-16 lg:px-8"
       >
-        <div className="space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1">
+        <motion.div
+          className="space-y-8"
+          variants={stagger}
+          initial={revealInitial}
+          animate="visible"
+        >
+          <motion.div
+            variants={reveal}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1"
+          >
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Trusted Glass & Aluminum Specialists
             </span>
-          </div>
-          <h1 className="text-3xl font-bold leading-tight text-black sm:text-4xl md:text-5xl lg:text-6xl">
+          </motion.div>
+          <motion.h1
+            variants={reveal}
+            className="text-3xl font-bold leading-tight text-black sm:text-4xl md:text-5xl lg:text-6xl"
+          >
             Clear views,
             <br />
             <span className="text-secondary">built to last.</span>
-          </h1>
-          <p className="max-w-md text-base leading-relaxed text-slate-500 sm:text-lg">
+          </motion.h1>
+          <motion.p
+            variants={reveal}
+            className="max-w-md text-base leading-relaxed text-slate-500 sm:text-lg"
+          >
             From custom windows and doors to aluminum racks and cabinets, SOG
             crafts precision-built solutions for every space. See it in your
             home before you buy, with live AR preview.
-          </p>
-          <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
+          </motion.p>
+          <motion.div
+            variants={reveal}
+            className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center"
+          >
             <a
               href="#booking"
               className="cursor-pointer rounded-xl bg-primary px-8 py-4 text-center text-sm font-bold text-white shadow-xl transition-all hover:-translate-y-0.5"
@@ -165,17 +202,26 @@ export default function Welcome() {
             >
               View in AR
             </button>
-          </div>
-          <div className="flex flex-wrap gap-3 pt-2 text-[10px] font-black uppercase tracking-widest text-slate-300 sm:text-[11px]">
+          </motion.div>
+          <motion.div
+            variants={reveal}
+            className="flex flex-wrap gap-3 pt-2 text-[10px] font-black uppercase tracking-widest text-slate-300 sm:text-[11px]"
+          >
             <span>Precision Crafted</span>
             <span>|</span>
             <span>AR Preview</span>
             <span>|</span>
             <span>Free Ocular Visit</span>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
-        <div className="group relative mt-10 md:mt-0">
+        <motion.div
+          className="group relative mt-10 md:mt-0"
+          initial={revealInitial}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          variants={{ hidden: { opacity: 0, scale: 0.96 } }}
+        >
           <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-[2.5rem] bg-primary shadow-2xl">
             <Image
               src="/images/landing/windows.jpg"
@@ -219,7 +265,7 @@ export default function Welcome() {
             <div className="landing-pulse-dot h-2 w-2 rounded-full bg-green-400" />
             AR Preview Available
           </div>
-        </div>
+        </motion.div>
       </main>
 
       <section id="about" className="bg-slate-50 py-16 md:py-24">
@@ -229,28 +275,42 @@ export default function Welcome() {
               <span className="absolute top-6 rounded-full border border-secondary bg-white px-4 py-1 text-[10px] font-black uppercase tracking-widest text-secondary">
                 Without SOG
               </span>
-              <div className="mt-10 w-full max-w-xs space-y-3">
+              <motion.div
+                className="mt-10 w-full max-w-xs space-y-3"
+                initial={revealInitial}
+                whileInView="visible"
+                viewport={viewport}
+                variants={stagger}
+              >
                 {[
                   "Multiple contractors, no clear quote",
                   "Vague measurements, delays happen",
                   "Total guesswork on fit and material",
                 ].map((text, i) => (
-                  <div
+                  <motion.div
                     key={text}
+                    variants={reveal}
+                    transition={{ duration: 0.4 }}
                     className={`flex items-center gap-3 rounded-xl bg-slate-50 p-4 text-xs text-slate-500 shadow-sm ${
                       i === 0 ? "-rotate-2" : i === 1 ? "rotate-1" : "-rotate-1"
                     }`}
                   >
                     {text}
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </div>
             <div className="relative flex min-h-[380px] flex-col items-center overflow-hidden rounded-[2.5rem] border border-slate-200 bg-[#f0f6fb80] p-10">
               <span className="absolute top-6 rounded-full bg-secondary px-4 py-1 text-[10px] font-black uppercase tracking-widest text-white">
                 With SOG
               </span>
-              <div className="mt-16 w-full max-w-sm space-y-4">
+              <motion.div
+                className="mt-16 w-full max-w-sm space-y-4"
+                initial={revealInitial}
+                whileInView="visible"
+                viewport={viewport}
+                variants={stagger}
+              >
                 {[
                   {
                     icon: "OK",
@@ -263,8 +323,10 @@ export default function Welcome() {
                     desc: "Free inspection, itemized quote on the spot",
                   },
                 ].map((item) => (
-                  <div
+                  <motion.div
                     key={item.title}
+                    variants={reveal}
+                    transition={{ duration: 0.4 }}
                     className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-md"
                   >
                     <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-primary">
@@ -276,7 +338,7 @@ export default function Welcome() {
                       </p>
                       <p className="text-xs text-slate-400">{item.desc}</p>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
                 <div className="pt-4 text-center">
                   <div className="inline-block rounded-xl border border-slate-100 bg-white px-6 py-3 shadow-sm">
@@ -285,7 +347,7 @@ export default function Welcome() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
@@ -300,10 +362,17 @@ export default function Welcome() {
               more transparent, and actually stress-free.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <motion.div
+            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+            variants={stagger}
+            initial={revealInitial}
+            whileInView="visible"
+            viewport={viewport}
+          >
             {stats.map((item) => (
-              <div
+              <motion.div
                 key={item.stat}
+                variants={reveal}
                 className="rounded-[2rem] border border-slate-100 bg-slate-50 p-8 transition-all duration-300 hover:border-blue-100 hover:bg-white hover:shadow-xl"
               >
                 <p className="mb-2 text-3xl font-black text-secondary">
@@ -312,9 +381,9 @@ export default function Welcome() {
                 <p className="text-sm font-medium leading-relaxed text-slate-500">
                   {item.desc}
                 </p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -324,26 +393,31 @@ export default function Welcome() {
             {
               title: "One shop for all\nyour glass needs",
               text: "Sliding doors, swing doors, windows, partitions, cabinets - all fabricated in-house by our skilled team.",
-              image: "/images/landing/high-quality.png",
+              image: "/images/landing/glass_works.jpg",
               alt: "Glass and aluminum work",
             },
             {
               title: "See it in your\nspace first.",
               text: "Point your phone at any wall or opening. Our AR tool lets you visualize how the window, door, or partition will look.",
-              image: "/images/landing/aesthetic.jpg",
+              image: "/images/landing/ar_door.jpg",
               alt: "Modern glass aesthetic",
               reverse: true,
             },
             {
               title: "We measure.\nYou decide.",
               text: "Our certified technicians visit your space, take precise measurements, and hand you a detailed itemized quote.",
-              image: "/images/landing/workmanship.png",
+              image: "/images/landing/measuring.jpg",
               alt: "SOG workmanship",
             },
           ].map((feature) => (
-            <div
+            <motion.div
               key={feature.title}
               className="grid items-center gap-10 md:grid-cols-2 md:gap-20"
+              variants={reveal}
+              initial={revealInitial}
+              whileInView="visible"
+              viewport={viewport}
+              transition={{ duration: 0.55 }}
             >
               <div className={`space-y-6 ${feature.reverse ? "md:order-2" : ""}`}>
                 <h2 className="whitespace-pre-line text-4xl font-bold leading-tight tracking-tight text-secondary">
@@ -364,14 +438,20 @@ export default function Welcome() {
                   className="h-full w-full object-cover"
                 />
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       <section id="products" className="bg-slate-50 py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-8 md:px-12 lg:px-20">
-          <div className="mb-10 flex flex-col items-start justify-between gap-4 md:mb-16 md:flex-row md:items-end">
+          <motion.div
+            className="mb-10 flex flex-col items-start justify-between gap-4 md:mb-16 md:flex-row md:items-end"
+            variants={reveal}
+            initial={revealInitial}
+            whileInView="visible"
+            viewport={viewport}
+          >
             <div>
               <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                 Our Products
@@ -390,17 +470,24 @@ export default function Welcome() {
             >
               View All Products →
             </Link>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            variants={stagger}
+            initial={revealInitial}
+            whileInView="visible"
+            viewport={viewport}
+          >
             {products.map((product, i) => {
               const coverImage = productImage(product);
               const category = productCategories(product)[0];
               const gradient = gradients[i % gradients.length];
 
               return (
-                <div
+                <motion.div
                   key={product.id}
+                  variants={reveal}
                   className="cursor-pointer overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div
@@ -447,18 +534,36 @@ export default function Welcome() {
                       </Link>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
 
-            {products.length === 0 && (
+            {productsLoading &&
+              Array.from({ length: 3 }, (_, index) => (
+                <motion.div
+                  key={index}
+                  variants={reveal}
+                  className="overflow-hidden rounded-[1.5rem] border border-slate-100 bg-white shadow-sm"
+                >
+                  <Skeleton className="h-52 rounded-none" />
+                  <div className="space-y-3 p-5">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-5 w-3/5" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-9 w-24 rounded-lg" />
+                  </div>
+                </motion.div>
+              ))}
+
+            {!productsLoading && products.length === 0 && (
               <div className="py-16 text-center text-slate-400 sm:col-span-2 lg:col-span-3">
                 <p className="font-semibold">
                   {productsError || "No products available yet."}
                 </p>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -507,14 +612,21 @@ export default function Welcome() {
                       {openFaq === index ? "x" : "+"}
                     </span>
                   </button>
-                  <div
-                    className="overflow-hidden transition-all duration-300"
-                    style={{ maxHeight: openFaq === index ? "200px" : "0" }}
-                  >
-                    <p className="px-2 pb-5 text-sm leading-relaxed text-slate-500">
-                      {faq.answer}
-                    </p>
-                  </div>
+                  <AnimatePresence initial={false}>
+                    {openFaq === index && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="px-2 pb-5 text-sm leading-relaxed text-slate-500">
+                          {faq.answer}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>

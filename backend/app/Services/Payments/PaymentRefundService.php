@@ -18,6 +18,12 @@ class PaymentRefundService
     public function __construct(private readonly PayPalClient $paypal) {}
 
     /**
+     * Refund a captured payment and keep local records consistent with PayPal.
+     *
+     * The pending refund row is created while the payment is locked. PayPal
+     * refunds are then sent to the provider; manual refunds complete locally.
+     * Both paths finalize the payment status and dispatch customer/staff updates.
+     *
      * @throws Throwable
      */
     public function refund(Payment $payment, array $data, User $actor): Payment

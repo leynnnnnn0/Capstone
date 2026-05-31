@@ -1,6 +1,7 @@
 import type { Product, ProductOption, ProductOptionGroup, ProductVariant } from "@/features/products/types";
 
 export type SizeMode = "standard" | "custom";
+export type DimensionUnit = "cm" | "m";
 export type PreferredTime = "morning" | "afternoon";
 
 export type SelectedQuoteOption = {
@@ -16,6 +17,7 @@ export type QuoteCartItem = {
   product: Product;
   selected_options: SelectedQuoteOption[];
   size_mode: SizeMode;
+  dimension_unit?: DimensionUnit;
   variant: ProductVariant | null;
   width: string;
   height: string;

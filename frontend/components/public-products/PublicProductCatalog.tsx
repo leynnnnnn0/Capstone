@@ -9,15 +9,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
-import ProductArButton from "@/components/public-products/ProductArButton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
 import {
   formatCurrency,
-  model3DUrl,
   productCategories,
   productCover,
-  product3DModel,
 } from "@/features/products/product-utils";
 
 const gradients = [
@@ -153,7 +151,7 @@ export default function PublicProductCatalog() {
 
       <main className="mx-auto max-w-7xl px-4 py-12 pb-24 sm:px-6 lg:px-8">
         {loading ? (
-          <EmptyState title="Loading products..." body="Preparing the catalog." />
+          <CatalogSkeleton />
         ) : error ? (
           <EmptyState title={error} body="Please refresh the page." />
         ) : filteredProducts.length === 0 ? (
@@ -170,7 +168,6 @@ export default function PublicProductCatalog() {
                 const cover = productCover(product);
                 const category = productCategories(product)[0];
                 const gradient = gradients[index % gradients.length];
-                const modelSrc = model3DUrl(product3DModel(product));
 
                 return (
                   <article
@@ -194,11 +191,6 @@ export default function PublicProductCatalog() {
                           </span>
                         )}
                       </Link>
-                      <ProductArButton
-                        productId={product.id}
-                        productName={product.name}
-                        modelSrc={modelSrc}
-                      />
                     </div>
 
                     <div className="p-4">
@@ -238,6 +230,34 @@ export default function PublicProductCatalog() {
 
       <Footer />
     </div>
+  );
+}
+
+function CatalogSkeleton() {
+  return (
+    <>
+      <Skeleton className="mb-6 h-4 w-20" />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
+          <div
+            key={index}
+            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+          >
+            <Skeleton className="h-48 rounded-none" />
+            <div className="space-y-3 p-4">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-5 w-3/5" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <div className="flex items-center justify-between pt-1">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-12" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

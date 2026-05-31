@@ -6,7 +6,7 @@ import AppLogo from "@/components/ui/AppLogo";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import HistoryBackButton from "@/components/navigation/HistoryBackButton";
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
@@ -67,15 +67,14 @@ export default function ForgotPasswordPage() {
           </Button>
         </form>
 
-        <p className="text-sm text-black/40">
-          Remembered it?{" "}
-          <Link
-            href="/staff/login"
-            className="text-black font-medium hover:underline"
-          >
-            Back to login
-          </Link>
-        </p>
+        <div className="flex items-center gap-2 text-sm text-black/40">
+          <span>Remembered it?</span>
+          <HistoryBackButton
+            fallbackHref="/staff/login"
+            label="Back to login"
+            className="font-medium text-black hover:underline"
+          />
+        </div>
       </div>
     </div>
   );

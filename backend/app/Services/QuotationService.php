@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\DB;
 
 class QuotationService
 {
+    /**
+     * Create a quotation connected to an appointment.
+     *
+     * The quotation stores a snapshot of product names, dimensions, selected
+     * options, and totals at the time the quote is made. That keeps the quote
+     * stable even if the product catalog changes later.
+     */
     public function create(array $data, ?User $actor = null): Quotation
     {
         $quotation = DB::transaction(function () use ($data) {
@@ -35,6 +42,12 @@ class QuotationService
         return $quotation;
     }
 
+    /**
+     * Replace quotation line items and invalidate a previous customer signature.
+     *
+     * The system treats quote updates as a new version that must be reviewed and
+     * signed again by the customer.
+     */
     public function update(Quotation $quotation, array $data, ?User $actor = null): Quotation
     {
         $quotation = DB::transaction(function () use ($quotation, $data) {
@@ -65,6 +78,9 @@ class QuotationService
         return $quotation;
     }
 
+    /**
+     * Update one quotation item status and notify the customer/admin side.
+     */
     public function updateItemStatus(QuotationItem $item, string $status, ?User $actor = null): QuotationItem
     {
         $item->update(['status' => $status]);
@@ -84,6 +100,9 @@ class QuotationService
         return $item;
     }
 
+    /**
+     * Persist each quotation line item and its selected product options.
+     */
     private function syncItems(Quotation $quotation, array $items): void
     {
         foreach ($items as $itemData) {

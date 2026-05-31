@@ -2,6 +2,8 @@
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 type LocationValue = {
   address: string;
   pinned: string;
@@ -282,8 +284,8 @@ export default function LocationPicker({
       />
 
       {loading && (
-        <div className="flex h-56 items-center justify-center bg-slate-50 text-sm text-slate-400">
-          Loading map...
+        <div className="h-56 bg-slate-50 p-3">
+          <Skeleton className="h-full w-full rounded-xl" />
         </div>
       )}
 

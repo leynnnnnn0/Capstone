@@ -33,6 +33,7 @@ export function createQuoteDraft(product: Product, variantId?: number | null): Q
     product,
     selected_options: [],
     size_mode: sizeMode,
+    dimension_unit: "m",
     variant: initialVariant,
     width: initialVariant ? String(initialVariant.width) : "",
     height: initialVariant ? String(initialVariant.height) : "",

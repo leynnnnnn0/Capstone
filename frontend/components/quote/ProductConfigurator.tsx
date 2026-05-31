@@ -235,6 +235,12 @@ export default function ProductConfigurator({
               thickness: draft.thickness,
             }}
             onChange={(dims) => setDraft((current) => current && { ...current, ...dims })}
+            unit={draft.dimension_unit ?? "m"}
+            onUnitChange={(dimensionUnit) =>
+              setDraft((current) =>
+                current && { ...current, dimension_unit: dimensionUnit },
+              )
+            }
           />
         )}
       </section>
@@ -284,6 +290,7 @@ function itemToDraft(item: QuoteCartItem): QuoteDraft {
     product: item.product,
     selected_options: item.selected_options,
     size_mode: item.size_mode,
+    dimension_unit: item.dimension_unit ?? "m",
     variant: item.variant,
     width: item.width,
     height: item.height,

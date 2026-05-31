@@ -21,6 +21,13 @@ class WorkJobPaymentService
 
     public function __construct(private readonly PayPalClient $payPal) {}
 
+    /**
+     * Build the authoritative billing snapshot consumed by customer and admin UIs.
+     *
+     * Approved quotation items establish the base price. Approved charges and
+     * discounts adjust that price, completed refunds reduce collected revenue,
+     * and pending PayPal checkouts are shown separately from captured payments.
+     */
     public function summary(WorkJob $workJob): array
     {
         $workJob->load([
@@ -125,6 +132,9 @@ class WorkJobPaymentService
         ];
     }
 
+    /**
+     * Create or reuse a short-lived PayPal order for the amount currently due.
+     */
     public function createPayPalOrder(WorkJob $workJob, PaymentType $type, ?User $payer): array
     {
         if (! $this->payPal->configured()) {
@@ -209,6 +219,9 @@ class WorkJobPaymentService
         ];
     }
 
+    /**
+     * Capture a pending PayPal order, persist provider details, and notify users.
+     */
     public function capturePayPalPayment(
         WorkJob $workJob,
         Payment $payment,
@@ -271,6 +284,9 @@ class WorkJobPaymentService
         return $workJob;
     }
 
+    /**
+     * Record staff-confirmed cash, bank-transfer, or other offline payment.
+     */
     public function recordManualPayment(WorkJob $workJob, array $data, User $actor): WorkJob
     {
         $type = PaymentType::from($data['type']);

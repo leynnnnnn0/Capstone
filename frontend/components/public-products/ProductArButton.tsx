@@ -14,6 +14,9 @@ type ProductArButtonProps = {
 };
 
 function arUrl(productId: number) {
+  // Product cards can launch whatever AR version is configured in .env. During
+  // local development the AR Vite app usually runs on :5173, while hosted builds
+  // can serve the AR route from the same domain.
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
   const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
   const base = configured
@@ -26,6 +29,8 @@ function arUrl(productId: number) {
 }
 
 async function supportsWebXrAr() {
+  // Full multi-item AR requires WebXR immersive-ar. iOS/Safari may still support
+  // model-viewer AR, so unsupported devices fall back to the 3D viewer modal.
   const xr = (navigator as Navigator & {
     xr?: { isSessionSupported?: (mode: "immersive-ar") => Promise<boolean> };
   }).xr;
@@ -46,6 +51,8 @@ export default function ProductArButton({
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
 
+    // Supported devices go to our multi-item AR page. Other devices stay on the
+    // product page and open model-viewer so the user still sees the 3D model.
     if (await supportsWebXrAr()) {
       window.location.href = arUrl(productId);
       return;

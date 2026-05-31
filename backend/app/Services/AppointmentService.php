@@ -19,10 +19,19 @@ use Illuminate\Support\Facades\DB;
 class AppointmentService
 {
     private const SLOT_CAPACITY = 10;
+
     public function __construct(
         private readonly QuotationService $quotationService
     ) {}
 
+    /**
+     * Create a customer appointment request.
+     *
+     * This also creates an initial quotation when the booking form or AR quote
+     * flow includes product line items. After the transaction, an event is
+     * dispatched so notifications and realtime UI updates stay outside the
+     * database write path.
+     */
     public function create(array $validated, ?User $actor = null): Appointment
     {
         $this->ensureSlotAvailable(
@@ -60,6 +69,12 @@ class AppointmentService
         return $appointment;
     }
 
+    /**
+     * Update appointment details, workers, and optional quotation items.
+     *
+     * Status changes create remarks and dispatch status events; normal edits
+     * dispatch a simpler "details updated" event.
+     */
     public function update(Appointment $appointment, array $validated, User $actor): Appointment
     {
         $originalStatus = $appointment->status;
@@ -117,6 +132,9 @@ class AppointmentService
         return $updated;
     }
 
+    /**
+     * Prevent overbooking the same preferred date/time slot.
+     */
     private function ensureSlotAvailable(string $date, string $time): void
     {
         $count = Appointment::where('preferred_date', $date)
@@ -135,6 +153,9 @@ class AppointmentService
     }
 
 
+    /**
+     * Confirm an appointment and assign the workers who will visit the customer.
+     */
     public function confirm(Appointment $appointment, array $data, User $actor): Appointment
     {
 
@@ -165,6 +186,9 @@ class AppointmentService
         return $appointment->fresh();
     }
 
+    /**
+     * Cancel an appointment with a required reason for audit/customer visibility.
+     */
     public function cancel(Appointment $appointment, array $data, User $actor): Appointment
     {
         $this->ensureCanTransition($appointment, AppointmentStatus::Cancelled);
@@ -184,6 +208,9 @@ class AppointmentService
         return $appointment->fresh();
     }
 
+    /**
+     * Reopen a cancelled/completed appointment when staff need to continue work.
+     */
     public function reopen(Appointment $appointment, array $data, User $actor): Appointment
     {
         $this->ensureCanTransition($appointment, AppointmentStatus::Reopened);
@@ -210,6 +237,9 @@ class AppointmentService
         return $appointment->fresh();
     }
 
+    /**
+     * Move an appointment to a new confirmed date/time window.
+     */
     public function reschedule(Appointment $appointment, array $data, User $actor): Appointment
     {
         $this->ensureCanTransition($appointment, AppointmentStatus::Rescheduled);

@@ -18,6 +18,13 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Shared frontend API client.
+ *
+ * It normalizes the backend base URL, sends cookies for Sanctum auth, adds JSON
+ * headers for normal requests, leaves FormData headers alone for uploads, and
+ * redirects authenticated screens to /login when the session expires.
+ */
 export async function api<T = unknown>(
   endpoint: string,
   options: ApiOptions = {},

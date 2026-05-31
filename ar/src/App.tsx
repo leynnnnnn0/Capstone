@@ -84,6 +84,10 @@ import { metersToCentimeters } from "./lib/format";
 import { cn } from "./lib/utils";
 
 const VERSION = "react-vite-tier1-2026-05-17";
+
+// V2/V3 placement uses a thin 3D panel/frame fitted to real-world centimeter
+// dimensions. These constants keep the generated preview usable before the user
+// starts adjusting height, width, rotation, or position.
 const PREVIEW_MODEL_DEPTH_METERS = 0.012;
 const V2_DEFAULT_WIDTH_CM = 120;
 const V2_DEFAULT_HEIGHT_CM = 210;
@@ -151,6 +155,8 @@ interface V2PlacedObject {
 }
 
 export default function App() {
+  // Refs hold WebXR and Three.js objects that must survive React renders without
+  // causing rerenders every animation frame.
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const placementGestureLayerRef = useRef<HTMLDivElement | null>(null);
@@ -180,6 +186,8 @@ export default function App() {
   const nextObjectIdRef = useRef(1);
   const nextV2ObjectIdRef = useRef(1);
 
+  // The AR route decides which measuring flow is active: v1 is point-to-point,
+  // v2 is wall scan + placement, and v3 is the simplified placement experiment.
   const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
     flowVersionFromPath(window.location.pathname),
   );
@@ -373,6 +381,9 @@ export default function App() {
     [],
   );
 
+  // Quote summary items are derived from actual AR objects in the scene.
+  // Manual quote items are separate because saved/catalog-selected products may
+  // not have an active 3D object yet.
   const measuredQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
     if (isPlacementFlow) {
       return v2Objects.map((object) => {
@@ -433,6 +444,8 @@ export default function App() {
     console.debug(`[SOG AR] ${message}`);
   }, []);
 
+  // Any tap on UI should temporarily block AR placement. Without this guard,
+  // tapping a drawer/button could accidentally place or move a model behind it.
   const markUiInteraction = useCallback(() => {
     ignorePlacementUntilRef.current = performance.now() + 900;
   }, []);
@@ -747,6 +760,12 @@ export default function App() {
     };
   }, [isActive, isV2, markUiInteraction, selectedV2Object]);
 
+  /**
+   * Start the browser WebXR immersive-ar session.
+   *
+   * This initializes the renderer, hit testing, surface reticle, and flow-specific
+   * placement state before the frame loop begins.
+   */
   const startSession = async () => {
     if (!canvasRef.current || sessionRef.current) return;
 
@@ -816,6 +835,9 @@ export default function App() {
     }
   };
 
+  /**
+   * End the active WebXR session. The session end event performs cleanup.
+   */
   const endSession = async () => {
     await sessionRef.current?.end().catch(() => undefined);
   };
@@ -908,6 +930,12 @@ export default function App() {
     }
   };
 
+  /**
+   * Main AR animation loop.
+   *
+   * Every XR frame updates anchors, hit-test reticle state, coaching messages,
+   * and then renders the Three.js scene through the WebXR camera.
+   */
   const renderFrame = (_time: number, frame?: XRFrame) => {
     const measurementScene = sceneRef.current;
     const localSpace = localSpaceRef.current;
@@ -985,6 +1013,9 @@ export default function App() {
     measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
   };
 
+  /**
+   * V1 measurement tap handler. It records outline points and a height point.
+   */
   const placePointFromHit = () => {
     const now = performance.now();
 
@@ -1122,6 +1153,10 @@ export default function App() {
     );
   };
 
+  /**
+   * V2 wall scan step. The wall plane becomes the reference for straight doors
+   * and windows, while the next tap chooses where the model is placed.
+   */
   const lockV2WallFromHit = () => {
     const activePlane = currentHitPlaneRef.current;
     const position = currentHitPositionRef.current;
@@ -1156,6 +1191,10 @@ export default function App() {
     setStatus("Wall scan reset. Aim at the reference wall and lock it again.");
   };
 
+  /**
+   * Prepare the next item. Each new product starts by asking for a wall again so
+   * a previous wall scan is not accidentally reused in another location.
+   */
   const doAnotherV2Object = () => {
     markUiInteraction();
 
@@ -1183,6 +1222,12 @@ export default function App() {
     setStatus("Choose the next product, then scan and lock its reference wall.");
   };
 
+  /**
+   * Create the Three.js object used by V2/V3 placement.
+   *
+   * It fits the product GLB into a centimeter-sized frame, adds a label, applies
+   * world-space axes, and attempts to attach an XR anchor for better stability.
+   */
   const createPlacedObject = async (
     anchor: THREE.Vector3,
     axes: V2PlacementAxes,
@@ -1369,6 +1414,9 @@ export default function App() {
     log(`v2 item ${object.id} placed`);
   };
 
+  /**
+   * Update height/width/depth for a placed object and rebuild its visual frame.
+   */
   const updateV2ObjectDimensions = (
     objectId: number,
     patch: Partial<V2PlacedObject["dimensions"]>,
@@ -1413,6 +1461,9 @@ export default function App() {
     setStatus(`Item ${objectId}: ${formatV2Dimensions(nextDimensions)}.`);
   };
 
+  /**
+   * Move or rotate a placed object while keeping its local axes consistent.
+   */
   const updateV2ObjectTransform = (
     objectId: number,
     transform: (object: V2PlacedObject) => Partial<
@@ -1438,6 +1489,9 @@ export default function App() {
     setStatus(`Item ${objectId} adjusted.`);
   };
 
+  /**
+   * Refit the GLB and generated frame after dimension/model changes.
+   */
   const rebuildV2ObjectVisuals = (object: V2PlacedObject) => {
     object.root.remove(object.model);
     disposeObject(object.model);
@@ -1760,6 +1814,12 @@ export default function App() {
     void endSession().then(navigateToFrontendHome);
   };
 
+  /**
+   * Send AR measurements to the Next.js quote page.
+   *
+   * The payload is base64url JSON so it can pass through the query string without
+   * losing measurement arrays or product IDs.
+   */
   const proceedToQuoteRequest = () => {
     markUiInteraction();
 

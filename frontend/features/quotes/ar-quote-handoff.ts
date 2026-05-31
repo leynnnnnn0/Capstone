@@ -19,6 +19,12 @@ export type ArQuoteHandoffPayload = {
   items: ArQuoteHandoffItem[];
 };
 
+/**
+ * Decode and validate the compact AR handoff payload from the URL.
+ *
+ * AR runs as a separate app, so it sends measurements to the Next.js quote page
+ * as base64url JSON in the ar_items query parameter.
+ */
 export function parseArQuoteHandoff(value: string | null): ArQuoteHandoffPayload | null {
   if (!value) return null;
 
@@ -43,6 +49,13 @@ export function parseArQuoteHandoff(value: string | null): ArQuoteHandoffPayload
   }
 }
 
+/**
+ * Convert AR measurements into quote cart items.
+ *
+ * The AR payload stores product IDs and dimensions. This function joins those
+ * measurements with the freshly fetched product records so quote checkout uses
+ * normal product data and the standard pricing pipeline.
+ */
 export function arHandoffToCartItems(
   payload: ArQuoteHandoffPayload,
   products: Product[],
@@ -61,6 +74,7 @@ export function arHandoffToCartItems(
         product,
         selected_options: [],
         size_mode: "custom",
+        dimension_unit: "m",
         variant: null,
         width: formatMeasurement(width),
         height: formatMeasurement(height),
@@ -74,6 +88,9 @@ export function arHandoffToCartItems(
   });
 }
 
+/**
+ * Accept only the handoff fields the quote builder knows how to use.
+ */
 function normalizeHandoffItem(item: unknown): ArQuoteHandoffItem | null {
   if (!item || typeof item !== "object") return null;
 
@@ -92,6 +109,10 @@ function normalizeHandoffItem(item: unknown): ArQuoteHandoffItem | null {
   };
 }
 
+/**
+ * Prefer explicit AR segment lengths, but fall back to a single width when older
+ * AR payloads do not include the full segment array.
+ */
 function normalizeSegments(segmentsCm?: number[], widthCm?: number) {
   const segments = (segmentsCm ?? [])
     .map(centimetersToMeters)

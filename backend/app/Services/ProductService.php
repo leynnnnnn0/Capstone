@@ -14,6 +14,14 @@ class ProductService
     private const DEFAULT_WARRANTY_COVERAGE = 'Covers workmanship concerns found after installation or service completion.';
     private const DEFAULT_WARRANTY_TERMS = 'Warranty claims are subject to SOG Glass & Aluminum inspection and do not cover misuse, accidental damage, or third-party alterations.';
 
+    /**
+     * Create a complete product graph in a single database transaction.
+     *
+     * Products can have categories, normal images, one 3D model, variants,
+     * variant images, warranty data, and quote option groups. Keeping this in
+     * one transaction prevents half-created product data if upload or relation
+     * syncing fails.
+     */
     public function create(array $data, array $files = []): Product
     {
         return DB::transaction(function () use ($data, $files) {
@@ -96,6 +104,13 @@ class ProductService
         });
     }
 
+    /**
+     * Update product data using a "sync" style contract.
+     *
+     * Arrays sent by the frontend represent the desired final state. Missing
+     * variant/option IDs are removed, existing IDs are updated, and new rows are
+     * inserted. File deletions also remove the physical storage objects.
+     */
     public function update(Product $product, array $data, array $files = []): Product
     {
         return DB::transaction(function () use ($product, $data, $files) {
@@ -148,6 +163,13 @@ class ProductService
         });
     }
 
+    /**
+     * Synchronize variants and their images for the product edit form.
+     *
+     * The edit form sends a mixed list of existing variants with IDs and new
+     * variants without IDs. This method deletes variants not present anymore,
+     * updates kept variants, and stores any newly uploaded variant images.
+     */
     private function syncVariants(Product $product, array $variants, array $variantFiles = []): void
     {
         $keptIds = collect($variants)
@@ -207,6 +229,13 @@ class ProductService
         }
     }
 
+    /**
+     * Synchronize quote option groups and their choices.
+     *
+     * Option groups are things like "Glass Type"; options are choices like
+     * "Tempered Glass". These are used later by the quote builder to calculate
+     * product add-ons.
+     */
     private function syncOptionGroups(Product $product, array $optionGroups): void
     {
         $keptGroupIds = collect($optionGroups)
@@ -260,6 +289,9 @@ class ProductService
         }
     }
 
+    /**
+     * Add product gallery images after a product already exists.
+     */
     public function addImages(Product $product, array $images): Product
     {
         foreach ($images as $image) {
@@ -270,6 +302,9 @@ class ProductService
         return $product->load('product_images');
     }
 
+    /**
+     * Delete one product image from both storage and the database.
+     */
     public function deleteImage(int $productId, int $imageId): void
     {
         $image = \App\Models\ProductImage::where('product_id', $productId)
@@ -279,6 +314,9 @@ class ProductService
         $image->delete();
     }
 
+    /**
+     * Remove a product and the stored files that belong to it.
+     */
     public function delete(Product $product): void
     {
         $product->loadMissing('product_images', 'product_3d_model');
@@ -293,6 +331,12 @@ class ProductService
         $product->delete();
     }
 
+    /**
+     * Replace the product's default GLB/3D model.
+     *
+     * The app currently keeps one default 3D model per product for AR and
+     * model-viewer. Uploading a new one deletes the old model file first.
+     */
     private function sync3DModel(Product $product, mixed $file): void
     {
         if (!$file instanceof UploadedFile) {
@@ -312,6 +356,9 @@ class ProductService
         ]);
     }
 
+    /**
+     * Delete the current default 3D model file and database row.
+     */
     private function delete3DModel(Product $product): void
     {
         $model = $product->product_3d_model()->first();
@@ -324,6 +371,9 @@ class ProductService
         $model->delete();
     }
 
+    /**
+     * Create or update the warranty shown with the product and quotation.
+     */
     private function syncWarranty(Product $product, array $data = []): void
     {
         $active = filter_var(
@@ -343,6 +393,9 @@ class ProductService
         );
     }
 
+    /**
+     * Relations every product response should include after mutations.
+     */
     private function productRelations(): array
     {
         return [

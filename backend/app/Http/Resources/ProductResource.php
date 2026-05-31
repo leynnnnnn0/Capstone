@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductResource extends JsonResource
 {
+    /**
+     * Shape product API responses for frontend and AR clients.
+     *
+     * Storage URLs are generated here so the frontend does not need to know
+     * whether files came from localhost, a LAN IP, ngrok, or production storage.
+     */
     public function toArray(Request $request): array
     {
         return [

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { FormEvent, useCallback, useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
@@ -37,6 +38,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { ArrowRight, Calculator } from "lucide-react";
+
+const reveal = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
 
 export default function Booking() {
   const [data, setData] = useState<BookingForm>(() => createInitialBookingForm());
@@ -45,6 +52,8 @@ export default function Booking() {
   const [success, setSuccess] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingBooking, setPendingBooking] = useState<BookingForm | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const revealInitial = prefersReducedMotion ? false : "hidden";
 
   const setField = <K extends keyof BookingForm>(
     field: K,
@@ -128,8 +137,17 @@ export default function Booking() {
       id="booking"
       className="mx-auto max-w-7xl px-4 py-4 sm:px-8 md:px-12 md:py-8 lg:px-20 lg:py-12"
     >
-      <div className="grid items-start gap-10 md:grid-cols-2 md:gap-20">
-        <div>
+      <motion.div
+        className="grid items-start gap-10 md:grid-cols-2 md:gap-20"
+        initial={revealInitial}
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.14 } },
+        }}
+      >
+        <motion.div variants={reveal}>
           <span className="text-[10px] font-black uppercase tracking-widest text-[#2c5282]">
             Book a Home Visit
           </span>
@@ -143,57 +161,106 @@ export default function Booking() {
             provide a detailed no-obligation quotation completely free of
             charge.
           </p>
-          <ul className="mb-10 space-y-3 text-sm text-slate-600">
+          <motion.ul
+            className="mb-10 space-y-3 text-sm text-slate-600"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.08 } },
+            }}
+          >
             {[
               "Precise on-site measurement of all openings",
               "Product recommendation tailored to your space",
               "Material samples to see and feel in person",
               "Transparent itemized quote on the spot",
             ].map((item) => (
-              <li key={item} className="flex items-center gap-3">
+              <motion.li
+                key={item}
+                variants={reveal}
+                className="flex items-center gap-3"
+              >
                 <span className="font-black text-[#2c5282]">+</span>
                 {item}
-              </li>
+              </motion.li>
             ))}
-          </ul>
-          <div className="flex items-start gap-4 rounded-2xl bg-secondary p-5 text-white">
-            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-sm font-black">
-              PHP
-            </div>
-            <div>
-              <h4 className="mb-1 text-lg font-bold">
-                Get an instant Quote first
-              </h4>
-              <p className="mb-2 text-sm leading-relaxed">
-                Input the height and width of the product that you want and get
-                a quote instantly.
-              </p>
-              <Link
-                href="/get-quote"
-                className="cursor-pointer text-xs font-black underline"
-              >
-                Get Started →
-              </Link>
-            </div>
-          </div>
-        </div>
+          </motion.ul>
+          <motion.div
+            animate={
+              prefersReducedMotion
+                ? undefined
+                : {
+                    y: [0, 0, -8, 0, -4, 0, 0],
+                    scale: [1, 1, 1.015, 1, 1.008, 1, 1],
+                  }
+            }
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+              times: [0, 0.84, 0.88, 0.91, 0.94, 0.97, 1],
+            }}
+            whileHover={
+              prefersReducedMotion ? undefined : { y: -4, scale: 1.01 }
+            }
+            className="rounded-2xl"
+          >
+            <Link
+              href="/get-quote"
+              className="group flex cursor-pointer items-center gap-4 rounded-[0.8rem]  px-4 py-4 text-white transition-colors bg-primary sm:px-5"
+            >
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/20">
+                <Calculator className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/65">
+                  Quick estimate
+                </p>
+                <h4 className="mt-1 text-lg font-bold">
+                  Get an instant quote first
+                </h4>
+                <p className="mt-1 text-sm leading-relaxed text-white/80">
+                  Enter dimensions and see an estimated price in minutes.
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-black text-primary transition-transform group-hover:translate-x-1">
+                  Start estimating
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </div>
+            </Link>
+          </motion.div>
+        </motion.div>
 
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-10">
+        <motion.div
+          variants={reveal}
+          className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-10"
+        >
           <h3 className="mb-7 text-lg font-bold text-slate-900">
             Schedule a Visit
           </h3>
 
-          {(errors.rate_limit || errors.form) && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600">
-              {errors.rate_limit || errors.form}
-            </div>
-          )}
+          <AnimatePresence>
+            {(errors.rate_limit || errors.form) && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-600"
+              >
+                {errors.rate_limit || errors.form}
+              </motion.div>
+            )}
 
-          {success && (
-            <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-medium text-green-700">
-              {success}
-            </div>
-          )}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-medium text-green-700"
+              >
+                {success}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -251,7 +318,9 @@ export default function Booking() {
                 placeholder="juan@example.com"
               />
               {fieldError("email") && (
-                <span className="text-xs text-red-500">{fieldError("email")}</span>
+                <span className="text-xs text-red-500">
+                  {fieldError("email")}
+                </span>
               )}
             </div>
 
@@ -287,7 +356,9 @@ export default function Booking() {
                   return next;
                 });
               }}
-              onPreferredTimeChange={(value) => setField("preferred_time", value)}
+              onPreferredTimeChange={(value) =>
+                setField("preferred_time", value)
+              }
             />
 
             <div className="flex flex-col gap-1.5">
@@ -314,7 +385,9 @@ export default function Booking() {
                 <Checkbox
                   id="consent"
                   checked={data.consent}
-                  onCheckedChange={(checked) => setField("consent", checked === true)}
+                  onCheckedChange={(checked) =>
+                    setField("consent", checked === true)
+                  }
                 />
                 <label
                   htmlFor="consent"
@@ -326,7 +399,9 @@ export default function Booking() {
                 </label>
               </div>
               {fieldError("consent") && (
-                <span className="text-xs text-red-500">{fieldError("consent")}</span>
+                <span className="text-xs text-red-500">
+                  {fieldError("consent")}
+                </span>
               )}
             </div>
 
@@ -347,11 +422,14 @@ export default function Booking() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Book this free inspection?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  We will submit your appointment request and contact you through the phone or email you provided.
+                  We will submit your appointment request and contact you
+                  through the phone or email you provided.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={processing}>Review details</AlertDialogCancel>
+                <AlertDialogCancel disabled={processing}>
+                  Review details
+                </AlertDialogCancel>
                 <AlertDialogAction
                   disabled={processing}
                   onClick={(event) => {
@@ -364,8 +442,8 @@ export default function Booking() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
