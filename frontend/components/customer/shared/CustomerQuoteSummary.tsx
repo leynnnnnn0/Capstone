@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatPeso } from "@/features/customer/customer-utils";
-import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
+import type { CustomerAppointment, CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 import type { Product, ProductImage, ResourceCollection } from "@/features/products/types";
 
 export default function CustomerQuoteSummary({
@@ -25,17 +25,22 @@ export default function CustomerQuoteSummary({
   canSign = true,
   canDownload = true,
   onSigned,
+  appointment
 }: {
   quotation?: CustomerQuotation | null;
   signerName?: string | null;
   canSign?: boolean;
   canDownload?: boolean;
-  onSigned?: () => void;
+    onSigned?: () => void;
+  appointment: CustomerAppointment
 }) {
   const [signOpen, setSignOpen] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const items = quotation?.items ?? [];
+
+  canSign = items.findIndex((item) => item.status != "approved") == -1;
+
 
   if (!quotation || items.length === 0) {
     return (
@@ -53,6 +58,8 @@ export default function CustomerQuoteSummary({
   const needsResign = quotation.signature_status === "needs_resign";
   const visibleItems = showAllItems ? items : items.slice(0, 1);
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
+
+  console.log(canSign);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -100,6 +107,7 @@ export default function CustomerQuoteSummary({
             item={item}
             index={index}
             onOpenPhotos={() => setPhotoItemId(item.id)}
+            appointmentStatus={appointment.status}
           />
         ))}
       </div>
@@ -181,10 +189,12 @@ function ReadonlyQuoteItem({
   item,
   index,
   onOpenPhotos,
+  appointmentStatus
 }: {
   item: CustomerQuotationItem;
   index: number;
-  onOpenPhotos: () => void;
+    onOpenPhotos: () => void;
+  appointmentStatus: string
 }) {
   const optionsTotal = Number(item.options_amount || 0);
   const image = productImage(item.product);
@@ -199,7 +209,13 @@ function ReadonlyQuoteItem({
         <div className="flex min-w-0 gap-3">
           {image && (
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
-              <Image src={image} alt={item.name} fill unoptimized className="object-cover" />
+              <Image
+                src={image}
+                alt={item.name}
+                fill
+                unoptimized
+                className="object-cover"
+              />
             </div>
           )}
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
@@ -207,13 +223,20 @@ function ReadonlyQuoteItem({
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-sm font-semibold leading-tight text-slate-950">{item.name}</h3>
-              <Badge variant="outline" className="h-5 rounded-full px-2 text-[10px] font-medium">
+              <h3 className="truncate text-sm font-semibold leading-tight text-slate-950">
+                {item.name}
+              </h3>
+              <Badge
+                variant="outline"
+                className="h-5 rounded-full px-2 text-[10px] font-medium"
+              >
                 {formatItemStatus(item.status)}
               </Badge>
             </div>
             {item.description && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{item.description}</p>
+              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                {item.description}
+              </p>
             )}
             <div className="mt-2 flex flex-wrap gap-2">
               {item.width && item.height && (
@@ -232,7 +255,9 @@ function ReadonlyQuoteItem({
             </div>
           </div>
         </div>
-        <p className="shrink-0 text-sm font-semibold text-primary">{formatPeso(item.total_amount)}</p>
+        <p className="shrink-0 text-sm font-semibold text-primary">
+          {formatPeso(item.total_amount)}
+        </p>
       </div>
 
       {options.length > 0 && (
@@ -243,10 +268,15 @@ function ReadonlyQuoteItem({
           </div>
           <div className="space-y-1">
             {options.map((option) => (
-              <div key={option.id} className="flex items-center justify-between gap-3 text-xs">
+              <div
+                key={option.id}
+                className="flex items-center justify-between gap-3 text-xs"
+              >
                 <span className="text-slate-500">
                   {option.group_name}:{" "}
-                  <span className="font-medium text-slate-950">{option.option_name}</span>
+                  <span className="font-medium text-slate-950">
+                    {option.option_name}
+                  </span>
                 </span>
                 <span className="text-slate-500">
                   {Number(option.price_modifier) > 0
@@ -259,23 +289,25 @@ function ReadonlyQuoteItem({
         </div>
       )}
 
-      <div className="border-t border-slate-200 bg-white px-4 py-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 w-full gap-2 text-xs"
-          onClick={onOpenPhotos}
-        >
-          <Images className="size-3.5" />
-          View Before / After Photos
-          {photoCount > 0 && (
-            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
-              {photoCount}
-            </span>
-          )}
-        </Button>
-      </div>
+      {appointmentStatus != "pending" && (
+        <div className="border-t border-slate-200 bg-white px-4 py-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 w-full gap-2 text-xs"
+            onClick={onOpenPhotos}
+          >
+            <Images className="size-3.5" />
+            View Before / After Photos
+            {photoCount > 0 && (
+              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                {photoCount}
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
 
       <div className="border-t border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between gap-3 text-xs text-slate-500">

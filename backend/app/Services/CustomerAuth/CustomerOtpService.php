@@ -29,7 +29,9 @@ class CustomerOtpService
     public function requestCode(string $contact, Request $request): array
     {
         $contactType = $this->contactType($contact);
+        //contact type = email
         $this->ensureCustomerContact($contact, $contactType);
+        // look for record with the contact
         $this->ensureRequestCooldown($contact, $contactType);
 
         $code = (string) random_int(100000, 999999);

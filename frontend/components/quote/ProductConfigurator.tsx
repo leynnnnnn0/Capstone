@@ -2,14 +2,18 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import DimensionFields from "@/components/quote/DimensionFields";
+import HistoryBackButton from "@/components/navigation/HistoryBackButton";
 import LivePriceBar from "@/components/quote/LivePriceBar";
 import OptionGroupPicker from "@/components/quote/OptionGroupPicker";
 import QuoteProductCard from "@/components/quote/QuoteProductCard";
 import VariantPicker from "@/components/quote/VariantPicker";
-import type { Product, ProductVariant } from "@/features/products/types";
+import type { Category, Product, ProductVariant } from "@/features/products/types";
+import { productCategories as categoriesForProduct } from "@/features/products/product-utils";
 import type { QuoteCartItem, QuoteDraft, SizeMode } from "@/features/quotes/types";
 import {
   createQuoteDraft,
@@ -22,6 +26,7 @@ import {
 
 export default function ProductConfigurator({
   products,
+  categories = [],
   preSelectedProductId,
   preSelectedVariantId,
   editingItem,
@@ -30,6 +35,7 @@ export default function ProductConfigurator({
   onCancelEdit,
 }: {
   products: Product[];
+  categories?: Category[];
   preSelectedProductId: number | null;
   preSelectedVariantId: number | null;
   editingItem: QuoteCartItem | null;
@@ -37,8 +43,13 @@ export default function ProductConfigurator({
   onUpdate: (item: QuoteCartItem) => void;
   onCancelEdit: () => void;
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category_id") ?? "";
+  const activeSearch = searchParams.get("q") ?? "";
   const initialProduct = products[0] ?? null;
   const [step, setStep] = useState<1 | 2>(preSelectedProductId || editingItem ? 2 : 1);
+  const [search, setSearch] = useState(activeSearch);
   const [draft, setDraft] = useState<QuoteDraft | null>(() =>
     editingItem
       ? itemToDraft(editingItem)
@@ -70,7 +81,46 @@ export default function ProductConfigurator({
     }
   }, [editingItem, initialProduct, preSelectedProductId, preSelectedVariantId, products]);
 
+  useEffect(() => {
+    queueMicrotask(() => setSearch(activeSearch));
+  }, [activeSearch]);
+
+  const visibleProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    return products.filter((product) => {
+      const matchesCategory =
+        !activeCategory ||
+        categoriesForProduct(product).some((category) => String(category.id) === activeCategory);
+      const matchesSearch =
+        !term ||
+        `${product.name} ${product.description}`.toLowerCase().includes(term);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, products, search]);
+
   const ready = draft ? isQuoteDraftReady(draft) : false;
+  const shouldUseHistoryBack = Boolean(preSelectedProductId || preSelectedVariantId);
+
+  const setQuoteProductQuery = (next: { categoryId?: number | null; search?: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if ("categoryId" in next) {
+      if (next.categoryId) params.set("category_id", String(next.categoryId));
+      else params.delete("category_id");
+    }
+
+    if ("search" in next) {
+      const term = next.search?.trim() ?? "";
+      if (term) params.set("q", term);
+      else params.delete("q");
+    }
+
+    router.replace(`/get-quote${params.toString() ? `?${params.toString()}` : ""}`, {
+      scroll: false,
+    });
+  };
 
   const pickProduct = (product: Product) => {
     setDraft(createQuoteDraft(product));
@@ -127,8 +177,63 @@ export default function ProductConfigurator({
           </p>
         </div>
 
+        <div className="mb-5 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="relative">
+            <input
+              type="text"
+              value={search}
+              onChange={(event) => {
+                const nextSearch = event.target.value;
+                setSearch(nextSearch);
+                setQuoteProductQuery({ search: nextSearch });
+              }}
+              placeholder="Search quote products..."
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-[13px] text-slate-700 placeholder-slate-400 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+            <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          </div>
+
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setQuoteProductQuery({ categoryId: null })}
+                className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
+                  !activeCategory
+                    ? "border-2 border-primary bg-primary text-white"
+                    : "border border-slate-200 bg-white text-slate-500"
+                }`}
+              >
+                All
+              </button>
+              {categories.map((category) => {
+                const active = activeCategory === String(category.id);
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => setQuoteProductQuery({ categoryId: category.id })}
+                    className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
+                      active
+                        ? "border-2 border-primary bg-primary text-white"
+                        : "border border-slate-200 bg-white text-slate-500"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {visibleProducts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-400">
+            No quote products match these filters.
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-          {products.map((product, index) => (
+          {visibleProducts.map((product, index) => (
             <QuoteProductCard
               key={product.id}
               product={product}
@@ -137,6 +242,7 @@ export default function ProductConfigurator({
             />
           ))}
         </div>
+        )}
 
         {editingItem && (
           <button
@@ -158,16 +264,24 @@ export default function ProductConfigurator({
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-5 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setStep(1);
-            if (!editingItem && initialProduct) setDraft(createQuoteDraft(initialProduct));
-          }}
-          className="rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-200"
-        >
-          ← Products
-        </button>
+        {shouldUseHistoryBack ? (
+          <HistoryBackButton
+            fallbackHref="/products"
+            label="Back"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-200"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setStep(1);
+              if (!editingItem && initialProduct) setDraft(createQuoteDraft(initialProduct));
+            }}
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-[12px] font-bold text-slate-500 hover:bg-slate-200"
+          >
+            Back
+          </button>
+        )}
         {editingItem && (
           <span className="ml-auto rounded-lg bg-blue-50 px-3 py-1 text-[11px] font-bold text-primary">
             Editing item

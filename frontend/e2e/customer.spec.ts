@@ -36,3 +36,10 @@ test("protected customer pages redirect to login when there is no auth cookie", 
   await expect(page).toHaveURL(/\/login$/);
   await context.close();
 });
+
+test("customer cannot access staff dashboard routes by changing the URL", async ({ page }) => {
+  await page.goto("/dashboard/users");
+
+  await expect(page).toHaveURL(/\/account$/);
+  await expect(page.getByText("Welcome back")).toBeVisible();
+});

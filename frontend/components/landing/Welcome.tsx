@@ -114,11 +114,22 @@ function arUrl() {
   return `${configured.replace(/\/ar(?:\/v[123])?$/, "")}/ar/${version}?${directParam}`;
 }
 
+async function supportsHitTestAr() {
+  const xr = (navigator as Navigator & {
+    xr?: { isSessionSupported?: (mode: "immersive-ar") => Promise<boolean> };
+  }).xr;
+
+  if (!window.isSecureContext || !xr?.isSessionSupported) return false;
+
+  return xr.isSessionSupported("immersive-ar").catch(() => false);
+}
+
 export default function Welcome() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsError, setProductsError] = useState("");
   const [productsLoading, setProductsLoading] = useState(true);
+  const [showArButton, setShowArButton] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const revealInitial = prefersReducedMotion ? false : "hidden";
 
@@ -141,6 +152,18 @@ export default function Welcome() {
       .finally(() => {
         if (mounted) setProductsLoading(false);
       });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supportsHitTestAr().then((supported) => {
+      if (mounted) setShowArButton(supported);
+    });
 
     return () => {
       mounted = false;
@@ -195,13 +218,15 @@ export default function Welcome() {
             >
               Get a Quote Now
             </a>
-            <button
-              type="button"
-              onClick={openAr}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-8 py-4 text-sm font-bold text-primary transition-all hover:border-primary hover:bg-slate-50"
-            >
-              View in AR
-            </button>
+            {showArButton && (
+              <button
+                type="button"
+                onClick={openAr}
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-8 py-4 text-sm font-bold text-primary transition-all hover:border-primary hover:bg-slate-50"
+              >
+                View in AR
+              </button>
+            )}
           </motion.div>
           <motion.div
             variants={reveal}

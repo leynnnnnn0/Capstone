@@ -129,3 +129,13 @@ it('lists customer work jobs without allowing creation', function () {
         ->postJson('/api/v1/customer/work-jobs', [])
         ->assertStatus(405);
 });
+
+it('prevents customers from accessing staff appointment endpoints', function () {
+    $customer = User::factory()->create([
+        'role' => 'customer',
+    ]);
+
+    $this->actingAs($customer)
+        ->getJson('/api/v1/appointments')
+        ->assertForbidden();
+});

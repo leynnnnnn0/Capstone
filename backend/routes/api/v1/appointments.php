@@ -12,9 +12,10 @@ use App\Http\Controllers\Appointments\ReopenAppointmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('appointments')->group(function () {
-    Route::post('/', [AppointmentController::class, 'store']);
+    Route::post('/', [AppointmentController::class, 'store'])
+        ->middleware('throttle:public-booking');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->group(function () {
         Route::get('/', [AppointmentController::class, 'index']);
         Route::get('{appointment}', [AppointmentController::class, 'show']);
         Route::put('{appointment}', [AppointmentController::class, 'update']);

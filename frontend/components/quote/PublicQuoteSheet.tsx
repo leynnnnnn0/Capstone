@@ -129,12 +129,18 @@ export default function PublicQuoteSheet({
 
           <SheetFooter className="border-t border-slate-100 bg-slate-50 px-5 py-4">
             {cart.length > 0 && (
-              <div className="mb-2 flex items-baseline justify-between">
-                <span className="text-sm font-semibold text-slate-500">Estimated Total</span>
-                <span className="text-xl font-extrabold text-primary">
-                  {formatCurrency(Math.round(quoteTotal(cart)))}
-                </span>
-              </div>
+              <>
+                <div className="mb-2 flex items-baseline justify-between">
+                  <span className="text-sm font-semibold text-slate-500">Estimated Total</span>
+                  <span className="text-xl font-extrabold text-primary">
+                    {formatCurrency(Math.round(quoteTotal(cart)))}
+                  </span>
+                </div>
+                <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+                  Estimate only. Final quotation is subject to SOG approval after
+                  ocular checking.
+                </p>
+              </>
             )}
             <Link
               href="/get-quote"

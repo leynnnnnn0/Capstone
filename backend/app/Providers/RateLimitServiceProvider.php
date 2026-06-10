@@ -82,6 +82,23 @@ class RateLimitServiceProvider extends ServiceProvider
 
     private function configureFormLimiters(): void
     {
-        
+        RateLimiter::for('public-booking', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email')));
+            $phone = preg_replace('/[\s().-]+/', '', (string) $request->input('phone_number'));
+            $contact = $email ?: $phone ?: $request->ip();
+
+            return [
+                Limit::perMinute(5)
+                    ->by($request->ip())
+                    ->response(fn() => response()->json([
+                        'message' => 'Too many booking requests. Please try again later.',
+                    ], 429)),
+                Limit::perMinutes(30, 3)
+                    ->by($contact)
+                    ->response(fn() => response()->json([
+                        'message' => 'Too many booking requests for this contact. Please try again later.',
+                    ], 429)),
+            ];
+        });
     }
 }

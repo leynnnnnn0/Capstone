@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, Plus, StickyNote, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, Plus, StickyNote, Users } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -321,6 +321,16 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
     <>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mb-3 -ml-2 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="size-3.5" />
+            Back
+          </Button>
           <p className="text-xs font-bold uppercase tracking-widest text-primary">
             {appointmentId ? "Edit Appointment" : rebookId ? "Rebook Appointment" : "Create Appointment"}
           </p>

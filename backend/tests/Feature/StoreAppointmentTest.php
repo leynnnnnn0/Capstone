@@ -34,6 +34,42 @@ it('creates appointment successfully', function () use ($validPayload) {
     ]);
 });
 
+it('rate limits repeated public booking submissions for the same contact', function () use ($validPayload) {
+    for ($i = 0; $i < 3; $i++) {
+        $this->withServerVariables(['REMOTE_ADDR' => "10.0.0.{$i}"])
+            ->postJson('/api/v1/appointments', [
+                ...$validPayload(),
+                'preferred_date' => now()->addDays($i + 3)->format('Y-m-d'),
+                'email' => 'limited@example.com',
+            ])->assertCreated();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10'])
+        ->postJson('/api/v1/appointments', [
+            ...$validPayload(),
+            'preferred_date' => now()->addDays(10)->format('Y-m-d'),
+            'email' => 'limited@example.com',
+        ])->assertStatus(429)
+        ->assertJsonPath('message', 'Too many booking requests for this contact. Please try again later.');
+});
+
+it('rate limits repeated public booking submissions from the same ip', function () use ($validPayload) {
+    for ($i = 0; $i < 5; $i++) {
+        $this->postJson('/api/v1/appointments', [
+            ...$validPayload(),
+            'preferred_date' => now()->addDays($i + 3)->format('Y-m-d'),
+            'email' => "limited-ip-{$i}@example.com",
+        ])->assertCreated();
+    }
+
+    $this->postJson('/api/v1/appointments', [
+        ...$validPayload(),
+        'preferred_date' => now()->addDays(20)->format('Y-m-d'),
+        'email' => 'limited-ip-final@example.com',
+    ])->assertStatus(429)
+        ->assertJsonPath('message', 'Too many booking requests. Please try again later.');
+});
+
 it('creates and links a customer account for public bookings', function () use ($validPayload) {
     $response = $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
@@ -143,15 +179,17 @@ it('appointment time until must be after time from', function () use ($validPayl
 
 
 it('still allows booking afternoon when morning is full', function () use($validPayload) {
+    $slotDate = now()->addDays(7)->format('Y-m-d');
+
     Appointment::factory(10)->create([
         ...$validPayload(),
-        'preferred_date' => '2026-06-01',
+        'preferred_date' => $slotDate,
         'preferred_time' => 'morning',
     ]);
 
     $response = $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
-        'preferred_date' => '2026-06-01',
+        'preferred_date' => $slotDate,
         'preferred_time' => 'afternoon',
     ]);
 
@@ -176,21 +214,23 @@ it('returns 422 when required fields are missing', function () {
 });
 
 it('rejects booking when morning slot is full', function () use ($validPayload) {
+    $slotDate = now()->addDays(7)->format('Y-m-d');
+
     // Arrange — fill the slot to capacity
     Appointment::factory(10)->create([
         ...$validPayload(),
-        'preferred_date' => '2026-06-01',
+        'preferred_date' => $slotDate,
         'preferred_time' => 'morning',
     ]);
 
     // Act — 11th booking attempt
     $response = $this->postJson('/api/v1/appointments', [
         ...$validPayload(),
-        'preferred_date' => '2026-06-01',
+        'preferred_date' => $slotDate,
         'preferred_time' => 'morning',
     ]);
 
     // Assert
     $response->assertStatus(422)
-        ->assertJsonPath('message', 'The morning slot on 2026-06-01 is fully booked.');
+        ->assertJsonPath('message', "The morning slot on {$slotDate} is fully booked.");
 });

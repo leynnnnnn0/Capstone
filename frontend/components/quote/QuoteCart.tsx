@@ -101,7 +101,8 @@ export default function QuoteCart({
             </button>
           )}
           <p className="mt-2 text-center text-[10px] leading-relaxed text-slate-400">
-            Final price confirmed after free on-site visit.
+            This is an initial estimate only. Final quotation approval happens after
+            SOG double-checks measurements during the free ocular visit.
           </p>
         </div>
       )}

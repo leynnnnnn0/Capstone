@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Http\Resources\WorkerResource;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('workers')->group(function () {
+Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->prefix('workers')->group(function () {
     Route::get('/', fn () => WorkerResource::collection(
         User::query()
             ->where(fn ($query) => $query

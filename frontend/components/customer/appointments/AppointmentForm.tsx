@@ -380,6 +380,10 @@ export default function AppointmentForm({
               <span className="text-slate-500">Estimated total</span>
               <span className="font-medium text-primary">{formatCurrency(quoteTotal(quoteCart))}</span>
             </div>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              Estimate only. Final quotation is subject to SOG approval after
+              measurements and site conditions are checked during the ocular visit.
+            </p>
           </div>
         )}
         <Button type="submit" className="mt-5 h-11 w-full" disabled={saving}>
@@ -400,8 +404,8 @@ export default function AppointmentForm({
             <AlertDialogTitle>{appointment ? "Save appointment changes?" : "Create appointment?"}</AlertDialogTitle>
             <AlertDialogDescription>
               {appointment
-                ? "This will update your pending appointment request."
-                : "This will send your appointment request to the SOG team for review."}
+                ? "This will update your pending appointment request. Any quote total shown is still an estimate until SOG approves the final quotation after ocular checking."
+                : "This will send your appointment request to the SOG team for review. Any quote total shown is still an estimate until SOG approves the final quotation after ocular checking."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

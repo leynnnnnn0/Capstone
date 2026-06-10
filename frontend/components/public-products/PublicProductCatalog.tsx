@@ -27,15 +27,19 @@ const gradients = [
   "linear-gradient(135deg,#6a8fa8,#c8dae8)",
 ];
 
+const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
+
 export default function PublicProductCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category_id") ?? "";
+  const activeSearch = searchParams.get("q") ?? "";
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(activeSearch);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const catalogQuery = searchParams.toString();
 
   useEffect(() => {
     let mounted = true;
@@ -66,6 +70,30 @@ export default function PublicProductCatalog() {
     };
   }, [activeCategory]);
 
+  useEffect(() => {
+    queueMicrotask(() => setSearch(activeSearch));
+  }, [activeSearch]);
+
+  useEffect(() => {
+    const href = `${window.location.pathname}${window.location.search}`;
+
+    return () => {
+      sessionStorage.setItem(`${CATALOG_SCROLL_PREFIX}${href}`, String(window.scrollY));
+    };
+  }, [activeCategory, activeSearch]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const href = `${window.location.pathname}${window.location.search}`;
+    const storedScroll = sessionStorage.getItem(`${CATALOG_SCROLL_PREFIX}${href}`);
+    if (!storedScroll) return;
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: Number(storedScroll) || 0 });
+    });
+  }, [activeCategory, activeSearch, loading]);
+
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return products;
@@ -76,12 +104,31 @@ export default function PublicProductCatalog() {
     });
   }, [products, search]);
 
-  const setCategory = (categoryId: number | null) => {
+  const setProductQuery = (next: { categoryId?: number | null; search?: string }) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (categoryId) params.set("category_id", String(categoryId));
-    else params.delete("category_id");
-    router.push(`/products${params.toString() ? `?${params.toString()}` : ""}`);
+
+    if ("categoryId" in next) {
+      if (next.categoryId) params.set("category_id", String(next.categoryId));
+      else params.delete("category_id");
+    }
+
+    if ("search" in next) {
+      const term = next.search?.trim() ?? "";
+      if (term) params.set("q", term);
+      else params.delete("q");
+    }
+
+    router.replace(`/products${params.toString() ? `?${params.toString()}` : ""}`, {
+      scroll: false,
+    });
   };
+
+  const setCategory = (categoryId: number | null) => {
+    setProductQuery({ categoryId });
+  };
+
+  const productHref = (productId: number) =>
+    `/products/${productId}${catalogQuery ? `?${catalogQuery}` : ""}`;
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -107,7 +154,11 @@ export default function PublicProductCatalog() {
                 type="text"
                 placeholder="Search products..."
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  const nextSearch = event.target.value;
+                  setSearch(nextSearch);
+                  setProductQuery({ search: nextSearch });
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-[13px] text-slate-700 placeholder-slate-400 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -178,7 +229,7 @@ export default function PublicProductCatalog() {
                       className="relative flex h-48 items-center justify-center overflow-hidden"
                       style={{ background: cover ? "#f8fafc" : gradient }}
                     >
-                      <Link href={`/products/${product.id}`} className="block h-full w-full">
+                      <Link href={productHref(product.id)} className="block h-full w-full">
                         {cover ? (
                           <img
                             src={cover}
@@ -213,7 +264,7 @@ export default function PublicProductCatalog() {
                           </span>
                         </span>
                         <Link
-                          href={`/products/${product.id}`}
+                          href={productHref(product.id)}
                           className="text-[11px] font-bold text-slate-400 transition-colors group-hover:text-primary"
                         >
                           View →

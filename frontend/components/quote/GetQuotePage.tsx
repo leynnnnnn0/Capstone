@@ -9,8 +9,8 @@ import ProductConfigurator from "@/components/quote/ProductConfigurator";
 import QuoteCart from "@/components/quote/QuoteCart";
 import QuoteCheckoutForm from "@/components/quote/QuoteCheckoutForm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchProducts } from "@/features/products/product-api";
-import type { Product } from "@/features/products/types";
+import { fetchCategories, fetchProducts } from "@/features/products/product-api";
+import type { Category, Product } from "@/features/products/types";
 import { arHandoffToCartItems, parseArQuoteHandoff } from "@/features/quotes/ar-quote-handoff";
 import {
   reconcileQuoteCart,
@@ -22,6 +22,7 @@ export default function GetQuotePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,10 +42,14 @@ export default function GetQuotePage() {
     // The quote page always loads active products first. If AR sent measurements
     // through the ar_items query parameter, those measurements are converted into
     // cart items after the products are available for product lookup/pricing.
-    fetchProducts({ is_active: "1", per_page: "100" })
-      .then((response) => {
+    Promise.all([
+      fetchProducts({ is_active: "1", per_page: "100" }),
+      fetchCategories().catch(() => []),
+    ])
+      .then(([response, nextCategories]) => {
         if (!mounted) return;
         setProducts(response.data);
+        setCategories(nextCategories);
         setCart((current) => reconcileQuoteCart(current, response.data));
         setError("");
         const arHandoff = parseArQuoteHandoff(arItemsParam);
@@ -153,6 +158,7 @@ export default function GetQuotePage() {
           <div className="flex flex-col items-start gap-6 lg:flex-row lg:gap-7">
             <ProductConfigurator
               products={products}
+              categories={categories}
               preSelectedProductId={preSelectedProductId}
               preSelectedVariantId={preSelectedVariantId}
               editingItem={editingItem}

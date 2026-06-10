@@ -229,7 +229,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             compact
           />
 
-          <CustomerQuoteImageList quotation={appointment.quotation} />
+          {/* <CustomerQuoteImageList quotation={appointment.quotation} /> */}
         </section>
 
         <aside className="space-y-4">
@@ -239,6 +239,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             canSign={quotationCanBeSigned}
             canDownload={quotationCanBeDownloaded}
             onSigned={reload}
+            appointment={appointment}
           />
 
           <CustomerActivityLog

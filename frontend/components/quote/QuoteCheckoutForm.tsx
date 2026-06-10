@@ -182,6 +182,11 @@ export default function QuoteCheckoutForm({
         <p className="text-[13px] text-slate-500 sm:text-[14px]">
           Fill in your details so we can schedule your free inspection.
         </p>
+        <p className="mt-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-[12px] leading-relaxed text-primary">
+          Your current total is an initial estimate only. The final quotation is
+          subject to SOG approval after our team double-checks the measurements and
+          site conditions during the ocular visit.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -307,7 +312,9 @@ export default function QuoteCheckoutForm({
           <AlertDialogHeader>
             <AlertDialogTitle>Submit this quote request?</AlertDialogTitle>
             <AlertDialogDescription>
-              We will send your selected items and contact details to the SOG team so they can schedule your free inspection.
+              We will send your selected items and contact details to the SOG team
+              so they can schedule your free inspection. The displayed amount is
+              not final and is still subject to approval after ocular checking.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -367,6 +374,10 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
           {formatCurrency(Math.round(total))}
         </span>
       </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+        Estimate only. Final quotation is approved after measurements and site
+        conditions are checked during the ocular visit.
+      </p>
     </div>
   );
 }
