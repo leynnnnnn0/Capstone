@@ -32,11 +32,11 @@ export default function AdminCalendarPage() {
   }, ["appointment"]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">Calendar</p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight">Calendar</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="mt-1 text-lg font-semibold tracking-tight sm:text-xl">Calendar</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
           {isWorker ? "Your assigned schedule." : "Appointments overview and workers schedule."}
         </p>
       </div>

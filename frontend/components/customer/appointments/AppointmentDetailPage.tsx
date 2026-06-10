@@ -219,7 +219,6 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             <LinkedWorkJobCard workJob={appointment.work_job} />
           )}
 
-          
           <AppointmentInfoCard appointment={appointment} />
 
           <CustomerLocationCard
@@ -233,6 +232,10 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         </section>
 
         <aside className="space-y-4">
+          <CustomerActivityLog
+            remarks={appointment.remarks}
+            emptyDescription="Updates from your inspection request will appear here."
+          />
           <CustomerQuoteSummary
             quotation={appointment.quotation}
             signerName={appointment.full_name}
@@ -240,11 +243,6 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             canDownload={quotationCanBeDownloaded}
             onSigned={reload}
             appointment={appointment}
-          />
-
-          <CustomerActivityLog
-            remarks={appointment.remarks}
-            emptyDescription="Updates from your inspection request will appear here."
           />
         </aside>
       </div>

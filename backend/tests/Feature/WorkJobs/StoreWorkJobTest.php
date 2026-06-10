@@ -2,18 +2,23 @@
 // tests/Feature/WorkJobs/StoreWorkJobTest.php
 
 use App\Enums\WorkJobStatus;
+use App\Events\WorkJobChanged;
+use App\Events\WorkJobCreated;
 use App\Models\Appointment;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Models\WorkJob;
 use App\Enums\AppointmentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->admin   = User::factory()->create(['role' => 'admin']);
     $this->workers = User::factory(2)->create(['role' => 'worker']);
+
+    Event::fake([WorkJobCreated::class]);
 });
 
 $validPayload = fn() => [
@@ -76,6 +81,28 @@ it('creates work job with pending status by default', function () use ($validPay
         ->assertJsonPath('data.status', WorkJobStatus::Pending->value);
 });
 
+it('dispatches a work job created notification event when a work job is created', function () use ($validPayload) {
+    $response = $this->actingAs($this->admin)
+        ->postJson('/api/v1/work-jobs', array_merge($validPayload(), [
+            'worker_ids' => $this->workers->pluck('id')->toArray(),
+        ]))
+        ->assertStatus(201);
+
+    Event::assertDispatched(WorkJobCreated::class, function (WorkJobCreated $event) use ($response) {
+        return $event->workJob->id === $response->json('data.id');
+    });
+});
+
+it('does not dispatch the work job created notification event for generic work job change events', function () {
+    $workJob = WorkJob::factory()->create([
+        'phone_number' => '+63 900 333 4444',
+    ]);
+
+    WorkJobChanged::dispatch($workJob, 'created', 'Work job created and scheduled.', $this->admin);
+
+    Event::assertNotDispatched(WorkJobCreated::class);
+});
+
 it('creates work job from appointment', function () {
     $workers     = User::factory(2)->create(['role' => 'worker']);
     $customer = User::factory()->create(['role' => 'customer']);
@@ -98,6 +125,26 @@ it('creates work job from appointment', function () {
     expect($workJob->user_id)->toBe($customer->id);
     expect($workJob->workers)->toHaveCount(2);
     expect($appointment->remarks()->where('action', 'work_job_created')->exists())->toBeTrue();
+});
+
+it('dispatches a work job created notification event when creating a work job from an appointment', function () {
+    $workers = User::factory(2)->create(['role' => 'worker']);
+    $appointment = Appointment::factory()->create([
+        'status'                 => AppointmentStatus::Confirmed,
+        'phone_number'           => '+63 900 111 2222',
+        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from'  => '09:00',
+        'appointment_time_until' => '11:00',
+    ]);
+    $appointment->workers()->sync($workers->pluck('id'));
+
+    $response = $this->actingAs($this->admin)
+        ->postJson("/api/v1/appointments/{$appointment->id}/work-job")
+        ->assertStatus(201);
+
+    Event::assertDispatched(WorkJobCreated::class, function (WorkJobCreated $event) use ($response) {
+        return $event->workJob->id === $response->json('data.id');
+    });
 });
 
 it('creates work job from appointment with quotation', function () {

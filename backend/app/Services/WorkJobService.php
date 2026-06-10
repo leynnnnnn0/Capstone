@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use App\Events\WorkJobChanged;
+use App\Events\WorkJobCreated;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Appointment;
 use App\Models\User;
@@ -72,6 +73,7 @@ class WorkJobService
         });
 
         WorkJobChanged::dispatch($workJob, 'created', 'Work job created and scheduled.', $actor);
+        WorkJobCreated::dispatch($workJob, $actor);
 
         return $workJob;
     }

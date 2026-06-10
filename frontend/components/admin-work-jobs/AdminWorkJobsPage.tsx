@@ -127,7 +127,7 @@ export default function AdminWorkJobsPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatCard label="Total" value={total} icon={BriefcaseBusiness} />
         <StatCard label="Pending" value={workJobs.filter((item) => item.status === "pending").length} icon={CalendarDays} />
         <StatCard label="In Progress" value={workJobs.filter((item) => item.status === "in_progress").length} icon={PlayCircle} />
@@ -135,7 +135,7 @@ export default function AdminWorkJobsPage() {
       </div>
 
       <div className="rounded-lg border bg-card p-3">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -148,16 +148,18 @@ export default function AdminWorkJobsPage() {
               }}
             />
           </div>
-          <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
-            <SlidersHorizontal className="size-3.5" />
-            Filters
-          </Button>
-          {activeFilters && (
-            <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
-              <RotateCcw className="size-3.5" />
-              Reset
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
+              <SlidersHorizontal className="size-3.5" />
+              Filters
             </Button>
-          )}
+            {activeFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+                <RotateCcw className="size-3.5" />
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
         {filtersOpen && (
           <div className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-3">
@@ -168,7 +170,21 @@ export default function AdminWorkJobsPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-2 md:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-32 animate-pulse rounded-lg border bg-muted/30" />
+          ))
+        ) : workJobs.length > 0 ? (
+          workJobs.map((workJob) => <WorkJobCard key={workJob.id} workJob={workJob} />)
+        ) : (
+          <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+            No work jobs found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -212,6 +228,49 @@ export default function AdminWorkJobsPage() {
   );
 }
 
+function WorkJobCard({ workJob }: { workJob: AdminWorkJob }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="truncate text-xs font-semibold uppercase tracking-wide text-primary">
+              {workJob.work_job_number}
+            </p>
+            {workJob.is_back_job && (
+              <Badge variant="outline" className="border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+                Back Job
+              </Badge>
+            )}
+          </div>
+          <p className="mt-1 truncate text-sm font-semibold">{workJob.full_name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{workJob.phone_number}</p>
+        </div>
+        <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${workJob.work_job_number}`} className="shrink-0">
+          <Link href={`/dashboard/work-jobs/${workJob.id}`}>
+            <Eye className="size-4" />
+          </Link>
+        </Button>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs">
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Schedule</p>
+          <p className="font-medium">{formatWorkJobSchedule(workJob)}</p>
+        </div>
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Workers</p>
+          <p className="font-medium">
+            {workJob.workers.length > 0 ? workJob.workers.map((worker) => worker.full_name).join(", ") : "-"}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3">
+        <AdminWorkJobStatusBadge status={workJob.status} />
+      </div>
+    </article>
+  );
+}
+
 function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
   return (
     <TableRow>
@@ -243,13 +302,13 @@ function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="flex items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
         <Icon className="size-4" />
       </div>
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold leading-tight">{value}</p>
+        <p className="text-base font-semibold leading-tight sm:text-lg">{value}</p>
       </div>
     </div>
   );

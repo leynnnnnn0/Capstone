@@ -210,6 +210,13 @@ export default function ProductDetails({ product }: { product: Product }) {
               No variants added.
             </p>
           ) : (
+            <>
+            <div className="space-y-2 md:hidden">
+              {variants.map((variant) => (
+                <VariantCard key={variant.id} variant={variant} />
+              ))}
+            </div>
+            <div className="hidden overflow-hidden rounded-lg border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -236,6 +243,8 @@ export default function ProductDetails({ product }: { product: Product }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -286,5 +295,25 @@ export default function ProductDetails({ product }: { product: Product }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function VariantCard({ variant }: { variant: ReturnType<typeof productVariants>[number] }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 text-sm shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold">{variant.width} x {variant.height} cm</p>
+          <p className="text-xs text-muted-foreground">{calcArea(variant.width, variant.height)} sqm</p>
+        </div>
+        <Badge variant={variant.is_active ? "default" : "secondary"}>
+          {variant.is_active ? "Active" : "Inactive"}
+        </Badge>
+      </div>
+      <div className="mt-3 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+        <p className="text-muted-foreground">Fixed Price</p>
+        <p className="font-medium">{formatCurrency(variant.price)}</p>
+      </div>
+    </article>
   );
 }

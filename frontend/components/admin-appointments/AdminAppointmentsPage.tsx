@@ -127,7 +127,7 @@ export default function AdminAppointmentsPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatCard label="Total" value={total} icon={ClipboardList} />
         <StatCard label="Pending" value={appointments.filter((item) => item.status === "pending").length} icon={CalendarDays} />
         <StatCard label="Confirmed" value={appointments.filter((item) => item.status === "confirmed").length} icon={UserCheck} />
@@ -135,7 +135,7 @@ export default function AdminAppointmentsPage() {
       </div>
 
       <div className="rounded-lg border bg-card p-3">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -148,16 +148,18 @@ export default function AdminAppointmentsPage() {
               }}
             />
           </div>
-          <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
-            <SlidersHorizontal className="size-3.5" />
-            Filters
-          </Button>
-          {activeFilters && (
-            <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
-              <RotateCcw className="size-3.5" />
-              Reset
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
+              <SlidersHorizontal className="size-3.5" />
+              Filters
             </Button>
-          )}
+            {activeFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+                <RotateCcw className="size-3.5" />
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
         {filtersOpen && (
           <div className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-4">
@@ -169,7 +171,23 @@ export default function AdminAppointmentsPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-2 md:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-28 animate-pulse rounded-lg border bg-muted/30" />
+          ))
+        ) : appointments.length > 0 ? (
+          appointments.map((appointment) => (
+            <AppointmentCard key={appointment.id} appointment={appointment} />
+          ))
+        ) : (
+          <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+            No appointments found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -213,6 +231,40 @@ export default function AdminAppointmentsPage() {
   );
 }
 
+function AppointmentCard({ appointment }: { appointment: AdminAppointment }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-semibold uppercase tracking-wide text-primary">
+            {appointment.appointment_number}
+          </p>
+          <p className="mt-1 truncate text-sm font-semibold">{appointment.full_name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{appointment.phone_number}</p>
+        </div>
+        <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${appointment.appointment_number}`} className="shrink-0">
+          <Link href={`/dashboard/appointments/${appointment.id}`}>
+            <Eye className="size-4" />
+          </Link>
+        </Button>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Preferred Date</p>
+          <p className="font-medium">{formatAdminDate(appointment.preferred_date)}</p>
+        </div>
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Preferred Time</p>
+          <p className="font-medium capitalize">{appointment.preferred_time}</p>
+        </div>
+      </div>
+      <div className="mt-3">
+        <AdminAppointmentStatusBadge status={appointment.status} />
+      </div>
+    </article>
+  );
+}
+
 function AppointmentRow({ appointment }: { appointment: AdminAppointment }) {
   return (
     <TableRow>
@@ -235,13 +287,13 @@ function AppointmentRow({ appointment }: { appointment: AdminAppointment }) {
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="flex items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
         <Icon className="size-4" />
       </div>
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-semibold leading-tight">{value}</p>
+        <p className="text-base font-semibold leading-tight sm:text-lg">{value}</p>
       </div>
     </div>
   );

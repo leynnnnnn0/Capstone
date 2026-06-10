@@ -264,7 +264,7 @@ export default function AdminPaymentsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">
         <StatCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} />
         <StatCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} />
         <StatCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} />
@@ -274,7 +274,7 @@ export default function AdminPaymentsPage() {
       </div>
 
       <div className="rounded-lg border bg-card p-3">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -287,25 +287,27 @@ export default function AdminPaymentsPage() {
               }}
             />
           </div>
-          <Button type="button" size="sm" onClick={() => applyFilter({ search })}>
-            Search
-          </Button>
-          <Button
-            type="button"
-            variant={filtersOpen ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setFiltersOpen((value) => !value)}
-            className="gap-1.5"
-          >
-            <SlidersHorizontal className="size-3.5" />
-            Filters
-          </Button>
-          {activeFilters && (
-            <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
-              <RotateCcw className="size-3.5" />
-              Reset
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button type="button" size="sm" onClick={() => applyFilter({ search })}>
+              Search
             </Button>
-          )}
+            <Button
+              type="button"
+              variant={filtersOpen ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setFiltersOpen((value) => !value)}
+              className="gap-1.5"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              Filters
+            </Button>
+            {activeFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+                <RotateCcw className="size-3.5" />
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
 
         {filtersOpen && (
@@ -319,7 +321,27 @@ export default function AdminPaymentsPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-2 md:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-36 animate-pulse rounded-lg border bg-muted/30" />
+          ))
+        ) : error ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-center text-sm text-destructive">
+            {error}
+          </div>
+        ) : payments.length > 0 ? (
+          payments.map((payment) => (
+            <PaymentCard key={payment.id} payment={payment} onRefund={openRefundDialog} />
+          ))
+        ) : (
+          <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+            No payments found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -556,6 +578,82 @@ function PaymentRow({ payment, onRefund }: { payment: AdminPayment; onRefund: (p
   );
 }
 
+function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (payment: AdminPayment) => void }) {
+  const workJob = payment.work_job;
+  const recordedAt = payment.paid_at ?? payment.created_at;
+
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{payment.payment_number ?? `PAY-${payment.id}`}</p>
+          {payment.provider_capture_id && (
+            <p className="truncate text-xs text-muted-foreground">Capture {payment.provider_capture_id}</p>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold">{formatPeso(payment.net_amount ?? payment.amount)}</p>
+          {(payment.refunded_amount ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground">{formatPeso(payment.refunded_amount)} refunded</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <PaymentBadge className={paymentStatusStyle[payment.status]}>{payment.status_label}</PaymentBadge>
+        <PaymentBadge className={paymentMethodStyle[payment.method]}>{payment.method_label}</PaymentBadge>
+        <PaymentBadge className={paymentTypeStyle[payment.type]}>{payment.type_label}</PaymentBadge>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs">
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Work Job</p>
+          {workJob ? (
+            <Link href={`/dashboard/work-jobs/${workJob.id}`} className="font-medium text-primary hover:underline">
+              {workJob.work_job_number}
+            </Link>
+          ) : (
+            <p className="font-medium">-</p>
+          )}
+        </div>
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Customer</p>
+          <p className="font-medium">{workJob?.full_name ?? payment.provider_payer_email ?? "-"}</p>
+          <p className="text-muted-foreground">{workJob?.phone_number ?? workJob?.email ?? payment.provider_payer_email ?? "-"}</p>
+        </div>
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Recorded</p>
+          <p className="font-medium">{formatPaymentDate(recordedAt)}</p>
+          {payment.creator?.full_name && <p className="text-muted-foreground">By {payment.creator.full_name}</p>}
+        </div>
+      </div>
+
+      {(payment.can_refund || workJob) && (
+        <div className="mt-3 flex justify-end gap-1">
+          {payment.can_refund && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onRefund(payment)}
+              aria-label={`Refund ${payment.payment_number ?? payment.id}`}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+          )}
+          {workJob && (
+            <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${workJob.work_job_number}`}>
+              <Link href={`/dashboard/work-jobs/${workJob.id}`}>
+                <Eye className="size-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
 function PaymentBadge({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <Badge variant="outline" className={cn("whitespace-nowrap", className)}>
@@ -566,13 +664,13 @@ function PaymentBadge({ className, children }: { className?: string; children: R
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate text-lg font-semibold leading-tight">{value}</p>
+        <p className="truncate text-base font-semibold leading-tight sm:text-lg">{value}</p>
       </div>
     </div>
   );

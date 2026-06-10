@@ -37,11 +37,18 @@ function ChartContainer({
     <ChartContext.Provider value={{ config }}>
       <div
         data-chart={chartId}
-        className={cn("flex aspect-video justify-center text-xs", className)}
+        className={cn(
+          "aspect-video min-w-0 max-w-full overflow-hidden text-xs",
+          className,
+        )}
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
+        <div className="h-full w-full min-w-0">
+          <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+            {children}
+          </RechartsPrimitive.ResponsiveContainer>
+        </div>
       </div>
     </ChartContext.Provider>
   );

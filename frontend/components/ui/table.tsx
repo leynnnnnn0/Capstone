@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div className="w-full overflow-auto">
-      <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
+      <table className={cn("w-full caption-bottom text-xs sm:text-sm", className)} {...props} />
     </div>
   );
 }
@@ -31,7 +31,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "h-10 px-3 text-left align-middle font-medium text-muted-foreground",
+        "h-8 px-2 text-left align-middle font-medium text-muted-foreground sm:h-10 sm:px-3",
         className,
       )}
       {...props}
@@ -40,7 +40,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-  return <td className={cn("p-3 align-middle", className)} {...props} />;
+  return <td className={cn("px-2 py-2 align-middle sm:p-3", className)} {...props} />;
 }
 
 export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };

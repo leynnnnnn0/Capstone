@@ -76,14 +76,14 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-5">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-primary">Business Overview</p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Collections, appointments, workload, and operational risks.</p>
+        <h1 className="mt-1 text-lg font-semibold tracking-tight sm:text-xl">Dashboard</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Collections, appointments, workload, and operational risks.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <TooltipProvider>
           <MetricCard
             title="Collected Revenue"
@@ -116,18 +116,18 @@ export default function AdminDashboardPage() {
         </TooltipProvider>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-7">
+      <div className="grid gap-3 xl:grid-cols-7">
         <Card className="xl:col-span-4">
           <CardHeader>
-            <CardTitle className="text-base">Collections Trend</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Collections Trend</CardTitle>
             <CardDescription>Paid collections versus pending payment requests by month.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={revenueChartConfig} className="h-[280px]">
-              <AreaChart data={metrics.collectionsByMonth}>
+            <ChartContainer config={revenueChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
+              <AreaChart data={metrics.collectionsByMonth} margin={{ left: 0, right: 8, top: 12 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Number(value) / 1000}k`} />
+                <YAxis width={42} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Number(value) / 1000}k`} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Area dataKey="pending" type="monotone" fill="var(--color-pending)" fillOpacity={0.18} stroke="var(--color-pending)" />
                 <Area dataKey="paid" type="monotone" fill="var(--color-paid)" fillOpacity={0.22} stroke="var(--color-paid)" />
@@ -138,14 +138,14 @@ export default function AdminDashboardPage() {
 
         <Card className="xl:col-span-3">
           <CardHeader>
-            <CardTitle className="text-base">Appointment Status</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Appointment Status</CardTitle>
             <CardDescription>Current operational distribution.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={statusChartConfig} className="h-[280px]">
+            <ChartContainer config={statusChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
               <PieChart>
                 <Tooltip content={<ChartTooltipContent />} />
-                <Pie data={metrics.statusData} dataKey="count" nameKey="status" innerRadius={55} outerRadius={92} paddingAngle={2}>
+                <Pie data={metrics.statusData} dataKey="count" nameKey="status" innerRadius={44} outerRadius={78} paddingAngle={2}>
                   {metrics.statusData.map((entry, index) => (
                     <Cell key={entry.status} fill={pieColors[index % pieColors.length]} />
                   ))}
@@ -156,18 +156,18 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Worker Load</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Worker Load</CardTitle>
             <CardDescription>Assigned appointments and work jobs.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={workloadChartConfig} className="h-[260px]">
-              <BarChart data={metrics.workerLoad}>
+            <ChartContainer config={workloadChartConfig} className="h-[210px] sm:h-[230px]">
+              <BarChart data={metrics.workerLoad} margin={{ left: 0, right: 8, top: 12 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="worker" tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                <YAxis width={28} allowDecimals={false} tickLine={false} axisLine={false} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="jobs" fill="var(--color-jobs)" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -177,17 +177,17 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Top Work Job Products</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Top Work Job Products</CardTitle>
             <CardDescription>Products appearing most often in customer work jobs.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {metrics.topProducts.length ? metrics.topProducts.map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span>
+                <div key={item.name} className="flex items-center justify-between rounded-lg border px-2.5 py-2 sm:px-3">
+                  <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:size-7">{index + 1}</span>
                     <div>
-                      <p className="text-sm font-medium">{item.name}</p>
+                      <p className="truncate text-xs font-medium sm:text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.count} work job item{item.count === 1 ? "" : "s"}</p>
                     </div>
                   </div>
@@ -201,13 +201,13 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Upcoming Appointments</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Upcoming Appointments</CardTitle>
             <CardDescription>Next confirmed schedules.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5">
             {metrics.upcomingAppointments.map((appointment) => (
               <CompactSchedule key={appointment.id} title={appointment.full_name} code={appointment.appointment_number} date={formatAdminDate(appointment.appointment_date)} />
             ))}
@@ -216,10 +216,10 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Active Work Jobs</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Active Work Jobs</CardTitle>
             <CardDescription>Installations and field work in motion.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2.5">
             {metrics.activeWorkJobs.map((job) => (
               <CompactSchedule key={job.id} title={job.full_name} code={job.work_job_number} date={formatAdminDate(job.scheduled_date)} />
             ))}
@@ -228,12 +228,12 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Service Mix</CardTitle>
+            <CardTitle className="text-sm sm:text-base">Service Mix</CardTitle>
             <CardDescription>Demand by requested service type.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {metrics.serviceMix.map((item) => (
-              <div key={item.service} className="flex items-center justify-between text-sm">
+              <div key={item.service} className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="capitalize text-muted-foreground">{item.service.replaceAll("_", " ")}</span>
                 <span className="font-medium">{item.count}</span>
               </div>
@@ -247,14 +247,14 @@ export default function AdminDashboardPage() {
 
 export function AdminDashboardSkeleton() {
   return (
-    <div className="space-y-6" aria-label="Loading dashboard">
+    <div className="space-y-4 lg:space-y-5" aria-label="Loading dashboard">
       <div className="space-y-2">
         <Skeleton className="h-3 w-36" />
         <Skeleton className="h-7 w-28" />
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -269,12 +269,12 @@ export function AdminDashboardSkeleton() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-7">
+      <div className="grid gap-3 xl:grid-cols-7">
         <DashboardChartSkeleton className="xl:col-span-4" />
         <DashboardChartSkeleton className="xl:col-span-3" variant="pie" />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <DashboardChartSkeleton />
         <Card>
           <DashboardCardHeading />
@@ -295,7 +295,7 @@ export function AdminDashboardSkeleton() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-3">
         {Array.from({ length: 3 }).map((_, cardIndex) => (
           <Card key={cardIndex}>
             <DashboardCardHeading />
@@ -319,12 +319,12 @@ function DashboardChartSkeleton({ className, variant = "bars" }: { className?: s
     <Card className={className}>
       <DashboardCardHeading />
       <CardContent>
-        <div className="flex h-[280px] items-end justify-center gap-4 rounded-lg bg-muted/35 p-6">
+        <div className="flex h-[220px] items-end justify-center gap-3 rounded-lg bg-muted/35 p-4 sm:h-[240px] xl:h-[260px]">
           {variant === "pie" ? (
             <Skeleton className="size-40 rounded-full" />
           ) : (
             [42, 64, 48, 78, 58, 86, 68].map((height, index) => (
-              <Skeleton key={index} className="w-8 sm:w-10" style={{ height: `${height}%` }} />
+            <Skeleton key={index} className="w-6 sm:w-8" style={{ height: `${height}%` }} />
             ))
           )}
         </div>
@@ -364,7 +364,7 @@ function MetricCard({
             <Icon className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{value}</div>
+            <div className="text-xl font-semibold sm:text-2xl">{value}</div>
             <p className="mt-1 text-xs text-muted-foreground">{description}</p>
           </CardContent>
         </Card>
@@ -376,9 +376,9 @@ function MetricCard({
 
 function CompactSchedule({ title, code, date }: { title: string; code: string; date: string }) {
   return (
-    <div className="rounded-lg border px-3 py-2">
-      <p className="text-sm font-medium">{title}</p>
-      <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+    <div className="rounded-lg border px-2.5 py-2 sm:px-3">
+      <p className="truncate text-xs font-medium sm:text-sm">{title}</p>
+      <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-xs">
         <span>{code}</span>
         <span>{date}</span>
       </div>

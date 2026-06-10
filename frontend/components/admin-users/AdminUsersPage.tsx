@@ -202,20 +202,20 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">Access Control</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Users</h1>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight">Users</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage staff, customers, roles, and permission overrides.</p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} size="sm">
           <Plus className="size-4" />
           New User
         </Button>
       </div>
 
-      <div className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1fr_220px]">
+      <div className="grid gap-2 rounded-lg border bg-card p-3 md:grid-cols-[1fr_220px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users..." className="pl-9" />
@@ -233,7 +233,28 @@ export default function AdminUsersPage() {
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm">
+      <div className="space-y-2 md:hidden">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-28 animate-pulse rounded-lg border bg-muted/30" />
+          ))
+        ) : users.length ? (
+          users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              onEdit={() => openEdit(user)}
+              onDelete={() => setDeleteTarget(user)}
+            />
+          ))
+        ) : (
+          <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+            No users found.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -411,6 +432,44 @@ export default function AdminUsersPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function UserCard({
+  user,
+  onEdit,
+  onDelete,
+}: {
+  user: AdminUser;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{user.full_name}</p>
+          <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          <ShieldCheck className="size-3.5" />
+          {roleLabels[user.role] ?? user.role}
+        </span>
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          {user.permissions.length} permission{user.permissions.length === 1 ? "" : "s"}
+        </p>
+        <div className="flex gap-1">
+          <Button type="button" variant="ghost" size="icon-sm" onClick={onEdit} aria-label={`Edit ${user.full_name}`}>
+            <Edit2 className="size-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="icon-sm" className="text-destructive" onClick={onDelete} aria-label={`Delete ${user.full_name}`}>
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }
 

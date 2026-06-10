@@ -40,13 +40,28 @@ export default function AdminAuditsPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <ShieldCheck className="size-4 text-primary" />
             Latest activity
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
+          <div className="space-y-2 md:hidden">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="h-32 animate-pulse rounded-lg border bg-muted/30" />
+              ))
+            ) : audits.length ? (
+              audits.map((audit) => <AuditCard key={audit.id} audit={audit} />)
+            ) : (
+              <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+                No audit records yet.
+              </div>
+            )}
+          </div>
+
+          <div className="hidden overflow-hidden rounded-lg border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -85,6 +100,7 @@ export default function AdminAuditsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
 
           {meta && meta.last_page > 1 && (
             <PaginationControls meta={meta} loading={loading} onPageChange={setPage} />
@@ -92,6 +108,41 @@ export default function AdminAuditsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AuditCard({ audit }: { audit: AuditRecord }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Badge variant="outline">{audit.event}</Badge>
+          <p className="mt-2 truncate text-sm font-semibold">
+            {audit.auditable_type} #{audit.auditable_id}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{audit.user?.name ?? "System"}</p>
+        </div>
+        <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Link href={`/dashboard/audits/${audit.id}`}>View</Link>
+        </Button>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs">
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Changes</p>
+          <p className="truncate font-medium">{Object.keys(audit.new_values ?? {}).join(", ") || "No changed values"}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-md bg-muted/40 px-2 py-1.5">
+            <p className="text-muted-foreground">IP</p>
+            <p className="truncate font-medium">{audit.ip_address ?? "-"}</p>
+          </div>
+          <div className="rounded-md bg-muted/40 px-2 py-1.5">
+            <p className="text-muted-foreground">Date</p>
+            <p className="truncate font-medium">{formatDate(audit.created_at)}</p>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 

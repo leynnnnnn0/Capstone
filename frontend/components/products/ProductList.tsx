@@ -110,7 +110,7 @@ export default function ProductList() {
 
       <Card>
         <CardContent className="p-3">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -130,7 +130,24 @@ export default function ProductList() {
         </CardContent>
       </Card>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-2 md:hidden">
+        {!response ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-28 animate-pulse rounded-lg border bg-muted/30" />
+          ))
+        ) : products.length === 0 ? (
+          <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+            <Package className="mx-auto mb-2 h-8 w-8 opacity-40" />
+            No products found.
+          </div>
+        ) : (
+          products.map((product) => (
+            <ProductCard key={product.id} product={product} onDelete={() => setDeleteTarget(product)} />
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -232,5 +249,48 @@ export default function ProductList() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function ProductCard({ product, onDelete }: { product: Product; onDelete: () => void }) {
+  const cover = productCover(product);
+
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start gap-3">
+        <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+          {cover ? (
+            <img src={cover} alt={product.name} className="h-full w-full object-cover" />
+          ) : (
+            <ImageOff className="h-5 w-5 text-muted-foreground" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{product.name}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {formatCurrency(product.price_per_unit)} / {product.unit}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant="secondary">{productVariants(product).length} variant{productVariants(product).length === 1 ? "" : "s"}</Badge>
+            <Badge variant={product.is_active ? "default" : "secondary"}>
+              {product.is_active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/dashboard/products/${product.id}`}>View</Link>
+        </Button>
+        <Button asChild size="icon-sm" variant="ghost">
+          <Link href={`/dashboard/products/${product.id}/edit`} aria-label={`Edit ${product.name}`}>
+            <Pencil className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
+        <Button type="button" size="icon-sm" variant="ghost" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </article>
   );
 }

@@ -231,7 +231,7 @@ export default function AdminSalesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-6">
         <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} />
         <MetricCard label="Paid Sales" value={formatPeso(summary?.gross_sales ?? 0)} icon={WalletCards} />
         <MetricCard label="Outstanding" value={formatPeso(summary?.outstanding_amount ?? 0)} icon={BriefcaseBusiness} />
@@ -240,16 +240,16 @@ export default function AdminSalesPage() {
         <MetricCard label="Collection Rate" value={formatPercent(summary?.collection_rate ?? 0)} icon={ChartNoAxesCombined} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(360px,1fr)]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
         <Card className="rounded-lg">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Sales Trend</CardTitle>
+            <CardTitle className="text-sm font-semibold sm:text-base">Sales Trend</CardTitle>
             <CardDescription>Paid and pending amounts by {filters.group_by === "month" ? "month" : "day"}.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <ChartLoading /> : report?.charts.sales_by_period.length ? (
-              <ChartContainer config={trendChartConfig} className="h-[280px] w-full">
-                <AreaChart data={report.charts.sales_by_period} margin={{ left: 4, right: 12, top: 12 }}>
+              <ChartContainer config={trendChartConfig} className="h-[220px] w-full sm:h-[240px] xl:h-[260px]">
+                <AreaChart data={report.charts.sales_by_period} margin={{ left: 0, right: 8, top: 12 }}>
                   <defs>
                     <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-sales)" stopOpacity={0.35} />
@@ -262,7 +262,7 @@ export default function AdminSalesPage() {
                   </defs>
                   <CartesianGrid vertical={false} strokeDasharray="4 4" />
                   <XAxis dataKey="period" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={compactPeso} width={58} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={compactPeso} width={42} />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Area type="monotone" dataKey="sales" stroke="var(--color-sales)" fill="url(#salesFill)" strokeWidth={2} />
                   <Area type="monotone" dataKey="pending" stroke="var(--color-pending)" fill="url(#pendingFill)" strokeWidth={2} />
@@ -276,21 +276,21 @@ export default function AdminSalesPage() {
 
         <Card className="rounded-lg">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Payment Methods</CardTitle>
+            <CardTitle className="text-sm font-semibold sm:text-base">Payment Methods</CardTitle>
             <CardDescription>Revenue split by payment channel.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <ChartLoading /> : report?.charts.payment_methods.length ? (
-              <div className="grid gap-3 md:grid-cols-[1fr_170px] xl:grid-cols-1 2xl:grid-cols-[1fr_170px]">
-                <ChartContainer config={methodChartConfig} className="h-[230px] w-full">
+              <div className="grid gap-3 md:grid-cols-[1fr_150px] xl:grid-cols-1 2xl:grid-cols-[1fr_150px]">
+                <ChartContainer config={methodChartConfig} className="h-[200px] w-full sm:h-[220px]">
                   <PieChart>
                     <Tooltip content={<ChartTooltipContent />} />
                     <Pie
                       data={report.charts.payment_methods}
                       dataKey="value"
                       nameKey="method"
-                      innerRadius={58}
-                      outerRadius={88}
+                      innerRadius={46}
+                      outerRadius={76}
                       paddingAngle={2}
                     >
                       {report.charts.payment_methods.map((item, index) => (
@@ -308,19 +308,19 @@ export default function AdminSalesPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-3 xl:grid-cols-2">
         <Card className="rounded-lg">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Payment Types</CardTitle>
+            <CardTitle className="text-sm font-semibold sm:text-base">Payment Types</CardTitle>
             <CardDescription>Full, down payment, balance, and additional charge collections.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <ChartLoading /> : report?.charts.payment_types.length ? (
-              <ChartContainer config={productChartConfig} className="h-[250px] w-full">
-                <BarChart data={report.charts.payment_types} margin={{ left: 4, right: 12, top: 12 }}>
+              <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
+                <BarChart data={report.charts.payment_types} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="4 4" />
                   <XAxis dataKey="type" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={compactPeso} width={58} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={compactPeso} width={42} />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="value" fill="#608DB9" radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -333,16 +333,16 @@ export default function AdminSalesPage() {
 
         <Card className="rounded-lg">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Top Products</CardTitle>
+            <CardTitle className="text-sm font-semibold sm:text-base">Top Products</CardTitle>
             <CardDescription>Approved quotation items attached to paid work jobs.</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? <ChartLoading /> : report?.charts.top_products.length ? (
-              <ChartContainer config={productChartConfig} className="h-[250px] w-full">
-                <BarChart data={report.charts.top_products} layout="vertical" margin={{ left: 8, right: 12, top: 12 }}>
+              <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
+                <BarChart data={report.charts.top_products} layout="vertical" margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid horizontal={false} strokeDasharray="4 4" />
                   <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={compactPeso} />
-                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={120} tickMargin={8} />
+                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={72} tickMargin={6} />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 6, 6, 0]} />
                 </BarChart>
@@ -354,7 +354,7 @@ export default function AdminSalesPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)]">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
         <RecentPaymentsTable payments={report?.tables.recent_payments ?? []} loading={loading} />
         <TopLists
           customers={report?.tables.top_customers ?? []}
@@ -371,13 +371,13 @@ export default function AdminSalesPage() {
 
 function MetricCard({ label, value, icon: Icon }: { label: string; value: string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+    <div className="flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
         <Icon className="size-4" />
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate text-lg font-semibold leading-tight">{value}</p>
+        <p className="truncate text-base font-semibold leading-tight sm:text-lg">{value}</p>
       </div>
     </div>
   );
@@ -397,16 +397,16 @@ function FilterDate({ label, value, onChange }: { label: string; value: string; 
 
 function ChartLoading() {
   return (
-    <div className="flex h-[240px] items-end justify-center gap-4 rounded-lg bg-muted/35 p-6">
+    <div className="flex h-[210px] items-end justify-center gap-3 rounded-lg bg-muted/35 p-4 sm:h-[230px]">
       {[48, 76, 58, 88, 66, 82].map((height, index) => (
-        <Skeleton key={index} className="w-8 sm:w-10" style={{ height: `${height}%` }} />
+        <Skeleton key={index} className="w-6 sm:w-8" style={{ height: `${height}%` }} />
       ))}
     </div>
   );
 }
 
 function EmptyChart({ label }: { label: string }) {
-  return <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">{label}</div>;
+  return <div className="flex h-[210px] items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground sm:h-[230px] sm:text-sm">{label}</div>;
 }
 
 function normalizeSalesDateRange(current: SalesFilters, next: SalesFilters): SalesFilters {
@@ -424,7 +424,7 @@ function BreakdownLegend<T extends SalesBreakdownPoint>({ data, labelKey }: { da
   return (
     <div className="space-y-2">
       {data.map((item, index) => (
-        <div key={String(item[labelKey])} className="flex items-center justify-between gap-3 text-sm">
+        <div key={String(item[labelKey])} className="flex items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex min-w-0 items-center gap-2">
             <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }} />
             <span className="truncate">{String(item[labelKey])}</span>
@@ -442,14 +442,27 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-semibold">Recent Payments</CardTitle>
+            <CardTitle className="text-sm font-semibold sm:text-base">Recent Payments</CardTitle>
             <CardDescription>Latest payment activity across work jobs.</CardDescription>
           </div>
           <Search className="size-4 text-muted-foreground" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg border">
+        <div className="space-y-2 md:hidden">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-28 animate-pulse rounded-lg border bg-muted/30" />
+            ))
+          ) : payments.length > 0 ? (
+            payments.map((payment) => <RecentPaymentCard key={payment.id} payment={payment} />)
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No recent payments yet.
+            </div>
+          )}
+        </div>
+        <div className="hidden overflow-hidden rounded-lg border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -505,6 +518,40 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function RecentPaymentCard({ payment }: { payment: SalesPaymentRow }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{payment.payment_number ?? `PAY-${payment.id}`}</p>
+          <p className="truncate text-xs text-muted-foreground">{payment.customer ?? payment.email ?? "-"}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold">{formatPeso(payment.amount)}</p>
+          <p className="text-xs text-muted-foreground">{formatReportDate(payment.recorded_at)}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className={cn("w-fit", statusClass(payment.status))}>{payment.status_label ?? "-"}</Badge>
+        <span className="text-xs text-muted-foreground">{payment.method_label ?? "-"} · {payment.type_label ?? "-"}</span>
+      </div>
+      <div className="mt-3 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+        <p className="text-muted-foreground">Work Job</p>
+        {payment.work_job_id ? (
+          <>
+            <Link href={`/dashboard/work-jobs/${payment.work_job_id}`} className="font-medium text-primary hover:underline">
+              {payment.work_job_number}
+            </Link>
+            <p className="text-muted-foreground">{payment.schedule ?? "-"}</p>
+          </>
+        ) : (
+          <p className="font-medium">-</p>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -621,7 +668,20 @@ function OutstandingTable({
         <CardDescription>Work jobs that still need down payment, balance, or additional charge collection.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg border">
+        <div className="space-y-2 md:hidden">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-32 animate-pulse rounded-lg border bg-muted/30" />
+            ))
+          ) : rows.length > 0 ? (
+            rows.map((row) => <OutstandingCard key={row.id} row={row} />)
+          ) : (
+            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No outstanding balances.
+            </div>
+          )}
+        </div>
+        <div className="hidden overflow-hidden rounded-lg border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -668,6 +728,37 @@ function OutstandingTable({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function OutstandingCard({ row }: { row: SalesReport["tables"]["outstanding_work_jobs"][number] }) {
+  return (
+    <article className="rounded-lg border bg-card p-3 shadow-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link href={`/dashboard/work-jobs/${row.id}`} className="truncate text-sm font-semibold text-primary hover:underline">
+            {row.work_job_number}
+          </Link>
+          <p className="truncate text-xs text-muted-foreground">{row.customer}</p>
+        </div>
+        <p className="shrink-0 text-sm font-semibold">{formatPeso(row.remaining_amount)}</p>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <Badge variant="outline">{row.status_label ?? "-"}</Badge>
+        {row.schedule && <span className="text-xs text-muted-foreground">{row.schedule}</span>}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Next Due</p>
+          <p className="font-medium">{row.next_due_type ? titleCase(row.next_due_type) : "Balance"}</p>
+          <p className="text-muted-foreground">{formatPeso(row.next_due_amount)}</p>
+        </div>
+        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <p className="text-muted-foreground">Paid</p>
+          <p className="font-medium">{formatPeso(row.paid_amount)}</p>
+        </div>
+      </div>
+    </article>
   );
 }
 

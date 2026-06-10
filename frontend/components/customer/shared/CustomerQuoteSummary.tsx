@@ -25,14 +25,14 @@ export default function CustomerQuoteSummary({
   canSign = true,
   canDownload = true,
   onSigned,
-  appointment
+  appointment,
 }: {
   quotation?: CustomerQuotation | null;
   signerName?: string | null;
   canSign?: boolean;
   canDownload?: boolean;
-    onSigned?: () => void;
-  appointment: CustomerAppointment
+  onSigned?: () => void;
+  appointment?: CustomerAppointment;
 }) {
   const [signOpen, setSignOpen] = useState(false);
   const [showAllItems, setShowAllItems] = useState(false);
@@ -58,8 +58,6 @@ export default function CustomerQuoteSummary({
   const needsResign = quotation.signature_status === "needs_resign";
   const visibleItems = showAllItems ? items : items.slice(0, 1);
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
-
-  console.log(canSign);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -107,7 +105,7 @@ export default function CustomerQuoteSummary({
             item={item}
             index={index}
             onOpenPhotos={() => setPhotoItemId(item.id)}
-            appointmentStatus={appointment.status}
+            appointmentStatus={appointment?.status ?? ""}
           />
         ))}
       </div>

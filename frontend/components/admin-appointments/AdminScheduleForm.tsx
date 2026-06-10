@@ -156,6 +156,8 @@ export default function AdminScheduleForm({
       setConfirmOpen(false);
     } catch (error) {
       setErrors(toScheduleErrors(error));
+      setConfirmOpen(false);
+      setScheduleOpen(true);
     } finally {
       setSaving(false);
     }
