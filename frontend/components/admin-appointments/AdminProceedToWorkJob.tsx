@@ -5,6 +5,7 @@ import { BriefcaseBusiness, ExternalLink } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AdminAppointmentStatusBadge from "@/components/admin-appointments/AdminAppointmentStatusBadge";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
 
 export default function AdminProceedToWorkJob({ appointment }: { appointment: AdminAppointment }) {
@@ -33,7 +34,7 @@ export default function AdminProceedToWorkJob({ appointment }: { appointment: Ad
     );
   }
 
-  if (appointment.status !== "completed") return null;
+  if (appointment.status !== CustomerStatus.Completed) return null;
 
   return (
     <div className="rounded-lg border bg-card p-5 shadow-sm">

@@ -53,6 +53,20 @@ export function createBackJob(id: number, payload: AdminBackJobForm) {
   });
 }
 
+export function confirmWorkJob(id: number, payload: StatusPayload = {}) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/confirm`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function markWorkJobOnTheWay(id: number, payload: StatusPayload = {}) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/on-the-way`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function markWorkJobInProgress(id: number, payload: StatusPayload = {}) {
   return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/in-progress`, {
     method: "PATCH",
@@ -69,6 +83,20 @@ export function markWorkJobCompleted(id: number, payload: StatusPayload = {}) {
 
 export function cancelWorkJob(id: number, payload: StatusPayload = {}) {
   return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function reopenWorkJob(id: number, payload: StatusPayload = {}) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/reopen`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function markWorkJobNoShow(id: number, payload: StatusPayload = {}) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/no-show`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

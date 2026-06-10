@@ -5,11 +5,12 @@ import { CalendarClock, MessageSquareHeart, Star, UserRound } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import { formatCustomerDateTime } from "@/features/customer/customer-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import { cn } from "@/lib/utils";
 
 export default function AdminWorkJobRatingCard({ workJob }: { workJob: AdminWorkJob }) {
   const rating = workJob.rating ?? null;
-  const isCompleted = workJob.status === "completed";
+  const isCompleted = workJob.status === CustomerStatus.Completed;
 
   return (
     <section className="rounded-lg border bg-card p-5 shadow-sm">

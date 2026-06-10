@@ -72,13 +72,13 @@ it('generates work job number automatically', function () use ($validPayload) {
         ->toMatch('/^WJ-\d{6}-\d{8}$/');
 });
 
-it('creates work job with pending status by default', function () use ($validPayload) {
+it('creates work job with confirmed status by default', function () use ($validPayload) {
     $this->actingAs($this->admin)
         ->postJson('/api/v1/work-jobs', array_merge($validPayload(), [
             'worker_ids' => $this->workers->pluck('id')->toArray(),
         ]))
         ->assertStatus(201)
-        ->assertJsonPath('data.status', WorkJobStatus::Pending->value);
+        ->assertJsonPath('data.status', WorkJobStatus::Confirmed->value);
 });
 
 it('dispatches a work job created notification event when a work job is created', function () use ($validPayload) {

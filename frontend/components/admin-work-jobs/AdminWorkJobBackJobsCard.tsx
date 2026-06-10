@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -56,6 +56,7 @@ import {
   workJobStatusLabel,
   workJobStatusStyle,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import type {
   AdminBackJobForm,
   AdminBackJobReason,
@@ -130,23 +131,30 @@ export default function AdminWorkJobBackJobsCard({
   const [errors, setErrors] = useState<ApiValidationErrors>({});
   const [saving, setSaving] = useState(false);
 
-  const canCreateBackJob = canCreate && ["in_progress", "completed"].includes(workJob.status);
+  const canCreateBackJob = canCreate && [
+    CustomerStatus.InProgress,
+    CustomerStatus.Completed,
+  ].includes(workJob.status);
   const reasonOptions = useMemo(() => {
-    if (workJob.status === "in_progress") {
+    if (workJob.status === CustomerStatus.InProgress) {
       return backJobReasonOptions.filter((option) => option.value === "unfinished_work");
     }
 
     return backJobReasonOptions;
   }, [workJob.status]);
 
-  useEffect(() => {
-    if (!open) return;
-
+  function openBackJobDialog() {
     setForm(initialBackJobForm(workJob));
     setErrors({});
     setConfirmOpen(false);
     fetchWorkJobWorkers().then((response) => setWorkers(response.data));
-  }, [open, workJob]);
+    setOpen(true);
+  }
+
+  function setBackJobDialogOpen(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) setConfirmOpen(false);
+  }
 
   function setField<K extends keyof AdminBackJobForm>(field: K, value: AdminBackJobForm[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -217,7 +225,7 @@ export default function AdminWorkJobBackJobsCard({
           </p>
         </div>
         {canCreateBackJob && (
-          <Button type="button" size="sm" variant="outline" className="gap-2" onClick={() => setOpen(true)}>
+          <Button type="button" size="sm" variant="outline" className="gap-2" onClick={openBackJobDialog}>
             <Plus className="size-4" />
             Create
           </Button>
@@ -284,7 +292,7 @@ export default function AdminWorkJobBackJobsCard({
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={setBackJobDialogOpen}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Create back job</DialogTitle>
@@ -428,7 +436,7 @@ function initialBackJobForm(workJob: AdminWorkJob): AdminBackJobForm {
     scheduled_time_from: workJob.scheduled_time_from ?? "09:00",
     scheduled_time_until: workJob.scheduled_time_until ?? "11:00",
     worker_ids: workJob.workers.map((worker) => worker.id),
-    back_job_reason: workJob.status === "in_progress" ? "unfinished_work" : "quality_issue",
+    back_job_reason: workJob.status === CustomerStatus.InProgress ? "unfinished_work" : "quality_issue",
     back_job_reason_other: "",
     back_job_details: "",
     notes: "",

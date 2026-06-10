@@ -19,6 +19,7 @@ import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerDate, formatCustomerSchedule } from "@/features/customer/customer-utils";
+import { CustomerStatus, statusIn } from "@/features/customer/status";
 import type { CustomerWorkJob } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
@@ -49,11 +50,11 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
   const quotation = workJob.quotation ?? workJob.appointment?.quotation;
   const quotationCanBeSigned =
-    !["cancelled", "no_show", "completed"].includes(workJob.status) &&
-    !["cancelled", "no_show", "completed"].includes(workJob.appointment?.status ?? "");
+    !statusIn(workJob.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]) &&
+    !statusIn(workJob.appointment?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]);
   const quotationCanBeDownloaded =
-    !["cancelled", "no_show"].includes(workJob.status) &&
-    !["cancelled", "no_show"].includes(workJob.appointment?.status ?? "");
+    !statusIn(workJob.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
+    !statusIn(workJob.appointment?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]);
 
   return (
     <>
@@ -79,7 +80,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         <section className="space-y-5">
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
           <CustomerWorkJobBackJobsCard workJob={workJob} />
-          
+
           <WorkJobInfoCard workJob={workJob} />
 
           <CustomerLocationCard
@@ -89,12 +90,13 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
             compact
           />
 
-          <CustomerQuoteImageList quotation={quotation} />
+          {/* <CustomerQuoteImageList quotation={quotation} /> */}
+          <WorkJobWarrantyCard workJob={workJob} />
         </section>
 
         <aside className="space-y-4">
           <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
-          <WorkJobWarrantyCard workJob={workJob} />
+
           <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
 
           <CustomerQuoteSummary

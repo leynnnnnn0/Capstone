@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertCircle, Banknote, CreditCard, Loader2, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { recordManualWorkJobPayment } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import { formatPeso } from "@/features/customer/customer-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import type { CustomerPaymentMethod, CustomerPaymentType } from "@/features/customer/types";
 import {
   positiveNumberStringSchema,
@@ -97,16 +98,20 @@ export default function AdminWorkJobPaymentsCard({
   );
   const paidPayments = (workJob.payments ?? []).filter((payment) => payment.status === "paid");
   const options = useMemo(() => paymentTypeOptions(workJob), [workJob]);
-  const canRecord = summary.can_accept_payment && workJob.status !== "cancelled";
+  const canRecord = summary.can_accept_payment && workJob.status !== CustomerStatus.Cancelled;
 
-  useEffect(() => {
-    if (open) {
-      setForm(defaultForm(workJob));
-      setError(null);
-      setFieldErrors({});
-      setConfirmOpen(false);
-    }
-  }, [open, workJob]);
+  function openPaymentDialog() {
+    setForm(defaultForm(workJob));
+    setError(null);
+    setFieldErrors({});
+    setConfirmOpen(false);
+    setOpen(true);
+  }
+
+  function setPaymentDialogOpen(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) setConfirmOpen(false);
+  }
 
   function setField<K extends keyof ManualPaymentForm>(field: K, value: ManualPaymentForm[K]) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -236,7 +241,7 @@ export default function AdminWorkJobPaymentsCard({
         className="mt-4 w-full gap-2"
         variant={canRecord ? "default" : "outline"}
         disabled={!canRecord}
-        onClick={() => setOpen(true)}
+        onClick={openPaymentDialog}
       >
         <Banknote className="size-4" />
         Record Manual Payment
@@ -280,7 +285,7 @@ export default function AdminWorkJobPaymentsCard({
         </>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={setPaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

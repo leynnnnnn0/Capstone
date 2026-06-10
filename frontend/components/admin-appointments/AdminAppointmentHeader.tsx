@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { fetchAdminAppointments } from "@/features/admin-appointments/admin-appointment-api";
 import { hasRole } from "@/features/auth/current-user-api";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
@@ -30,7 +31,7 @@ export default function AdminAppointmentHeader({
   const { user } = useCurrentUser();
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const isLocked = ["cancelled", "no_show"].includes(appointment.status);
+  const isLocked = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const isWorker = hasRole(user, "worker");
 
   useEffect(() => {

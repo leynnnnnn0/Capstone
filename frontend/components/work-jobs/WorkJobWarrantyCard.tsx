@@ -4,6 +4,7 @@ import { CalendarDays, Clock3, ShieldCheck, UserRoundCheck } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge";
 import { formatCustomerDate } from "@/features/customer/customer-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import type { CustomerWorkJob, CustomerWorkJobWarrantyStatus } from "@/features/customer/types";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +93,7 @@ function emptyWarrantyMessage(workJob: CustomerWorkJob) {
     return "This back job is covered by the original work job warranty unless a separate warranty is issued by management.";
   }
 
-  if (workJob.status === "completed") {
+  if (workJob.status === CustomerStatus.Completed) {
     return "This completed job does not have a warranty record yet.";
   }
 

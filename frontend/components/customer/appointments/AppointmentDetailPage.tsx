@@ -8,9 +8,9 @@ import { BriefcaseBusiness, RotateCcw, Pencil, XCircle } from "lucide-react";
 import AppointmentInfoCard from "@/components/customer/appointments/AppointmentInfoCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
-import CustomerQuoteImageList from "@/components/customer/shared/CustomerQuoteImageList";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
+import { CustomerStatus, statusIn } from "@/features/customer/status";
 import { Button } from "@/components/ui/button";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import {
@@ -61,7 +61,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
       const response = await cancelCustomerAppointment(appointment.id, reason);
       setAppointment({
         ...response.data,
-        status: "cancelled",
+        status: CustomerStatus.Cancelled,
         status_label: "Cancelled",
         can_edit: false,
         can_cancel: false,
@@ -72,7 +72,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
       try {
         const latest = await getCustomerAppointment(appointment.id);
 
-        if (latest.data.status === "cancelled") {
+        if (latest.data.status === CustomerStatus.Cancelled) {
           setAppointment({
             ...latest.data,
             can_edit: false,
@@ -97,11 +97,11 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   }
 
   const quotationCanBeSigned =
-    !["cancelled", "no_show", "completed"].includes(appointment.status) &&
-    !["cancelled", "no_show", "completed"].includes(appointment.work_job?.status ?? "");
+    !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]) &&
+    !statusIn(appointment.work_job?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]);
   const quotationCanBeDownloaded =
-    !["cancelled", "no_show"].includes(appointment.status) &&
-    !["cancelled", "no_show"].includes(appointment.work_job?.status ?? "");
+    !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
+    !statusIn(appointment.work_job?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]);
 
   return (
     <>

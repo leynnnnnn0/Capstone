@@ -53,7 +53,7 @@ class WorkJobService
                 'scheduled_date'       => $data['scheduled_date'],
                 'scheduled_time_from'  => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
-                'status'               => WorkJobStatus::Pending,
+                'status'               => WorkJobStatus::Confirmed,
                 'notes'                => $data['notes'] ?? null,
                 'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
                 'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
@@ -146,7 +146,7 @@ class WorkJobService
                 'scheduled_date'       => $data['scheduled_date'],
                 'scheduled_time_from'  => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
-                'status'               => WorkJobStatus::Pending,
+                'status'               => WorkJobStatus::Confirmed,
                 'back_job_reason'      => $reason,
                 'back_job_reason_other' => $data['back_job_reason_other'] ?? null,
                 'back_job_details'     => $data['back_job_details'],
@@ -181,23 +181,65 @@ class WorkJobService
     /**
      * Move the job into active work and add a status remark.
      */
-    public function markInProgress(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
+    public function confirm(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
     {
-        $this->ensureCanTransition($workJob, WorkJobStatus::InProgress);
-        DB::transaction(function () use ($workJob, $actor, $remarks) {
-            $workJob->update(['status' => WorkJobStatus::InProgress]);
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::Confirmed,
+            $actor,
+            $remarks ?: 'Work job confirmed.'
+        );
+    }
+
+    public function reschedule(WorkJob $workJob, array $data, User $actor): WorkJob
+    {
+        $this->ensureCanTransition($workJob, WorkJobStatus::Rescheduled);
+
+        $message = $data['reason'] ?? 'Work job rescheduled.';
+
+        DB::transaction(function () use ($workJob, $data, $actor, $message) {
+            $workJob->update([
+                'status' => WorkJobStatus::Rescheduled,
+                'scheduled_date' => $data['scheduled_date'],
+                'scheduled_time_from' => $data['scheduled_time_from'],
+                'scheduled_time_until' => $data['scheduled_time_until'],
+            ]);
+
+            if (isset($data['worker_ids'])) {
+                $workJob->workers()->sync($data['worker_ids']);
+            }
 
             $workJob->remarks()->create([
                 'user_id' => $actor->id,
-                'action' => WorkJobStatus::InProgress->value,
-                'message' => $remarks ?: 'Work job is now in progress.',
+                'action' => WorkJobStatus::Rescheduled->value,
+                'message' => $message,
             ]);
         });
 
         $workJob = $workJob->fresh()->load($this->relations());
-        WorkJobChanged::dispatch($workJob, WorkJobStatus::InProgress->value, $remarks ?: 'Work job is now in progress.', $actor);
+        WorkJobChanged::dispatch($workJob, WorkJobStatus::Rescheduled->value, $message, $actor);
 
         return $workJob;
+    }
+
+    public function markOnTheWay(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
+    {
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::OnTheWay,
+            $actor,
+            $remarks ?: 'Worker is on the way.'
+        );
+    }
+
+    public function markInProgress(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
+    {
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::InProgress,
+            $actor,
+            $remarks ?: 'Work job is now in progress.'
+        );
     }
 
     /**
@@ -229,19 +271,50 @@ class WorkJobService
      */
     public function cancel(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
     {
-        $this->ensureCanTransition($workJob, WorkJobStatus::Cancelled);
-        DB::transaction(function () use ($workJob, $actor, $remarks) {
-            $workJob->update(['status' => WorkJobStatus::Cancelled]);
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::Cancelled,
+            $actor,
+            $remarks ?: 'Work job cancelled.'
+        );
+    }
+
+    public function reopen(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
+    {
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::Reopened,
+            $actor,
+            $remarks ?: 'Work job reopened.'
+        );
+    }
+
+    public function markNoShow(WorkJob $workJob, User $actor, ?string $remarks = null): WorkJob
+    {
+        return $this->transition(
+            $workJob,
+            WorkJobStatus::NoShow,
+            $actor,
+            $remarks ?: 'Customer marked as no show.'
+        );
+    }
+
+    private function transition(WorkJob $workJob, WorkJobStatus $next, User $actor, string $message): WorkJob
+    {
+        $this->ensureCanTransition($workJob, $next);
+
+        DB::transaction(function () use ($workJob, $next, $actor, $message) {
+            $workJob->update(['status' => $next]);
 
             $workJob->remarks()->create([
                 'user_id' => $actor->id,
-                'action' => WorkJobStatus::Cancelled->value,
-                'message' => $remarks ?: 'Work job cancelled.',
+                'action' => $next->value,
+                'message' => $message,
             ]);
         });
 
         $workJob = $workJob->fresh()->load($this->relations());
-        WorkJobChanged::dispatch($workJob, WorkJobStatus::Cancelled->value, $remarks ?: 'Work job cancelled.', $actor);
+        WorkJobChanged::dispatch($workJob, $next->value, $message, $actor);
 
         return $workJob;
     }

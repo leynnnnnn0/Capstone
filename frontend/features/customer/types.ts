@@ -1,15 +1,7 @@
 import type { Product } from "@/features/products/types";
+export { CustomerStatus } from "./status";
 
-export type CustomerStatus =
-  | "pending"
-  | "confirmed"
-  | "rescheduled"
-  | "on_the_way"
-  | "in_progress"
-  | "completed"
-  | "cancelled"
-  | "reopened"
-  | "no_show";
+import type { CustomerStatus } from "./status";
 
 export type CustomerWorker = {
   id: number;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,8 +38,12 @@ class AppointmentResource extends JsonResource
             'appointment_time_until' => $this->appointment_time_until,
             'status' => $this->status?->value ?? $this->status,
             'status_label' => method_exists($this->status, 'label') ? $this->status->label() : $this->status,
-            'can_edit' => ($this->status?->value ?? $this->status) === 'pending',
-            'can_cancel' => ! in_array(($this->status?->value ?? $this->status), ['cancelled', 'completed', 'no_show'], true),
+            'can_edit' => $this->status === AppointmentStatus::Pending,
+            'can_cancel' => ! in_array($this->status, [
+                AppointmentStatus::Cancelled,
+                AppointmentStatus::Completed,
+                AppointmentStatus::NoShow,
+            ], true),
             'consent' => $this->consent,
             'consent_given_at' => $this->consent_given_at,
             'created_at' => $this->created_at,

@@ -38,7 +38,7 @@ it('creates a back job from a completed work job', function () {
         ->assertStatus(201)
         ->assertJsonPath('data.parent_work_job_id', $source->id)
         ->assertJsonPath('data.is_back_job', true)
-        ->assertJsonPath('data.status', WorkJobStatus::Pending->value)
+        ->assertJsonPath('data.status', WorkJobStatus::Confirmed->value)
         ->assertJsonPath('data.back_job_reason', WorkJobBackJobReason::WarrantyClaim->value);
 
     $backJob = WorkJob::where('parent_work_job_id', $source->id)->first();

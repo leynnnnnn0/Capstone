@@ -41,6 +41,7 @@ import {
   adminWorkJobStatusOptions,
   formatWorkJobSchedule,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob, WorkJobCollection } from "@/features/admin-work-jobs/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -129,9 +130,9 @@ export default function AdminWorkJobsPage() {
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatCard label="Total" value={total} icon={BriefcaseBusiness} />
-        <StatCard label="Pending" value={workJobs.filter((item) => item.status === "pending").length} icon={CalendarDays} />
-        <StatCard label="In Progress" value={workJobs.filter((item) => item.status === "in_progress").length} icon={PlayCircle} />
-        <StatCard label="Completed" value={workJobs.filter((item) => item.status === "completed").length} icon={CheckCircle2} />
+        <StatCard label="Pending" value={workJobs.filter((item) => item.status === CustomerStatus.Pending).length} icon={CalendarDays} />
+        <StatCard label="In Progress" value={workJobs.filter((item) => item.status === CustomerStatus.InProgress).length} icon={PlayCircle} />
+        <StatCard label="Completed" value={workJobs.filter((item) => item.status === CustomerStatus.Completed).length} icon={CheckCircle2} />
       </div>
 
       <div className="rounded-lg border bg-card p-3">

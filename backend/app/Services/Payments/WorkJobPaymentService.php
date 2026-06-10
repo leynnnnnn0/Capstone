@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PaymentType;
 use App\Enums\WorkJobChargeStatus;
 use App\Enums\WorkJobChargeType;
+use App\Enums\WorkJobStatus;
 use App\Events\PaymentRecorded;
 use App\Models\Payment;
 use App\Models\User;
@@ -64,7 +65,7 @@ class WorkJobPaymentService
         $paymentNotRequired = $isBackJob && $payableTotal <= 0;
         $canAcceptPayment = $payableTotal > 0
             && $remaining > 0
-            && $workJob->status->value !== 'cancelled';
+            && $workJob->status !== WorkJobStatus::Cancelled;
 
         $nextDueType = null;
         $nextDueAmount = 0.0;

@@ -24,9 +24,15 @@ import {
   markAppointmentOnTheWay,
   reopenAppointment,
 } from "@/features/admin-appointments/admin-appointment-api";
+import { CustomerStatus, statusLabel as customerStatusLabel } from "@/features/customer/status";
 import type { AdminAppointment, AdminAppointmentStatus } from "@/features/admin-appointments/types";
 
-const flow: AdminAppointmentStatus[] = ["confirmed", "on_the_way", "in_progress", "completed"];
+const flow: AdminAppointmentStatus[] = [
+  CustomerStatus.Confirmed,
+  CustomerStatus.OnTheWay,
+  CustomerStatus.InProgress,
+  CustomerStatus.Completed,
+];
 
 export default function AdminStatusActions({
   appointment,
@@ -40,10 +46,10 @@ export default function AdminStatusActions({
   const [saving, setSaving] = useState(false);
   const nextStatus = nextAppointmentStatus(appointment.status);
   const canAdvance = Boolean(nextStatus);
-  const canCancel = ["confirmed", "on_the_way"].includes(appointment.status);
-  const canMarkNoShow = ["confirmed", "rescheduled", "on_the_way"].includes(appointment.status);
-  const canRebook = ["cancelled", "no_show"].includes(appointment.status);
-  const canReopen = appointment.status === "cancelled";
+  const canCancel = [CustomerStatus.Confirmed, CustomerStatus.OnTheWay].includes(appointment.status);
+  const canMarkNoShow = [CustomerStatus.Confirmed, CustomerStatus.Rescheduled, CustomerStatus.OnTheWay].includes(appointment.status);
+  const canRebook = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
+  const canReopen = appointment.status === CustomerStatus.Cancelled;
 
   if (!canAdvance && !canCancel && !canRebook && !canReopen && !canMarkNoShow) return null;
 
@@ -176,22 +182,19 @@ function nextAppointmentStatus(status: AdminAppointmentStatus) {
 }
 
 function advanceAppointment(id: number, next: AdminAppointmentStatus | null) {
-  if (next === "on_the_way") return markAppointmentOnTheWay(id);
-  if (next === "in_progress") return markAppointmentInProgress(id);
-  if (next === "completed") return markAppointmentCompleted(id);
+  if (next === CustomerStatus.OnTheWay) return markAppointmentOnTheWay(id);
+  if (next === CustomerStatus.InProgress) return markAppointmentInProgress(id);
+  if (next === CustomerStatus.Completed) return markAppointmentCompleted(id);
   throw new Error("No next appointment status.");
 }
 
 function statusLabel(status: AdminAppointmentStatus | null) {
-  if (status === "on_the_way") return "On the Way";
-  if (status === "in_progress") return "In Progress";
-  if (status === "completed") return "Completed";
-  return "Confirmed";
+  return status ? customerStatusLabel(status) : customerStatusLabel(CustomerStatus.Confirmed);
 }
 
 function statusIcon(status: AdminAppointmentStatus) {
-  if (status === "on_the_way") return <Truck className="size-4" />;
-  if (status === "in_progress") return <Wrench className="size-4" />;
+  if (status === CustomerStatus.OnTheWay) return <Truck className="size-4" />;
+  if (status === CustomerStatus.InProgress) return <Wrench className="size-4" />;
   return <CheckCircle2 className="size-4" />;
 }
 

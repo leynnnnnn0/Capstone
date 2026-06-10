@@ -61,6 +61,7 @@ import {
   type AdminLineItem,
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { AdminAppointment, AdminAppointmentForm as AdminAppointmentFormState, AdminWorker } from "@/features/admin-appointments/types";
+import { CustomerStatus, customerStatusOptions, customerStatusValues } from "@/features/customer/status";
 import { fetchProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 import { ApiError } from "@/lib/api";
@@ -76,28 +77,8 @@ import {
 
 type FieldErrors = Partial<Record<keyof AdminAppointmentFormState | "items" | "form", string>>;
 
-const adminAppointmentStatusValues = [
-  "pending",
-  "confirmed",
-  "rescheduled",
-  "on_the_way",
-  "in_progress",
-  "completed",
-  "cancelled",
-  "reopened",
-  "no_show",
-] as const;
-
 const statusOptions = [
-  { value: "pending", label: "Pending" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "rescheduled", label: "Rescheduled" },
-  { value: "on_the_way", label: "On the Way" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-  { value: "reopened", label: "Reopened" },
-  { value: "no_show", label: "No Show" },
+  ...customerStatusOptions,
 ] as const;
 
 const adminAppointmentSchema = z.object({
@@ -115,7 +96,7 @@ const adminAppointmentSchema = z.object({
   service_type_other: z.string().trim().optional(),
   additional_notes: z.string().max(2000, "Notes must be 2000 characters or fewer.").optional(),
   consent: z.boolean(),
-  status: z.enum(adminAppointmentStatusValues, { message: "Status is required." }),
+  status: z.enum(customerStatusValues, { message: "Status is required." }),
   appointment_date: requiredDateSchema("Appointment date"),
   appointment_time_from: requiredTimeSchema("Start time"),
   appointment_time_until: requiredTimeSchema("End time"),
@@ -197,7 +178,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             service_type_other: source.service_type_other ?? "",
             additional_notes: source.additional_notes ?? "",
             consent: true,
-            status: appointmentId ? source.status : "pending",
+            status: appointmentId ? source.status : CustomerStatus.Pending,
             appointment_date: source.appointment_date ?? source.preferred_date,
             appointment_time_from: source.appointment_time_from ?? "09:00",
             appointment_time_until: source.appointment_time_until ?? "11:00",
@@ -465,7 +446,10 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                   id="status"
                   label="Status"
                   value={data.status}
-                  options={statusOptions.filter((option) => ["pending", "confirmed"].includes(option.value))}
+                  options={statusOptions.filter((option) => [
+                    CustomerStatus.Pending,
+                    CustomerStatus.Confirmed,
+                  ].includes(option.value))}
                   error={errors.status}
                   onValueChange={(value) => setField("status", value)}
                 />

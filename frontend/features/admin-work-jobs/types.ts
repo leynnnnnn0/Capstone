@@ -2,7 +2,7 @@ import type { CustomerStatus, CustomerWorkJob } from "@/features/customer/types"
 import type { PaginatedResponse } from "@/features/products/types";
 
 export type AdminWorkJob = CustomerWorkJob;
-export type AdminWorkJobStatus = Extract<CustomerStatus, "pending" | "in_progress" | "completed" | "cancelled">;
+export type AdminWorkJobStatus = CustomerStatus;
 export type AdminBackJobReason =
   | "unfinished_work"
   | "warranty_claim"

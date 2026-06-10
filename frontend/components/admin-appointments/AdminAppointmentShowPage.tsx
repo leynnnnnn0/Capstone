@@ -14,6 +14,7 @@ import CustomerLocationCard from "@/components/customer/shared/CustomerLocationC
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAdminAppointment, fetchWorkers } from "@/features/admin-appointments/admin-appointment-api";
 import { hasRole } from "@/features/auth/current-user-api";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
@@ -44,8 +45,8 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
   }
 
   const isWorker = hasRole(user, "worker");
-  const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(appointment.status);
-  const quotationCanBeSigned = !["cancelled", "no_show"].includes(appointment.status);
+  const quotationCanBeDownloaded = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
+  const quotationCanBeSigned = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
 
   return (
     <div className="space-y-6">

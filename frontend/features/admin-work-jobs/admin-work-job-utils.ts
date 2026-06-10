@@ -1,12 +1,10 @@
 import type { AdminAppointment } from "@/features/admin-appointments/types";
+import { CustomerStatus, customerStatusOptions, statusLabel } from "@/features/customer/status";
 import type { AdminBackJobReason, AdminWorkJob, AdminWorkJobForm, AdminWorkJobStatus } from "./types";
 
 export const adminWorkJobStatusOptions = [
   { value: "all", label: "All statuses" },
-  { value: "pending", label: "Pending" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+  ...customerStatusOptions,
 ];
 
 export const backJobReasonOptions: { value: AdminBackJobReason; label: string; description: string }[] = [
@@ -43,10 +41,15 @@ export const backJobReasonOptions: { value: AdminBackJobReason; label: string; d
 ];
 
 export const workJobStatusStyle: Record<AdminWorkJobStatus, string> = {
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  in_progress: "bg-blue-50 text-blue-700 border-blue-200",
-  completed: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-red-50 text-red-700 border-red-200",
+  [CustomerStatus.Pending]: "bg-amber-50 text-amber-700 border-amber-200",
+  [CustomerStatus.Confirmed]: "bg-blue-50 text-blue-700 border-blue-200",
+  [CustomerStatus.Rescheduled]: "bg-sky-50 text-sky-700 border-sky-200",
+  [CustomerStatus.OnTheWay]: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  [CustomerStatus.InProgress]: "bg-blue-50 text-blue-700 border-blue-200",
+  [CustomerStatus.Completed]: "bg-green-50 text-green-700 border-green-200",
+  [CustomerStatus.Cancelled]: "bg-red-50 text-red-700 border-red-200",
+  [CustomerStatus.Reopened]: "bg-sky-50 text-sky-700 border-sky-200",
+  [CustomerStatus.NoShow]: "bg-red-50 text-red-700 border-red-200",
 };
 
 export function emptyWorkJobForm(): AdminWorkJobForm {
@@ -121,9 +124,7 @@ export function formatWorkJobSchedule(workJob: AdminWorkJob) {
 }
 
 export function workJobStatusLabel(status: string) {
-  return status
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return statusLabel(status);
 }
 
 export function backJobReasonLabel(reason?: string | null, fallback?: string | null) {

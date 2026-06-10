@@ -4,28 +4,43 @@ namespace App\Enums;
 
 enum WorkJobStatus: string
 {
-    case Pending    = 'pending';
-    case InProgress = 'in_progress';
-    case Completed  = 'completed';
-    case Cancelled  = 'cancelled';
+    case Pending     = 'pending';
+    case Confirmed   = 'confirmed';
+    case Rescheduled = 'rescheduled';
+    case OnTheWay    = 'on_the_way';
+    case InProgress  = 'in_progress';
+    case Completed   = 'completed';
+    case Cancelled   = 'cancelled';
+    case Reopened    = 'reopened';
+    case NoShow      = 'no_show';
 
     public function label(): string
     {
         return match ($this) {
-            self::Pending    => 'Pending',
-            self::InProgress => 'In Progress',
-            self::Completed  => 'Completed',
-            self::Cancelled  => 'Cancelled',
+            self::Pending     => 'Pending',
+            self::Confirmed   => 'Confirmed',
+            self::Rescheduled => 'Rescheduled',
+            self::OnTheWay    => 'On the Way',
+            self::InProgress  => 'In Progress',
+            self::Completed   => 'Completed',
+            self::Cancelled   => 'Cancelled',
+            self::Reopened    => 'Reopened',
+            self::NoShow      => 'No Show',
         };
     }
 
     public function canTransitionTo(self $next): bool
     {
         return match ($this) {
-            self::Pending    => in_array($next, [self::InProgress, self::Cancelled]),
-            self::InProgress => in_array($next, [self::Completed, self::Cancelled]),
+            self::Pending     => in_array($next, [self::Confirmed, self::Cancelled], true),
+            self::Confirmed   => in_array($next, [self::Rescheduled, self::OnTheWay, self::Cancelled, self::NoShow], true),
+            self::Rescheduled => in_array($next, [self::Confirmed, self::Cancelled, self::NoShow], true),
+            self::OnTheWay    => in_array($next, [self::InProgress, self::Cancelled, self::NoShow], true),
+            self::InProgress  => in_array($next, [self::Completed], true),
+            self::Cancelled   => in_array($next, [self::Reopened], true),
+            self::Reopened    => in_array($next, [self::Confirmed, self::Cancelled], true),
             self::Completed,
-            self::Cancelled  => false,
+            self::NoShow      => false,
         };
     }
 }

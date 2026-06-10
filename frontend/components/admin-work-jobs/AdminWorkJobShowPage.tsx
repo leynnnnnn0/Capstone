@@ -16,6 +16,7 @@ import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { hasRole } from "@/features/auth/current-user-api";
 import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
@@ -45,8 +46,12 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
     return <DetailPageSkeleton />;
   }
 
-  const quotationCanBeDownloaded = !["cancelled", "no_show"].includes(workJob.status);
-  const quotationCanBeSigned = !["cancelled", "no_show", "completed"].includes(workJob.status);
+  const quotationCanBeDownloaded = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(workJob.status);
+  const quotationCanBeSigned = ![
+    CustomerStatus.Cancelled,
+    CustomerStatus.NoShow,
+    CustomerStatus.Completed,
+  ].includes(workJob.status);
   const isWorker = hasRole(user, "worker");
 
   return (

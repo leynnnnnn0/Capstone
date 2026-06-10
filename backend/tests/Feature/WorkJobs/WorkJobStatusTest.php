@@ -13,10 +13,32 @@ beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
 });
 
-// ── In Progress ───────────────────────────────────────────────────
+it('confirms a pending work job', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Pending]);
 
-it('marks pending work job as in progress', function () {
-    $workJob = WorkJob::factory()->create();
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/work-jobs/{$workJob->id}/confirm", [
+            'remarks' => 'Work job schedule confirmed.',
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', WorkJobStatus::Confirmed->value);
+
+    expect($workJob->fresh()->status)->toBe(WorkJobStatus::Confirmed);
+});
+
+it('marks confirmed work job as on the way', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Confirmed]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/work-jobs/{$workJob->id}/on-the-way")
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', WorkJobStatus::OnTheWay->value);
+
+    expect($workJob->fresh()->status)->toBe(WorkJobStatus::OnTheWay);
+});
+
+it('marks on the way work job as in progress', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::OnTheWay]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/in-progress", [
@@ -32,15 +54,13 @@ it('marks pending work job as in progress', function () {
     expect($workJob->fresh()->remarks()->first()->message)->toBe('Installer started site preparation.');
 });
 
-it('cannot mark completed work job as in progress', function () {
-    $workJob = WorkJob::factory()->completed()->create();
+it('cannot mark confirmed work job as in progress', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Confirmed]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/in-progress")
         ->assertStatus(422);
 });
-
-// ── Complete ──────────────────────────────────────────────────────
 
 it('marks in progress work job as completed', function () {
     $workJob = WorkJob::factory()->inProgress()->create();
@@ -75,17 +95,15 @@ it('does not issue a separate warranty for completed back jobs', function () {
 });
 
 it('cannot mark pending work job as completed', function () {
-    $workJob = WorkJob::factory()->create();
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Pending]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/complete")
         ->assertStatus(422);
 });
 
-// ── Cancel ────────────────────────────────────────────────────────
-
-it('cancels a pending work job', function () {
-    $workJob = WorkJob::factory()->create();
+it('cancels a confirmed work job', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Confirmed]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/cancel")
@@ -96,12 +114,38 @@ it('cancels a pending work job', function () {
     expect($workJob->fresh()->remarks()->first()->action)->toBe(WorkJobStatus::Cancelled->value);
 });
 
-it('cancels an in progress work job', function () {
+it('cannot cancel an in progress work job', function () {
     $workJob = WorkJob::factory()->inProgress()->create();
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/cancel")
-        ->assertStatus(200);
+        ->assertStatus(422);
+});
+
+it('marks confirmed work job as no show', function () {
+    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Confirmed]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/work-jobs/{$workJob->id}/no-show", [
+            'remarks' => 'Customer was unavailable.',
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', WorkJobStatus::NoShow->value);
+
+    expect($workJob->fresh()->status)->toBe(WorkJobStatus::NoShow);
+});
+
+it('reopens a cancelled work job', function () {
+    $workJob = WorkJob::factory()->cancelled()->create();
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/work-jobs/{$workJob->id}/reopen", [
+            'remarks' => 'Incorrect cancellation.',
+        ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', WorkJobStatus::Reopened->value);
+
+    expect($workJob->fresh()->status)->toBe(WorkJobStatus::Reopened);
 });
 
 it('cannot cancel a completed work job', function () {

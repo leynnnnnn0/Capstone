@@ -2,6 +2,11 @@ import {
   minimumBookingDate,
   resolvePreferredTimeForDate,
 } from "@/features/booking/booking-utils";
+import {
+  activeWorkJobBlockedStatuses,
+  CustomerStatus,
+  customerTerminalStatuses,
+} from "@/features/customer/status";
 
 import type {
   CustomerAppointment,
@@ -9,20 +14,19 @@ import type {
   CustomerQuotation,
   CustomerQuotationItem,
   CustomerRemark,
-  CustomerStatus,
   CustomerWorkJob,
 } from "./types";
 
 export const customerStatusMeta: Record<CustomerStatus, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  confirmed: { label: "Confirmed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  rescheduled: { label: "Rescheduled", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  on_the_way: { label: "On the Way", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  in_progress: { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  completed: { label: "Completed", className: "bg-green-100 text-green-700 border-green-200" },
-  cancelled: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
-  reopened: { label: "Reopened", className: "bg-sky-50 text-sky-700 border-sky-200" },
-  no_show: { label: "No Show", className: "bg-red-50 text-red-700 border-red-200" },
+  [CustomerStatus.Pending]: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  [CustomerStatus.Confirmed]: { label: "Confirmed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  [CustomerStatus.Rescheduled]: { label: "Rescheduled", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  [CustomerStatus.OnTheWay]: { label: "On the Way", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  [CustomerStatus.InProgress]: { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
+  [CustomerStatus.Completed]: { label: "Completed", className: "bg-green-100 text-green-700 border-green-200" },
+  [CustomerStatus.Cancelled]: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
+  [CustomerStatus.Reopened]: { label: "Reopened", className: "bg-sky-50 text-sky-700 border-sky-200" },
+  [CustomerStatus.NoShow]: { label: "No Show", className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 export const serviceOptions = [
@@ -140,11 +144,11 @@ export function quotationTotal(quotation?: CustomerQuotation | null) {
 }
 
 export function isActiveAppointment(appointment: CustomerAppointment) {
-  return !["cancelled", "completed", "no_show"].includes(appointment.status);
+  return !customerTerminalStatuses.includes(appointment.status);
 }
 
 export function isActiveWorkJob(workJob: CustomerWorkJob) {
-  return !["cancelled", "completed"].includes(workJob.status);
+  return !activeWorkJobBlockedStatuses.includes(workJob.status);
 }
 
 export function customerRemarkForAction(remarks: CustomerRemark[] | undefined, action: string) {

@@ -23,6 +23,7 @@ import {
   rescheduleAppointment,
 } from "@/features/admin-appointments/admin-appointment-api";
 import { formatAdminDate, formatAdminTime } from "@/features/admin-appointments/admin-appointment-utils";
+import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment, AdminWorker, SchedulePayload } from "@/features/admin-appointments/types";
 import {
   addScheduleIssues,
@@ -78,8 +79,16 @@ export default function AdminScheduleForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const canReschedule = ["confirmed", "on_the_way", "in_progress"].includes(appointment.status);
-  const canSetSchedule = ["pending", "rescheduled", "reopened"].includes(appointment.status);
+  const canReschedule = [
+    CustomerStatus.Confirmed,
+    CustomerStatus.OnTheWay,
+    CustomerStatus.InProgress,
+  ].includes(appointment.status);
+  const canSetSchedule = [
+    CustomerStatus.Pending,
+    CustomerStatus.Rescheduled,
+    CustomerStatus.Reopened,
+  ].includes(appointment.status);
   const canSchedule = !readOnly && (canSetSchedule || canReschedule);
   const scheduleButtonLabel = canSetSchedule ? "Set Schedule" : "Reschedule";
   const selectedWorkerNames = useMemo(
