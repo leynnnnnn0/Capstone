@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, PenLine } from "lucide-react";
+import { Calculator, CheckCircle2, Download, FileText, Images, Layers, Maximize2, Package, PenLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatPeso } from "@/features/customer/customer-utils";
-import type { CustomerAppointment, CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
+import type { CustomerAppointment, CustomerQuotation, CustomerQuotationItem, CustomerQuotationItemImage } from "@/features/customer/types";
 import type { Product, ProductImage, ResourceCollection } from "@/features/products/types";
 
 export default function CustomerQuoteSummary({
@@ -335,32 +335,52 @@ function ReadonlyPhotoDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [previewImage, setPreviewImage] = useState<CustomerQuotationItemImage | null>(null);
+  const previewSrc = previewImage?.image_url || previewImage?.url;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-medium">{item.name}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <ReadonlyImageGroup title="Before photos" images={item.before_images} />
-          <ReadonlyImageGroup title="After photos" images={item.after_images} />
-          {(item.before_images ?? []).length + (item.after_images ?? []).length === 0 && (
-            <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
-              No photos uploaded yet.
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium">{item.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <ReadonlyImageGroup title="Before photos" images={item.before_images} onPreview={setPreviewImage} />
+            <ReadonlyImageGroup title="After photos" images={item.after_images} onPreview={setPreviewImage} />
+            {(item.before_images ?? []).length + (item.after_images ?? []).length === 0 && (
+              <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+                No photos uploaded yet.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(previewImage)} onOpenChange={(nextOpen) => !nextOpen && setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium">{previewImage?.caption ?? "Photo preview"}</DialogTitle>
+          </DialogHeader>
+          {previewSrc && (
+            <div className="relative h-[75vh] max-h-[760px] overflow-hidden rounded-lg bg-slate-950">
+              <Image src={previewSrc} alt={previewImage?.caption ?? "Quotation photo"} fill unoptimized className="object-contain" />
             </div>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
 function ReadonlyImageGroup({
   title,
   images,
+  onPreview,
 }: {
   title: string;
   images?: CustomerQuotationItem["before_images"];
+  onPreview: (image: CustomerQuotationItemImage) => void;
 }) {
   const safeImages = images ?? [];
   if (safeImages.length === 0) return null;
@@ -375,15 +395,17 @@ function ReadonlyImageGroup({
           if (!src) return null;
 
           return (
-            <a
+            <button
               key={image.id}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
-              className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+              type="button"
+              onClick={() => onPreview(image)}
+              className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
             >
               <Image src={src} alt={image.caption ?? title} fill unoptimized className="object-cover" />
-            </a>
+              <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition group-hover:opacity-100">
+                <Maximize2 className="size-4 text-white" />
+              </span>
+            </button>
           );
         })}
       </div>

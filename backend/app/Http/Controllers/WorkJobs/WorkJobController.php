@@ -5,6 +5,7 @@ namespace App\Http\Controllers\WorkJobs;
 use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkJobs\StoreWorkJobRequest;
+use App\Http\Requests\WorkJobs\UpdateWorkJobRequest;
 use App\Http\Resources\WorkJobResource;
 use App\Models\Appointment;
 use App\Models\WorkJob;
@@ -71,7 +72,7 @@ class WorkJobController extends Controller
                 fn($q) =>
                 $q->whereDate('scheduled_date', '<=', $request->date_to)
             )
-            ->orderBy($sortBy, $sortDir)
+            ->latest()
             ->paginate($request->per_page ?? 15);
 
         return response()->json(WorkJobResource::collection($workJobs));
@@ -98,6 +99,32 @@ class WorkJobController extends Controller
 
             return response()->json([
                 'message' => 'Something went wrong while creating the work job.',
+            ], 500);
+        }
+    }
+
+    public function update(UpdateWorkJobRequest $request, WorkJob $workJob): JsonResponse
+    {
+        $this->abortIfWorker($request, 'Workers cannot update work jobs.');
+
+        try {
+            $workJob = $this->workJobService->update($workJob, $request->validated(), $request->user());
+
+            return response()->json([
+                'message' => 'Work job updated successfully.',
+                'data'    => new WorkJobResource($workJob),
+            ]);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            Log::error('Failed to update work job', [
+                'work_job_id' => $workJob->id,
+                'error'       => $e->getMessage(),
+                'trace'       => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Something went wrong while updating the work job.',
             ], 500);
         }
     }

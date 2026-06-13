@@ -42,16 +42,12 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
             <p className="text-[20px] font-extrabold tracking-wide text-white sm:text-[24px]">
               {result.reference_number}
             </p>
-            <p className="mt-0.5 text-[12px] text-white/60">{result.full_name}</p>
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-[11px] font-bold text-white">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: status.dot }} />
               {status.label}
             </span>
-            {result.workers.length > 0 && (
-              <span className="text-[11px] text-white/60">{result.workers.join(", ")}</span>
-            )}
           </div>
         </div>
 

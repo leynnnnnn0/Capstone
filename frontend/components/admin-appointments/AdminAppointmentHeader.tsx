@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CalendarDays, FilePenLine, FileText, PlusCircle } from "lucide-react";
 
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
@@ -20,6 +21,7 @@ import { hasRole } from "@/features/auth/current-user-api";
 import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { safeReturnTo, withReturnTo } from "@/lib/return-to";
 
 export default function AdminAppointmentHeader({
   appointment,
@@ -29,10 +31,12 @@ export default function AdminAppointmentHeader({
   onOpenQuotation: () => void;
 }) {
   const { user } = useCurrentUser();
+  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const isLocked = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const isWorker = hasRole(user, "worker");
+  const backHref = safeReturnTo(searchParams.get("returnTo"), "/dashboard/appointments");
 
   useEffect(() => {
     if (!calendarOpen) return;
@@ -43,7 +47,7 @@ export default function AdminAppointmentHeader({
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <Link href="/dashboard/appointments" className="text-sm font-bold text-primary hover:underline">
+        <Link href={backHref} className="text-sm font-bold text-primary hover:underline">
           Back to appointments
         </Link>
         <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-primary">{appointment.appointment_number}</p>
@@ -53,7 +57,7 @@ export default function AdminAppointmentHeader({
         <AdminAppointmentStatusBadge status={appointment.status} />
         {!isLocked && !isWorker && (
           <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link href={`/dashboard/appointments/${appointment.id}/edit`}>
+            <Link href={withReturnTo(`/dashboard/appointments/${appointment.id}/edit`, backHref)}>
               <FilePenLine className="size-3.5" />
               Edit Appointment
             </Link>

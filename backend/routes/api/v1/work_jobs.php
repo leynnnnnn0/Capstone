@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->grou
     Route::get('work-jobs', [WorkJobController::class, 'index']);
     Route::get('work-jobs/{workJob}', [WorkJobController::class, 'show']);
     Route::post('work-jobs', [WorkJobController::class, 'store']);
+    Route::patch('work-jobs/{workJob}', [WorkJobController::class, 'update']);
 
     Route::post(
         'appointments/{appointment}/work-job',

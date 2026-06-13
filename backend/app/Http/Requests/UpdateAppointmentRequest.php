@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enums\AppointmentStatus;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateAppointmentRequest extends FormRequest
 {
@@ -51,7 +53,7 @@ class UpdateAppointmentRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->input('service_type') === 'other'),
             ],
             'additional_notes' => ['nullable', 'string', 'max:2000'],
-            'appointment_date' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'appointment_date' => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:today'],
             'appointment_time_from' => ['nullable', 'date_format:H:i', 'required_with:appointment_date'],
             'appointment_time_until' => ['nullable', 'date_format:H:i', 'required_with:appointment_time_from', 'after:appointment_time_from'],
             'status' => ['required', Rule::enum(AppointmentStatus::class)],
@@ -76,6 +78,35 @@ class UpdateAppointmentRequest extends FormRequest
             'items.*.selected_options.*.group_name' => ['required', 'string'],
             'items.*.selected_options.*.option_name' => ['required', 'string'],
             'items.*.selected_options.*.price_modifier' => ['required', 'numeric'],
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $date = $this->input('appointment_date');
+            $timeFrom = $this->input('appointment_time_from');
+
+            if (!$date || !$timeFrom) {
+                return;
+            }
+
+            if (Carbon::parse("{$date} {$timeFrom}")->lte(Carbon::now())) {
+                $validator->errors()->add(
+                    'appointment_time_from',
+                    'The appointment time must be later than the current time.'
+                );
+            }
+        });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'appointment_date.after_or_equal' => 'Appointment date must be today or in the future.',
+            'appointment_time_from.required_with' => 'A start time is required when an appointment date is set.',
+            'appointment_time_until.required_with' => 'An end time is required when a start time is set.',
+            'appointment_time_until.after' => 'The end time must be after the start time.',
         ];
     }
 

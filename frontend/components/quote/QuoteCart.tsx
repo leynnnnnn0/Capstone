@@ -6,6 +6,7 @@ import type { QuoteCartItem } from "@/features/quotes/types";
 import {
   computeItemTotal,
   formatCurrency,
+  quoteDimensionLabel,
   quoteTotal,
   variantLabel,
 } from "@/features/quotes/quote-utils";
@@ -46,9 +47,7 @@ export default function QuoteCart({
                     </p>
                   ) : item.width ? (
                     <p className="mb-1 text-[10px] text-slate-400">
-                      {item.product.unit === "sqm"
-                        ? `${item.width}m x ${item.height}m`
-                        : `${item.width}m`}
+                      {quoteDimensionLabel(item)}
                     </p>
                   ) : null}
                   {item.selected_options.length > 0 && (

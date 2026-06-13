@@ -31,8 +31,9 @@ class WorkJobPaymentService
      */
     public function summary(WorkJob $workJob): array
     {
-        $workJob->load([
-            'quotation.quotation_items',
+        $workJob->loadMissing([
+            'quotation.quotation_items.before_images',
+            'quotation.quotation_items.after_images',
             'payments.refunds',
             'charges',
         ]);

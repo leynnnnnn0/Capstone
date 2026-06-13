@@ -17,6 +17,7 @@ import type { QuoteCartItem } from "@/features/quotes/types";
 import {
   computeItemTotal,
   formatCurrency,
+  quoteDimensionLabel,
   quoteTotal,
   variantLabel,
 } from "@/features/quotes/quote-utils";
@@ -165,7 +166,5 @@ function measurementLabel(item: QuoteCartItem) {
   }
 
   if (!item.width) return "Custom measurement";
-  return item.product.unit === "sqm"
-    ? `${item.width}m x ${item.height}m`
-    : `${item.width}m`;
+  return quoteDimensionLabel(item);
 }

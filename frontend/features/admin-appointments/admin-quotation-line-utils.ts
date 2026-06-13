@@ -1,6 +1,7 @@
 import type { Product } from "@/features/products/types";
 import { optionGroupOptions, productOptionGroups, productVariants } from "@/features/products/product-utils";
 import type { CustomerQuotationItem } from "@/features/customer/types";
+import { computeMeasuredQuantity, isQuantityOnlyUnit } from "@/features/quotes/quote-utils";
 import type { QuoteItemPayload, SelectedQuoteOption } from "@/features/quotes/types";
 
 export type AdminLineItem = {
@@ -88,8 +89,13 @@ export function recalculateLineItem(item: AdminLineItem, updates: Partial<AdminL
   const optionsAmount = Number(merged.options_amount || 0);
   let amountPerPiece = Number(merged.amount_per_piece || 0);
 
-  if (product?.unit === "sqm" && width > 0 && height > 0 && updates.amount_per_piece === undefined) {
-    amountPerPiece = (width * height / 10000) * Number(product.price_per_unit || 0);
+  if (product && !isQuantityOnlyUnit(product.unit) && updates.amount_per_piece === undefined) {
+    const measuredQuantity = computeMeasuredQuantity(product.unit, width / 100, height / 100);
+
+    if (measuredQuantity > 0) {
+      amountPerPiece = measuredQuantity * Number(product.price_per_unit || 0);
+    }
+
     merged.amount_per_piece = amountPerPiece.toFixed(2);
   }
 

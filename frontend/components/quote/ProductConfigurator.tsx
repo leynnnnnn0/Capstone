@@ -29,6 +29,7 @@ export default function ProductConfigurator({
   categories = [],
   preSelectedProductId,
   preSelectedVariantId,
+  preSelectedSizeMode,
   editingItem,
   onAdd,
   onUpdate,
@@ -38,6 +39,7 @@ export default function ProductConfigurator({
   categories?: Category[];
   preSelectedProductId: number | null;
   preSelectedVariantId: number | null;
+  preSelectedSizeMode?: SizeMode | null;
   editingItem: QuoteCartItem | null;
   onAdd: (item: QuoteCartItem) => void;
   onUpdate: (item: QuoteCartItem) => void;
@@ -73,13 +75,24 @@ export default function ProductConfigurator({
 
     if (selectedProduct) {
       queueMicrotask(() => {
-        setDraft(createQuoteDraft(selectedProduct, preSelectedVariantId));
+        const nextDraft = createQuoteDraft(selectedProduct, preSelectedVariantId);
+        setDraft(
+          preSelectedSizeMode === "custom"
+            ? {
+                ...nextDraft,
+                size_mode: "custom",
+                variant: null,
+                width: "",
+                height: "",
+              }
+            : nextDraft,
+        );
         setStep(2);
       });
     } else if (initialProduct) {
       queueMicrotask(() => setDraft(createQuoteDraft(initialProduct)));
     }
-  }, [editingItem, initialProduct, preSelectedProductId, preSelectedVariantId, products]);
+  }, [editingItem, initialProduct, preSelectedProductId, preSelectedSizeMode, preSelectedVariantId, products]);
 
   useEffect(() => {
     queueMicrotask(() => setSearch(activeSearch));

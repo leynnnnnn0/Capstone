@@ -33,14 +33,27 @@ class RescheduleAppointmentRequest extends FormRequest
 
             if (!$date || !$timeFrom) return;
 
-            if (Carbon::parse($date)->isToday()) {
-                if (Carbon::parse($timeFrom)->lte(Carbon::now())) {
-                    $validator->errors()->add(
-                        'appointment_time_from',
-                        'The appointment time must be later than the current time when booking for today.'
-                    );
-                }
+            $selectedDateTime = Carbon::parse("{$date} {$timeFrom}");
+
+            if ($selectedDateTime->lte(Carbon::now())) {
+                $validator->errors()->add(
+                    'appointment_time_from',
+                    'The appointment time must be later than the current time.'
+                );
             }
         });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'appointment_date.required'       => 'Please provide the appointment date.',
+            'appointment_date.after_or_equal' => 'Appointment date must be today or in the future.',
+            'appointment_time_from.required'  => 'Please provide the start time.',
+            'appointment_time_until.after'    => 'End time must be after the start time.',
+            'reason.required'                 => 'Please provide a reschedule reason.',
+            'worker_ids.min'                  => 'Please assign at least one worker.',
+            'worker_ids.*.exists'             => 'One or more selected workers do not exist.',
+        ];
     }
 }

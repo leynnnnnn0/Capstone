@@ -35,7 +35,9 @@ import {
   cartItemToPayload,
   computeItemTotal,
   formatCurrency,
+  isAreaUnit,
   measurementWidth,
+  quoteDimensionLabel,
   quoteTotal,
   variantLabel,
 } from "@/features/quotes/quote-utils";
@@ -356,7 +358,7 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
               </div>
             ) : item.width ? (
               <p className="text-[11px] text-slate-400">
-                {item.product.unit === "sqm" ? `${item.width}m x ${item.height}m` : `${item.width}m`}
+                {quoteDimensionLabel(item)}
               </p>
             ) : null}
             <p className="text-[10px] text-slate-400">
@@ -387,11 +389,13 @@ function formatMeasurementSummary(item: QuoteCartItem) {
   const width = measurementWidth(item);
   const height = Number(item.height || item.measurement_height || 0);
 
+  if (item.source !== "ar") return quoteDimensionLabel(item);
+
   if (segments.length > 1) {
     return `${segments.map((segment) => `${segment}m`).join(" + ")} x ${height}m`;
   }
 
-  if (item.product.unit === "sqm") return `${width}m x ${height}m`;
+  if (isAreaUnit(item.product.unit)) return `${width}m x ${height}m`;
   if (item.product.unit === "meter") return `${width}m`;
   return height > 0 ? `${width}m x ${height}m` : `${width}m`;
 }
@@ -418,5 +422,5 @@ function FormField({
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-[11px] text-red-500">{message}</p>;
+  return <p className="mt-1  text-red-500 text-[9px]">{message}</p>;
 }

@@ -10,7 +10,7 @@ export const productFormSchema = z.object({
   name: z.string().trim().min(1, "Product name is required.").max(255),
   description: z.string().trim().min(1, "Description is required."),
   category_ids: z.array(z.number()).min(1, "Select at least one category."),
-  unit: z.enum(["sqm", "meter", "piece", "set"], {
+  unit: z.enum(["sqm", "sqft", "meter", "piece", "set"], {
     message: "Select a unit.",
   }),
   price_per_unit: nonNegativeNumberStringSchema("Price per unit"),

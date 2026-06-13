@@ -34,18 +34,13 @@ class ConfirmAppointmentRequest extends FormRequest
 
             if (!$date || !$timeFrom) return;
 
-            $isToday = Carbon::parse($date)->isToday();
+            $selectedDateTime = Carbon::parse("{$date} {$timeFrom}");
 
-            if ($isToday) {
-                $now = Carbon::now();
-                $selectedTime = Carbon::parse($timeFrom);
-
-                if ($selectedTime->lte($now)) {
-                    $validator->errors()->add(
-                        'appointment_time_from',
-                        'The appointment time must be later than the current time when booking for today.'
-                    );
-                }
+            if ($selectedDateTime->lte(Carbon::now())) {
+                $validator->errors()->add(
+                    'appointment_time_from',
+                    'The appointment time must be later than the current time.'
+                );
             }
         });
     }

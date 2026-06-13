@@ -16,7 +16,7 @@ class StoreProductRequest extends FormRequest
             // ── Product Core ──────────────────────────────────
             'name'            => ['required', 'string', 'max:255'],
             'description'     => ['required', 'string'],
-            'unit'            => ['required', 'string', 'in:sqm,meter,piece,set'],
+            'unit'            => ['required', 'string', 'in:sqm,sqft,meter,piece,set'],
             'price_per_unit'  => ['required', 'numeric', 'min:0'],
             'is_active'       => ['sometimes', 'boolean'],
 
@@ -72,7 +72,7 @@ class StoreProductRequest extends FormRequest
             'name.required'           => 'Product name is required.',
             'description.required'    => 'Product description is required.',
             'unit.required'           => 'Unit is required.',
-            'unit.in'                 => 'Unit must be one of: sqm, meter, piece, set.',
+            'unit.in'                 => 'Unit must be one of: sqm, sqft, meter, piece, set.',
             'price_per_unit.required' => 'Price per unit is required.',
             'price_per_unit.min'      => 'Price cannot be negative.',
             'category_ids.*.exists'   => 'One or more selected categories do not exist.',

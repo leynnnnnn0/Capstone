@@ -62,6 +62,7 @@ import {
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { AdminAppointment, AdminAppointmentForm as AdminAppointmentFormState, AdminWorker } from "@/features/admin-appointments/types";
 import { CustomerStatus, customerStatusOptions, customerStatusValues } from "@/features/customer/status";
+import { toClockTime } from "@/features/booking/booking-utils";
 import { fetchProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 import { ApiError } from "@/lib/api";
@@ -72,6 +73,7 @@ import {
   philippineMobileSchema,
   requiredDateSchema,
   requiredTimeSchema,
+  todayIsoDate,
   zodIssuesToFieldErrors,
 } from "@/features/forms/validation";
 
@@ -126,7 +128,7 @@ const adminAppointmentSchema = z.object({
     startTimeField: "appointment_time_from",
     endTime: value.appointment_time_until,
     endTimeField: "appointment_time_until",
-    allowPastStartDate: true,
+    requireFutureStart: true,
   });
 });
 
@@ -147,6 +149,8 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const today = todayIsoDate();
+  const startTimeMin = data.appointment_date === today ? toClockTime() : undefined;
 
   const grandTotal = useMemo(() => items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0), [items]);
 
@@ -493,6 +497,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               <TextField
                 label="Appointment Date"
                 type="date"
+                min={today}
                 value={data.appointment_date}
                 error={errors.appointment_date}
                 onChange={(value) => setField("appointment_date", value)}
@@ -500,6 +505,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               <TextField
                 label="Time From"
                 type="time"
+                min={startTimeMin}
                 value={data.appointment_time_from}
                 error={errors.appointment_time_from}
                 onChange={(value) => setField("appointment_time_from", value)}
@@ -956,6 +962,7 @@ function TextField({
   error,
   onChange,
   kind,
+  min,
 }: {
   label: string;
   type?: string;
@@ -963,6 +970,7 @@ function TextField({
   error?: string;
   onChange: (value: string) => void;
   kind?: "name" | "phone";
+  min?: string;
 }) {
   const id = label.toLowerCase().replaceAll(" ", "_");
 
@@ -974,7 +982,7 @@ function TextField({
       ) : kind === "phone" ? (
         <PhoneNumberInput id={id} value={value} onValueChange={onChange} />
       ) : (
-        <Input id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+        <Input id={id} type={type} min={min} value={value} onChange={(event) => onChange(event.target.value)} />
       )}
       {error && <p className="text-xs text-red-500">{error}</p>}
     </div>

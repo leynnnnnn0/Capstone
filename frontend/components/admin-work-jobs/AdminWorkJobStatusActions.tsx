@@ -57,8 +57,6 @@ export default function AdminWorkJobStatusActions({
   ].includes(workJob.status);
   const canReopen = workJob.status === CustomerStatus.Cancelled;
   const canMarkNoShow = [
-    CustomerStatus.Confirmed,
-    CustomerStatus.Rescheduled,
     CustomerStatus.OnTheWay,
   ].includes(workJob.status);
 

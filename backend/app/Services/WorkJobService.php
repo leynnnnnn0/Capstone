@@ -78,6 +78,51 @@ class WorkJobService
         return $workJob;
     }
 
+    public function update(WorkJob $workJob, array $data, ?User $actor = null): WorkJob
+    {
+        $customerId = $this->resolveCustomerId($data, $actor);
+
+        $workJob = DB::transaction(function () use ($workJob, $data, $actor, $customerId) {
+            $workJob->update([
+                'appointment_id'       => $data['appointment_id'] ?? null,
+                'quotation_id'         => $data['quotation_id'] ?? null,
+                'user_id'              => $customerId,
+                'first_name'           => $data['first_name'],
+                'last_name'            => $data['last_name'],
+                'phone_number'         => $data['phone_number'],
+                'email'                => $data['email'] ?? null,
+                'address'              => $data['address'] ?? null,
+                'address_pinned'       => $data['address_pinned'] ?? null,
+                'address_lat'          => $data['address_lat'] ?? null,
+                'address_lng'          => $data['address_lng'] ?? null,
+                'service_type'         => $data['service_type'],
+                'service_type_other'   => $data['service_type_other'] ?? null,
+                'scheduled_date'       => $data['scheduled_date'],
+                'scheduled_time_from'  => $data['scheduled_time_from'],
+                'scheduled_time_until' => $data['scheduled_time_until'],
+                'notes'                => $data['notes'] ?? null,
+                'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
+                'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
+            ]);
+
+            $workJob->workers()->sync($data['worker_ids']);
+
+            if ($actor) {
+                $workJob->remarks()->create([
+                    'user_id' => $actor->id,
+                    'action' => 'work_job_updated',
+                    'message' => 'Work job details updated.',
+                ]);
+            }
+
+            return $workJob->fresh()->load($this->relations());
+        });
+
+        WorkJobChanged::dispatch($workJob, 'updated', 'Work job details updated.', $actor);
+
+        return $workJob;
+    }
+
     /**
      * Convert a confirmed appointment into a work job using appointment details.
      */
@@ -388,6 +433,9 @@ class WorkJobService
             'quotation.quotation_items.after_images',
             'payments.payer',
             'payments.creator',
+            'charges.creator',
+            'charges.approver',
+            'rating.customer',
             'warranty.issuedBy',
             'remarks.user',
         ];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AppointmentStatus;
+use App\Enums\WorkJobStatus;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Models\WorkJob;
@@ -128,6 +129,44 @@ it('lists customer work jobs without allowing creation', function () {
     $this->actingAs($customer)
         ->postJson('/api/v1/customer/work-jobs', [])
         ->assertStatus(405);
+});
+
+it('lets customers rate completed work jobs', function () {
+    $customer = User::factory()->create([
+        'role' => 'customer',
+        'phone_number' => '+639123456789',
+    ]);
+
+    $workJob = WorkJob::factory()->completed()->create([
+        'user_id' => $customer->id,
+        'phone_number' => '+63 912 345 6789',
+    ]);
+
+    $this->actingAs($customer)
+        ->postJson("/api/v1/customer/work-jobs/{$workJob->id}/rating", [
+            'rating' => 4,
+            'comment' => 'Good service.',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.rating.rating', 4)
+        ->assertJsonPath('data.rating.comment', 'Good service.');
+
+    expect($workJob->fresh()->rating?->rating)->toBe(4);
+});
+
+it('does not let customers rate unfinished work jobs', function () {
+    $customer = User::factory()->create(['role' => 'customer']);
+    $workJob = WorkJob::factory()->create([
+        'user_id' => $customer->id,
+        'status' => WorkJobStatus::Confirmed,
+    ]);
+
+    $this->actingAs($customer)
+        ->postJson("/api/v1/customer/work-jobs/{$workJob->id}/rating", [
+            'rating' => 5,
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.rating.0', 'You can rate a work job only after it is completed.');
 });
 
 it('prevents customers from accessing staff appointment endpoints', function () {

@@ -20,7 +20,7 @@ class RateLimitServiceProvider extends ServiceProvider
     {
         RateLimiter::for('customer-otp-request', function (Request $request) {
             return [
-                Limit::perMinute(5)
+                Limit::perMinute(3)
                     ->by($request->ip())
                     ->response(fn() => response()->json([
                         'message' => 'Too many code requests. Please try again later.',
@@ -35,7 +35,7 @@ class RateLimitServiceProvider extends ServiceProvider
 
         RateLimiter::for('customer-otp-verify', function (Request $request) {
             return [
-                Limit::perMinute(10)
+                Limit::perMinute(5)
                     ->by($request->ip())
                     ->response(fn() => response()->json([
                         'message' => 'Too many verification attempts. Please try again later.',
@@ -49,7 +49,7 @@ class RateLimitServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('register', function (Request $request) {
-            return Limit::perMinute(5)
+            return Limit::perMinute(3)
                 ->by($request->ip())
                 ->response(fn() => response()->json([
                     'message' => 'Too many registration attempts. Please try again later.',
@@ -58,7 +58,7 @@ class RateLimitServiceProvider extends ServiceProvider
 
         RateLimiter::for('login', function (Request $request) {
             return [
-                Limit::perMinute(5)
+                Limit::perMinute(3)
                     ->by($request->ip())
                     ->response(fn() => response()->json([
                         'message' => 'Too many login attempts. Please try again in a minute.',
@@ -88,12 +88,12 @@ class RateLimitServiceProvider extends ServiceProvider
             $contact = $email ?: $phone ?: $request->ip();
 
             return [
-                Limit::perMinute(5)
+                Limit::perMinute(3)
                     ->by($request->ip())
                     ->response(fn() => response()->json([
                         'message' => 'Too many booking requests. Please try again later.',
                     ], 429)),
-                Limit::perMinutes(30, 3)
+                Limit::perMinutes(60, 3)
                     ->by($contact)
                     ->response(fn() => response()->json([
                         'message' => 'Too many booking requests for this contact. Please try again later.',

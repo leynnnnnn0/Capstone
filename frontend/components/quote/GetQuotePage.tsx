@@ -31,6 +31,7 @@ export default function GetQuotePage() {
 
   const preSelectedProductId = useMemo(() => numberParam(searchParams.get("product")), [searchParams]);
   const preSelectedVariantId = useMemo(() => numberParam(searchParams.get("variant")), [searchParams]);
+  const preSelectedSizeMode = searchParams.get("size") === "custom" ? "custom" : null;
   const arItemsParam = useMemo(() => searchParams.get("ar_items"), [searchParams]);
   const editingItemId = useMemo(() => searchParams.get("edit"), [searchParams]);
   const editingItem = editingIndex !== null ? cart[editingIndex] ?? null : null;
@@ -159,10 +160,11 @@ export default function GetQuotePage() {
             <ProductConfigurator
               products={products}
               categories={categories}
-              preSelectedProductId={preSelectedProductId}
-              preSelectedVariantId={preSelectedVariantId}
-              editingItem={editingItem}
-              onAdd={addItem}
+            preSelectedProductId={preSelectedProductId}
+            preSelectedVariantId={preSelectedVariantId}
+            preSelectedSizeMode={preSelectedSizeMode}
+            editingItem={editingItem}
+            onAdd={addItem}
               onUpdate={updateItem}
               onCancelEdit={cancelEdit}
             />

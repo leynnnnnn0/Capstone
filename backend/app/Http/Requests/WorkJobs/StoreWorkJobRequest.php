@@ -3,8 +3,10 @@
 
 namespace App\Http\Requests\WorkJobs;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Throwable;
 
 class StoreWorkJobRequest extends FormRequest
 {
@@ -55,6 +57,35 @@ class StoreWorkJobRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $date = $this->input('scheduled_date');
+            $from = $this->input('scheduled_time_from');
+
+            if (! is_string($date) || ! is_string($from)) {
+                return;
+            }
+
+            try {
+                $scheduledDate = Carbon::createFromFormat('Y-m-d', $date)->startOfDay();
+                $today = now()->startOfDay();
+
+                if ($scheduledDate->lt($today)) {
+                    $validator->errors()->add('scheduled_date', 'Work job date cannot be before today.');
+                }
+
+                $startAt = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$from}");
+
+                if ($startAt->lte(now())) {
+                    $validator->errors()->add('scheduled_time_from', 'Start time must be later than the current time.');
+                }
+            } catch (Throwable) {
+                // Existing date/time rules handle malformed values.
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [
@@ -63,8 +94,12 @@ class StoreWorkJobRequest extends FormRequest
             'phone_number.required'         => 'Phone number is required.',
             'service_type.required'         => 'Service type is required.',
             'scheduled_date.required'       => 'Scheduled date is required.',
+            'scheduled_date.date'           => 'Scheduled date must be a valid date.',
+            'scheduled_date.date_format'    => 'Scheduled date must use the YYYY-MM-DD format.',
             'scheduled_time_from.required'  => 'Start time is required.',
+            'scheduled_time_from.date_format' => 'Start time must be a valid time.',
             'scheduled_time_until.required' => 'End time is required.',
+            'scheduled_time_until.date_format' => 'End time must be a valid time.',
             'scheduled_time_until.after'    => 'End time must be after the start time.',
             'worker_ids.required'           => 'Please assign at least one worker.',
             'worker_ids.min'                => 'Please assign at least one worker.',

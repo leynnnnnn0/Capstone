@@ -13,6 +13,7 @@ import type {
 
 export const PRODUCT_UNITS: Array<{ label: string; value: ProductUnit }> = [
   { value: "sqm", label: "Square Meter (sqm)" },
+  { value: "sqft", label: "Square Foot (sqft)" },
   { value: "meter", label: "Linear Meter" },
   { value: "piece", label: "Piece" },
   { value: "set", label: "Set" },

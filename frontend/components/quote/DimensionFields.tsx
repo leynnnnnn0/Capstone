@@ -3,7 +3,11 @@
 import NumericInput from "@/components/form/NumericInput";
 import { Label } from "@/components/ui/label";
 import type { Product } from "@/features/products/types";
-import { parseNumber } from "@/features/quotes/quote-utils";
+import {
+  computeMeasuredQuantity,
+  dimensionValueInMeters,
+  isQuantityOnlyUnit,
+} from "@/features/quotes/quote-utils";
 import type { DimensionUnit } from "@/features/quotes/types";
 
 type Dims = {
@@ -25,7 +29,7 @@ export default function DimensionFields({
   unit: DimensionUnit;
   onUnitChange: (unit: DimensionUnit) => void;
 }) {
-  if (product.unit === "piece" || product.unit === "set") {
+  if (isQuantityOnlyUnit(product.unit)) {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] text-slate-500">
         Priced per <strong>{product.unit}</strong>. Adjust pieces below.
@@ -33,8 +37,13 @@ export default function DimensionFields({
     );
   }
 
-  const area = parseNumber(value.width) * parseNumber(value.height);
+  const measuredQuantity = computeMeasuredQuantity(
+    product.unit,
+    dimensionValueInMeters(value.width, unit),
+    dimensionValueInMeters(value.height, unit),
+  );
   const unitLabel = unit === "cm" ? "cm" : "m";
+  const usesHeight = product.unit !== "meter";
 
   return (
     <div className="space-y-3">
@@ -65,45 +74,40 @@ export default function DimensionFields({
       <div className="flex items-end gap-3">
         <NumberField
           label={`${product.unit === "meter" ? "Length" : "Width"} (${unitLabel})`}
-          value={toDisplayValue(value.width, unit)}
-          onChange={(width) => onChange({ ...value, width: toMeters(width, unit) })}
+          value={value.width}
+          onChange={(width) => onChange({ ...value, width })}
         />
-        {product.unit === "sqm" && (
+        {usesHeight && (
           <>
             <span className="pb-2 font-bold text-slate-400">x</span>
             <NumberField
               label={`Height (${unitLabel})`}
-              value={toDisplayValue(value.height, unit)}
-              onChange={(height) => onChange({ ...value, height: toMeters(height, unit) })}
+              value={value.height}
+              onChange={(height) => onChange({ ...value, height })}
             />
-            {area > 0 && (
+            {measuredQuantity > 0 && (
               <div className="rounded-xl bg-blue-50 px-4 py-2.5 text-center">
-                <p className="text-[10px] text-slate-500">Area</p>
-                <p className="text-[13px] font-extrabold text-primary">{area.toFixed(2)} sqm</p>
+                <p className="text-[10px] text-slate-500">
+                  {product.unit === "sqft" ? "Square feet" : "Area"}
+                </p>
+                <p className="text-[13px] font-extrabold text-primary">
+                  {measuredQuantity.toFixed(2)} {product.unit}
+                </p>
               </div>
             )}
           </>
         )}
       </div>
       <div className="max-w-[220px]">
-        <NumberField label="Thickness (mm)" value={value.thickness} onChange={(thickness) => onChange({ ...value, thickness })} optional />
+        <NumberField
+          label="Thickness (mm)"
+          value={value.thickness}
+          onChange={(thickness) => onChange({ ...value, thickness })}
+          optional
+        />
       </div>
     </div>
   );
-}
-
-function toDisplayValue(value: string, unit: DimensionUnit) {
-  if (!value || unit === "m") return value;
-  return formatValue(parseNumber(value) * 100);
-}
-
-function toMeters(value: string, unit: DimensionUnit) {
-  if (!value || unit === "m") return value;
-  return formatValue(parseNumber(value) / 100);
-}
-
-function formatValue(value: number) {
-  return String(Math.round(value * 10000) / 10000);
 }
 
 function NumberField({

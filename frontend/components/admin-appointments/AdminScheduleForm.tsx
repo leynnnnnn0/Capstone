@@ -29,8 +29,10 @@ import {
   addScheduleIssues,
   requiredDateSchema,
   requiredTimeSchema,
+  todayIsoDate,
   zodIssuesToFieldErrors,
 } from "@/features/forms/validation";
+import { toClockTime } from "@/features/booking/booking-utils";
 import { ApiError } from "@/lib/api";
 
 type ScheduleErrors = Partial<Record<keyof SchedulePayload | "form", string>>;
@@ -51,7 +53,7 @@ const scheduleSchema = z
       startTimeField: "appointment_time_from",
       endTime: data.appointment_time_until,
       endTimeField: "appointment_time_until",
-      allowPastStartDate: true,
+      requireFutureStart: true,
     });
   });
 
@@ -91,6 +93,8 @@ export default function AdminScheduleForm({
   ].includes(appointment.status);
   const canSchedule = !readOnly && (canSetSchedule || canReschedule);
   const scheduleButtonLabel = canSetSchedule ? "Set Schedule" : "Reschedule";
+  const today = todayIsoDate();
+  const startTimeMin = data.appointment_date === today ? toClockTime() : undefined;
   const selectedWorkerNames = useMemo(
     () => data.worker_ids.map((id) => workers.find((worker) => worker.id === id)?.full_name).filter(Boolean).join(", "),
     [data.worker_ids, workers],
@@ -224,6 +228,7 @@ export default function AdminScheduleForm({
               <Input
                 id="appointment_date"
                 type="date"
+                min={today}
                 value={data.appointment_date}
                 onChange={(event) => setField("appointment_date", event.target.value)}
               />
@@ -233,7 +238,7 @@ export default function AdminScheduleForm({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="appointment_time_from">From</Label>
-                <Input id="appointment_time_from" type="time" value={data.appointment_time_from} onChange={(event) => setField("appointment_time_from", event.target.value)} />
+                <Input id="appointment_time_from" type="time" min={startTimeMin} value={data.appointment_time_from} onChange={(event) => setField("appointment_time_from", event.target.value)} />
                 {errors.appointment_time_from && <p className="text-xs text-red-500">{errors.appointment_time_from}</p>}
               </div>
               <div className="space-y-1.5">

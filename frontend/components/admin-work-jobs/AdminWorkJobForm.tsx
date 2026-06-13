@@ -53,13 +53,16 @@ import {
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
 import {
   createAdminWorkJob,
+  fetchAdminWorkJob,
   fetchWorkJobWorkers,
+  updateAdminWorkJob,
 } from "@/features/admin-work-jobs/admin-work-job-api";
 import {
   emptyWorkJobForm,
   workJobFormFromAppointment,
+  workJobFormFromWorkJob,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
-import type { AdminWorkJobForm as WorkJobFormValues } from "@/features/admin-work-jobs/types";
+import type { AdminWorkJob, AdminWorkJobForm as WorkJobFormValues } from "@/features/admin-work-jobs/types";
 import {
   addScheduleIssues,
   optionalEmailSchema,
@@ -67,6 +70,7 @@ import {
   philippineMobileSchema,
   requiredDateSchema,
   requiredTimeSchema,
+  todayIsoDate,
   zodIssuesToFieldErrors,
 } from "@/features/forms/validation";
 
@@ -104,7 +108,8 @@ const workJobSchema = z.object({
     startTimeField: "scheduled_time_from",
     endTime: value.scheduled_time_until,
     endTimeField: "scheduled_time_until",
-    allowPastStartDate: true,
+    allowPastStartDate: false,
+    requireFutureStart: true,
   });
 });
 
@@ -115,18 +120,25 @@ const serviceOptions = [
   { value: "other", label: "Other" },
 ];
 
+function currentTimeValue(now = new Date()) {
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
 type FormErrors = Partial<Record<keyof WorkJobFormValues, string>>;
 
-export default function AdminWorkJobForm() {
+export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointment");
+  const isEditing = Boolean(workJobId);
   const [data, setData] = useState<WorkJobFormValues>(() => emptyWorkJobForm());
   const [workers, setWorkers] = useState<AdminWorker[]>([]);
   const [appointment, setAppointment] = useState<AdminAppointment | null>(null);
+  const [workJob, setWorkJob] = useState<AdminWorkJob | null>(null);
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [loadingAppointment, setLoadingAppointment] = useState(Boolean(appointmentId));
+  const [loadingAppointment, setLoadingAppointment] = useState(Boolean(appointmentId && !workJobId));
+  const [loadingWorkJob, setLoadingWorkJob] = useState(Boolean(workJobId));
   const [saving, setSaving] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [quotationOpen, setQuotationOpen] = useState(false);
@@ -138,7 +150,7 @@ export default function AdminWorkJobForm() {
   }, []);
 
   useEffect(() => {
-    if (!appointmentId) return;
+    if (workJobId || !appointmentId) return;
 
     fetchAdminAppointment(appointmentId)
       .then((response) => {
@@ -146,17 +158,34 @@ export default function AdminWorkJobForm() {
         setData(workJobFormFromAppointment(response.data));
       })
       .finally(() => setLoadingAppointment(false));
-  }, [appointmentId]);
+  }, [appointmentId, workJobId]);
+
+  useEffect(() => {
+    if (!workJobId) return;
+
+    fetchAdminWorkJob(workJobId)
+      .then((response) => {
+        setWorkJob(response.data);
+        setAppointment(response.data.appointment ?? null);
+        setData(workJobFormFromWorkJob(response.data));
+      })
+      .catch(() => toast.error("Unable to load work job."))
+      .finally(() => setLoadingWorkJob(false));
+  }, [workJobId]);
 
   const sourceLabel = useMemo(() => {
+    if (isEditing && workJob) return `Editing ${workJob.work_job_number}`;
     if (!appointment) return null;
     return `Prefilled from ${appointment.appointment_number}`;
-  }, [appointment]);
+  }, [appointment, isEditing, workJob]);
 
-  const quoteTotal = appointment?.quotation?.total ?? 0;
+  const attachedQuotation = workJob?.quotation ?? appointment?.quotation ?? null;
+  const quoteTotal = attachedQuotation?.total ?? 0;
   const downPaymentAmount = data.is_down_payment_required
     ? Number(quoteTotal) * (Number(data.down_payment_percentage || 0) / 100)
     : 0;
+  const today = todayIsoDate();
+  const startTimeMin = data.scheduled_date === today ? currentTimeValue() : undefined;
 
   function setField<Key extends keyof WorkJobFormValues>(field: Key, value: WorkJobFormValues[Key]) {
     setData((current) => ({ ...current, [field]: value }));
@@ -186,21 +215,24 @@ export default function AdminWorkJobForm() {
     setSaving(true);
     setErrors({});
     try {
-      const response = await createAdminWorkJob({ ...data, ...parsed.data });
-      toast.success("Work job created successfully.");
+      const payload = { ...data, ...parsed.data };
+      const response = isEditing && workJobId
+        ? await updateAdminWorkJob(workJobId, payload)
+        : await createAdminWorkJob(payload);
+      toast.success(isEditing ? "Work job updated successfully." : "Work job created successfully.");
       router.push(`/dashboard/work-jobs/${response.data.id}`);
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
         setErrors(Object.fromEntries(Object.entries(error.errors).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value])) as FormErrors);
       }
-      toast.error(error instanceof ApiError ? error.message : "Unable to create work job.");
+      toast.error(error instanceof ApiError ? error.message : isEditing ? "Unable to update work job." : "Unable to create work job.");
       setConfirmOpen(false);
     } finally {
       setSaving(false);
     }
   }
 
-  if (loadingAppointment) {
+  if (loadingAppointment || loadingWorkJob) {
     return <FormPageSkeleton />;
   }
 
@@ -208,10 +240,16 @@ export default function AdminWorkJobForm() {
     <>
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">Create Work Job</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">New work job</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            {isEditing ? "Edit Work Job" : "Create Work Job"}
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight">
+            {isEditing ? workJob?.work_job_number ?? "Edit work job" : "New work job"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create the work job, set the production slot, and attach the quotation.
+            {isEditing
+              ? "Update the work job details, schedule, workers, and payment terms."
+              : "Create the work job, set the production slot, and attach the quotation."}
           </p>
           {sourceLabel && <p className="mt-1 text-xs font-semibold text-primary">{sourceLabel}</p>}
         </div>
@@ -222,7 +260,7 @@ export default function AdminWorkJobForm() {
           </Button>
           <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setQuotationOpen(true)}>
             <FileText className="size-3.5" />
-            {appointment?.quotation ? "View Quotation" : "Create Quotation"}
+            {attachedQuotation ? "View Quotation" : "Create Quotation"}
           </Button>
         </div>
       </div>
@@ -301,13 +339,13 @@ export default function AdminWorkJobForm() {
             <SectionTitle title="Schedule Work Job" description="Set the actual production slot and workers." />
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <Field label="Work Job Date" error={errors.scheduled_date}>
-                <Input type="date" value={data.scheduled_date} onChange={(event) => setField("scheduled_date", event.target.value)} />
+                <Input type="date" min={today} value={data.scheduled_date} onChange={(event) => setField("scheduled_date", event.target.value)} />
               </Field>
                 <Field label="Time From" error={errors.scheduled_time_from}>
-                  <Input type="time" value={data.scheduled_time_from} onChange={(event) => setField("scheduled_time_from", event.target.value)} />
+                  <Input type="time" min={startTimeMin} value={data.scheduled_time_from} onChange={(event) => setField("scheduled_time_from", event.target.value)} />
                 </Field>
                 <Field label="Time Until" error={errors.scheduled_time_until}>
-                  <Input type="time" value={data.scheduled_time_until} onChange={(event) => setField("scheduled_time_until", event.target.value)} />
+                  <Input type="time" min={data.scheduled_time_from || undefined} value={data.scheduled_time_until} onChange={(event) => setField("scheduled_time_until", event.target.value)} />
                 </Field>
               </div>
             <div className="mt-4 space-y-2">
@@ -363,16 +401,16 @@ export default function AdminWorkJobForm() {
         </div>
 
         <aside className="h-fit space-y-5">
-          {appointment?.quotation && <AdminQuotationDetails quotation={appointment.quotation} />}
+          {attachedQuotation && <AdminQuotationDetails quotation={attachedQuotation} />}
           <div className="rounded-lg border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black">Create Work Job</p>
+                <p className="text-sm font-black">{isEditing ? "Update Work Job" : "Create Work Job"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Review schedule, workers, and quotation before saving.
+                  {isEditing ? "Review changes before saving." : "Review schedule, workers, and quotation before saving."}
                 </p>
               </div>
-              <Badge variant="outline">pending</Badge>
+              <Badge variant="outline">{isEditing ? workJob?.status ?? "pending" : "pending"}</Badge>
             </div>
 
             <div className="mt-4 space-y-2 rounded-lg border bg-muted/30 p-3 text-sm">
@@ -388,7 +426,7 @@ export default function AdminWorkJobForm() {
 
             <Button type="submit" className="mt-5 h-11 w-full" disabled={saving}>
               {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : <BriefcaseBusiness className="mr-2 size-4" />}
-              {saving ? "Creating..." : "Create Work Job"}
+              {saving ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Work Job" : "Create Work Job")}
             </Button>
           </div>
         </aside>
@@ -411,12 +449,12 @@ export default function AdminWorkJobForm() {
           <SheetHeader className="text-left">
             <SheetTitle>Quotation</SheetTitle>
             <SheetDescription>
-              {appointment?.quotation ? "Attached quotation from the source appointment." : "Create the quotation from an appointment before creating the work job."}
+              {attachedQuotation ? "Attached quotation for this work job." : "Create the quotation from an appointment before creating the work job."}
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
-            {appointment?.quotation ? (
-              <AdminQuotationDetails quotation={appointment.quotation} />
+            {attachedQuotation ? (
+              <AdminQuotationDetails quotation={attachedQuotation} />
             ) : (
               <div className="rounded-lg border border-dashed bg-muted/30 p-5 text-sm text-muted-foreground">
                 Work jobs should be created from a confirmed appointment when a quotation is available.
@@ -429,7 +467,7 @@ export default function AdminWorkJobForm() {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Create this work job?</AlertDialogTitle>
+            <AlertDialogTitle>{isEditing ? "Update this work job?" : "Create this work job?"}</AlertDialogTitle>
             <AlertDialogDescription>
               Please confirm the customer details, schedule, assigned workers, quotation, and payment terms before saving.
             </AlertDialogDescription>
@@ -443,7 +481,7 @@ export default function AdminWorkJobForm() {
                 void saveWorkJob();
               }}
             >
-              {saving ? "Creating..." : "Create Work Job"}
+              {saving ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Work Job" : "Create Work Job")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

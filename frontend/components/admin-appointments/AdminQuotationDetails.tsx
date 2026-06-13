@@ -60,17 +60,26 @@ export default function AdminQuotationDetails({
   canDownload?: boolean;
   canSign?: boolean;
 }) {
-  const [items, setItems] = useState<CustomerQuotationItem[]>(quotation?.items ?? []);
+  const [itemOverrides, setItemOverrides] = useState<Record<number, CustomerQuotationItem>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const [showAllItems, setShowAllItems] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
-  const [signature, setSignature] = useState({
+  const [signatureOverride, setSignatureOverride] = useState<{
+    status?: CustomerQuotation["signature_status"];
+    signedAt?: CustomerQuotation["customer_signed_at"];
+    name?: CustomerQuotation["customer_signature_name"];
+  } | null>(null);
+
+  const items = useMemo(
+    () => (quotation?.items ?? []).map((item) => itemOverrides[item.id] ?? item),
+    [quotation?.items, itemOverrides],
+  );
+  const signature = signatureOverride ?? {
     status: quotation?.signature_status,
     signedAt: quotation?.customer_signed_at,
     name: quotation?.customer_signature_name,
-  });
-
+  };
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
   const approvedItems = useMemo(() => items.filter((item) => item.status === approvedStatus), [items]);
   const visibleItems = showAllItems ? items : items.slice(0, 1);
@@ -99,12 +108,21 @@ export default function AdminQuotationDetails({
   async function changeStatus(itemId: number, status: string) {
     const previousItems = items;
     setSavingId(itemId);
-    setItems((current) => current.map((item) => item.id === itemId ? { ...item, status } : item));
+    setItemOverrides((current) => {
+      const currentItem = items.find((item) => item.id === itemId);
+      return currentItem ? { ...current, [itemId]: { ...currentItem, status } } : current;
+    });
 
     try {
       await updateQuotationItemStatus(itemId, status);
     } catch (error) {
-      setItems(previousItems);
+      setItemOverrides((current) => {
+        const next = { ...current };
+        previousItems.forEach((item) => {
+          next[item.id] = item;
+        });
+        return next;
+      });
       throw error;
     } finally {
       setSavingId(null);
@@ -245,6 +263,9 @@ export default function AdminQuotationDetails({
           onOpenChange={(open) => {
             if (!open) setPhotoItemId(null);
           }}
+          onItemChange={(nextItem) => {
+            setItemOverrides((current) => ({ ...current, [nextItem.id]: nextItem }));
+          }}
         />
       )}
       <CustomerSignatureDialog
@@ -254,7 +275,7 @@ export default function AdminQuotationDetails({
         open={signOpen}
         onOpenChange={setSignOpen}
         onSigned={(nextQuotation) => {
-          setSignature({
+          setSignatureOverride({
             status: nextQuotation.signature_status,
             signedAt: nextQuotation.customer_signed_at,
             name: nextQuotation.customer_signature_name,
@@ -374,10 +395,12 @@ function ItemPhotosDialog({
   item,
   open,
   onOpenChange,
+  onItemChange,
 }: {
   item: CustomerQuotationItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onItemChange: (item: CustomerQuotationItem) => void;
 }) {
   const totalCount = (item.before_images?.length ?? 0) + (item.after_images?.length ?? 0);
 
@@ -396,6 +419,13 @@ function ItemPhotosDialog({
           beforeImages={item.before_images ?? []}
           afterImages={item.after_images ?? []}
           mode="content"
+          onImagesChange={(nextImages) => {
+            onItemChange({
+              ...item,
+              before_images: nextImages.before,
+              after_images: nextImages.after,
+            });
+          }}
         />
       </DialogContent>
     </Dialog>

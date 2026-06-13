@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
@@ -43,10 +43,12 @@ import {
 import type { AdminAppointment, AppointmentCollection } from "@/features/admin-appointments/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { currentPathWithSearch, withReturnTo } from "@/lib/return-to";
 
 export default function AdminAppointmentsPage() {
   const { user } = useCurrentUser();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [response, setResponse] = useState<AppointmentCollection | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export default function AdminAppointmentsPage() {
     }),
     [searchParams],
   );
+  const returnTo = useMemo(() => currentPathWithSearch(pathname, searchParams), [pathname, searchParams]);
 
   const reload = useCallback(() => {
     let mounted = true;
@@ -88,14 +91,15 @@ export default function AdminAppointmentsPage() {
     reload();
   }, ["appointment", "quotation"]);
 
-  function applyFilter(next: Record<string, string>) {
+  function applyFilter(next: Record<string, string>, options: { resetPage?: boolean } = {}) {
     const cleanNext = normalizeDateRange(filters, next);
     const params = new URLSearchParams(searchParams.toString());
+    params.delete("returnTo");
     Object.entries(cleanNext).forEach(([key, value]) => {
       if (!value || value === "all") params.delete(key);
       else params.set(key, value);
     });
-    params.delete("page");
+    if (options.resetPage !== false) params.delete("page");
     router.push(`/dashboard/appointments${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
@@ -178,7 +182,7 @@ export default function AdminAppointmentsPage() {
           ))
         ) : appointments.length > 0 ? (
           appointments.map((appointment) => (
-            <AppointmentCard key={appointment.id} appointment={appointment} />
+            <AppointmentCard key={appointment.id} appointment={appointment} returnTo={returnTo} />
           ))
         ) : (
           <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
@@ -204,7 +208,7 @@ export default function AdminAppointmentsPage() {
             {loading ? (
               <TableSkeletonRows columns={7} />
             ) : appointments.length > 0 ? (
-              appointments.map((appointment) => <AppointmentRow key={appointment.id} appointment={appointment} />)
+              appointments.map((appointment) => <AppointmentRow key={appointment.id} appointment={appointment} returnTo={returnTo} />)
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No appointments found.</TableCell>
@@ -216,13 +220,13 @@ export default function AdminAppointmentsPage() {
 
       {meta && meta.last_page > 1 && (
         <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="sm" disabled={meta.current_page <= 1} onClick={() => applyFilter({ page: String(meta.current_page - 1) })}>
+          <Button variant="outline" size="sm" disabled={meta.current_page <= 1} onClick={() => applyFilter({ page: String(meta.current_page - 1) }, { resetPage: false })}>
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
             Page {meta.current_page} of {meta.last_page}
           </span>
-          <Button variant="outline" size="sm" disabled={meta.current_page >= meta.last_page} onClick={() => applyFilter({ page: String(meta.current_page + 1) })}>
+          <Button variant="outline" size="sm" disabled={meta.current_page >= meta.last_page} onClick={() => applyFilter({ page: String(meta.current_page + 1) }, { resetPage: false })}>
             Next
           </Button>
         </div>
@@ -231,7 +235,7 @@ export default function AdminAppointmentsPage() {
   );
 }
 
-function AppointmentCard({ appointment }: { appointment: AdminAppointment }) {
+function AppointmentCard({ appointment, returnTo }: { appointment: AdminAppointment; returnTo: string }) {
   return (
     <article className="rounded-lg border bg-card p-3 shadow-xs">
       <div className="flex items-start justify-between gap-3">
@@ -243,7 +247,7 @@ function AppointmentCard({ appointment }: { appointment: AdminAppointment }) {
           <p className="mt-0.5 text-xs text-muted-foreground">{appointment.phone_number}</p>
         </div>
         <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${appointment.appointment_number}`} className="shrink-0">
-          <Link href={`/dashboard/appointments/${appointment.id}`}>
+          <Link href={withReturnTo(`/dashboard/appointments/${appointment.id}`, returnTo)}>
             <Eye className="size-4" />
           </Link>
         </Button>
@@ -265,7 +269,7 @@ function AppointmentCard({ appointment }: { appointment: AdminAppointment }) {
   );
 }
 
-function AppointmentRow({ appointment }: { appointment: AdminAppointment }) {
+function AppointmentRow({ appointment, returnTo }: { appointment: AdminAppointment; returnTo: string }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{appointment.appointment_number}</TableCell>
@@ -276,7 +280,7 @@ function AppointmentRow({ appointment }: { appointment: AdminAppointment }) {
       <TableCell><AdminAppointmentStatusBadge status={appointment.status} /></TableCell>
       <TableCell className="text-right">
         <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${appointment.appointment_number}`}>
-          <Link href={`/dashboard/appointments/${appointment.id}`}>
+          <Link href={withReturnTo(`/dashboard/appointments/${appointment.id}`, returnTo)}>
             <Eye className="size-4" />
           </Link>
         </Button>

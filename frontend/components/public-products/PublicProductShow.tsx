@@ -211,7 +211,10 @@ export default function PublicProductShow() {
               </h2>
               <p className="mt-2 text-[13px] text-slate-500">
                 Need a custom size?{" "}
-                <Link href="/get-quote" className="font-bold text-primary hover:underline">
+                <Link
+                  href={`/get-quote?product=${product.id}&size=custom`}
+                  className="font-bold text-primary hover:underline"
+                >
                   Request a custom quote →
                 </Link>
               </p>
@@ -249,7 +252,7 @@ export default function PublicProductShow() {
                   </p>
                 </div>
                 <Link
-                  href="/get-quote"
+                  href={`/get-quote?product=${product.id}&size=custom`}
                   className="rounded-xl border-2 border-slate-200 px-5 py-2.5 text-[12px] font-bold whitespace-nowrap text-slate-600 no-underline transition-all hover:border-primary hover:text-primary"
                 >
                   Custom Size Quote →

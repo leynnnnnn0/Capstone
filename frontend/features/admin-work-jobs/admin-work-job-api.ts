@@ -46,6 +46,13 @@ export function createAdminWorkJob(payload: AdminWorkJobForm) {
   });
 }
 
+export function updateAdminWorkJob(id: string | number, payload: AdminWorkJobForm) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function createBackJob(id: number, payload: AdminBackJobForm) {
   return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/back-jobs`, {
     method: "POST",

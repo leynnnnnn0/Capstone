@@ -16,7 +16,7 @@ class UpdateProductRequest extends FormRequest
         return [
             'name'           => ['sometimes', 'string', 'max:255'],
             'description'    => ['sometimes', 'string'],
-            'unit'           => ['sometimes', 'string', 'in:sqm,meter,piece,set'],
+            'unit'           => ['sometimes', 'string', 'in:sqm,sqft,meter,piece,set'],
             'price_per_unit' => ['sometimes', 'numeric', 'min:0'],
             'is_active'      => ['sometimes', 'boolean'],
             'category_ids'   => ['sometimes', 'array'],
@@ -69,7 +69,7 @@ class UpdateProductRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'unit.in'        => 'Unit must be one of: sqm, meter, piece, set.',
+            'unit.in'        => 'Unit must be one of: sqm, sqft, meter, piece, set.',
             'price_per_unit.min' => 'Price cannot be negative.',
             'model_3d.extensions' => 'The 3D model must use a .glb or .gltf extension.',
             'model_3d.mimes' => 'The 3D model must be a GLB or GLTF file.',

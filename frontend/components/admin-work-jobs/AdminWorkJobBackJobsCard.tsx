@@ -66,6 +66,7 @@ import type {
 import type { AdminWorker } from "@/features/admin-appointments/types";
 import {
   addScheduleIssues,
+  normalizeTimeInput,
   requiredDateSchema,
   requiredTimeSchema,
   zodIssuesToFieldErrors,
@@ -157,7 +158,12 @@ export default function AdminWorkJobBackJobsCard({
   }
 
   function setField<K extends keyof AdminBackJobForm>(field: K, value: AdminBackJobForm[K]) {
-    setForm((current) => ({ ...current, [field]: value }));
+    const nextValue =
+      field === "scheduled_time_from" || field === "scheduled_time_until"
+        ? normalizeTimeInput(String(value))
+        : value;
+
+    setForm((current) => ({ ...current, [field]: nextValue }));
     setErrors((current) => {
       const next = { ...current };
       delete next[field as string];
@@ -174,6 +180,8 @@ export default function AdminWorkJobBackJobsCard({
       return;
     }
 
+    setForm(parsed.data as AdminBackJobForm);
+    setErrors({});
     setConfirmOpen(true);
   }
 

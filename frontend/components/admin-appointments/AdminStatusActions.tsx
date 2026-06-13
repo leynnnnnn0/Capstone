@@ -46,8 +46,14 @@ export default function AdminStatusActions({
   const [saving, setSaving] = useState(false);
   const nextStatus = nextAppointmentStatus(appointment.status);
   const canAdvance = Boolean(nextStatus);
-  const canCancel = [CustomerStatus.Confirmed, CustomerStatus.OnTheWay].includes(appointment.status);
-  const canMarkNoShow = [CustomerStatus.Confirmed, CustomerStatus.Rescheduled, CustomerStatus.OnTheWay].includes(appointment.status);
+  const canCancel = [
+    CustomerStatus.Pending,
+    CustomerStatus.Confirmed,
+    CustomerStatus.Rescheduled,
+    CustomerStatus.OnTheWay,
+    CustomerStatus.Reopened,
+  ].includes(appointment.status);
+  const canMarkNoShow = [CustomerStatus.OnTheWay].includes(appointment.status);
   const canRebook = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const canReopen = appointment.status === CustomerStatus.Cancelled;
 

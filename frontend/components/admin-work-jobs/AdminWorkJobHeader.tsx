@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 
 import AdminWorkJobStatusBadge from "@/components/admin-work-jobs/AdminWorkJobStatusBadge";
 import { Button } from "@/components/ui/button";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 
 export default function AdminWorkJobHeader({ workJob }: { workJob: AdminWorkJob }) {
+  const canEdit = !["cancelled", "no_show"].includes(workJob.status);
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -24,6 +26,14 @@ export default function AdminWorkJobHeader({ workJob }: { workJob: AdminWorkJob 
       </div>
       <div className="flex items-center gap-2">
         <AdminWorkJobStatusBadge status={workJob.status} />
+        {canEdit && (
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link href={`/dashboard/work-jobs/${workJob.id}/edit`}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Link>
+          </Button>
+        )}
         <Button asChild variant="outline" size="sm" className="gap-1.5">
           <Link href="/dashboard/work-jobs">
             <ArrowLeft className="size-3.5" />

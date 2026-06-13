@@ -3,6 +3,8 @@ import { z } from "zod";
 const PERSON_NAME_PATTERN = /^[\p{L}][\p{L}' -]*$/u;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^\d{2}:\d{2}$/;
+const TIME_24_HOUR_PATTERN = /^(\d{1,2}):(\d{2})(?::\d{2})?$/;
+const TIME_12_HOUR_PATTERN = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i;
 const PASSWORD_LOWERCASE = /[a-z]/;
 const PASSWORD_UPPERCASE = /[A-Z]/;
 const PASSWORD_NUMBER = /\d/;
@@ -112,16 +114,30 @@ export function personNameSchema(label: string) {
   return z
     .string()
     .transform((value) => sanitizePersonName(value).trim())
-    .pipe(
-      z
-        .string()
-        .min(2, `${label} must be at least 2 characters.`)
-        .max(50, `${label} must be 50 characters or fewer.`)
-        .regex(
-          PERSON_NAME_PATTERN,
-          `${label} can only contain letters, spaces, apostrophes, and hyphens.`,
-        ),
-    );
+    .superRefine((value, ctx) => {
+      if (value.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} must be at least 2 characters.`,
+        });
+        return;
+      }
+
+      if (value.length > 50) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} must be 50 characters or fewer.`,
+        });
+        return;
+      }
+
+      if (!PERSON_NAME_PATTERN.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} can only contain letters, spaces, apostrophes, and hyphens.`,
+        });
+      }
+    });
 }
 
 export function requiredEmailSchema(label = "Email") {
@@ -191,8 +207,54 @@ export const requiredDateSchema = (label: string) =>
 export const requiredTimeSchema = (label: string) =>
   z
     .string()
-    .min(1, `${label} is required.`)
-    .regex(TIME_PATTERN, `Enter a valid ${label.toLowerCase()}.`);
+    .transform(normalizeTimeInput)
+    .pipe(
+      z
+        .string()
+        .min(1, `${label} is required.`)
+        .regex(TIME_PATTERN, `Enter a valid ${label.toLowerCase()}.`),
+    );
+
+export function normalizeTimeInput(value: string) {
+  const trimmed = value.trim();
+  const twelveHourMatch = TIME_12_HOUR_PATTERN.exec(trimmed);
+
+  if (!twelveHourMatch) {
+    const twentyFourHourMatch = TIME_24_HOUR_PATTERN.exec(trimmed);
+
+    if (!twentyFourHourMatch) {
+      return trimmed;
+    }
+
+    const [, hourText, minuteText] = twentyFourHourMatch;
+    const hours = Number(hourText);
+    const minutes = Number(minuteText);
+
+    if (hours > 23 || minutes > 59) {
+      return trimmed;
+    }
+
+    return `${String(hours).padStart(2, "0")}:${minuteText}`;
+  }
+
+  const [, hourText, minuteText, meridiem] = twelveHourMatch;
+  let hours = Number(hourText);
+  const minutes = Number(minuteText);
+
+  if (hours < 1 || hours > 12 || minutes > 59) {
+    return trimmed;
+  }
+
+  if (meridiem.toUpperCase() === "PM" && hours !== 12) {
+    hours += 12;
+  }
+
+  if (meridiem.toUpperCase() === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${minuteText}`;
+}
 
 type NumberStringSchemaOptions = {
   max?: number;
@@ -276,8 +338,8 @@ export function addScheduleIssues(
   if (requireFutureStart && startDate === today && startMinutes !== null) {
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-    if (startMinutes < nowMinutes) {
-      addCustomIssue(context, startTimeField, "Start time cannot be earlier than the current time.");
+    if (startMinutes <= nowMinutes) {
+      addCustomIssue(context, startTimeField, "Start time must be later than the current time.");
     }
   }
 }

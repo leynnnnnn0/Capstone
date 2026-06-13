@@ -100,6 +100,30 @@ export function workJobFormFromAppointment(appointment: AdminAppointment): Admin
   };
 }
 
+export function workJobFormFromWorkJob(workJob: AdminWorkJob): AdminWorkJobForm {
+  return {
+    appointment_id: workJob.appointment_id ?? null,
+    quotation_id: workJob.quotation?.id ?? null,
+    first_name: workJob.first_name,
+    last_name: workJob.last_name,
+    phone_number: workJob.phone_number,
+    email: workJob.email ?? "",
+    address: workJob.address ?? "",
+    address_pinned: workJob.address_pinned ?? "",
+    address_lat: workJob.address_lat ?? "",
+    address_lng: workJob.address_lng ?? "",
+    service_type: workJob.service_type,
+    service_type_other: workJob.service_type_other ?? "",
+    scheduled_date: workJob.scheduled_date ?? "",
+    scheduled_time_from: workJob.scheduled_time_from ?? "09:00",
+    scheduled_time_until: workJob.scheduled_time_until ?? "11:00",
+    worker_ids: workJob.workers.map((worker) => worker.id),
+    is_down_payment_required: workJob.is_down_payment_required ?? false,
+    down_payment_percentage: workJob.down_payment_percentage ?? 20,
+    notes: workJob.notes ?? "",
+  };
+}
+
 export function formatWorkJobDate(value?: string | null) {
   if (!value) return "-";
 

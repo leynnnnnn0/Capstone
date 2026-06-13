@@ -82,7 +82,7 @@ export type Product = {
   product_option_groups?: ResourceCollection<ProductOptionGroup>;
 };
 
-export type ProductUnit = "sqm" | "meter" | "piece" | "set";
+export type ProductUnit = "sqm" | "sqft" | "meter" | "piece" | "set" ;
 
 export type PaginatedResponse<T> = {
   data: T[];

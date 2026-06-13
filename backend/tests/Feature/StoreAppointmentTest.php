@@ -54,19 +54,23 @@ it('rate limits repeated public booking submissions for the same contact', funct
 });
 
 it('rate limits repeated public booking submissions from the same ip', function () use ($validPayload) {
-    for ($i = 0; $i < 5; $i++) {
-        $this->postJson('/api/v1/appointments', [
-            ...$validPayload(),
-            'preferred_date' => now()->addDays($i + 3)->format('Y-m-d'),
-            'email' => "limited-ip-{$i}@example.com",
-        ])->assertCreated();
+    for ($i = 0; $i < 3; $i++) {
+        $this->withServerVariables(['REMOTE_ADDR' => '10.10.10.10'])
+            ->postJson('/api/v1/appointments', [
+                ...$validPayload(),
+                'preferred_date' => now()->addDays($i + 3)->format('Y-m-d'),
+                'email' => "limited-ip-{$i}@example.com",
+                'phone_number' => '+63 917 000 000' . $i,
+            ])->assertCreated();
     }
 
-    $this->postJson('/api/v1/appointments', [
-        ...$validPayload(),
-        'preferred_date' => now()->addDays(20)->format('Y-m-d'),
-        'email' => 'limited-ip-final@example.com',
-    ])->assertStatus(429)
+    $this->withServerVariables(['REMOTE_ADDR' => '10.10.10.10'])
+        ->postJson('/api/v1/appointments', [
+            ...$validPayload(),
+            'preferred_date' => now()->addDays(20)->format('Y-m-d'),
+            'email' => 'limited-ip-final@example.com',
+            'phone_number' => '+63 917 000 0010',
+        ])->assertStatus(429)
         ->assertJsonPath('message', 'Too many booking requests. Please try again later.');
 });
 
@@ -124,7 +128,11 @@ it('blocks bookings when email and phone belong to different customers', functio
         'email' => 'test@gmail.com',
         'phone_number' => '+639222222222',
     ])->assertStatus(422)
-        ->assertJsonValidationErrors(['contact']);
+        ->assertJsonValidationErrors(['contact'])
+        ->assertJsonPath(
+            'errors.contact.0',
+            'This email and phone number belong to different customer accounts. Please verify the contact details.'
+        );
 });
 
 it('appointment number follows expected format', function () use ($validPayload) {

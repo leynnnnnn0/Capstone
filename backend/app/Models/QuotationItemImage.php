@@ -14,6 +14,7 @@ class QuotationItemImage extends Model implements AuditableContract
 
     protected $fillable = [
         'quotation_item_id',
+        'uploaded_by_id',
         'image_path',
         'type',         // 'before' | 'after'
         'sort_order',
@@ -23,5 +24,10 @@ class QuotationItemImage extends Model implements AuditableContract
     public function quotation_item()
     {
         return $this->belongsTo(QuotationItem::class);
+    }
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_id');
     }
 }

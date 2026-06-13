@@ -8,7 +8,13 @@ import {
   variantImages,
   imageUrl,
 } from "@/features/products/product-utils";
-import type { QuoteCartItem, QuoteDraft, QuoteItemPayload, SelectedQuoteOption } from "./types";
+import type {
+  DimensionUnit,
+  QuoteCartItem,
+  QuoteDraft,
+  QuoteItemPayload,
+  SelectedQuoteOption,
+} from "./types";
 
 export function createQuoteId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -21,6 +27,46 @@ export function createQuoteId() {
 export function parseNumber(value: string | number | null | undefined) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+const SQM_TO_SQFT = 10.7639104167;
+
+export function isAreaUnit(unit: Product["unit"]) {
+  return unit === "sqm" || unit === "sqft";
+}
+
+export function isQuantityOnlyUnit(unit: Product["unit"]) {
+  return unit === "piece" || unit === "set";
+}
+
+export function computeMeasuredQuantity(unit: Product["unit"], width: number, height: number) {
+  if (unit === "sqm") return width * height;
+  if (unit === "sqft") return width * height * SQM_TO_SQFT;
+  if (unit === "meter") return width;
+
+  return 1;
+}
+
+export function dimensionUnitLabel(unit?: DimensionUnit) {
+  return unit === "cm" ? "cm" : "m";
+}
+
+export function dimensionValueInMeters(
+  value: string | number | null | undefined,
+  unit?: DimensionUnit,
+) {
+  const numericValue = parseNumber(value);
+  return unit === "cm" ? numericValue / 100 : numericValue;
+}
+
+export function quoteDimensionLabel(item: QuoteDraft | QuoteCartItem) {
+  const unit = dimensionUnitLabel(item.dimension_unit);
+
+  if (!item.width) return "Custom measurement";
+
+  return isAreaUnit(item.product.unit)
+    ? `${item.width}${unit} x ${item.height}${unit}`
+    : `${item.width}${unit}`;
 }
 
 export function createQuoteDraft(product: Product, variantId?: number | null): QuoteDraft {
@@ -54,7 +100,7 @@ export function isQuoteDraftReady(draft: QuoteDraft) {
     return Boolean(draft.variant);
   }
 
-  if (draft.product.unit === "sqm") {
+  if (isAreaUnit(draft.product.unit)) {
     return parseNumber(draft.width) > 0 && parseNumber(draft.height) > 0;
   }
 
@@ -76,11 +122,11 @@ export function computeItemTotal(item: QuoteDraft | QuoteCartItem) {
 
   const pricePerUnit = Number(item.product.price_per_unit);
   const width = measurementWidth(item);
-  const height = parseNumber(item.height);
-  const measure =
-    item.product.unit === "sqm" ? width * height : item.product.unit === "meter" ? width : 1;
+  const height = dimensionValueInMeters(item.height, item.dimension_unit);
+  const measure = computeMeasuredQuantity(item.product.unit, width, height);
+  const baseAmount = pricePerUnit * measure;
 
-  return (pricePerUnit + optionsAmount) * measure * item.pieces;
+  return (baseAmount + optionsAmount) * item.pieces;
 }
 
 export function computeAmountPerPiece(item: QuoteDraft | QuoteCartItem) {
@@ -95,7 +141,7 @@ export function cartItemToPayload(item: QuoteCartItem): QuoteItemPayload {
     name: item.product.name,
     description: item.product.description,
     width: measurementWidth(item) || null,
-    height: parseNumber(item.height) || null,
+    height: dimensionValueInMeters(item.height, item.dimension_unit) || null,
     thickness: parseNumber(item.thickness) || null,
     pieces: item.pieces,
     amount_per_piece: amountPerPiece,
@@ -106,12 +152,14 @@ export function cartItemToPayload(item: QuoteCartItem): QuoteItemPayload {
   };
 }
 
-export function measurementWidth(item: Pick<QuoteCartItem, "measurement_segments" | "width"> | QuoteDraft) {
+export function measurementWidth(
+  item: Pick<QuoteCartItem, "measurement_segments" | "width" | "dimension_unit"> | QuoteDraft,
+) {
   if ("measurement_segments" in item && item.measurement_segments?.length) {
     return item.measurement_segments.reduce((sum, segment) => sum + parseNumber(segment), 0);
   }
 
-  return parseNumber(item.width);
+  return dimensionValueInMeters(item.width, item.dimension_unit);
 }
 
 export function arMeasurementNote(item: QuoteCartItem) {

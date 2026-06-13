@@ -209,11 +209,13 @@ export type CustomerQuotationItem = {
 
 export type CustomerQuotationItemImage = {
   id: number;
+  uploaded_by_id?: number | null;
   image_url: string;
   url?: string;
   type: string;
   caption: string | null;
   sort_order: number;
+  can_delete?: boolean;
 };
 
 export type CustomerQuotation = {

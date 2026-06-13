@@ -92,12 +92,12 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
           {/* <CustomerQuoteImageList quotation={quotation} /> */}
           <WorkJobWarrantyCard workJob={workJob} />
+
+          <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
         </section>
 
         <aside className="space-y-4">
           <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
-
-          <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
 
           <CustomerQuoteSummary
             quotation={quotation}

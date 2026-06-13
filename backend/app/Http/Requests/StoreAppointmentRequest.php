@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AppointmentStatus;
+use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\AppointmentStatus;
+use Illuminate\Validation\Validator;
 
 class StoreAppointmentRequest extends FormRequest
 {
@@ -104,6 +106,7 @@ class StoreAppointmentRequest extends FormRequest
                 'nullable',
                 'date',
                 'date_format:Y-m-d',
+                'after_or_equal:today',
                 Rule::requiredIf(fn() => $this->input('status') === AppointmentStatus::Confirmed->value),
             ],
             'appointment_time_from'  => [
@@ -160,6 +163,25 @@ class StoreAppointmentRequest extends FormRequest
         ];
     }
 
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $date = $this->input('appointment_date');
+            $timeFrom = $this->input('appointment_time_from');
+
+            if (!$date || !$timeFrom) {
+                return;
+            }
+
+            if (Carbon::parse("{$date} {$timeFrom}")->lte(Carbon::now())) {
+                $validator->errors()->add(
+                    'appointment_time_from',
+                    'The appointment time must be later than the current time.'
+                );
+            }
+        });
+    }
+
     /**
      * Custom error messages.
      *
@@ -198,6 +220,7 @@ class StoreAppointmentRequest extends FormRequest
             'service_type_other.required_if' => 'Please describe the service when selecting "Other".',
 
             // Appointment
+            'appointment_date.after_or_equal'        => 'Appointment date must be today or in the future.',
             'appointment_time_from.required_with'  => 'A start time is required when an appointment date is set.',
             'appointment_time_until.required_with' => 'An end time is required when a start time is set.',
             'appointment_time_until.after'         => 'The end time must be after the start time.',
