@@ -41,6 +41,8 @@ export default function CustomerQuoteSummary({
 
   canSign = items.findIndex((item) => item.status != "approved") == -1;
 
+  
+
 
   if (!quotation || items.length === 0) {
     return (
@@ -58,6 +60,7 @@ export default function CustomerQuoteSummary({
   const needsResign = quotation.signature_status === "needs_resign";
   const visibleItems = showAllItems ? items : items.slice(0, 1);
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
+  canDownload = isSigned;
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

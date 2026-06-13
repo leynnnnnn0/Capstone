@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ImageOff, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, ImageOff, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -109,7 +109,7 @@ export default function ProductList() {
       </div>
 
       <Card>
-        <CardContent className="p-3">
+        <div className="p-3">
           <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -127,7 +127,7 @@ export default function ProductList() {
               Search
             </Button>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <div className="space-y-2 md:hidden">
@@ -197,9 +197,11 @@ export default function ProductList() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/dashboard/products/${product.id}`}>View</Link>
-                        </Button>
+                       <Button asChild size="icon-sm" variant="ghost">
+          <Link href={`/dashboard/products/${product.id}`}>
+            <Eye className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
                         <Button asChild size="icon-sm" variant="ghost">
                           <Link href={`/dashboard/products/${product.id}/edit`} aria-label={`Edit ${product.name}`}>
                             <Pencil className="h-3.5 w-3.5" />
@@ -260,7 +262,11 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
       <div className="flex items-start gap-3">
         <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
           {cover ? (
-            <img src={cover} alt={product.name} className="h-full w-full object-cover" />
+            <img
+              src={cover}
+              alt={product.name}
+              className="h-full w-full object-cover"
+            />
           ) : (
             <ImageOff className="h-5 w-5 text-muted-foreground" />
           )}
@@ -271,19 +277,27 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
             {formatCurrency(product.price_per_unit)} / {product.unit}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant="secondary">{productVariants(product).length} variant{productVariants(product).length === 1 ? "" : "s"}</Badge>
+            <Badge variant="secondary">
+              {productVariants(product).length} variant
+              {productVariants(product).length === 1 ? "" : "s"}
+            </Badge>
             <Badge variant={product.is_active ? "default" : "secondary"}>
               {product.is_active ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
-        <Button asChild size="sm" variant="outline">
-          <Link href={`/dashboard/products/${product.id}`}>View</Link>
+      <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 w-fit">
+        <Button asChild size="icon-sm" variant="ghost">
+          <Link href={`/dashboard/products/${product.id}`}>
+            <Eye className="h-3.5 w-3.5" />
+          </Link>
         </Button>
         <Button asChild size="icon-sm" variant="ghost">
-          <Link href={`/dashboard/products/${product.id}/edit`} aria-label={`Edit ${product.name}`}>
+          <Link
+            href={`/dashboard/products/${product.id}/edit`}
+            aria-label={`Edit ${product.name}`}
+          >
             <Pencil className="h-3.5 w-3.5" />
           </Link>
         </Button>

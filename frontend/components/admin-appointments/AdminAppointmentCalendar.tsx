@@ -8,7 +8,15 @@ import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventClickArg, EventContentArg } from "@fullcalendar/core";
 import Link from "next/link";
-import { CalendarDays, Clock, FileText, MapPin, Phone, Users } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  Clock,
+  FileText,
+  MapPin,
+  Phone,
+  Users,
+} from "lucide-react";
 
 import AdminAppointmentStatusBadge from "@/components/admin-appointments/AdminAppointmentStatusBadge";
 import { Button } from "@/components/ui/button";
@@ -20,18 +28,31 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import type { AdminAppointment } from "@/features/admin-appointments/types";
 import { adminStatusMeta, formatAdminDate, formatAdminTime } from "@/features/admin-appointments/admin-appointment-utils";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
+import type { AdminAppointment } from "@/features/admin-appointments/types";
+import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 
-export type CalendarMode = "appointments" | "workers";
+export type CalendarMode = "appointments" | "work_jobs" | "workers";
 
 type AdminAppointmentCalendarProps = {
   appointments: AdminAppointment[];
+  workJobs?: AdminWorkJob[];
   defaultMode?: CalendarMode;
   lockedMode?: CalendarMode;
   fitToContainer?: boolean;
   compact?: boolean;
+};
+
+type CalendarRecordKind = "appointment" | "work_job";
+type SelectedRecord = { kind: CalendarRecordKind; id: number } | null;
+type WorkerColor = (typeof workerPalette)[number];
+type WorkerLike = { id: number; full_name: string };
+type SlotItem = {
+  date: string | null | undefined;
+  time_from: string | null | undefined;
+  time_until: string | null | undefined;
+  workers: WorkerLike[];
 };
 
 const workerPalette = [
@@ -59,6 +80,7 @@ const fcClasses = `[&_.fc]:font-sans [&_.fc-button]:rounded-md [&_.fc-button]:bo
 
 export default function AdminAppointmentCalendar({
   appointments,
+  workJobs = [],
   defaultMode = "appointments",
   lockedMode,
   fitToContainer = false,
@@ -66,135 +88,231 @@ export default function AdminAppointmentCalendar({
 }: AdminAppointmentCalendarProps) {
   const [mode, setMode] = useState<CalendarMode>(defaultMode);
   const activeMode = lockedMode ?? mode;
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const scheduled = appointments.filter((appointment) => appointment.appointment_date && appointment.appointment_time_from && appointment.appointment_time_until);
-  const initialDate = scheduled[0]?.appointment_date ?? new Date().toISOString().slice(0, 10);
-  const appointmentEvents = useMemo(() => toAppointmentEvents(scheduled), [scheduled]);
-  const workerEvents = useMemo(() => toWorkerEvents(scheduled), [scheduled]);
-  const slotRange = useMemo(() => calendarSlotRange(scheduled), [scheduled]);
-  const selectedAppointment = appointments.find((appointment) => appointment.id === selectedId) ?? null;
+  const [selectedRecord, setSelectedRecord] = useState<SelectedRecord>(null);
+
+  const scheduledAppointments = useMemo(
+    () => appointments.filter((appointment) => appointment.appointment_date && appointment.appointment_time_from && appointment.appointment_time_until),
+    [appointments],
+  );
+  const scheduledWorkJobs = useMemo(
+    () => workJobs.filter((workJob) => workJob.scheduled_date && workJob.scheduled_time_from && workJob.scheduled_time_until),
+    [workJobs],
+  );
+  const scheduledItems = useMemo(
+    () => [
+      ...scheduledAppointments.map((appointment) => ({
+        date: appointment.appointment_date,
+        time_from: appointment.appointment_time_from,
+        time_until: appointment.appointment_time_until,
+        workers: appointment.workers,
+      })),
+      ...scheduledWorkJobs.map((workJob) => ({
+        date: workJob.scheduled_date,
+        time_from: workJob.scheduled_time_from,
+        time_until: workJob.scheduled_time_until,
+        workers: workJob.workers,
+      })),
+    ],
+    [scheduledAppointments, scheduledWorkJobs],
+  );
+
+  const initialDate = scheduledItems[0]?.date ?? new Date().toISOString().slice(0, 10);
+  const workerColorMap = useMemo(() => buildWorkerColorMap(scheduledItems), [scheduledItems]);
+  const appointmentEvents = useMemo(() => toAppointmentEvents(scheduledAppointments), [scheduledAppointments]);
+  const workJobEvents = useMemo(() => toWorkJobEvents(scheduledWorkJobs), [scheduledWorkJobs]);
+  const workerEvents = useMemo(
+    () => toWorkerEvents(scheduledAppointments, scheduledWorkJobs, workerColorMap),
+    [scheduledAppointments, scheduledWorkJobs, workerColorMap],
+  );
+  const slotRange = useMemo(() => calendarSlotRange(scheduledItems), [scheduledItems]);
+  const selectedAppointment = selectedRecord?.kind === "appointment"
+    ? appointments.find((appointment) => appointment.id === selectedRecord.id) ?? null
+    : null;
+  const selectedWorkJob = selectedRecord?.kind === "work_job"
+    ? workJobs.find((workJob) => workJob.id === selectedRecord.id) ?? null
+    : null;
   const calendarMinWidth = fitToContainer
     ? "100%"
     : activeMode === "workers"
-      ? Math.max(760, 7 * Math.max(maxConcurrentWorkerEvents(scheduled), 1) * 104)
+      ? Math.max(760, 7 * Math.max(maxConcurrentWorkerEvents(scheduledItems), 1) * 104)
       : 760;
 
   function handleEventClick(info: EventClickArg) {
-    const appointmentIds = info.event.extendedProps.appointment_ids as number[] | undefined;
-    const appointmentId = appointmentIds?.[0] ?? Number(info.event.extendedProps.appointment_id ?? info.event.id);
+    const kind = info.event.extendedProps.kind as CalendarRecordKind | undefined;
+    const recordIds = info.event.extendedProps.record_ids as number[] | undefined;
+    const recordId = recordIds?.[0] ?? Number(info.event.extendedProps.record_id ?? info.event.id);
 
-    if (appointmentId) setSelectedId(appointmentId);
+    if (kind && recordId) setSelectedRecord({ kind, id: recordId });
   }
 
   return (
     <>
-    <div className="flex h-full flex-col gap-3">
-      {!lockedMode && (
-        <div className="flex items-center gap-2">
-          <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
-            <button type="button" onClick={() => setMode("appointments")} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 sm:text-sm ${activeMode === "appointments" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              📋 Appointments
-            </button>
-            <button type="button" onClick={() => setMode("workers")} className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 sm:text-sm ${activeMode === "workers" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              👷 Workers Schedule
-            </button>
+      <div className="flex h-full flex-col gap-3">
+        {!lockedMode && (
+          <div className="flex items-center gap-2">
+            <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
+              <ModeButton active={activeMode === "appointments"} onClick={() => setMode("appointments")}>
+                📋 Appointments
+              </ModeButton>
+              <ModeButton active={activeMode === "work_jobs"} onClick={() => setMode("work_jobs")}>
+                🧰 Work Jobs
+              </ModeButton>
+              <ModeButton active={activeMode === "workers"} onClick={() => setMode("workers")}>
+                👷 Workers Schedule
+              </ModeButton>
+            </div>
+          </div>
+        )}
+
+        <div className={`flex-1 ${fitToContainer ? "overflow-hidden" : "overflow-auto"} rounded-xl border bg-card p-2 shadow-sm sm:p-3 ${fcClasses}`}>
+          <style>{`
+            .fc .fc-timegrid-slot { height: ${compact ? "1.45rem" : "1.7rem"} !important; }
+            .fc .fc-toolbar.fc-header-toolbar {
+              align-items: center;
+              display: grid;
+              gap: 0.5rem;
+              grid-template-columns: 1fr auto;
+              margin-bottom: ${compact ? "0.5rem" : "0.75rem"};
+            }
+            .fc .fc-toolbar-chunk { display: flex; flex-wrap: wrap; gap: 0.25rem; min-width: 0; }
+            .fc .fc-toolbar-chunk:nth-child(2) { grid-column: 1 / -1; grid-row: 1; justify-content: flex-start; }
+            .fc .fc-toolbar-chunk:nth-child(1) { grid-column: 1; grid-row: 2; }
+            .fc .fc-toolbar-chunk:nth-child(3) { grid-column: 2; grid-row: 2; justify-content: flex-end; }
+            .fc .fc-toolbar-title {
+              font-size: clamp(1rem, 5vw, 1.25rem) !important;
+              line-height: 1.15 !important;
+              max-width: 100%;
+              overflow-wrap: anywhere;
+            }
+            .fc .fc-button {
+              min-height: 1.85rem !important;
+              padding: 0.25rem 0.45rem !important;
+            }
+            .fc .fc-daygrid-day-events { min-height: 1.25rem; }
+            .fc .fc-timegrid-event-harness { inset-inline-end: 0 !important; }
+            .fc .fc-timegrid-event { margin-inline-end: 0 !important; }
+            .fc .fc-event-main { min-width: 0; }
+            @media (min-width: 640px) {
+              .fc .fc-toolbar.fc-header-toolbar {
+                display: flex;
+                align-items: flex-start;
+              }
+              .fc .fc-toolbar-chunk:nth-child(1),
+              .fc .fc-toolbar-chunk:nth-child(2),
+              .fc .fc-toolbar-chunk:nth-child(3) {
+                grid-column: auto;
+                grid-row: auto;
+              }
+              .fc .fc-toolbar-title { font-size: 1.125rem !important; }
+            }
+          `}</style>
+          <div style={{ minWidth: calendarMinWidth }}>
+            <FullCalendar
+              key={activeMode}
+              plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+              initialView="timeGridWeek"
+              initialDate={initialDate}
+              headerToolbar={{
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+              }}
+              buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day", list: "List" }}
+              events={activeMode === "appointments" ? appointmentEvents : activeMode === "work_jobs" ? workJobEvents : workerEvents}
+              eventContent={(info) => {
+                if (activeMode === "workers") return <WorkerEventBlock info={info} />;
+                if (activeMode === "work_jobs") return <WorkJobEventBlock info={info} onSelect={(id) => setSelectedRecord({ kind: "work_job", id })} />;
+                return <AppointmentEventBlock info={info} onSelect={(id) => setSelectedRecord({ kind: "appointment", id })} />;
+              }}
+              eventClick={handleEventClick}
+              slotMinTime={slotRange.min}
+              slotMaxTime={slotRange.max}
+              slotDuration="01:00:00"
+              eventMinHeight={24}
+              eventShortHeight={20}
+              height="auto"
+              nowIndicator
+              allDaySlot={false}
+              dayMaxEvents={false}
+              slotEventOverlap={activeMode === "workers" ? false : true}
+              expandRows={false}
+            />
           </div>
         </div>
-      )}
 
-      <div className={`flex-1 ${fitToContainer ? "overflow-hidden" : "overflow-auto"} rounded-xl border bg-card p-2 shadow-sm sm:p-3 ${fcClasses}`}>
-        <style>{`
-          .fc .fc-timegrid-slot { height: ${compact ? "1.45rem" : "1.7rem"} !important; }
-          .fc .fc-toolbar.fc-header-toolbar {
-            align-items: center;
-            display: grid;
-            gap: 0.5rem;
-            grid-template-columns: 1fr auto;
-            margin-bottom: ${compact ? "0.5rem" : "0.75rem"};
-          }
-          .fc .fc-toolbar-chunk { display: flex; flex-wrap: wrap; gap: 0.25rem; min-width: 0; }
-          .fc .fc-toolbar-chunk:nth-child(2) { grid-column: 1 / -1; grid-row: 1; justify-content: flex-start; }
-          .fc .fc-toolbar-chunk:nth-child(1) { grid-column: 1; grid-row: 2; }
-          .fc .fc-toolbar-chunk:nth-child(3) { grid-column: 2; grid-row: 2; justify-content: flex-end; }
-          .fc .fc-toolbar-title {
-            font-size: clamp(1rem, 5vw, 1.25rem) !important;
-            line-height: 1.15 !important;
-            max-width: 100%;
-            overflow-wrap: anywhere;
-          }
-          .fc .fc-button {
-            min-height: 1.85rem !important;
-            padding: 0.25rem 0.45rem !important;
-          }
-          .fc .fc-daygrid-day-events { min-height: 1.25rem; }
-          .fc .fc-timegrid-event-harness { inset-inline-end: 0 !important; }
-          .fc .fc-timegrid-event { margin-inline-end: 0 !important; }
-          .fc .fc-event-main { min-width: 0; }
-          @media (min-width: 640px) {
-            .fc .fc-toolbar.fc-header-toolbar {
-              display: flex;
-              align-items: flex-start;
-            }
-            .fc .fc-toolbar-chunk:nth-child(1),
-            .fc .fc-toolbar-chunk:nth-child(2),
-            .fc .fc-toolbar-chunk:nth-child(3) {
-              grid-column: auto;
-              grid-row: auto;
-            }
-            .fc .fc-toolbar-title { font-size: 1.125rem !important; }
-          }
-        `}</style>
-        <div style={{ minWidth: calendarMinWidth }}>
-          <FullCalendar
-            key={activeMode}
-            plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
-            initialDate={initialDate}
-            headerToolbar={{
-              left: "prev,next today",
-              center: "title",
-              right: "dayGridMonth,timeGridWeek,timeGridDay",
-            }}
-            buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day", list: "List" }}
-            events={activeMode === "appointments" ? appointmentEvents : workerEvents}
-            eventContent={(info) => activeMode === "appointments" ? <AppointmentEventBlock info={info} onSelect={setSelectedId} /> : <WorkerEventBlock info={info} />}
-            eventClick={handleEventClick}
-            slotMinTime={slotRange.min}
-            slotMaxTime={slotRange.max}
-            slotDuration="01:00:00"
-            eventMinHeight={24}
-            eventShortHeight={20}
-            height="auto"
-            nowIndicator
-            allDaySlot={false}
-            dayMaxEvents={false}
-            slotEventOverlap={activeMode === "workers" ? false : true}
-            expandRows={false}
-          />
-        </div>
+        <CalendarLegend mode={activeMode} scheduledItems={scheduledItems} workerColorMap={workerColorMap} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        {activeMode === "appointments"
-          ? ["pending", "confirmed", "completed", "cancelled"].map((status) => (
-              <div key={status} className="flex items-center gap-1.5">
-                <span className={`size-2.5 rounded-full ${statusColors[status].dot}`} />
-                <span>{adminStatusMeta[status as keyof typeof adminStatusMeta]?.label ?? status}</span>
-              </div>
-            ))
-          : uniqueWorkers(scheduled).map((worker, index) => {
-              const color = workerPalette[index % workerPalette.length];
-              return (
-                <div key={worker} className="flex items-center gap-1.5">
-                  <span className={`size-2.5 rounded-full ${color.dot}`} />
-                  <span>{worker}</span>
-                </div>
-              );
-            })}
-      </div>
-    </div>
-    <CalendarDetailsDrawer appointment={selectedAppointment} open={Boolean(selectedAppointment)} onOpenChange={(open) => !open && setSelectedId(null)} />
+      <AppointmentDetailsDrawer
+        appointment={selectedAppointment}
+        open={Boolean(selectedAppointment)}
+        onOpenChange={(open) => !open && setSelectedRecord(null)}
+      />
+      <WorkJobDetailsDrawer
+        workJob={selectedWorkJob}
+        open={Boolean(selectedWorkJob)}
+        onOpenChange={(open) => !open && setSelectedRecord(null)}
+      />
     </>
+  );
+}
+
+function ModeButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-all sm:px-3 sm:py-1.5 sm:text-sm ${
+        active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function CalendarLegend({
+  mode,
+  scheduledItems,
+  workerColorMap,
+}: {
+  mode: CalendarMode;
+  scheduledItems: SlotItem[];
+  workerColorMap: Map<number, WorkerColor>;
+}) {
+  if (mode === "workers") {
+    return (
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        {uniqueWorkers(scheduledItems).map((worker) => {
+          const color = workerColorMap.get(worker.id) ?? workerPalette[0];
+          return (
+            <div key={worker.id} className="flex items-center gap-1.5">
+              <span className={`size-2.5 rounded-full ${color.dot}`} />
+              <span>{worker.full_name}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+      {["pending", "confirmed", "in_progress", "completed", "cancelled"].map((status) => (
+        <div key={status} className="flex items-center gap-1.5">
+          <span className={`size-2.5 rounded-full ${statusColors[status].dot}`} />
+          <span>{adminStatusMeta[status as keyof typeof adminStatusMeta]?.label ?? labelize(status)}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -205,13 +323,14 @@ function toAppointmentEvents(appointments: AdminAppointment[]) {
     const end = maxTime(group.map((appointment) => appointment.appointment_time_until));
 
     return {
-      id: group.map((appointment) => appointment.id).join("-"),
+      id: `appointment-${group.map((appointment) => appointment.id).join("-")}`,
       title: group.length === 1 ? first.appointment_number : `${group.length} appointments`,
       start: `${first.appointment_date}T${start}`,
       end: `${first.appointment_date}T${end}`,
       extendedProps: {
-        appointment_id: first.id,
-        appointment_ids: group.map((appointment) => appointment.id),
+        kind: "appointment" satisfies CalendarRecordKind,
+        record_id: first.id,
+        record_ids: group.map((appointment) => appointment.id),
         appointments: group,
         full_name: first.full_name,
         status: first.status,
@@ -224,32 +343,84 @@ function toAppointmentEvents(appointments: AdminAppointment[]) {
   });
 }
 
-function toWorkerEvents(appointments: AdminAppointment[]) {
-  return appointments.flatMap((appointment) =>
-    appointment.workers.map((worker, index) => {
-      const color = workerPalette[index % workerPalette.length];
-      return {
-        id: `w${worker.id}-a${appointment.id}`,
-        title: appointment.appointment_number,
-        start: `${appointment.appointment_date}T${appointment.appointment_time_from}`,
-        end: `${appointment.appointment_date}T${appointment.appointment_time_until}`,
-        extendedProps: {
-          appointment_id: appointment.id,
-          full_name: appointment.full_name,
-          status: appointment.status,
-          worker_name: worker.full_name,
-          time_from: appointment.appointment_time_from,
-          time_until: appointment.appointment_time_until,
-          workerColor: color,
-        },
-        backgroundColor: "transparent",
-        borderColor: "transparent",
-      };
-    }),
-  );
+function toWorkJobEvents(workJobs: AdminWorkJob[]) {
+  return overlappingWorkJobGroups(workJobs).map((group) => {
+    const first = group[0];
+    const start = minTime(group.map((workJob) => workJob.scheduled_time_from));
+    const end = maxTime(group.map((workJob) => workJob.scheduled_time_until));
+
+    return {
+      id: `work-job-${group.map((workJob) => workJob.id).join("-")}`,
+      title: group.length === 1 ? first.work_job_number : `${group.length} work jobs`,
+      start: `${first.scheduled_date}T${start}`,
+      end: `${first.scheduled_date}T${end}`,
+      extendedProps: {
+        kind: "work_job" satisfies CalendarRecordKind,
+        record_id: first.id,
+        record_ids: group.map((workJob) => workJob.id),
+        workJobs: group,
+        full_name: first.full_name,
+        status: first.status,
+        time_from: start,
+        time_until: end,
+      },
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+    };
+  });
 }
 
-function CalendarDetailsDrawer({
+function toWorkerEvents(
+  appointments: AdminAppointment[],
+  workJobs: AdminWorkJob[],
+  workerColorMap: Map<number, WorkerColor>,
+) {
+  const appointmentEvents = appointments.flatMap((appointment) =>
+    appointment.workers.map((worker) => ({
+      id: `worker-${worker.id}-appointment-${appointment.id}`,
+      title: appointment.appointment_number,
+      start: `${appointment.appointment_date}T${appointment.appointment_time_from}`,
+      end: `${appointment.appointment_date}T${appointment.appointment_time_until}`,
+      extendedProps: {
+        kind: "appointment" satisfies CalendarRecordKind,
+        record_id: appointment.id,
+        record_type_label: "Appointment",
+        full_name: appointment.full_name,
+        worker_name: worker.full_name,
+        time_from: appointment.appointment_time_from,
+        time_until: appointment.appointment_time_until,
+        workerColor: workerColorMap.get(worker.id) ?? workerPalette[0],
+      },
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+    })),
+  );
+
+  const workJobEvents = workJobs.flatMap((workJob) =>
+    workJob.workers.map((worker) => ({
+      id: `worker-${worker.id}-work-job-${workJob.id}`,
+      title: workJob.work_job_number,
+      start: `${workJob.scheduled_date}T${workJob.scheduled_time_from}`,
+      end: `${workJob.scheduled_date}T${workJob.scheduled_time_until}`,
+      extendedProps: {
+        kind: "work_job" satisfies CalendarRecordKind,
+        record_id: workJob.id,
+        record_type_label: workJob.is_back_job ? "Back Job" : "Work Job",
+        full_name: workJob.full_name,
+        worker_name: worker.full_name,
+        time_from: workJob.scheduled_time_from,
+        time_until: workJob.scheduled_time_until,
+        workerColor: workerColorMap.get(worker.id) ?? workerPalette[0],
+      },
+      backgroundColor: "transparent",
+      borderColor: "transparent",
+    })),
+  );
+
+  return [...appointmentEvents, ...workJobEvents];
+}
+
+function AppointmentDetailsDrawer({
   appointment,
   open,
   onOpenChange,
@@ -258,13 +429,11 @@ function CalendarDetailsDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const quoteTotal = appointment?.quotation?.items
-    .filter((item) => item.status === "approved")
-    .reduce((sum, item) => sum + Number(item.total_amount || 0), 0) ?? 0;
+  const quoteTotal = approvedQuoteTotal(appointment?.quotation?.items);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md p-3">
+      <SheetContent side="right" className="w-full overflow-y-auto p-3 sm:max-w-md">
         {appointment && (
           <>
             <SheetHeader className="text-left">
@@ -280,53 +449,143 @@ function CalendarDetailsDrawer({
                 </Button>
               </div>
 
-              <div className="space-y-3 rounded-lg border p-4 text-sm">
-                <Detail icon={CalendarDays} label="Date" value={formatAdminDate(appointment.appointment_date)} />
-                <Detail
-                  icon={Clock}
-                  label="Time"
-                  value={`${formatAdminTime(appointment.appointment_time_from)} - ${formatAdminTime(appointment.appointment_time_until)}`}
-                />
-                <Detail icon={Phone} label="Phone" value={appointment.phone_number} />
-                <Detail icon={MapPin} label="Address" value={appointment.address} />
-              </div>
+              <ScheduleDetails
+                date={appointment.appointment_date}
+                timeFrom={appointment.appointment_time_from}
+                timeUntil={appointment.appointment_time_until}
+                phone={appointment.phone_number}
+                address={appointment.address}
+              />
 
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-                  <Users className="size-4" />
-                  Assigned Workers
-                </div>
-                {appointment.workers.length ? (
-                  <div className="flex flex-wrap gap-2">
-                    {appointment.workers.map((worker) => (
-                      <span key={worker.id} className="rounded-full bg-muted px-3 py-1 text-xs">{worker.full_name}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No workers assigned yet.</p>
-                )}
-              </div>
-
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
-                    <FileText className="size-4" />
-                    Quotation
-                  </div>
-                  <span className="text-sm font-semibold">₱{fmtPeso(quoteTotal)}</span>
-                </div>
-                <Separator className="my-3" />
-                <p className="text-sm text-muted-foreground">
-                  {appointment.quotation?.items.length
-                    ? `${appointment.quotation.items.length} item${appointment.quotation.items.length === 1 ? "" : "s"} attached`
-                    : "No quotation attached."}
-                </p>
-              </div>
+              <WorkersPanel workers={appointment.workers} />
+              <QuotationPanel total={quoteTotal} itemCount={appointment.quotation?.items.length ?? 0} />
             </div>
           </>
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function WorkJobDetailsDrawer({
+  workJob,
+  open,
+  onOpenChange,
+}: {
+  workJob: AdminWorkJob | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const quoteTotal = approvedQuoteTotal(workJob?.quotation?.items);
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full overflow-y-auto p-3 sm:max-w-md">
+        {workJob && (
+          <>
+            <SheetHeader className="text-left">
+              <SheetTitle className="text-base">{workJob.work_job_number}</SheetTitle>
+              <SheetDescription>{workJob.full_name}</SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-6 space-y-5">
+              <div className="flex items-center justify-between gap-3">
+                <AdminAppointmentStatusBadge status={workJob.status} />
+                <Button asChild size="sm">
+                  <Link href={`/dashboard/work-jobs/${workJob.id}`}>View Work Job</Link>
+                </Button>
+              </div>
+
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+                  <BriefcaseBusiness className="size-4" />
+                  {workJob.is_back_job ? "Back Job" : "Work Job"}
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {workJob.appointment?.appointment_number
+                    ? `Linked to ${workJob.appointment.appointment_number}`
+                    : "Standalone scheduled work."}
+                </p>
+              </div>
+
+              <ScheduleDetails
+                date={workJob.scheduled_date}
+                timeFrom={workJob.scheduled_time_from}
+                timeUntil={workJob.scheduled_time_until}
+                phone={workJob.phone_number}
+                address={workJob.address}
+              />
+
+              <WorkersPanel workers={workJob.workers} />
+              <QuotationPanel total={quoteTotal} itemCount={workJob.quotation?.items.length ?? 0} />
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ScheduleDetails({
+  date,
+  timeFrom,
+  timeUntil,
+  phone,
+  address,
+}: {
+  date: string | null | undefined;
+  timeFrom: string | null | undefined;
+  timeUntil: string | null | undefined;
+  phone: string | null | undefined;
+  address: string | null | undefined;
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border p-4 text-sm">
+      <Detail icon={CalendarDays} label="Date" value={formatAdminDate(date)} />
+      <Detail icon={Clock} label="Time" value={`${formatAdminTime(timeFrom)} - ${formatAdminTime(timeUntil)}`} />
+      <Detail icon={Phone} label="Phone" value={phone ?? "-"} />
+      <Detail icon={MapPin} label="Address" value={address ?? "-"} />
+    </div>
+  );
+}
+
+function WorkersPanel({ workers }: { workers: WorkerLike[] }) {
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+        <Users className="size-4" />
+        Assigned Workers
+      </div>
+      {workers.length ? (
+        <div className="flex flex-wrap gap-2">
+          {workers.map((worker) => (
+            <span key={worker.id} className="rounded-full bg-muted px-3 py-1 text-xs">
+              {worker.full_name}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No workers assigned yet.</p>
+      )}
+    </div>
+  );
+}
+
+function QuotationPanel({ total, itemCount }: { total: number; itemCount: number }) {
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
+          <FileText className="size-4" />
+          Quotation
+        </div>
+        <span className="text-sm font-semibold">₱{fmtPeso(total)}</span>
+      </div>
+      <Separator className="my-3" />
+      <p className="text-sm text-muted-foreground">
+        {itemCount ? `${itemCount} item${itemCount === 1 ? "" : "s"} attached` : "No quotation attached."}
+      </p>
+    </div>
   );
 }
 
@@ -350,7 +609,13 @@ function Detail({
   );
 }
 
-function AppointmentEventBlock({ info, onSelect }: { info: EventContentArg; onSelect: (id: number) => void }) {
+function AppointmentEventBlock({
+  info,
+  onSelect,
+}: {
+  info: EventContentArg;
+  onSelect: (id: number) => void;
+}) {
   const props = info.event.extendedProps as {
     appointments?: AdminAppointment[];
     status: string;
@@ -359,28 +624,102 @@ function AppointmentEventBlock({ info, onSelect }: { info: EventContentArg; onSe
     time_until: string;
   };
   const group = props.appointments ?? [];
-  const color = statusColors[props.status] ?? statusColors.pending;
+  return (
+    <GroupedEventBlock
+      info={info}
+      group={group}
+      getId={(appointment) => appointment.id}
+      getNumber={(appointment) => appointment.appointment_number}
+      getName={(appointment) => appointment.full_name}
+      getStatus={(appointment) => appointment.status}
+      status={props.status}
+      fullName={props.full_name}
+      timeFrom={props.time_from}
+      timeUntil={props.time_until}
+      onSelect={onSelect}
+    />
+  );
+}
+
+function WorkJobEventBlock({
+  info,
+  onSelect,
+}: {
+  info: EventContentArg;
+  onSelect: (id: number) => void;
+}) {
+  const props = info.event.extendedProps as {
+    workJobs?: AdminWorkJob[];
+    status: string;
+    full_name: string;
+    time_from: string;
+    time_until: string;
+  };
+  const group = props.workJobs ?? [];
+  return (
+    <GroupedEventBlock
+      info={info}
+      group={group}
+      getId={(workJob) => workJob.id}
+      getNumber={(workJob) => workJob.work_job_number}
+      getName={(workJob) => workJob.full_name}
+      getStatus={(workJob) => workJob.status}
+      status={props.status}
+      fullName={props.full_name}
+      timeFrom={props.time_from}
+      timeUntil={props.time_until}
+      onSelect={onSelect}
+    />
+  );
+}
+
+function GroupedEventBlock<T>({
+  info,
+  group,
+  getId,
+  getNumber,
+  getName,
+  getStatus,
+  status,
+  fullName,
+  timeFrom,
+  timeUntil,
+  onSelect,
+}: {
+  info: EventContentArg;
+  group: T[];
+  getId: (item: T) => number;
+  getNumber: (item: T) => string;
+  getName: (item: T) => string;
+  getStatus: (item: T) => string;
+  status: string;
+  fullName: string;
+  timeFrom: string;
+  timeUntil: string;
+  onSelect: (id: number) => void;
+}) {
+  const color = statusColors[status] ?? statusColors.pending;
   const isMonthView = info.view.type === "dayGridMonth";
 
   if (isMonthView) {
     if (group.length > 1) {
       return (
         <div className="space-y-0.5">
-          {group.map((appointment) => {
-            const itemColor = statusColors[appointment.status] ?? statusColors.pending;
+          {group.map((item) => {
+            const itemColor = statusColors[getStatus(item)] ?? statusColors.pending;
 
             return (
               <button
-                key={appointment.id}
+                key={getId(item)}
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  onSelect(appointment.id);
+                  onSelect(getId(item));
                 }}
                 className={`flex w-full items-center gap-1.5 overflow-hidden rounded px-1.5 py-0.5 text-left ${itemColor.bg} ${itemColor.text}`}
               >
                 <span className={`size-1.5 shrink-0 rounded-full ${itemColor.dot}`} />
-                <span className="truncate text-[11px] font-semibold">{appointment.appointment_number}</span>
+                <span className="truncate text-[11px] font-semibold">{getNumber(item)}</span>
               </button>
             );
           })}
@@ -399,21 +738,21 @@ function AppointmentEventBlock({ info, onSelect }: { info: EventContentArg; onSe
   if (group.length > 1) {
     return (
       <div className="flex h-full w-full flex-col gap-1 overflow-y-auto rounded-lg border bg-background/80 p-1.5">
-        {group.map((appointment) => {
-          const itemColor = statusColors[appointment.status] ?? statusColors.pending;
+        {group.map((item) => {
+          const itemColor = statusColors[getStatus(item)] ?? statusColors.pending;
 
           return (
             <button
-              key={appointment.id}
+              key={getId(item)}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                onSelect(appointment.id);
+                onSelect(getId(item));
               }}
               className={`min-h-8 rounded-md border-l-4 px-1.5 py-1 text-left ${itemColor.bg} ${itemColor.border} ${itemColor.text}`}
             >
-              <p className="truncate text-[11px] font-bold leading-tight">{appointment.appointment_number}</p>
-              <p className="truncate text-[10px] leading-tight opacity-80">{appointment.full_name}</p>
+              <p className="truncate text-[11px] font-bold leading-tight">{getNumber(item)}</p>
+              <p className="truncate text-[10px] leading-tight opacity-80">{getName(item)}</p>
             </button>
           );
         })}
@@ -424,59 +763,100 @@ function AppointmentEventBlock({ info, onSelect }: { info: EventContentArg; onSe
   return (
     <div className={`flex h-full w-full flex-col overflow-hidden rounded-md border-l-4 px-1.5 py-1 ${color.bg} ${color.border} ${color.text}`}>
       <p className="truncate text-[11px] font-bold leading-tight">{info.event.title}</p>
-      <p className="truncate text-[10px] leading-tight opacity-80">{props.full_name}</p>
-      <p className="text-[10px] leading-tight opacity-70">{formatAdminTime(props.time_from)} - {formatAdminTime(props.time_until)}</p>
+      <p className="truncate text-[10px] leading-tight opacity-80">{fullName}</p>
+      <p className="text-[10px] leading-tight opacity-70">
+        {formatAdminTime(timeFrom)} - {formatAdminTime(timeUntil)}
+      </p>
     </div>
   );
 }
 
 function WorkerEventBlock({ info }: { info: EventContentArg }) {
-  const props = info.event.extendedProps as { full_name: string; worker_name: string; time_from: string; time_until: string; workerColor: typeof workerPalette[number] };
+  const props = info.event.extendedProps as {
+    full_name: string;
+    worker_name: string;
+    record_type_label: string;
+    time_from: string;
+    time_until: string;
+    workerColor: WorkerColor;
+  };
   const color = props.workerColor;
 
   return (
     <div className={`flex h-full w-full flex-col overflow-hidden rounded-md border-l-4 px-1.5 py-1 ${color.bg} ${color.border} ${color.text}`}>
       <p className="truncate text-[11px] font-bold leading-tight">{info.event.title}</p>
       <p className="truncate text-[10px] font-semibold leading-tight opacity-90">{props.worker_name}</p>
-      <p className="truncate text-[10px] leading-tight opacity-70">{props.full_name}</p>
-      <p className="text-[10px] leading-tight opacity-60">{formatAdminTime(props.time_from)} - {formatAdminTime(props.time_until)}</p>
+      <p className="truncate text-[10px] leading-tight opacity-70">{props.record_type_label} · {props.full_name}</p>
+      <p className="text-[10px] leading-tight opacity-60">
+        {formatAdminTime(props.time_from)} - {formatAdminTime(props.time_until)}
+      </p>
     </div>
   );
 }
 
-function uniqueWorkers(appointments: AdminAppointment[]) {
-  return Array.from(new Set(appointments.flatMap((appointment) => appointment.workers.map((worker) => worker.full_name))));
+function uniqueWorkers(items: SlotItem[]) {
+  const workers = new Map<number, WorkerLike>();
+  items.forEach((item) => item.workers.forEach((worker) => workers.set(worker.id, worker)));
+  return Array.from(workers.values());
+}
+
+function buildWorkerColorMap(items: SlotItem[]) {
+  const workers = uniqueWorkers(items);
+  return new Map(workers.map((worker, index) => [worker.id, workerPalette[index % workerPalette.length]]));
 }
 
 function overlappingAppointmentGroups(appointments: AdminAppointment[]) {
-  const byDate = new Map<string, AdminAppointment[]>();
+  return overlappingGroups(appointments, {
+    date: (appointment) => appointment.appointment_date,
+    start: (appointment) => appointment.appointment_time_from,
+    end: (appointment) => appointment.appointment_time_until,
+  });
+}
 
-  appointments.forEach((appointment) => {
-    const date = String(appointment.appointment_date);
-    byDate.set(date, [...(byDate.get(date) ?? []), appointment]);
+function overlappingWorkJobGroups(workJobs: AdminWorkJob[]) {
+  return overlappingGroups(workJobs, {
+    date: (workJob) => workJob.scheduled_date,
+    start: (workJob) => workJob.scheduled_time_from,
+    end: (workJob) => workJob.scheduled_time_until,
+  });
+}
+
+function overlappingGroups<T>(
+  records: T[],
+  accessors: {
+    date: (record: T) => string | null | undefined;
+    start: (record: T) => string | null | undefined;
+    end: (record: T) => string | null | undefined;
+  },
+) {
+  const byDate = new Map<string, T[]>();
+
+  records.forEach((record) => {
+    const date = String(accessors.date(record));
+    byDate.set(date, [...(byDate.get(date) ?? []), record]);
   });
 
   return Array.from(byDate.values()).flatMap((items) => {
-    const sorted = [...items].sort((a, b) => minutes(a.appointment_time_from) - minutes(b.appointment_time_from));
-    const groups: AdminAppointment[][] = [];
+    const sorted = [...items].sort((a, b) => minutes(accessors.start(a)) - minutes(accessors.start(b)));
+    const groups: T[][] = [];
 
-    sorted.forEach((appointment) => {
-      const start = minutes(appointment.appointment_time_from);
+    sorted.forEach((record) => {
+      const start = minutes(accessors.start(record));
       const current = groups.at(-1);
 
       if (!current) {
-        groups.push([appointment]);
+        groups.push([record]);
         return;
       }
 
-      const currentEnd = Math.max(...current.map((item) => minutes(item.appointment_time_until)));
+      const currentEnd = Math.max(...current.map((item) => minutes(accessors.end(item))));
 
       if (start < currentEnd) {
-        current.push(appointment);
+        current.push(record);
         return;
       }
 
-      groups.push([appointment]);
+      groups.push([record]);
     });
 
     return groups;
@@ -496,13 +876,13 @@ function maxTime(values: Array<string | null | undefined>) {
   return values.reduce((max, value) => minutes(value) > minutes(max) ? value : max, values[0]) ?? "00:00";
 }
 
-function calendarSlotRange(appointments: AdminAppointment[]) {
-  if (!appointments.length) {
+function calendarSlotRange(items: SlotItem[]) {
+  if (!items.length) {
     return { min: "08:00:00", max: "18:00:00" };
   }
 
-  const starts = appointments.map((appointment) => minutes(appointment.appointment_time_from));
-  const ends = appointments.map((appointment) => minutes(appointment.appointment_time_until));
+  const starts = items.map((item) => minutes(item.time_from));
+  const ends = items.map((item) => minutes(item.time_until));
   const minHour = Math.max(0, Math.floor(Math.min(...starts) / 60) - 1);
   const maxHour = Math.min(24, Math.ceil(Math.max(...ends) / 60) + 1);
 
@@ -516,17 +896,21 @@ function slotTime(hour: number) {
   return `${String(hour).padStart(2, "0")}:00:00`;
 }
 
-function maxConcurrentWorkerEvents(appointments: AdminAppointment[]) {
+function maxConcurrentWorkerEvents(items: SlotItem[]) {
   const grouped = new Map<string, number>();
 
-  appointments.forEach((appointment) => {
-    const key = [
-      appointment.appointment_date,
-      appointment.appointment_time_from,
-      appointment.appointment_time_until,
-    ].join("|");
-    grouped.set(key, (grouped.get(key) ?? 0) + appointment.workers.length);
+  items.forEach((item) => {
+    const key = [item.date, item.time_from, item.time_until].join("|");
+    grouped.set(key, (grouped.get(key) ?? 0) + item.workers.length);
   });
 
   return Math.max(1, ...grouped.values());
+}
+
+function approvedQuoteTotal(items: Array<{ status: string | null; total_amount: number }> | undefined) {
+  return items?.filter((item) => item.status === "approved").reduce((sum, item) => sum + Number(item.total_amount || 0), 0) ?? 0;
+}
+
+function labelize(value: string) {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

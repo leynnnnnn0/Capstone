@@ -29,6 +29,7 @@ import {
 } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { toast } from "sonner";
 
 export default function AppointmentDetailPage({ appointmentId }: { appointmentId: string }) {
   const router = useRouter();
@@ -68,6 +69,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
       });
       setReason("");
       setCancelOpen(false);
+      toast.success("Appointment Cancelled");
     } catch {
       try {
         const latest = await getCustomerAppointment(appointment.id);
