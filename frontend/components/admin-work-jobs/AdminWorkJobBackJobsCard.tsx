@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
@@ -43,10 +43,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchAvailableWorkers } from "@/features/admin-appointments/admin-appointment-api";
 import {
   createBackJob,
   fetchAdminWorkJob,
-  fetchWorkJobWorkers,
 } from "@/features/admin-work-jobs/admin-work-job-api";
 import {
   backJobReasonLabel,
@@ -148,9 +148,24 @@ export default function AdminWorkJobBackJobsCard({
     setForm(initialBackJobForm(workJob));
     setErrors({});
     setConfirmOpen(false);
-    fetchWorkJobWorkers().then((response) => setWorkers(response.data));
     setOpen(true);
   }
+
+  useEffect(() => {
+    if (!open || !form.scheduled_date || !form.scheduled_time_from || !form.scheduled_time_until) {
+      if (!open) setWorkers([]);
+      return;
+    }
+
+    fetchAvailableWorkers({
+      appointment_date: form.scheduled_date,
+      appointment_time_from: form.scheduled_time_from,
+      appointment_time_until: form.scheduled_time_until,
+      worker_ids: [],
+    })
+      .then((response) => setWorkers(response.data))
+      .catch(() => setWorkers([]));
+  }, [open, form.scheduled_date, form.scheduled_time_from, form.scheduled_time_until]);
 
   function setBackJobDialogOpen(nextOpen: boolean) {
     setOpen(nextOpen);

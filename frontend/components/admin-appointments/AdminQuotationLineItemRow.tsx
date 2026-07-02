@@ -27,6 +27,8 @@ import {
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { Product } from "@/features/products/types";
 import { optionGroupOptions, productOptionGroups, productVariants } from "@/features/products/product-utils";
+import { isQuantityOnlyUnit } from "@/features/quotes/quote-utils";
+import type { DimensionUnit } from "@/features/quotes/types";
 
 export default function AdminQuotationLineItemRow({
   item,
@@ -47,11 +49,55 @@ export default function AdminQuotationLineItemRow({
   const selectedProduct = products.find((product) => String(product.id) === item.product_id) ?? null;
   const variants = selectedProduct ? productVariants(selectedProduct) : [];
   const groups = selectedProduct ? productOptionGroups(selectedProduct) : [];
-  const currentVariant = variants.find((variant) => String(variant.width) === item.width && String(variant.height) === item.height);
+  const currentVariant = item.selected_variant_id
+    ? variants.find((variant) => String(variant.id) === item.selected_variant_id)
+    : variants.find((variant) => String(variant.width) === item.width && String(variant.height) === item.height);
   const errorPrefix = `items.${index}`;
+  const usesMeasurements = selectedProduct ? !isQuantityOnlyUnit(selectedProduct.unit) : true;
+  const dimensionUnit = item.dimension_unit ?? "m";
+  const dimensionLabel = dimensionUnit === "cm" ? "cm" : "m";
 
   function updateField(field: keyof AdminLineItem, value: string) {
-    onUpdate(item.id, recalculateLineItem(item, { [field]: value }, selectedProduct));
+    const clearsVariant = ["width", "height"].includes(field);
+    onUpdate(
+      item.id,
+      recalculateLineItem(
+        item,
+        {
+          [field]: value,
+          ...(clearsVariant ? { selected_variant_id: undefined } : {}),
+        },
+        selectedProduct,
+      ),
+    );
+  }
+
+  function updateDimensionUnit(value: DimensionUnit) {
+    onUpdate(
+      item.id,
+      recalculateLineItem(
+        item,
+        {
+          dimension_unit: value,
+          selected_variant_id: undefined,
+        },
+        selectedProduct,
+      ),
+    );
+  }
+
+  function updateManualPrice(value: string) {
+    onUpdate(
+      item.id,
+      recalculateLineItem(
+        item,
+        {
+          amount_per_piece: value,
+          selected_variant_id: undefined,
+        },
+        selectedProduct,
+      ),
+    );
   }
 
   return (
@@ -131,11 +177,25 @@ export default function AdminQuotationLineItemRow({
             </FieldError>
           </div>
 
+          {selectedProduct && usesMeasurements && (
+            <FieldError label="Measurement Unit">
+              <Select value={dimensionUnit} onValueChange={(value) => updateDimensionUnit(value as DimensionUnit)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="m">Meters</SelectItem>
+                  <SelectItem value="cm">Centimeters</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldError>
+          )}
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <FieldError label="Width (cm)">
+            <FieldError label={`${selectedProduct?.unit === "meter" ? "Length" : "Width"} (${dimensionLabel})`}>
               <NumericInput value={item.width} onValueChange={(value) => updateField("width", value)} />
             </FieldError>
-            <FieldError label="Height (cm)">
+            <FieldError label={`Height (${dimensionLabel})`}>
               <NumericInput value={item.height} onValueChange={(value) => updateField("height", value)} />
             </FieldError>
             <FieldError label="Thickness (mm)">
@@ -186,7 +246,7 @@ export default function AdminQuotationLineItemRow({
 
           <div className="grid gap-3 rounded-lg bg-muted/40 p-3 sm:grid-cols-3">
             <FieldError label="Base Price / Pc (₱)">
-              <NumericInput decimalScale={2} value={item.amount_per_piece} onValueChange={(value) => updateField("amount_per_piece", value)} />
+              <NumericInput decimalScale={2} value={item.amount_per_piece} onValueChange={updateManualPrice} />
             </FieldError>
             <FieldError label="Options Add-ons (₱)">
               <Input readOnly value={fmtPeso(item.options_amount)} className="cursor-not-allowed bg-muted" />

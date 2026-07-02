@@ -54,7 +54,7 @@ import {
 } from "@/features/admin-appointments/admin-appointment-utils";
 import {
   fmtPeso,
-  customerItemToLineItem,
+  customerItemsToLineItems,
   lineItemToPayload,
   makeAdminLineItem,
   validateLineItems,
@@ -190,7 +190,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             quotation_notes: source.quotation?.notes ?? "",
           });
           if (source.quotation?.items.length) {
-            setItems(source.quotation.items.map(customerItemToLineItem));
+            setItems(customerItemsToLineItems(source.quotation.items, productResponse.data));
             setHasQuotation(true);
           }
         }

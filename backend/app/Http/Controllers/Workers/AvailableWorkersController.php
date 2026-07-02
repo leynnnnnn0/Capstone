@@ -20,6 +20,7 @@ class AvailableWorkersController extends Controller
             from: $request->appointment_time_from,
             to: $request->appointment_time_until,
             excludeAppointmentId: $request->appointment_id,
+            excludeWorkJobId: $request->work_job_id,
         );
 
         return WorkerResource::collection($workers);

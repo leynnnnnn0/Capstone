@@ -50,7 +50,7 @@ export function fetchWorkers() {
   return api<CollectionResponse<AdminWorker>>("/api/v1/workers");
 }
 
-export function fetchAvailableWorkers(payload: SchedulePayload & { appointment_id?: number }) {
+export function fetchAvailableWorkers(payload: SchedulePayload & { appointment_id?: number; work_job_id?: number }) {
   const params = new URLSearchParams({
     appointment_date: payload.appointment_date,
     appointment_time_from: payload.appointment_time_from,
@@ -58,6 +58,7 @@ export function fetchAvailableWorkers(payload: SchedulePayload & { appointment_i
   });
 
   if (payload.appointment_id) params.set("appointment_id", String(payload.appointment_id));
+  if (payload.work_job_id) params.set("work_job_id", String(payload.work_job_id));
 
   return api<CollectionResponse<AdminWorker>>(`/api/v1/workers/available?${params.toString()}`);
 }

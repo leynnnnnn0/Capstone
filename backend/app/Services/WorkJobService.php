@@ -19,7 +19,8 @@ class WorkJobService
 {
     public function __construct(
         private readonly CustomerAccountResolver $customerAccountResolver,
-        private readonly WorkJobWarrantyService $warrantyService
+        private readonly WorkJobWarrantyService $warrantyService,
+        private readonly WorkerService $workerService
     ) {}
 
     /**
@@ -32,6 +33,13 @@ class WorkJobService
     public function create(array $data, ?User $actor = null): WorkJob
     {
         $customerId = $this->resolveCustomerId($data, $actor);
+        $this->ensureWorkersAvailable(
+            $data['worker_ids'],
+            $data['scheduled_date'],
+            $data['scheduled_time_from'],
+            $data['scheduled_time_until'],
+            $data['appointment_id'] ?? null
+        );
 
         $workJob = DB::transaction(function () use ($data, $actor, $customerId) {
             $workerIds = $data['worker_ids'];
@@ -81,6 +89,14 @@ class WorkJobService
     public function update(WorkJob $workJob, array $data, ?User $actor = null): WorkJob
     {
         $customerId = $this->resolveCustomerId($data, $actor);
+        $this->ensureWorkersAvailable(
+            $data['worker_ids'],
+            $data['scheduled_date'],
+            $data['scheduled_time_from'],
+            $data['scheduled_time_until'],
+            $data['appointment_id'] ?? null,
+            $workJob->id
+        );
 
         $workJob = DB::transaction(function () use ($workJob, $data, $actor, $customerId) {
             $workJob->update([
@@ -169,6 +185,12 @@ class WorkJobService
                 'email' => $source->email,
                 'phone_number' => $source->phone_number,
             ])->id;
+        $this->ensureWorkersAvailable(
+            $data['worker_ids'],
+            $data['scheduled_date'],
+            $data['scheduled_time_from'],
+            $data['scheduled_time_until']
+        );
 
         $backJob = DB::transaction(function () use ($source, $data, $actor, $customerId) {
             $reason = WorkJobBackJobReason::from($data['back_job_reason']);
@@ -239,6 +261,15 @@ class WorkJobService
     public function reschedule(WorkJob $workJob, array $data, User $actor): WorkJob
     {
         $this->ensureCanTransition($workJob, WorkJobStatus::Rescheduled);
+        $workerIds = $data['worker_ids'] ?? $workJob->workers()->pluck('users.id')->all();
+        $this->ensureWorkersAvailable(
+            $workerIds,
+            $data['scheduled_date'],
+            $data['scheduled_time_from'],
+            $data['scheduled_time_until'],
+            null,
+            $workJob->id
+        );
 
         $message = $data['reason'] ?? 'Work job rescheduled.';
 
@@ -390,6 +421,30 @@ class WorkJobService
         if ($source->status === WorkJobStatus::InProgress && $reason !== WorkJobBackJobReason::UnfinishedWork) {
             throw ValidationException::withMessages([
                 'back_job_reason' => 'Only unfinished work can create a back job while the original work job is still in progress.',
+            ]);
+        }
+    }
+
+    private function ensureWorkersAvailable(
+        array $workerIds,
+        string $date,
+        string $from,
+        string $to,
+        ?int $excludeAppointmentId = null,
+        ?int $excludeWorkJobId = null
+    ): void {
+        $availableIds = $this->workerService
+            ->getAvailable($date, $from, $to, $excludeAppointmentId, $excludeWorkJobId)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $selectedIds = array_map('intval', $workerIds);
+        $unavailableIds = array_values(array_diff($selectedIds, $availableIds));
+
+        if ($unavailableIds !== []) {
+            throw ValidationException::withMessages([
+                'worker_ids' => 'One or more selected workers already have an appointment, work job, or back job during this schedule.',
             ]);
         }
     }

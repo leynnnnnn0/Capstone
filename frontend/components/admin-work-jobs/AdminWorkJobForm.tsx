@@ -47,6 +47,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import {
+  fetchAvailableWorkers,
   fetchAdminAppointment,
   fetchAdminAppointments,
 } from "@/features/admin-appointments/admin-appointment-api";
@@ -54,7 +55,6 @@ import type { AdminAppointment, AdminWorker } from "@/features/admin-appointment
 import {
   createAdminWorkJob,
   fetchAdminWorkJob,
-  fetchWorkJobWorkers,
   updateAdminWorkJob,
 } from "@/features/admin-work-jobs/admin-work-job-api";
 import {
@@ -145,9 +145,32 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
-    fetchWorkJobWorkers().then((response) => setWorkers(response.data));
     fetchAdminAppointments({ per_page: "100" }).then((response) => setAppointments(response.data));
   }, []);
+
+  useEffect(() => {
+    if (!data.scheduled_date || !data.scheduled_time_from || !data.scheduled_time_until) {
+      setWorkers([]);
+      return;
+    }
+
+    fetchAvailableWorkers({
+      appointment_id: data.appointment_id ?? undefined,
+      work_job_id: workJob?.id,
+      appointment_date: data.scheduled_date,
+      appointment_time_from: data.scheduled_time_from,
+      appointment_time_until: data.scheduled_time_until,
+      worker_ids: [],
+    })
+      .then((response) => setWorkers(response.data))
+      .catch(() => setWorkers([]));
+  }, [
+    data.appointment_id,
+    data.scheduled_date,
+    data.scheduled_time_from,
+    data.scheduled_time_until,
+    workJob?.id,
+  ]);
 
   useEffect(() => {
     if (workJobId || !appointmentId) return;

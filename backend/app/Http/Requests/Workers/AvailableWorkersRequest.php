@@ -30,6 +30,7 @@ class AvailableWorkersRequest extends FormRequest
             'appointment_time_from'  => ['required', 'date_format:H:i'],
             'appointment_time_until' => ['required', 'date_format:H:i', 'after:appointment_time_from'],
             'appointment_id'         => ['nullable', 'integer', 'exists:appointments,id'],
+            'work_job_id'            => ['nullable', 'integer', 'exists:work_jobs,id'],
         ];
     }
 
@@ -65,7 +66,8 @@ class AvailableWorkersRequest extends FormRequest
             'appointment_date.after_or_equal' => 'Appointment date must be today or in the future.',
             'appointment_time_from.required'  => 'Please provide the start time.',
             'appointment_time_until.after'    => 'End time must be after the start time.',
-            'appointment_id.exists'          => 'The specified appointment does not exist.',
+            'appointment_id.exists'           => 'The specified appointment does not exist.',
+            'work_job_id.exists'              => 'The specified work job does not exist.',
 
         ];
     }

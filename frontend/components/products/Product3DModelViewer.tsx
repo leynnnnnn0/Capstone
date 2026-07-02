@@ -13,6 +13,7 @@ type Product3DModelViewerProps = {
   compact?: boolean;
   hideHeader?: boolean;
   ar?: boolean;
+  arDefaultScale?: number;
   maxWidthMeters?: number;
   maxHeightMeters?: number;
 };
@@ -30,6 +31,7 @@ export default function Product3DModelViewer({
   compact = false,
   hideHeader = false,
   ar = false,
+  arDefaultScale = 0.01,
   maxWidthMeters = 0.8,
   maxHeightMeters = 1.2,
 }: Product3DModelViewerProps) {
@@ -53,6 +55,12 @@ export default function Product3DModelViewer({
     const dimensions = viewer?.getDimensions?.();
 
     if (!viewer || !dimensions) return;
+
+    if (ar && arDefaultScale > 0) {
+      viewer.setAttribute("scale", `${arDefaultScale} ${arDefaultScale} ${arDefaultScale}`);
+      viewer.updateFraming?.();
+      return;
+    }
 
     const width = Math.max(dimensions.x, dimensions.z);
     const height = dimensions.y;
@@ -103,6 +111,7 @@ export default function Product3DModelViewer({
                 ? {
                     "ar-modes": "webxr scene-viewer quick-look",
                     "ar-scale": "auto",
+                    scale: `${arDefaultScale} ${arDefaultScale} ${arDefaultScale}`,
                   }
                 : {}),
             "camera-controls": true,

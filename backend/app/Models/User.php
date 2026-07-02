@@ -55,6 +55,11 @@ class User extends Authenticatable implements AuditableContract
         return $this->belongsToMany(Appointment::class, 'appointment_workers');
     }
 
+    public function workJobs(): BelongsToMany
+    {
+        return $this->belongsToMany(WorkJob::class, 'work_job_workers');
+    }
+
     // ── Helpers ───────────────────────────────────────────────────
 
     public function isAdmin(): bool

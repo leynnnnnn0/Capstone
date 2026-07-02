@@ -22,7 +22,7 @@ import {
   updateAppointmentQuotation,
 } from "@/features/admin-appointments/admin-appointment-api";
 import {
-  customerItemToLineItem,
+  customerItemsToLineItems,
   fmtPeso,
   lineItemToPayload,
   makeAdminLineItem,
@@ -60,7 +60,7 @@ export default function AdminQuotationEditor({
         setProducts(response.data);
         setItems(
           appointment.quotation?.items.length
-            ? appointment.quotation.items.map(customerItemToLineItem)
+            ? customerItemsToLineItems(appointment.quotation.items, response.data)
             : [makeAdminLineItem()],
         );
         setNotes(appointment.quotation?.notes ?? "");
@@ -77,7 +77,7 @@ export default function AdminQuotationEditor({
   function resetItems() {
     setItems(
       appointment.quotation?.items.length
-        ? appointment.quotation.items.map(customerItemToLineItem)
+        ? customerItemsToLineItems(appointment.quotation.items, products)
         : [makeAdminLineItem()],
     );
     setNotes(appointment.quotation?.notes ?? "");
