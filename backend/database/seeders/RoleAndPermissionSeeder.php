@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RoleAndPermissionSeeder extends Seeder
 {
@@ -76,9 +77,13 @@ class RoleAndPermissionSeeder extends Seeder
 
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         foreach (self::PERMISSIONS as $permission) {
             Permission::findOrCreate($permission, 'web');
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach (self::ROLES as $roleName => $permissions) {
             Role::findOrCreate($roleName, 'web')->syncPermissions($permissions);
@@ -91,5 +96,7 @@ class RoleAndPermissionSeeder extends Seeder
                 $user->assignRole($role);
             }
         });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
