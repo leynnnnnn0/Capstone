@@ -258,6 +258,7 @@ export type CustomerAppointment = {
   status: CustomerStatus;
   status_label: string;
   can_edit: boolean;
+  can_reschedule: boolean;
   can_cancel: boolean;
   created_at: string;
   workers: CustomerWorker[];

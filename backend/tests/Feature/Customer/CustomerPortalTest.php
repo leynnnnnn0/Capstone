@@ -83,6 +83,42 @@ it('allows customer edits only while appointment is pending', function () {
         ->assertJsonPath('message', 'Only pending appointments can be edited.');
 });
 
+it('lets customers reschedule confirmed appointments before work job creation', function () {
+    Mail::fake();
+
+    $customer = User::factory()->create([
+        'role' => 'customer',
+        'email' => 'customer@gmail.com',
+    ]);
+
+    $appointment = Appointment::factory()->create([
+        'user_id' => $customer->id,
+        'email' => 'customer@gmail.com',
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(2)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
+        'appointment_time_until' => '11:00',
+    ]);
+
+    $newDate = now()->addDays(5)->format('Y-m-d');
+
+    $this->actingAs($customer)
+        ->patchJson("/api/v1/customer/appointments/{$appointment->id}/reschedule", [
+            'appointment_date' => $newDate,
+            'appointment_time_from' => '13:00',
+            'appointment_time_until' => '15:00',
+            'reason' => 'Customer requested a later inspection slot.',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.status', 'rescheduled')
+        ->assertJsonPath('data.appointment_date', $newDate)
+        ->assertJsonPath('data.appointment_time_from', '13:00')
+        ->assertJsonPath('data.appointment_time_until', '15:00')
+        ->assertJsonPath('data.can_reschedule', false);
+
+    expect($appointment->fresh()->remarks()->where('action', 'rescheduled')->exists())->toBeTrue();
+});
+
 it('lets customers cancel but not delete appointments', function () {
     Mail::fake();
 

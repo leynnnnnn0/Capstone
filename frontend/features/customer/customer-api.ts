@@ -58,6 +58,21 @@ export function cancelCustomerAppointment(id: string | number, reason: string) {
   });
 }
 
+export function rescheduleCustomerAppointment(
+  id: string | number,
+  payload: {
+    appointment_date: string;
+    appointment_time_from: string;
+    appointment_time_until: string;
+    reason: string;
+  },
+) {
+  return api<ResourceResponse<CustomerAppointment>>(`/api/v1/customer/appointments/${id}/reschedule`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function signCustomerQuotation(
   quotationId: string | number,
   payload: { signer_name: string; signature: string },

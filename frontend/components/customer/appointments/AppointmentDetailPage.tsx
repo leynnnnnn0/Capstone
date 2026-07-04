@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, RotateCcw, Pencil, XCircle } from "lucide-react";
+import { BriefcaseBusiness, CalendarClock, RotateCcw, Pencil, XCircle } from "lucide-react";
 
 import AppointmentInfoCard from "@/components/customer/appointments/AppointmentInfoCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
@@ -12,6 +12,8 @@ import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSumm
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { CustomerStatus, statusIn } from "@/features/customer/status";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import {
   Dialog,
@@ -26,10 +28,20 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   cancelCustomerAppointment,
   getCustomerAppointment,
+  rescheduleCustomerAppointment,
 } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
+import { todayIsoDate, timeToMinutes } from "@/features/forms/validation";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { ApiError } from "@/lib/api";
 import { toast } from "sonner";
+
+type RescheduleForm = {
+  appointment_date: string;
+  appointment_time_from: string;
+  appointment_time_until: string;
+  reason: string;
+};
 
 export default function AppointmentDetailPage({ appointmentId }: { appointmentId: string }) {
   const router = useRouter();
@@ -38,6 +50,15 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   const [cancelling, setCancelling] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState("");
+  const [rescheduleForm, setRescheduleForm] = useState<RescheduleForm>({
+    appointment_date: "",
+    appointment_time_from: "",
+    appointment_time_until: "",
+    reason: "",
+  });
 
   const reload = useCallback(() => {
     getCustomerAppointment(appointmentId).then((response) => setAppointment(response.data));
@@ -91,6 +112,73 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
       setCancelError("We could not cancel this appointment. Please try again.");
     } finally {
       setCancelling(false);
+    }
+  }
+
+  function seedRescheduleForm(nextAppointment = appointment) {
+    if (!nextAppointment) return;
+
+    setRescheduleForm({
+      appointment_date: nextAppointment.appointment_date ?? nextAppointment.preferred_date,
+      appointment_time_from: nextAppointment.appointment_time_from ?? "09:00",
+      appointment_time_until: nextAppointment.appointment_time_until ?? "11:00",
+      reason: "",
+    });
+    setRescheduleError("");
+  }
+
+  function updateRescheduleField<K extends keyof RescheduleForm>(field: K, value: RescheduleForm[K]) {
+    setRescheduleForm((current) => ({ ...current, [field]: value }));
+    setRescheduleError("");
+  }
+
+  function validateRescheduleForm() {
+    const today = todayIsoDate();
+    const startMinutes = timeToMinutes(rescheduleForm.appointment_time_from);
+    const endMinutes = timeToMinutes(rescheduleForm.appointment_time_until);
+
+    if (!rescheduleForm.appointment_date) return "Choose a new appointment date.";
+    if (rescheduleForm.appointment_date < today) return "Appointment date cannot be before today.";
+    if (startMinutes === null) return "Enter a valid start time.";
+    if (endMinutes === null) return "Enter a valid end time.";
+    if (endMinutes <= startMinutes) return "End time must be after the start time.";
+    if (rescheduleForm.appointment_date === today) {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      if (startMinutes <= nowMinutes) return "Start time must be later than the current time.";
+    }
+    if (!rescheduleForm.reason.trim()) return "Please provide a reason for rescheduling.";
+
+    return "";
+  }
+
+  async function rescheduleAppointment() {
+    if (!appointment) return;
+
+    const validationError = validateRescheduleForm();
+    if (validationError) {
+      setRescheduleError(validationError);
+      return;
+    }
+
+    try {
+      setRescheduling(true);
+      setRescheduleError("");
+      const response = await rescheduleCustomerAppointment(appointment.id, {
+        ...rescheduleForm,
+        reason: rescheduleForm.reason.trim(),
+      });
+      setAppointment(response.data);
+      setRescheduleOpen(false);
+      toast.success("Appointment rescheduled");
+    } catch (error) {
+      setRescheduleError(
+        error instanceof ApiError
+          ? error.message
+          : "We could not reschedule this appointment. Please try again.",
+      );
+    } finally {
+      setRescheduling(false);
     }
   }
 
@@ -152,8 +240,100 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
                 </Link>
               </Button>
             ) : null}
+            {appointment.can_reschedule && (
+              <Dialog
+                open={rescheduleOpen}
+                onOpenChange={(open) => {
+                  if (open) seedRescheduleForm();
+                  setRescheduleOpen(open);
+                }}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 gap-2"
+                  >
+                    <CalendarClock className="size-4" />
+                    Reschedule
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Reschedule appointment</DialogTitle>
+                    <DialogDescription>
+                      Choose a new inspection schedule and tell SOG why you need
+                      the change.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-1.5 sm:col-span-3">
+                      <Label htmlFor="reschedule-date">New date</Label>
+                      <Input
+                        id="reschedule-date"
+                        type="date"
+                        min={todayIsoDate()}
+                        value={rescheduleForm.appointment_date}
+                        onChange={(event) => updateRescheduleField("appointment_date", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="reschedule-from">Time from</Label>
+                      <Input
+                        id="reschedule-from"
+                        type="time"
+                        value={rescheduleForm.appointment_time_from}
+                        onChange={(event) => updateRescheduleField("appointment_time_from", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="reschedule-until">Time until</Label>
+                      <Input
+                        id="reschedule-until"
+                        type="time"
+                        value={rescheduleForm.appointment_time_until}
+                        onChange={(event) => updateRescheduleField("appointment_time_until", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-3">
+                      <Label htmlFor="reschedule-reason">Reason</Label>
+                      <Textarea
+                        id="reschedule-reason"
+                        value={rescheduleForm.reason}
+                        onChange={(event) => updateRescheduleField("reason", event.target.value)}
+                        placeholder="Reason for rescheduling"
+                        className="min-h-24 resize-none"
+                      />
+                    </div>
+                    {rescheduleError && (
+                      <p className="text-sm font-medium text-red-600 sm:col-span-3">
+                        {rescheduleError}
+                      </p>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setRescheduleOpen(false)}
+                      disabled={rescheduling}
+                    >
+                      Keep Current Schedule
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={rescheduling}
+                      onClick={rescheduleAppointment}
+                    >
+                      {rescheduling ? "Rescheduling..." : "Confirm Reschedule"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
             {(appointment.status === "pending" ||
-              appointment.status === "confirmed") &&
+              appointment.status === "confirmed" ||
+              appointment.status === "rescheduled") &&
               appointment.can_cancel && (
                 <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
                   <DialogTrigger asChild>

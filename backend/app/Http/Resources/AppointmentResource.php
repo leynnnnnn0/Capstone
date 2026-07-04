@@ -39,6 +39,7 @@ class AppointmentResource extends JsonResource
             'status' => $this->status?->value ?? $this->status,
             'status_label' => method_exists($this->status, 'label') ? $this->status->label() : $this->status,
             'can_edit' => $this->status === AppointmentStatus::Pending,
+            'can_reschedule' => $this->status === AppointmentStatus::Confirmed && ! $this->workJob()->exists(),
             'can_cancel' => ! in_array($this->status, [
                 AppointmentStatus::Cancelled,
                 AppointmentStatus::Completed,

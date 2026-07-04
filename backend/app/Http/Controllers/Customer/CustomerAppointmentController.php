@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Customer;
 
 use App\Enums\AppointmentStatus;
 use App\Events\AppointmentUpdated;
+use App\Exceptions\InvalidStatusTransitionException;
 use App\Exceptions\SlotFullException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Appointments\CancelAppointmentRequest;
+use App\Http\Requests\Customer\RescheduleCustomerAppointmentRequest;
 use App\Http\Requests\Customer\StoreCustomerAppointmentRequest;
 use App\Http\Requests\Customer\UpdateCustomerAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
@@ -133,5 +135,29 @@ class CustomerAppointmentController extends Controller
             'message' => 'Appointment cancelled.',
             'data' => new AppointmentResource($appointment),
         ]);
+    }
+
+    public function reschedule(RescheduleCustomerAppointmentRequest $request, Appointment $appointment): JsonResponse
+    {
+        abort_unless($this->recordAccess->canAccessAppointment($request->user(), $appointment), 404);
+
+        if ($appointment->workJob()->exists()) {
+            return response()->json([
+                'message' => 'This appointment already has a work job. Please coordinate with SOG staff for schedule changes.',
+            ], 422);
+        }
+
+        try {
+            $appointment = $this->appointmentService
+                ->reschedule($appointment, $request->validated(), $request->user())
+                ->load(self::APPOINTMENT_RELATIONS);
+
+            return response()->json([
+                'message' => 'Appointment rescheduled.',
+                'data' => new AppointmentResource($appointment),
+            ]);
+        } catch (InvalidStatusTransitionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 }
