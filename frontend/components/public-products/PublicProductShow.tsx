@@ -102,13 +102,15 @@ export default function PublicProductShow() {
 
   return (
     <Shell>
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <main className="px-2 py-3 sm:px-3">
+        <div className="mx-auto max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-10 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+          <div className="mx-auto max-w-[1440px]">
         <HistoryBackButton
           fallbackHref="/products"
-          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[12px] font-bold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary hover:text-primary hover:shadow-md"
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#cbd6de] bg-white px-4 py-2.5 text-xs font-semibold text-[#536372] transition-all hover:border-[#2c5282] hover:text-[#2c5282]"
         />
 
-        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-20">
+        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-20">
           <div className="order-1 lg:sticky lg:top-24 lg:order-2">
             <ImageGallery
               images={productImages(product)}
@@ -120,7 +122,7 @@ export default function PublicProductShow() {
 
           <div className="order-2 lg:order-1">
             {categories[0] && (
-              <div className="mb-3 flex items-center gap-2 text-[11px] text-slate-400">
+              <div className="mb-5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8996a2]">
                 <Link href="/products" className="font-semibold transition-colors hover:text-primary">
                   {categories[0].name}
                 </Link>
@@ -129,18 +131,18 @@ export default function PublicProductShow() {
               </div>
             )}
 
-            <h1 className="mb-4 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
+            <h1 className="mb-6 text-[clamp(2.75rem,5vw,5.5rem)] font-medium leading-[0.9] tracking-[-0.06em] text-[#101820]">
               {product.name}
             </h1>
 
             <div className="mb-5 flex items-baseline gap-3">
-              <span className="text-[26px] font-extrabold text-primary sm:text-[30px]">
+              <span className="text-2xl font-semibold tracking-[-0.03em] text-[#2c5282] sm:text-3xl">
                 {formatCurrency(product.price_per_unit)}
               </span>
               <span className="text-[13px] text-slate-400">per {product.unit}</span>
             </div>
 
-            <p className="mb-6 text-[14px] leading-relaxed text-slate-500 sm:text-[15px]">
+            <p className="mb-8 max-w-xl text-sm leading-7 text-[#667584] sm:text-base">
               {product.description}
             </p>
 
@@ -156,7 +158,7 @@ export default function PublicProductShow() {
                       {optionGroupOptions(group).map((option) => (
                         <span
                           key={option.id}
-                          className="rounded-full border border-slate-200 px-3 py-1 text-[12px] font-semibold text-slate-600"
+                          className="rounded-full border border-[#cbd6de] bg-white px-3 py-1.5 text-xs font-semibold text-[#536372]"
                         >
                           {option.name}
                           {Number(option.price_modifier) > 0 && (
@@ -172,11 +174,11 @@ export default function PublicProductShow() {
               </div>
             )}
 
-            <div className="mb-8 flex flex-wrap gap-2 border-b border-slate-100 pb-6">
+            <div className="mb-8 flex flex-wrap gap-2 border-b border-[#dce4ea] pb-7">
               {["Fabricated In-House", "Warranty Included", "Free Measurement", "7-14 Day Lead Time"].map((label) => (
                 <span
                   key={label}
-                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                  className="rounded-full border border-[#dce4ea] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#536372]"
                 >
                   {label}
                 </span>
@@ -186,7 +188,7 @@ export default function PublicProductShow() {
             <div className="mb-6 flex flex-col gap-3 sm:flex-row">
               <Link
                 href={`/get-quote?product=${product.id}`}
-                className="flex-1 rounded-xl bg-primary py-4 text-center text-[14px] font-bold text-white no-underline transition-all hover:-translate-y-0.5 hover:opacity-90"
+                className="flex-1 rounded-full bg-[#162d4a] py-4 text-center text-sm font-semibold text-white no-underline transition-colors hover:bg-[#2c5282]"
               >
                 Get a Quote for This Product
               </Link>
@@ -197,16 +199,19 @@ export default function PublicProductShow() {
             </p>
           </div>
         </div>
+          </div>
+        </div>
       </main>
 
       {variants.length > 0 && (
-        <section className="border-t border-slate-100 bg-slate-50 py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section className="px-2 pt-3 sm:px-3">
+          <div className="mx-auto max-w-none rounded-[2rem] bg-[#eaf2f8] px-5 py-14 sm:px-10 sm:py-20 lg:px-16">
+            <div className="mx-auto max-w-[1440px]">
             <div className="mb-8">
               <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-primary">
                 Standard Sizes
               </span>
-              <h2 className="text-2xl font-bold text-secondary sm:text-3xl">
+              <h2 className="text-3xl font-medium tracking-[-0.04em] text-[#101820] sm:text-4xl">
                 Available in {variants.length} standard size{variants.length === 1 ? "" : "s"}
               </h2>
               <p className="mt-2 text-[13px] text-slate-500">
@@ -220,7 +225,7 @@ export default function PublicProductShow() {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white">
               <div className="hidden grid-cols-[auto_1fr_auto] gap-4 border-b border-slate-100 bg-slate-50/60 px-6 py-3 sm:grid">
                 <span className="w-20 text-[10px] font-black uppercase tracking-widest text-slate-400">
                   Preview
@@ -253,25 +258,27 @@ export default function PublicProductShow() {
                 </div>
                 <Link
                   href={`/get-quote?product=${product.id}&size=custom`}
-                  className="rounded-xl border-2 border-slate-200 px-5 py-2.5 text-[12px] font-bold whitespace-nowrap text-slate-600 no-underline transition-all hover:border-primary hover:text-primary"
+                  className="rounded-full border border-[#cbd6de] px-5 py-2.5 text-xs font-semibold whitespace-nowrap text-[#536372] no-underline transition-all hover:border-[#2c5282] hover:text-[#2c5282]"
                 >
                   Custom Size Quote →
                 </Link>
               </div>
+            </div>
             </div>
           </div>
         </section>
       )}
 
       {related.length > 0 && (
-        <section className="border-t border-slate-100 py-12 sm:py-16">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section className="px-2 pt-3 sm:px-3">
+          <div className="mx-auto max-w-none rounded-[2rem] bg-white px-5 py-14 sm:px-10 sm:py-20 lg:px-16">
+            <div className="mx-auto max-w-[1440px]">
             <div className="mb-8 flex items-end justify-between">
               <div>
                 <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-primary">
                   You May Also Like
                 </span>
-                <h2 className="text-2xl font-bold text-secondary">Related Products</h2>
+                <h2 className="text-3xl font-medium tracking-[-0.04em] text-[#101820]">Related Products</h2>
               </div>
               <Link href="/products" className="text-[12px] font-bold text-primary hover:underline">
                 View All →
@@ -283,6 +290,7 @@ export default function PublicProductShow() {
                 <RelatedProductCard key={item.id} product={item} index={index} />
               ))}
             </div>
+            </div>
           </div>
         </section>
       )}
@@ -292,7 +300,7 @@ export default function PublicProductShow() {
 
 function ProductShowSkeleton() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <main className="mx-auto max-w-[1440px] px-5 py-12 sm:px-10 sm:py-16 lg:px-16">
       <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-20">
         <div className="order-1 space-y-3 lg:order-2">
           <Skeleton className="aspect-square w-full rounded-3xl" />
@@ -325,7 +333,7 @@ function ProductShowSkeleton() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-white text-[#101820]">
       <Navbar />
       {children}
       <Footer />
@@ -367,7 +375,7 @@ function ImageGallery({
   return (
     <div className="flex flex-col gap-4">
       <div
-        className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-3xl border border-slate-100 bg-slate-50"
+        className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-[1.75rem] border border-[#dce4ea] bg-white"
         onClick={() => setZoomed(true)}
       >
         <img

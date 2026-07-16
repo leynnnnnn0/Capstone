@@ -79,14 +79,15 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="h-screen w-screen dark:bg-[#F1F1F1] flex items-center justify-center">
-      <div className="h-fit w-110 rounded-lg shadow-lg dark:bg-white space-y-4 p-5 flex justify-center items-center flex-col">
+    <main className="min-h-screen bg-white p-2 sm:p-3">
+      <div className="flex min-h-[calc(100svh-1rem)] items-center justify-center rounded-[2rem] bg-[#162d4a] px-4 py-12 sm:min-h-[calc(100svh-1.5rem)]">
+      <div className="flex h-fit w-full max-w-md flex-col items-center justify-center space-y-5 rounded-[1.75rem] border border-white/20 bg-white p-6 shadow-[0_30px_100px_rgba(0,0,0,0.2)] sm:p-8">
         <AppLogo />
         <div className="text-center">
-          <h3 className="text-xl font-bold">Reset your password</h3>
-          <h6 className="text-black/40 text-sm">
+          <h1 className="text-3xl font-medium tracking-[-0.04em] text-[#101820]">Reset your password</h1>
+          <p className="mt-2 text-sm text-[#667584]">
             Enter your new password below
-          </h6>
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="w-full space-y-4">
@@ -113,12 +114,13 @@ function ResetPasswordForm() {
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="h-12 w-full rounded-full bg-[#162d4a] hover:bg-[#2c5282]" disabled={loading}>
             {loading ? "Resetting..." : "Reset Password"}
           </Button>
         </form>
       </div>
-    </div>
+      </div>
+    </main>
   );
 }
 

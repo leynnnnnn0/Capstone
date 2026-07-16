@@ -129,10 +129,19 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-8 lg:grid-cols-[1fr_440px] lg:px-8">
-        <section className="hidden lg:block">
-          <Link href="/" className="inline-flex items-center gap-3">
+    <main className="min-h-screen bg-white p-2 sm:p-3">
+      <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] overflow-hidden rounded-[2rem] bg-[#f3f6f8] sm:min-h-[calc(100svh-1.5rem)] lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="relative hidden overflow-hidden bg-[#162d4a] p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-16">
+          <Image
+            src="/images/landing/aesthetic.jpg"
+            alt="Black aluminum window systems on a modern residence"
+            fill
+            priority
+            sizes="60vw"
+            className="object-cover opacity-55"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#162d4a]/70 via-[#162d4a]/45 to-[#162d4a]/95" />
+          <Link href="/" className="relative inline-flex items-center gap-3 self-start">
             <Image
               src="/images/sog-logo.png"
               alt="SOG Logo"
@@ -143,14 +152,14 @@ export default function LoginPage() {
             />
           </Link>
 
-          <div className="mt-5 max-w-xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">
+          <div className="relative max-w-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#c8dae8]">
               Customer Portal
             </p>
-            <h1 className="mt-4 text-5xl font-bold leading-tight tracking-tight text-slate-950">
+            <h1 className="mt-5 text-[clamp(3.5rem,5vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.06em] text-white">
               Track every inspection, quote, and installation in one place.
             </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-slate-600">
+            <p className="mt-7 max-w-lg text-base leading-7 text-white/65">
               Sign in with a one-time code to view your appointments, work jobs,
               quotes, and product selections without remembering another password.
             </p>
@@ -158,7 +167,8 @@ export default function LoginPage() {
 
         </section>
 
-        <section className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="mx-auto flex w-full max-w-xl flex-col justify-center px-5 py-12 sm:px-10 lg:px-14 xl:px-20">
+          <div className="rounded-[1.75rem] border border-[#dce4ea] bg-white p-6 shadow-[0_24px_80px_rgba(22,45,74,0.09)] sm:p-8">
           <div className="mb-8 text-center lg:hidden">
             <Image
               src="/images/sog-logo.png"
@@ -173,10 +183,10 @@ export default function LoginPage() {
           {step === "contact" && (
             <>
               <div className="mb-7">
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">
+                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#608db9]">
                   Customer Login
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                <h2 className="mt-3 text-3xl font-medium tracking-[-0.04em] text-[#101820]">
                   Get your one-time code
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -188,7 +198,7 @@ export default function LoginPage() {
               <form onSubmit={handleRequestOtp} className="space-y-5">
                 <div className="space-y-2">
                   <Label>Send code via</Label>
-                  <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1">
+                  <div className="grid grid-cols-2 gap-2 rounded-full bg-[#f3f6f8] p-1">
                     {(["phone", "email"] as ContactMode[]).map((mode) => (
                       <button
                         key={mode}
@@ -197,7 +207,7 @@ export default function LoginPage() {
                           setContactMode(mode);
                           setError("");
                         }}
-                        className={`inline-flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium transition ${
+                        className={`inline-flex h-10 items-center justify-center gap-2 rounded-full text-sm font-medium transition ${
                           contactMode === mode
                             ? "bg-white text-slate-950 shadow-sm"
                             : "text-slate-500 hover:text-slate-900"
@@ -253,7 +263,7 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                <Button type="submit" className="h-12 w-full rounded-full bg-[#162d4a] hover:bg-[#2c5282]" disabled={loading}>
                   {loading ? "Sending..." : "Send OTP"}
                 </Button>
               </form>
@@ -277,7 +287,7 @@ export default function LoginPage() {
               </button>
 
               <div className="mb-7">
-                <h2 className="text-2xl font-bold text-slate-950">
+                <h2 className="text-3xl font-medium tracking-[-0.04em] text-[#101820]">
                   Enter verification code
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
@@ -316,7 +326,7 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <Button type="submit" className="h-11 w-full" disabled={loading}>
+                <Button type="submit" className="h-12 w-full rounded-full bg-[#162d4a] hover:bg-[#2c5282]" disabled={loading}>
                   {loading ? "Verifying..." : "Verify and continue"}
                 </Button>
 
@@ -344,7 +354,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="mt-8 border-t border-slate-100 pt-5 text-center">
+          <div className="mt-8 border-t border-[#dce4ea] pt-5 text-center">
             <p className="text-sm text-slate-500">
               SOG team member?{" "}
               <Link
@@ -354,6 +364,7 @@ export default function LoginPage() {
                 Staff login
               </Link>
             </p>
+          </div>
           </div>
         </section>
       </div>

@@ -41,7 +41,7 @@ export default function PublicQuoteSheet({
         onClick={() => setOpen(true)}
         aria-label={`Open quote${itemCount ? ` with ${itemCount} items` : ""}`}
         className={cn(
-          "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-primary transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-blue-50",
+          "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dce4ea] text-[#2c5282] transition-all hover:border-[#2c5282] hover:bg-[#eaf2f8]",
           className,
         )}
       >
@@ -54,9 +54,9 @@ export default function PublicQuoteSheet({
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
-          <SheetHeader className="border-b border-slate-100 px-5 py-5 text-left">
-            <SheetTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+        <SheetContent side="right" className="w-full gap-0 border-l-[#dce4ea] p-0 sm:max-w-md">
+          <SheetHeader className="border-b border-[#dce4ea] bg-[#f3f6f8] px-6 py-6 text-left">
+            <SheetTitle className="flex items-center gap-2 text-xl font-medium tracking-[-0.025em] text-[#101820]">
               <FileText className="h-5 w-5 text-primary" />
               Your Quote
             </SheetTitle>
@@ -73,7 +73,7 @@ export default function PublicQuoteSheet({
               </div>
             ) : (
               cart.map((item) => (
-                <div key={item.id} className="border-b border-slate-100 py-4 last:border-0">
+                <div key={item.id} className="border-b border-[#dce4ea] py-5 last:border-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-slate-900">{item.product.name}</p>
@@ -84,7 +84,7 @@ export default function PublicQuoteSheet({
                         {item.pieces} pc{item.pieces === 1 ? "" : "s"}
                       </p>
                     </div>
-                    <p className="whitespace-nowrap text-sm font-extrabold text-primary">
+                    <p className="whitespace-nowrap text-sm font-semibold text-[#2c5282]">
                       {formatCurrency(Math.round(computeItemTotal(item)))}
                     </p>
                   </div>
@@ -94,7 +94,7 @@ export default function PublicQuoteSheet({
                       {item.selected_options.map((option) => (
                         <span
                           key={option.product_option_id}
-                          className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                          className="rounded-full bg-[#eaf2f8] px-2 py-1 text-[10px] font-semibold text-[#2c5282]"
                         >
                           {option.option_name}
                         </span>
@@ -128,12 +128,12 @@ export default function PublicQuoteSheet({
             )}
           </div>
 
-          <SheetFooter className="border-t border-slate-100 bg-slate-50 px-5 py-4">
+          <SheetFooter className="border-t border-[#dce4ea] bg-[#f3f6f8] px-6 py-5">
             {cart.length > 0 && (
               <>
                 <div className="mb-2 flex items-baseline justify-between">
                   <span className="text-sm font-semibold text-slate-500">Estimated Total</span>
-                  <span className="text-xl font-extrabold text-primary">
+                  <span className="text-xl font-semibold text-[#2c5282]">
                     {formatCurrency(Math.round(quoteTotal(cart)))}
                   </span>
                 </div>
@@ -149,7 +149,7 @@ export default function PublicQuoteSheet({
                 setOpen(false);
                 onNavigate?.();
               }}
-              className="rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold text-white transition-opacity hover:opacity-90"
+              className="rounded-full bg-[#162d4a] px-4 py-3.5 text-center text-sm font-semibold text-white transition-colors hover:bg-[#2c5282]"
             >
               {cart.length > 0 ? "Continue Quote" : "Start a Quote"}
             </Link>

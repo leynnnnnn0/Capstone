@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
+import PublicPageHero from "@/components/landing/PublicPageHero";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
@@ -131,25 +132,15 @@ export default function PublicProductCatalog() {
     `/products/${productId}${catalogQuery ? `?${catalogQuery}` : ""}`;
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-white text-[#101820]">
       <Navbar />
 
-      <header className="bg-primary">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <div className="mb-4 inline-flex rounded-lg bg-white/10 px-3 py-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                  Catalog
-                </span>
-              </div>
-              <h1 className="text-2xl font-extrabold leading-tight text-white sm:text-4xl">
-                Everything we craft,
-                <br className="hidden sm:block" /> built for your space.
-              </h1>
-            </div>
-
-            <div className="relative w-full sm:w-80">
+      <PublicPageHero
+        eyebrow="Product collection"
+        title={<>Everything we craft,<br />built for your space.</>}
+        description="Browse made-to-measure glass and aluminum systems for residential and commercial openings."
+        aside={
+          <div className="relative w-full lg:w-96">
               <input
                 type="text"
                 placeholder="Search products..."
@@ -159,21 +150,25 @@ export default function PublicProductCatalog() {
                   setSearch(nextSearch);
                   setProductQuery({ search: nextSearch });
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-[13px] text-slate-700 placeholder-slate-400 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-full border border-white/20 bg-white/10 px-5 py-4 pr-12 text-sm text-white placeholder-white/45 outline-none backdrop-blur-md transition focus:border-white/50 focus:bg-white/15 focus:ring-2 focus:ring-white/20"
               />
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            </div>
+              <Search className="absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55" />
           </div>
+        }
+      />
 
-          {categories.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-2">
+      <main className="px-2 py-3 sm:px-3">
+        <div className="mx-auto min-h-[36rem] max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-14 sm:px-10 sm:py-20 lg:px-16">
+          <div className="mx-auto max-w-[1440px]">
+            {categories.length > 0 && (
+            <div className="mb-10 flex flex-wrap gap-2 border-b border-[#dce4ea] pb-7 sm:mb-14">
               <button
                 type="button"
                 onClick={() => setCategory(null)}
-                className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                   !activeCategory
-                    ? "border-2 border-[#9eb4c9] bg-[#9eb4c9] text-white"
-                    : "border border-slate-200 bg-white text-slate-500"
+                    ? "border border-[#162d4a] bg-[#162d4a] text-white"
+                    : "border border-[#cbd6de] bg-white text-[#667584] hover:border-[#2c5282]"
                 }`}
               >
                 All
@@ -185,10 +180,10 @@ export default function PublicProductCatalog() {
                     key={category.id}
                     type="button"
                     onClick={() => setCategory(category.id)}
-                    className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition-all ${
                       active
-                        ? "border-2 border-[#9eb4c9] bg-[#9eb4c9] text-white"
-                        : "border border-slate-200 bg-white text-slate-500"
+                        ? "border border-[#162d4a] bg-[#162d4a] text-white"
+                        : "border border-[#cbd6de] bg-white text-[#667584] hover:border-[#2c5282]"
                     }`}
                   >
                     {category.name}
@@ -197,10 +192,6 @@ export default function PublicProductCatalog() {
               })}
             </div>
           )}
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-12 pb-24 sm:px-6 lg:px-8">
         {loading ? (
           <CatalogSkeleton />
         ) : error ? (
@@ -209,12 +200,12 @@ export default function PublicProductCatalog() {
           <EmptyState title="No products found" body="Try a different search or category." />
         ) : (
           <>
-            <p className="mb-6 text-[12px] font-medium text-slate-400">
+            <p className="mb-7 text-xs font-medium uppercase tracking-[0.16em] text-[#8996a2]">
               {filteredProducts.length} product{filteredProducts.length === 1 ? "" : "s"}
               {search ? ` for "${search}"` : ""}
             </p>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProducts.map((product, index) => {
                 const cover = productCover(product);
                 const category = productCategories(product)[0];
@@ -223,10 +214,10 @@ export default function PublicProductCatalog() {
                 return (
                   <article
                     key={product.id}
-                    className="group block overflow-hidden rounded-2xl border border-slate-100 bg-white no-underline shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    className="group block overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white no-underline transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(22,45,74,0.12)]"
                   >
                     <div
-                      className="relative flex h-48 items-center justify-center overflow-hidden"
+                      className="relative flex aspect-[4/3] items-center justify-center overflow-hidden"
                       style={{ background: cover ? "#f8fafc" : gradient }}
                     >
                       <Link href={productHref(product.id)} className="block h-full w-full">
@@ -234,7 +225,7 @@ export default function PublicProductCatalog() {
                           <img
                             src={cover}
                             alt={product.name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
                           />
                         ) : (
                           <span className="flex h-full w-full items-center justify-center text-[32px] font-black text-white opacity-30">
@@ -244,20 +235,20 @@ export default function PublicProductCatalog() {
                       </Link>
                     </div>
 
-                    <div className="p-4">
+                    <div className="p-6">
                       {category && (
-                        <span className="mb-2 inline-block rounded bg-blue-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+                        <span className="mb-3 inline-block text-[9px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
                           {category.name}
                         </span>
                       )}
-                      <h3 className="mb-1 font-bold leading-snug text-slate-900">
+                      <h3 className="mb-2 text-xl font-medium leading-snug tracking-[-0.03em] text-[#101820]">
                         {product.name}
                       </h3>
-                      <p className="mb-3 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
+                      <p className="mb-5 line-clamp-2 min-h-10 text-xs leading-5 text-[#667584]">
                         {product.description}
                       </p>
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-[12px] font-bold text-primary">
+                        <span className="text-xs font-semibold text-[#2c5282]">
                           from {formatCurrency(product.price_per_unit)}
                           <span className="font-normal text-slate-400">
                             /{product.unit}
@@ -265,7 +256,7 @@ export default function PublicProductCatalog() {
                         </span>
                         <Link
                           href={productHref(product.id)}
-                          className="text-[11px] font-bold text-slate-400 transition-colors group-hover:text-primary"
+                          className="inline-flex items-center rounded-full border border-[#dce4ea] px-3 py-2 text-[11px] font-semibold text-[#536372] transition-colors group-hover:border-[#2c5282] group-hover:text-[#2c5282]"
                         >
                           View →
                         </Link>
@@ -277,6 +268,8 @@ export default function PublicProductCatalog() {
             </div>
           </>
         )}
+          </div>
+        </div>
       </main>
 
       <Footer />
@@ -288,11 +281,11 @@ function CatalogSkeleton() {
   return (
     <>
       <Skeleton className="mb-6 h-4 w-20" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 8 }, (_, index) => (
           <div
             key={index}
-            className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+            className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white"
           >
             <Skeleton className="h-48 rounded-none" />
             <div className="space-y-3 p-4">
@@ -314,8 +307,8 @@ function CatalogSkeleton() {
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="py-24 text-center text-slate-400">
-      <p className="mb-2 text-lg font-semibold">{title}</p>
+    <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white px-6 py-24 text-center text-[#667584]">
+      <p className="mb-2 text-xl font-medium tracking-[-0.025em] text-[#101820]">{title}</p>
       <p className="text-sm">{body}</p>
     </div>
   );

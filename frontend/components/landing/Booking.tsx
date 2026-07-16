@@ -135,10 +135,10 @@ export default function Booking() {
   return (
     <section
       id="booking"
-      className="mx-auto max-w-7xl px-4 py-4 sm:px-8 md:px-12 md:py-8 lg:px-20 lg:py-12"
+      className="px-2 pt-3 sm:px-3"
     >
       <motion.div
-        className="grid items-start gap-10 md:grid-cols-2 md:gap-20"
+        className="mx-auto grid max-w-none items-start gap-12 rounded-[2rem] bg-[#f3f6f8] px-5 py-20 sm:px-10 sm:py-24 md:grid-cols-2 md:gap-14 lg:px-16 lg:py-28 xl:gap-24"
         initial={revealInitial}
         whileInView="visible"
         viewport={{ once: true, amount: 0.15 }}
@@ -148,21 +148,22 @@ export default function Booking() {
         }}
       >
         <motion.div variants={reveal}>
-          <span className="text-[10px] font-black uppercase tracking-widest text-[#2c5282]">
-            Book a Home Visit
+          <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-[#667584] sm:text-xs">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#608db9]" />
+            Book an inspection
           </span>
-          <h2 className="mb-5 mt-3 text-5xl font-bold leading-[1.05] tracking-tight text-secondary">
-            Free Ocular
+          <h2 className="mb-6 mt-4 text-[clamp(2.75rem,5.5vw,6rem)] font-medium leading-[0.9] tracking-[-0.06em] text-[#101820]">
+            Free on-site
             <br />
-            Visit.
+            inspection.
           </h2>
-          <p className="mb-8 max-w-sm text-base leading-relaxed text-slate-500">
-            Our certified technicians visit your home, measure precisely, and
+          <p className="mb-9 max-w-md text-base leading-7 text-[#667584]">
+            Our technicians visit your space, measure precisely, and
             provide a detailed no-obligation quotation completely free of
             charge.
           </p>
           <motion.ul
-            className="mb-10 space-y-3 text-sm text-slate-600"
+            className="mb-10 space-y-4 text-sm text-[#536372]"
             variants={{
               hidden: {},
               visible: { transition: { staggerChildren: 0.08 } },
@@ -179,49 +180,35 @@ export default function Booking() {
                 variants={reveal}
                 className="flex items-center gap-3"
               >
-                <span className="font-black text-[#2c5282]">+</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#dce9f3] text-[10px] font-bold text-[#2c5282]">✓</span>
                 {item}
               </motion.li>
             ))}
           </motion.ul>
           <motion.div
-            animate={
-              prefersReducedMotion
-                ? undefined
-                : {
-                    y: [0, 0, -8, 0, -4, 0, 0],
-                    scale: [1, 1, 1.015, 1, 1.008, 1, 1],
-                  }
-            }
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-              times: [0, 0.84, 0.88, 0.91, 0.94, 0.97, 1],
-            }}
             whileHover={
-              prefersReducedMotion ? undefined : { y: -4, scale: 1.01 }
+              prefersReducedMotion ? undefined : { y: -4 }
             }
-            className="rounded-2xl"
+            className="overflow-hidden rounded-[1.5rem]"
           >
             <Link
               href="/get-quote"
-              className="group flex cursor-pointer items-center gap-4 rounded-[0.8rem]  px-4 py-4 text-white transition-colors bg-primary sm:px-5"
+              className="group flex cursor-pointer items-center gap-4 rounded-[1.5rem] bg-[#162d4a] px-5 py-5 text-white transition-colors hover:bg-[#2c5282] sm:px-6"
             >
               <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/20">
                 <Calculator className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/65">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
                   Quick estimate
                 </p>
-                <h4 className="mt-1 text-lg font-bold">
+                <h4 className="mt-1 text-lg font-medium">
                   Get an instant quote first
                 </h4>
                 <p className="mt-1 text-sm leading-relaxed text-white/80">
                   Enter dimensions and see an estimated price in minutes.
                 </p>
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-black text-primary transition-transform group-hover:translate-x-1">
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#2c5282] transition-transform group-hover:translate-x-1">
                   Start estimating
                   <ArrowRight className="h-3.5 w-3.5" />
                 </span>
@@ -232,9 +219,9 @@ export default function Booking() {
 
         <motion.div
           variants={reveal}
-          className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-xl sm:p-10"
+          className="rounded-[1.75rem] border border-[#dce4ea] bg-white p-5 shadow-[0_24px_80px_rgba(22,45,74,0.08)] sm:p-8 lg:p-10"
         >
-          <h3 className="mb-7 text-lg font-bold text-slate-900">
+          <h3 className="mb-7 text-lg font-medium text-[#101820]">
             Schedule a Visit
           </h3>
 
@@ -408,7 +395,7 @@ export default function Booking() {
             <Button
               type="submit"
               disabled={processing || !data.consent}
-              className="mt-2 w-full bg-[#2c5282] py-3.5 text-sm font-bold hover:bg-[#6a8fa8] disabled:opacity-60"
+              className="mt-2 w-full rounded-full bg-[#162d4a] py-3.5 text-sm font-bold hover:bg-[#2c5282] disabled:opacity-60"
             >
               {processing ? "Booking..." : "Book Free Inspection"}
             </Button>

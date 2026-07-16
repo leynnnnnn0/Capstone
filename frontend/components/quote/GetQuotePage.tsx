@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
+import PublicPageHero from "@/components/landing/PublicPageHero";
 import ProductConfigurator from "@/components/quote/ProductConfigurator";
 import QuoteCart from "@/components/quote/QuoteCart";
 import QuoteCheckoutForm from "@/components/quote/QuoteCheckoutForm";
@@ -118,32 +119,32 @@ export default function GetQuotePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-white text-[#101820]">
       <Navbar />
 
-      <header className="bg-primary">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-4 inline-flex rounded-lg bg-white/10 px-3 py-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-              Free Inspection Included
-            </span>
+      <PublicPageHero
+        eyebrow="Free inspection included"
+        title={<>Build your quote,<br />one product at a time.</>}
+        description="Configure the products your project needs. Dimensions and options stay together in one clear request."
+        aside={
+          <div className="grid grid-cols-3 gap-2 rounded-[1.5rem] border border-white/15 bg-white/[0.08] p-4 backdrop-blur-md sm:min-w-80">
+            {["Choose", "Configure", "Submit"].map((label, index) => (
+              <div key={label} className="text-center">
+                <span className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/20 text-[10px] font-semibold">0{index + 1}</span>
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60">{label}</p>
+              </div>
+            ))}
           </div>
-          <h1 className="mb-2 text-[24px] font-extrabold leading-tight text-white sm:text-[34px]">
-            Build your quote,
-            <br />
-            one product at a time.
-          </h1>
-          <p className="max-w-md text-[14px] text-white/65">
-            Add as many products as you need in a single request.
-          </p>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 pb-24 sm:px-6 lg:px-8 lg:pb-16">
+      <main className="px-2 py-3 sm:px-3">
+        <div className="mx-auto max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+          <div className="mx-auto max-w-[1440px]">
         {loading ? (
           <QuoteBuilderSkeleton />
         ) : error ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-red-500">
+          <div className="rounded-[1.5rem] border border-red-200 bg-white p-10 text-center text-red-600">
             {error}
           </div>
         ) : showCheckout ? (
@@ -156,7 +157,7 @@ export default function GetQuotePage() {
             }}
           />
         ) : (
-          <div className="flex flex-col items-start gap-6 lg:flex-row lg:gap-7">
+          <div className="flex flex-col items-start gap-7 lg:flex-row lg:gap-8">
             <ProductConfigurator
               products={products}
               categories={categories}
@@ -176,6 +177,8 @@ export default function GetQuotePage() {
             />
           </div>
         )}
+          </div>
+        </div>
       </main>
 
       <Footer />
@@ -185,8 +188,8 @@ export default function GetQuotePage() {
 
 function QuoteBuilderSkeleton() {
   return (
-    <div className="flex flex-col items-start gap-6 lg:flex-row lg:gap-7">
-      <div className="w-full space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-1 sm:p-7">
+    <div className="flex flex-col items-start gap-7 lg:flex-row lg:gap-8">
+      <div className="w-full space-y-5 rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 lg:flex-1 sm:p-7">
         <Skeleton className="h-6 w-44" />
         <Skeleton className="h-11 w-full rounded-xl" />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -197,7 +200,7 @@ function QuoteBuilderSkeleton() {
         <Skeleton className="h-11 w-full rounded-xl" />
         <Skeleton className="h-12 w-full rounded-xl" />
       </div>
-      <div className="w-full space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:w-80 sm:p-6">
+      <div className="w-full space-y-4 rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 lg:w-80 sm:p-6">
         <Skeleton className="h-6 w-28" />
         <Skeleton className="h-20 w-full rounded-xl" />
         <Skeleton className="h-20 w-full rounded-xl" />

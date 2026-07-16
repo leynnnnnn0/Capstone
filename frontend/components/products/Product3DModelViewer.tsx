@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ type Product3DModelViewerProps = {
   title?: string;
   description?: string;
   className?: string;
+  viewportClassName?: string;
   compact?: boolean;
   hideHeader?: boolean;
   ar?: boolean;
@@ -28,6 +29,7 @@ export default function Product3DModelViewer({
   title = "3D model preview",
   description = "Drag to rotate. Pinch or scroll to zoom.",
   className,
+  viewportClassName,
   compact = false,
   hideHeader = false,
   ar = false,
@@ -100,32 +102,34 @@ export default function Product3DModelViewer({
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       )}
-      <div className={compact ? "h-48" : "h-80"}>
+      <div className={cn(compact ? "h-48" : "h-80", viewportClassName)}>
         {ready ? (
-          createElement("model-viewer", {
-            ref: viewerRef,
-            src,
-            alt: title,
-            ar,
-            ...(ar
-                ? {
-                    "ar-modes": "webxr scene-viewer quick-look",
-                    "ar-scale": "auto",
-                    scale: `${arDefaultScale} ${arDefaultScale} ${arDefaultScale}`,
-                  }
-                : {}),
-            "camera-controls": true,
-            "auto-rotate": false,
-            "camera-orbit": "0deg 75deg 2.5m",
-            "camera-target": "0m 0m 0m",
-            "field-of-view": "30deg",
-            "shadow-intensity": "0.85",
-            "environment-image": "neutral",
-            exposure: "0.95",
-            "interaction-prompt": "auto",
-            onLoad: fitModelToRealWorldSize,
-            className: "h-full w-full bg-gradient-to-b from-slate-50 to-slate-100",
-          })
+          <model-viewer
+            ref={(element: HTMLElement | null) => {
+              viewerRef.current = element as ModelViewerElement | null;
+            }}
+            src={src}
+            alt={title}
+            ar={ar}
+            ar-modes={ar ? "webxr scene-viewer quick-look" : undefined}
+            ar-scale={ar ? "auto" : undefined}
+            scale={
+              ar
+                ? `${arDefaultScale} ${arDefaultScale} ${arDefaultScale}`
+                : undefined
+            }
+            camera-controls
+            auto-rotate={false}
+            camera-orbit="0deg 75deg 2.5m"
+            camera-target="0m 0m 0m"
+            field-of-view="30deg"
+            shadow-intensity="0.85"
+            environment-image="neutral"
+            exposure="0.95"
+            interaction-prompt="auto"
+            onLoad={fitModelToRealWorldSize}
+            className="h-full w-full bg-gradient-to-b from-slate-50 to-slate-100"
+          />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             Loading 3D viewer...

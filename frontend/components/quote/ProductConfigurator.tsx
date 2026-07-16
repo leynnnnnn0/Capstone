@@ -172,7 +172,7 @@ export default function ProductConfigurator({
 
   if (!draft) {
     return (
-      <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+      <div className="min-w-0 flex-1 rounded-[1.5rem] border border-[#dce4ea] bg-white p-10 text-center text-[#667584]">
         No products are available for quotes yet.
       </div>
     );
@@ -182,7 +182,7 @@ export default function ProductConfigurator({
     return (
       <div className="min-w-0 flex-1">
         <div className="mb-7">
-          <h2 className="mb-1.5 text-[22px] font-bold text-secondary sm:text-[28px]">
+          <h2 className="mb-2 text-3xl font-medium tracking-[-0.04em] text-[#101820] sm:text-4xl">
             {editingItem ? "Change product" : "Add a product"}
           </h2>
           <p className="text-[13px] text-slate-500 sm:text-[14px]">
@@ -190,7 +190,7 @@ export default function ProductConfigurator({
           </p>
         </div>
 
-        <div className="mb-5 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-7 space-y-4 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 sm:p-5">
           <div className="relative">
             <input
               type="text"
@@ -201,7 +201,7 @@ export default function ProductConfigurator({
                 setQuoteProductQuery({ search: nextSearch });
               }}
               placeholder="Search quote products..."
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-[13px] text-slate-700 placeholder-slate-400 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-full border border-[#dce4ea] bg-[#f3f6f8] px-5 py-3 pr-11 text-sm text-[#101820] placeholder-[#8996a2] outline-none transition focus:border-[#608db9] focus:ring-2 focus:ring-[#608db9]/20"
             />
             <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           </div>
@@ -213,8 +213,8 @@ export default function ProductConfigurator({
                 onClick={() => setQuoteProductQuery({ categoryId: null })}
                 className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
                   !activeCategory
-                    ? "border-2 border-primary bg-primary text-white"
-                    : "border border-slate-200 bg-white text-slate-500"
+                    ? "border border-[#162d4a] bg-[#162d4a] text-white"
+                    : "border border-[#cbd6de] bg-white text-[#667584]"
                 }`}
               >
                 All
@@ -228,8 +228,8 @@ export default function ProductConfigurator({
                     onClick={() => setQuoteProductQuery({ categoryId: category.id })}
                     className={`rounded-full px-4 py-1.5 text-[12px] font-bold transition-all ${
                       active
-                        ? "border-2 border-primary bg-primary text-white"
-                        : "border border-slate-200 bg-white text-slate-500"
+                        ? "border border-[#162d4a] bg-[#162d4a] text-white"
+                        : "border border-[#cbd6de] bg-white text-[#667584]"
                     }`}
                   >
                     {category.name}
@@ -241,11 +241,11 @@ export default function ProductConfigurator({
         </div>
 
         {visibleProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm font-semibold text-slate-400">
+          <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-10 text-center text-sm font-semibold text-[#667584]">
             No quote products match these filters.
           </div>
         ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visibleProducts.map((product, index) => (
             <QuoteProductCard
               key={product.id}
@@ -261,7 +261,7 @@ export default function ProductConfigurator({
           <button
             type="button"
             onClick={onCancelEdit}
-            className="mt-4 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-[13px] font-bold text-slate-500 hover:bg-slate-50"
+            className="mt-5 rounded-full border border-[#cbd6de] bg-white px-5 py-2.5 text-sm font-semibold text-[#536372] hover:border-[#2c5282]"
           >
             Cancel
           </button>
@@ -302,7 +302,7 @@ export default function ProductConfigurator({
         )}
       </div>
 
-      <div className="mb-5 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:gap-4">
+      <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 sm:gap-4">
         <ProductIdentity product={draft.product} />
       </div>
 
@@ -341,8 +341,8 @@ export default function ProductConfigurator({
                 }
                 className={`rounded-xl border px-4 py-2 text-[12px] font-bold transition-all ${
                   draft.size_mode === mode.key
-                    ? "border-primary bg-primary text-white"
-                    : "border-slate-200 bg-white text-slate-500"
+                    ? "border-[#162d4a] bg-[#162d4a] text-white"
+                    : "border-[#cbd6de] bg-white text-[#667584]"
                 }`}
               >
                 {mode.label}

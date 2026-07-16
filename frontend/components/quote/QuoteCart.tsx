@@ -37,7 +37,7 @@ export default function QuoteCart({
           </div>
         ) : (
           cart.map((item, index) => (
-            <div key={item.id} className="border-b border-slate-50 py-2.5 last:border-0">
+            <div key={item.id} className="border-b border-[#dce4ea] py-3.5 last:border-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-bold text-slate-900">{item.product.name}</p>
@@ -53,7 +53,7 @@ export default function QuoteCart({
                   {item.selected_options.length > 0 && (
                     <div className="mb-1 flex flex-wrap gap-1">
                       {item.selected_options.map((option) => (
-                        <span key={option.product_option_id} className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                        <span key={option.product_option_id} className="rounded-full bg-[#eaf2f8] px-2 py-0.5 text-[9px] font-semibold text-[#2c5282]">
                           {option.option_name}
                         </span>
                       ))}
@@ -64,7 +64,7 @@ export default function QuoteCart({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[13px] font-extrabold text-primary">
+                  <p className="text-[13px] font-semibold text-[#2c5282]">
                     {formatCurrency(Math.round(computeItemTotal(item)))}
                   </p>
                   <div className="mt-1 flex justify-end gap-2">
@@ -83,10 +83,10 @@ export default function QuoteCart({
       </div>
 
       {cart.length > 0 && (
-        <div className="border-t border-slate-100 px-4 py-4">
+        <div className="border-t border-[#dce4ea] bg-[#f3f6f8] px-4 py-4">
           <div className="mb-3 flex items-baseline justify-between">
             <span className="text-[12px] font-semibold text-slate-500">Estimated Total</span>
-            <span className="text-[18px] font-extrabold text-primary">
+            <span className="text-lg font-semibold text-[#2c5282]">
               {formatCurrency(Math.round(total))}
             </span>
           </div>
@@ -94,7 +94,7 @@ export default function QuoteCart({
             <button
               type="button"
               onClick={() => { onCheckout(); setMobileOpen(false); }}
-              className="w-full rounded-xl bg-primary py-3.5 text-[13px] font-bold text-white hover:opacity-90"
+              className="w-full rounded-full bg-[#162d4a] py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#2c5282]"
             >
               {actionLabel}
             </button>
@@ -111,9 +111,9 @@ export default function QuoteCart({
   return (
     <>
       <aside className="sticky top-24 hidden w-72 flex-shrink-0 self-start lg:block xl:w-80">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between bg-primary px-5 py-4">
-            <span className="text-[14px] font-bold text-white">Your Quote</span>
+        <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_20px_60px_rgba(22,45,74,0.08)]">
+          <div className="flex items-center justify-between bg-[#162d4a] px-5 py-5">
+            <span className="text-sm font-semibold text-white">Your Quote</span>
             {cart.length > 0 && (
               <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold text-white">
                 {cart.length} item{cart.length === 1 ? "" : "s"}
@@ -129,7 +129,7 @@ export default function QuoteCart({
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="fixed bottom-5 right-4 z-40 flex items-center gap-2.5 rounded-2xl bg-primary px-4 py-3 text-[13px] font-bold text-white shadow-2xl"
+            className="fixed bottom-5 right-4 z-40 flex items-center gap-2.5 rounded-full bg-[#162d4a] px-5 py-3.5 text-sm font-semibold text-white shadow-2xl"
           >
             <span>{cart.length} item{cart.length === 1 ? "" : "s"}</span>
             <span className="opacity-70">·</span>
@@ -141,8 +141,8 @@ export default function QuoteCart({
           <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45" onClick={(event) => {
             if (event.target === event.currentTarget) setMobileOpen(false);
           }}>
-            <div className="max-h-[85vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl">
-              <div className="flex items-center justify-between bg-primary px-5 py-4">
+            <div className="max-h-[85vh] overflow-hidden rounded-t-[2rem] bg-white shadow-2xl">
+              <div className="flex items-center justify-between bg-[#162d4a] px-5 py-5">
                 <span className="text-[14px] font-bold text-white">Your Quote</span>
                 <button type="button" onClick={() => setMobileOpen(false)} className="text-xl leading-none text-white/80">
                   x
