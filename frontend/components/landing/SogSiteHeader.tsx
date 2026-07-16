@@ -57,7 +57,7 @@ export default function SogSiteHeader({
       className={cn(
         "z-50 w-full font-poppins",
         sticky
-          ? "sticky top-0 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl"
+          ? "sticky top-0 bg-white/95 backdrop-blur-xl"
           : "relative z-30",
       )}
     >

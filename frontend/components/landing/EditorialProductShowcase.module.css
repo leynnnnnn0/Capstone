@@ -161,6 +161,7 @@
 @media (max-width: 639px) {
   .showcase {
     min-height: auto;
+    border: 0;
   }
 
   .showcase::before {

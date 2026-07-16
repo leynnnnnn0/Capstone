@@ -320,7 +320,7 @@ export default function EditorialProductShowcase({
   return (
     <section
       aria-label="SOG product collection"
-      className="bg-[#e9edf2]"
+      className="bg-white"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
