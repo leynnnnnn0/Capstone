@@ -253,6 +253,7 @@ function subscribeToViewport(onStoreChange: () => void) {
     );
   };
 }
+// TODO: REMOVE THIS
 
 function getViewportWidth() {
   return window.innerWidth;
