@@ -34,12 +34,12 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
   return (
     <div className="mx-auto max-w-3xl">
       <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_24px_80px_rgba(22,45,74,0.09)]">
-        <div className="flex flex-col gap-3 bg-[#162d4a] px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div className="flex flex-col gap-3 bg-[#162d4a] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
           <div>
             <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-white/50">
               {isWorkJob ? "Work Job" : "Appointment"}
             </p>
-            <p className="text-xl font-semibold tracking-wide text-white sm:text-2xl">
+            <p className="break-all text-base font-semibold tracking-wide text-white sm:text-2xl">
               {result.reference_number}
             </p>
           </div>
@@ -51,7 +51,7 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 border-b border-[#dce4ea] px-6 py-6 sm:grid-cols-2 sm:px-8">
+        <div className="grid grid-cols-1 gap-4 border-b border-[#dce4ea] px-4 py-5 sm:grid-cols-2 sm:gap-5 sm:px-8 sm:py-6">
           {infoItems.map((item) => (
             <div key={item.label}>
               <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
@@ -66,7 +66,7 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
 
         {result.has_quotation && result.items.length > 0 ? (
           <>
-            <div className="border-b border-[#dce4ea] px-6 py-5 sm:px-8">
+            <div className="border-b border-[#dce4ea] px-4 py-5 sm:px-8">
               <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 Items ({result.items.length})
               </p>
@@ -100,7 +100,7 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 bg-[#f3f6f8] px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <div className="flex flex-col gap-3 bg-[#f3f6f8] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
               {result.quotation_notes && (
                 <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-700">
                   {result.quotation_notes}
@@ -120,7 +120,7 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
             </div>
           </>
         ) : (
-          <div className="px-6 py-5">
+          <div className="px-4 py-5 sm:px-6">
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
               <p className="mb-1 text-[13px] font-bold text-slate-800">Quotation Not Yet Available</p>
               <p className="text-[12px] leading-relaxed text-slate-500">
@@ -130,7 +130,7 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
           </div>
         )}
 
-        <div className="border-t border-[#dce4ea] px-6 py-6 sm:px-8">
+        <div className="border-t border-[#dce4ea] px-4 py-5 sm:px-8 sm:py-6">
           <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             Updates
           </p>

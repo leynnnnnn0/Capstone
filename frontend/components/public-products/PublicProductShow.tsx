@@ -102,15 +102,15 @@ export default function PublicProductShow() {
 
   return (
     <Shell>
-      <main className="px-2 py-3 sm:px-3">
-        <div className="mx-auto max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-10 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+      <main className="py-2 sm:px-3 sm:py-3">
+        <div className="mx-auto max-w-none bg-white px-4 py-5 sm:rounded-[2rem] sm:bg-[#f3f6f8] sm:px-10 sm:py-16 lg:px-16 lg:py-20">
           <div className="mx-auto max-w-[1440px]">
         <HistoryBackButton
           fallbackHref="/products"
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#cbd6de] bg-white px-4 py-2.5 text-xs font-semibold text-[#536372] transition-all hover:border-[#2c5282] hover:text-[#2c5282]"
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#cbd6de] bg-white px-4 py-2.5 text-xs font-semibold text-[#536372] transition-all hover:border-[#2c5282] hover:text-[#2c5282] sm:mb-8"
         />
 
-        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-20">
+        <div className="grid grid-cols-1 items-start gap-8 sm:gap-12 lg:grid-cols-2 lg:gap-20">
           <div className="order-1 lg:sticky lg:top-24 lg:order-2">
             <ImageGallery
               images={productImages(product)}
@@ -131,7 +131,7 @@ export default function PublicProductShow() {
               </div>
             )}
 
-            <h1 className="mb-6 text-[clamp(2.75rem,5vw,5.5rem)] font-medium leading-[0.9] tracking-[-0.06em] text-[#101820]">
+            <h1 className="mb-5 text-[clamp(2.25rem,11vw,3.5rem)] font-medium leading-[0.94] tracking-[-0.055em] text-[#101820] sm:mb-6 sm:text-[clamp(2.75rem,5vw,5.5rem)] sm:leading-[0.9] sm:tracking-[-0.06em]">
               {product.name}
             </h1>
 

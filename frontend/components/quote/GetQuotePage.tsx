@@ -138,8 +138,8 @@ export default function GetQuotePage() {
         }
       />
 
-      <main className="px-2 py-3 sm:px-3">
-        <div className="mx-auto max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+      <main className="py-2 sm:px-3 sm:py-3">
+        <div className="mx-auto max-w-none bg-white px-4 py-8 sm:rounded-[2rem] sm:bg-[#f3f6f8] sm:px-8 sm:py-16 lg:px-12 lg:py-20">
           <div className="mx-auto max-w-[1440px]">
         {loading ? (
           <QuoteBuilderSkeleton />
@@ -157,7 +157,7 @@ export default function GetQuotePage() {
             }}
           />
         ) : (
-          <div className="flex flex-col items-start gap-7 lg:flex-row lg:gap-8">
+          <div className="flex w-full flex-col items-stretch gap-7 lg:flex-row lg:items-start lg:gap-8">
             <ProductConfigurator
               products={products}
               categories={categories}

@@ -49,8 +49,9 @@ export default function CustomerNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-[#f3f6f8]/95 px-2 pt-2 backdrop-blur-xl sm:px-3 sm:pt-3">
-      <div className="mx-auto w-full max-w-[1440px] overflow-hidden rounded-[1.25rem] border border-[#dce4ea] bg-white shadow-[0_12px_40px_rgba(22,45,74,0.06)]">
+    <>
+      <header className="sticky top-0 z-40 bg-[#f3f6f8]/95 px-2 pt-2 backdrop-blur-xl sm:px-3 sm:pt-3">
+        <div className="mx-auto w-full max-w-[1440px] overflow-hidden rounded-[1.25rem] border border-[#dce4ea] bg-white shadow-[0_12px_40px_rgba(22,45,74,0.06)]">
         <div className="flex h-[4.5rem] items-center gap-5 px-4 sm:px-6 lg:px-8">
         <Link href="/account" className="flex shrink-0 items-center gap-3">
           <Image
@@ -130,32 +131,40 @@ export default function CustomerNavbar() {
           </DropdownMenu>
         </div>
         </div>
-      <nav className="grid grid-cols-3 border-t border-[#e8edf1] px-2 lg:hidden">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
+        </div>
+      </header>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex items-center justify-center gap-1.5 px-2 py-3 text-[11px] font-semibold text-[#667584] transition-colors",
-                active && "text-[#162d4a]",
-              )}
-            >
-              <Icon className="size-4" />
-              {item.label}
-              {active && (
-                <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-[#2563eb]" />
-              )}
-            </Link>
-          );
-        })}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#dce4ea] bg-white/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-14px_38px_rgba(22,45,74,0.10)] backdrop-blur-xl lg:hidden" aria-label="Customer navigation">
+        <div className="mx-auto grid max-w-lg grid-cols-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[10px] font-semibold text-[#7d8995] transition-colors",
+                  active && "text-[#162d4a]",
+                )}
+              >
+                <span className={cn(
+                  "relative flex size-8 items-center justify-center rounded-xl transition-colors group-hover:bg-[#edf3f7]",
+                  active && "bg-[#edf3f7]",
+                )}>
+                  <Icon className="size-5" />
+                  {active && <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border-2 border-white bg-[#608db9]" />}
+                </span>
+                <span className="max-w-full truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
-      </div>
-    </header>
+    </>
   );
 }

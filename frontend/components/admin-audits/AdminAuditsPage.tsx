@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RotateCcw, ShieldCheck, SlidersHorizontal } from "lucide-react";
 
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
+import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,7 +70,7 @@ export default function AdminAuditsPage() {
       </div>
 
       <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex min-w-0 items-center gap-2">
           <AdminTableSearch
             value={search}
             onChange={(value) => {
@@ -78,21 +79,22 @@ export default function AdminAuditsPage() {
             }}
             placeholder="Search event, record, user, or IP address..."
           />
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             <Button
               type="button"
               variant={filtersOpen ? "secondary" : "outline"}
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="h-11 gap-1.5 rounded-xl px-4"
+              className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4"
+              aria-label="Toggle filters"
             >
               <SlidersHorizontal className="size-3.5" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </Button>
             {hasFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
                 <RotateCcw className="size-3.5" />
-                Reset
+                <span className="hidden sm:inline">Reset</span>
               </Button>
             )}
           </div>
@@ -252,7 +254,7 @@ function AuditDate({ label, value, onChange }: { label: string; value: string; o
 
 function AuditCard({ audit }: { audit: AuditRecord }) {
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Badge variant="outline">{audit.event}</Badge>
@@ -266,22 +268,22 @@ function AuditCard({ audit }: { audit: AuditRecord }) {
         </Button>
       </div>
       <div className="mt-3 grid gap-2 text-xs">
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Changes</p>
           <p className="truncate font-medium">{Object.keys(audit.new_values ?? {}).join(", ") || "No changed values"}</p>
-        </div>
+        </AdminMobileRecordDetail>
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          <AdminMobileRecordDetail>
             <p className="text-muted-foreground">IP</p>
             <p className="truncate font-medium">{audit.ip_address ?? "-"}</p>
-          </div>
-          <div className="rounded-md bg-muted/40 px-2 py-1.5">
+          </AdminMobileRecordDetail>
+          <AdminMobileRecordDetail>
             <p className="text-muted-foreground">Date</p>
             <p className="truncate font-medium">{formatDate(audit.created_at)}</p>
-          </div>
+          </AdminMobileRecordDetail>
         </div>
       </div>
-    </article>
+    </AdminMobileRecord>
   );
 }
 

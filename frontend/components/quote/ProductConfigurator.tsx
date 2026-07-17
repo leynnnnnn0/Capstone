@@ -180,8 +180,8 @@ export default function ProductConfigurator({
 
   if (step === 1) {
     return (
-      <div className="min-w-0 flex-1">
-        <div className="mb-7">
+      <div className="w-full min-w-0 flex-1">
+        <div className="mb-5 sm:mb-7">
           <h2 className="mb-2 text-3xl font-medium tracking-[-0.04em] text-[#101820] sm:text-4xl">
             {editingItem ? "Change product" : "Add a product"}
           </h2>
@@ -190,7 +190,7 @@ export default function ProductConfigurator({
           </p>
         </div>
 
-        <div className="mb-7 space-y-4 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 sm:p-5">
+        <div className="mb-6 space-y-3 rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 sm:mb-7 sm:space-y-4 sm:rounded-[1.5rem] sm:p-5">
           <div className="relative">
             <input
               type="text"
@@ -245,7 +245,7 @@ export default function ProductConfigurator({
             No quote products match these filters.
           </div>
         ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {visibleProducts.map((product, index) => (
             <QuoteProductCard
               key={product.id}
@@ -275,8 +275,8 @@ export default function ProductConfigurator({
   const requiredGroups = productOptionGroups(draft.product).filter((group) => group.is_required);
 
   return (
-    <div className="min-w-0 flex-1">
-      <div className="mb-5 flex items-center gap-3">
+    <div className="w-full min-w-0 flex-1">
+      <div className="mb-3 flex items-center gap-3 sm:mb-5">
         {shouldUseHistoryBack ? (
           <HistoryBackButton
             fallbackHref="/products"
@@ -302,7 +302,7 @@ export default function ProductConfigurator({
         )}
       </div>
 
-      <div className="mb-6 flex items-center gap-3 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 sm:gap-4">
+      <div className="mb-5 flex items-center gap-3 rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 sm:mb-6 sm:gap-4 sm:rounded-[1.5rem] sm:p-4">
         <ProductIdentity product={draft.product} />
       </div>
 

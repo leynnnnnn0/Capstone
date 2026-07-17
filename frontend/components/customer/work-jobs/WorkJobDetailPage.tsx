@@ -58,23 +58,23 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
   return (
     <>
-      <div className="relative mb-6 flex flex-col gap-6 overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-8 text-white sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
+      <div className="relative mb-6 flex min-w-0 w-full max-w-full flex-col gap-6 overflow-hidden rounded-[1.5rem] bg-[#162d4a] px-4 py-7 text-white sm:rounded-[1.75rem] sm:px-8 sm:py-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
         <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#608db9]/25 blur-3xl" />
-        <div>
+        <div className="min-w-0">
           <button
             onClick={() => router.back()}
             className="relative mb-4 text-xs font-semibold text-white/55 hover:text-white"
           >
             Back
           </button>
-          <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8dae8]">
+          <p className="relative break-all text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8dae8]">
             {workJob.work_job_number}
           </p>
           <h1 className="relative mt-2 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
             Work job details
           </h1>
         </div>
-        <div className="relative flex flex-wrap items-center gap-3">
+        <div className="relative flex min-w-0 flex-wrap items-center gap-3">
           <CustomerStatusBadge status={workJob.status} />
           <CustomerContactLocationSheet
             fullName={workJob.full_name}
@@ -87,8 +87,8 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <section className="space-y-5">
+      <div className="grid min-w-0 w-full max-w-full gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="min-w-0 space-y-5">
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
           <CustomerWorkJobBackJobsCard workJob={workJob} />
 
@@ -102,7 +102,7 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
           <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
         </section>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
 
           <CustomerQuoteSummary
@@ -133,7 +133,7 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
     : "Pending assignment";
 
   return (
-    <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <div className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
       <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
         Schedule &amp; Service Details
       </h2>
@@ -164,20 +164,20 @@ function LinkedAppointmentCard({ workJob }: { workJob: CustomerWorkJob }) {
   if (!workJob.appointment) return null;
 
   return (
-    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <BriefcaseBusiness className="size-4 text-primary" />
             <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">
               Linked Appointment
             </h2>
           </div>
-          <p className="mt-2 text-sm font-medium text-slate-950">
+          <p className="mt-2 break-all text-sm font-medium text-slate-950">
             {workJob.appointment.appointment_number}
           </p>
         </div>
-        <Button asChild type="button" variant="outline" size="sm">
+        <Button asChild type="button" variant="outline" size="sm" className="w-full sm:w-auto">
           <Link href={`/account/appointments/${workJob.appointment.id}`}>View Appointment</Link>
         </Button>
       </div>
@@ -202,7 +202,7 @@ function Info({
         <Icon className="size-3.5 text-slate-500" />
         {label}
       </div>
-      <p className="mt-1 text-sm font-normal leading-relaxed text-slate-950">{value}</p>
+      <p className="mt-1 break-words text-sm font-normal leading-relaxed text-slate-950">{value}</p>
     </div>
   );
 }

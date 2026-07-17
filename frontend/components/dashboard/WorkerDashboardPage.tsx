@@ -8,6 +8,7 @@ import { BriefcaseBusiness, CalendarCheck, CheckCircle2, ClipboardList } from "l
 import AdminAppointmentCalendar from "@/components/admin-appointments/AdminAppointmentCalendar";
 import { AdminDashboardSkeleton } from "@/components/dashboard/AdminDashboardPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import AdminSummaryCard, { type SummaryTone } from "@/components/admin/AdminSummaryCard";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,7 +60,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Your assigned appointments, work jobs, progress, and calendar.</p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
         <TooltipProvider>
           <MetricCard
             title="Upcoming Appointments"
@@ -67,6 +68,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             description="Assigned inspections ahead"
             icon={CalendarCheck}
             tooltip="Assigned inspections scheduled from today onward."
+            tone="blue"
           />
           <MetricCard
             title="Upcoming Work Jobs"
@@ -74,6 +76,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             description="Scheduled installation jobs"
             icon={BriefcaseBusiness}
             tooltip="Assigned installation or service jobs scheduled from today onward."
+            tone="mist"
           />
           <MetricCard
             title="Finished Appointments"
@@ -81,6 +84,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             description="Completed inspections"
             icon={CheckCircle2}
             tooltip="Assigned appointments marked completed."
+            tone="light"
           />
           <MetricCard
             title="Finished Work Jobs"
@@ -88,6 +92,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             description="Completed jobs"
             icon={ClipboardList}
             tooltip="Assigned work jobs marked completed."
+            tone="slate"
           />
         </TooltipProvider>
       </div>
@@ -166,26 +171,25 @@ function MetricCard({
   description,
   icon: Icon,
   tooltip,
+  tone,
 }: {
   title: string;
   value: number;
   description: string;
   icon: typeof CalendarCheck;
   tooltip: string;
+  tone: SummaryTone;
 }) {
   return (
     <UiTooltip>
       <TooltipTrigger asChild>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-medium sm:text-sm">{title}</CardTitle>
-            <Icon className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-semibold sm:text-2xl">{value}</div>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-          </CardContent>
-        </Card>
+        <AdminSummaryCard
+          label={title}
+          value={value}
+          icon={Icon}
+          tone={tone}
+          description={description}
+        />
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </UiTooltip>

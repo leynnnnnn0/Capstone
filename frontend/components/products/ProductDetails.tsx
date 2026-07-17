@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Box, ExternalLink, ImageIcon, Package, Ruler, Settings2, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -300,7 +301,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 
 function VariantCard({ variant }: { variant: ReturnType<typeof productVariants>[number] }) {
   return (
-    <article className="rounded-lg border bg-card p-3 text-sm shadow-xs">
+    <AdminMobileRecord className="text-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold">{variant.width} x {variant.height} cm</p>
@@ -310,10 +311,10 @@ function VariantCard({ variant }: { variant: ReturnType<typeof productVariants>[
           {variant.is_active ? "Active" : "Inactive"}
         </Badge>
       </div>
-      <div className="mt-3 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+      <AdminMobileRecordDetail className="mt-3 text-xs">
         <p className="text-muted-foreground">Fixed Price</p>
         <p className="font-medium">{formatCurrency(variant.price)}</p>
-      </div>
-    </article>
+      </AdminMobileRecordDetail>
+    </AdminMobileRecord>
   );
 }

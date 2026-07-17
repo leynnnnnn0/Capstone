@@ -40,15 +40,15 @@ const statusChartConfig = {
 } satisfies ChartConfig;
 
 const revenueChartConfig = {
-  paid: { label: "Paid Collections", color: "#0f8a4b" },
-  pending: { label: "Pending Payments", color: "#d49b25" },
+  paid: { label: "Paid Collections", color: "#608DB9" },
+  pending: { label: "Pending Payments", color: "#9aabba" },
 } satisfies ChartConfig;
 
 const workloadChartConfig = {
-  jobs: { label: "Assigned Jobs", color: "#7a5af8" },
+  jobs: { label: "Assigned Jobs", color: "#608DB9" },
 } satisfies ChartConfig;
 
-const pieColors = ["#5f87b5", "#0f8a4b", "#d49b25", "#c2410c", "#7a5af8", "#64748b"];
+const pieColors = ["#162d4a", "#315b7d", "#608db9", "#83a8c5", "#a9c3d6", "#cbdbe7"];
 
 export default function AdminDashboardPage() {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 xl:grid-cols-5">
         <TooltipProvider>
           <MetricCard
             title="Collected Revenue"
@@ -349,7 +349,7 @@ export function AdminDashboardSkeleton() {
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -487,29 +487,29 @@ function MetricCard({
       <TooltipTrigger asChild>
         <article
           className={cn(
-            "group relative min-h-48 overflow-hidden rounded-[1.75rem] p-5 text-left shadow-[0_16px_44px_rgba(22,45,74,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(22,45,74,0.12)] sm:p-6",
+            "group relative min-h-[112px] overflow-hidden rounded-xl p-3 text-left shadow-[0_16px_44px_rgba(22,45,74,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(22,45,74,0.12)] sm:min-h-48 sm:rounded-[1.75rem] sm:p-6",
             palette.surface,
             featured && "md:col-span-2 xl:col-span-2",
           )}
         >
           <span className={cn("absolute -bottom-16 -right-12 size-48 rounded-full blur-2xl", palette.glow)} />
-          <div className="relative flex h-full min-h-36 flex-col justify-between gap-7">
-            <div className="flex items-start justify-between gap-4">
+          <div className="relative flex h-full min-h-[88px] flex-col justify-between gap-2 sm:min-h-36 sm:gap-7">
+            <div className="flex items-start justify-between gap-2 sm:gap-4">
               <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] opacity-55">
+                <p className="text-[7px] font-bold uppercase tracking-[0.12em] opacity-55 sm:text-[9px] sm:tracking-[0.2em]">
                   {featured ? "Financial performance" : "Live operations"}
                 </p>
-                <h2 className="mt-2 text-sm font-semibold">{title}</h2>
+                <h2 className="mt-1 text-[11px] font-semibold leading-tight sm:mt-2 sm:text-sm">{title}</h2>
               </div>
-              <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-sm", palette.icon)}>
-                <Icon className="size-5" />
+              <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg shadow-sm sm:size-11 sm:rounded-2xl", palette.icon)}>
+                <Icon className="size-3.5 sm:size-5" />
               </span>
             </div>
             <div className="relative">
-              <div className={cn("font-semibold tracking-[-0.05em]", featured ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl")}>{value}</div>
-              <p className={cn("mt-2 text-xs leading-5", palette.muted)}>{description}</p>
+              <div className={cn("truncate text-xl font-semibold tracking-[-0.05em]", featured ? "sm:text-5xl" : "sm:text-4xl")}>{value}</div>
+              <p className={cn("mt-1 line-clamp-2 text-[8px] leading-3 sm:mt-2 sm:text-xs sm:leading-5", palette.muted)}>{description}</p>
             </div>
-            <Icon className="pointer-events-none absolute -bottom-5 -right-3 size-24 opacity-[0.055]" strokeWidth={1.2} />
+            <Icon className="pointer-events-none absolute -bottom-3 -right-2 size-14 opacity-[0.055] sm:-bottom-5 sm:-right-3 sm:size-24" strokeWidth={1.2} />
           </div>
         </article>
       </TooltipTrigger>

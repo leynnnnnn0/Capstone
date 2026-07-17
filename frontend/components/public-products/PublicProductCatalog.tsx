@@ -157,8 +157,8 @@ export default function PublicProductCatalog() {
         }
       />
 
-      <main className="px-2 py-3 sm:px-3">
-        <div className="mx-auto min-h-[36rem] max-w-none rounded-[2rem] bg-[#f3f6f8] px-5 py-14 sm:px-10 sm:py-20 lg:px-16">
+      <main className="py-2 sm:px-3 sm:py-3">
+        <div className="mx-auto min-h-[36rem] max-w-none bg-white px-4 py-8 sm:rounded-[2rem] sm:bg-[#f3f6f8] sm:px-10 sm:py-20 lg:px-16">
           <div className="mx-auto max-w-[1440px]">
             {categories.length > 0 && (
             <div className="mb-10 flex flex-wrap gap-2 border-b border-[#dce4ea] pb-7 sm:mb-14">

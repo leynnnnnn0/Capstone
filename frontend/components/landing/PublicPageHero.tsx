@@ -19,8 +19,8 @@ export default function PublicPageHero({
   const reducedMotion = useReducedMotion();
 
   return (
-    <div className="px-2 pt-3 sm:px-3">
-      <section className="relative overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-10 text-white sm:px-10 sm:py-12 lg:px-14 lg:py-14">
+    <div className="pt-2 sm:px-3 sm:pt-3">
+      <section className="relative overflow-hidden bg-[#162d4a] px-5 py-8 text-white sm:rounded-[1.75rem] sm:px-10 sm:py-12 lg:px-14 lg:py-14">
         <div className="absolute -right-32 -top-48 h-[30rem] w-[30rem] rounded-full bg-[#608db9]/20 blur-3xl" />
         <div className="absolute -bottom-40 left-1/3 h-80 w-80 rounded-full bg-[#c8dae8]/10 blur-3xl" />
         <motion.div
@@ -44,7 +44,7 @@ export default function PublicPageHero({
             <motion.h1
               variants={{ hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.8, ease: easeOut }}
-              className="mt-4 max-w-4xl text-[clamp(2.5rem,4.8vw,5rem)] font-medium leading-[0.91] tracking-[-0.06em]"
+              className="mt-4 max-w-4xl text-[clamp(2.25rem,11vw,3.25rem)] font-medium leading-[0.93] tracking-[-0.055em] sm:text-[clamp(2.75rem,5.5vw,5rem)] sm:leading-[0.91] sm:tracking-[-0.06em]"
             >
               {title}
             </motion.h1>
@@ -52,7 +52,7 @@ export default function PublicPageHero({
               <motion.p
                 variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.65, ease: easeOut }}
-                className="mt-5 max-w-xl text-sm leading-6 text-white/60 sm:text-base sm:leading-7"
+                className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:mt-5 sm:text-base sm:leading-7"
               >
                 {description}
               </motion.p>

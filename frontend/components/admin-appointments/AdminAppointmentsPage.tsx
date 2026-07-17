@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ComponentType } from "react";
 import Link from "next/link";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
@@ -15,6 +15,7 @@ import {
 
 import AdminAppointmentStatusBadge from "@/components/admin-appointments/AdminAppointmentStatusBadge";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
+import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
@@ -145,24 +146,24 @@ export default function AdminAppointmentsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <StatCard label="Total" value={total} icon={ClipboardList} />
-        <StatCard label="Pending" value={appointments.filter((item) => item.status === "pending").length} icon={CalendarDays} />
-        <StatCard label="Confirmed" value={appointments.filter((item) => item.status === "confirmed").length} icon={UserCheck} />
-        <StatCard label="Completed" value={appointments.filter((item) => item.status === "completed").length} icon={ClipboardList} />
+        <AdminSummaryCard label="Total" value={total} icon={ClipboardList} tone="blue" />
+        <AdminSummaryCard label="Pending" value={appointments.filter((item) => item.status === "pending").length} icon={CalendarDays} tone="mist" />
+        <AdminSummaryCard label="Confirmed" value={appointments.filter((item) => item.status === "confirmed").length} icon={UserCheck} tone="light" />
+        <AdminSummaryCard label="Completed" value={appointments.filter((item) => item.status === "completed").length} icon={ClipboardList} tone="slate" />
       </div>
 
       <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex min-w-0 items-center gap-2">
           <AdminTableSearch value={search} onChange={setSearch} placeholder="Search by name, phone, appointment #..." />
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
+          <div className="flex shrink-0 gap-2">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
               <SlidersHorizontal className="size-3.5" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </Button>
             {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
                 <RotateCcw className="size-3.5" />
-                Reset
+                <span className="hidden sm:inline">Reset</span>
               </Button>
             )}
           </div>
@@ -239,7 +240,7 @@ export default function AdminAppointmentsPage() {
 
 function AppointmentCard({ appointment, returnTo }: { appointment: AdminAppointment; returnTo: string }) {
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-semibold uppercase tracking-wide text-primary">
@@ -255,19 +256,19 @@ function AppointmentCard({ appointment, returnTo }: { appointment: AdminAppointm
         </Button>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Preferred Date</p>
           <p className="font-medium">{formatAdminDate(appointment.preferred_date)}</p>
-        </div>
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        </AdminMobileRecordDetail>
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Preferred Time</p>
           <p className="font-medium capitalize">{appointment.preferred_time}</p>
-        </div>
+        </AdminMobileRecordDetail>
       </div>
       <div className="mt-3">
         <AdminAppointmentStatusBadge status={appointment.status} />
       </div>
-    </article>
+    </AdminMobileRecord>
   );
 }
 
@@ -288,20 +289,6 @@ function AppointmentRow({ appointment, returnTo }: { appointment: AdminAppointme
         </Button>
       </TableCell>
     </TableRow>
-  );
-}
-
-function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: ComponentType<{ className?: string }> }) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
-        <Icon className="size-4" />
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-base font-semibold leading-tight sm:text-lg">{value}</p>
-      </div>
-    </div>
   );
 }
 

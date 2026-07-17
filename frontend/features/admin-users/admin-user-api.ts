@@ -26,6 +26,10 @@ export function fetchUserOptions() {
   return api<UserOptions>("/api/v1/users/options");
 }
 
+export function fetchAdminUser(id: number | string) {
+  return api<ResourceResponse<AdminUser>>(`/api/v1/users/${id}`).then((response) => response.data);
+}
+
 export function createAdminUser(payload: AdminUserForm) {
   return api<ResourceResponse<AdminUser>>("/api/v1/users", {
     method: "POST",

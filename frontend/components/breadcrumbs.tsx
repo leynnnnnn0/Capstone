@@ -19,22 +19,22 @@ export function Breadcrumbs({
   return (
     <>
       {breadcrumbs.length > 0 && (
-        <Breadcrumb>
-          <BreadcrumbList>
+        <Breadcrumb className="min-w-0 overflow-hidden">
+          <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden whitespace-nowrap text-xs sm:text-sm">
             {breadcrumbs.map((item, index) => {
               const isLast = index === breadcrumbs.length - 1;
               return (
                 <Fragment key={index}>
-                  <BreadcrumbItem>
+                  <BreadcrumbItem className={isLast ? "min-w-0" : "hidden shrink-0 sm:inline-flex"}>
                     {isLast ? (
-                      <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                      <BreadcrumbPage className="block truncate">{item.title}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink asChild>
                         <Link href={item.href}>{item.title}</Link>
                       </BreadcrumbLink>
                     )}
                   </BreadcrumbItem>
-                  {!isLast && <BreadcrumbSeparator />}
+                  {!isLast && <BreadcrumbSeparator className="hidden shrink-0 sm:list-item" />}
                 </Fragment>
               );
             })}

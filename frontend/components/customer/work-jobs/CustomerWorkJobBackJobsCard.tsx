@@ -15,7 +15,7 @@ export default function CustomerWorkJobBackJobsCard({ workJob }: { workJob: Cust
   if (!hasParent && backJobs.length === 0) return null;
 
   return (
-    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
       <div className="flex items-center gap-2">
         <GitBranch className="size-4 text-primary" />
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
@@ -24,21 +24,21 @@ export default function CustomerWorkJobBackJobsCard({ workJob }: { workJob: Cust
       </div>
 
       {workJob.parent_work_job && (
-        <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/70 p-3">
+        <div className="mt-4 min-w-0 overflow-hidden rounded-xl border border-blue-100 bg-blue-50/70 p-3">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
             Created From
           </p>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-950">
+            <div className="min-w-0">
+              <p className="break-all text-sm font-medium text-slate-950">
                 {workJob.parent_work_job.work_job_number}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 break-words text-xs leading-relaxed text-slate-500">
                 {workJob.back_job_reason_label ?? "Back job"} ·{" "}
                 {workJob.back_job_details ?? "Return visit scheduled."}
               </p>
             </div>
-            <Button asChild type="button" variant="outline" size="sm">
+            <Button asChild type="button" variant="outline" size="sm" className="w-full sm:w-auto">
               <Link href={`/account/work-jobs/${workJob.parent_work_job.id}`}>View Source</Link>
             </Button>
           </div>
@@ -58,10 +58,10 @@ export default function CustomerWorkJobBackJobsCard({ workJob }: { workJob: Cust
 
 function CustomerBackJobRow({ backJob }: { backJob: CustomerBackJobSummary }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 p-3">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-950">{backJob.work_job_number}</p>
+        <div className="min-w-0">
+          <p className="break-all text-sm font-medium text-slate-950">{backJob.work_job_number}</p>
           <p className="mt-1 text-xs text-slate-500">
             {formatCustomerSchedule(
               backJob.scheduled_date,
@@ -78,7 +78,7 @@ function CustomerBackJobRow({ backJob }: { backJob: CustomerBackJobSummary }) {
         </span>
         {backJob.back_job_details ? ` · ${backJob.back_job_details}` : null}
       </p>
-      <Button asChild type="button" variant="outline" size="sm" className="mt-3">
+      <Button asChild type="button" variant="outline" size="sm" className="mt-3 w-full sm:w-auto">
         <Link href={`/account/work-jobs/${backJob.id}`}>View Back Job</Link>
       </Button>
     </div>

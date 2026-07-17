@@ -32,7 +32,7 @@ export default function QuoteProductCard({
       className="group overflow-hidden rounded-[1.25rem] border border-[#dce4ea] bg-white text-left transition-all hover:-translate-y-1 hover:border-[#608db9] hover:shadow-[0_20px_50px_rgba(22,45,74,0.10)]"
     >
       <div
-        className="flex h-28 items-center justify-center overflow-hidden sm:h-36"
+        className="flex h-24 items-center justify-center overflow-hidden sm:h-36"
         style={{ background: image ? "#f8fafc" : gradients[index % gradients.length] }}
       >
         {image ? (
@@ -43,7 +43,7 @@ export default function QuoteProductCard({
           </span>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <p className="mb-1 text-sm font-semibold leading-tight text-[#101820]">
           {product.name}
         </p>

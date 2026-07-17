@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ComponentType } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
@@ -21,6 +21,7 @@ import { z } from "zod";
 
 import NumericInput from "@/components/form/NumericInput";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
+import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -277,32 +278,33 @@ export default function AdminPaymentsPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">
-        <StatCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} />
-        <StatCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} />
-        <StatCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} />
-        <StatCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} />
-        <StatCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} />
-        <StatCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} />
+        <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" />
+        <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" />
+        <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" />
+        <AdminSummaryCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} tone="slate" eyebrow="Collections" />
+        <AdminSummaryCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} tone="mist" eyebrow="Adjustments" />
+        <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" eyebrow="Adjustments" />
       </div>
 
       <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex min-w-0 items-center gap-2">
           <AdminTableSearch value={search} onChange={setSearch} placeholder="Search payment #, capture ID, customer, work job..." />
-          <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+          <div className="flex shrink-0 gap-2">
             <Button
               type="button"
               variant={filtersOpen ? "secondary" : "outline"}
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="h-11 gap-1.5 rounded-xl px-4"
+              className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4"
+              aria-label="Toggle filters"
             >
               <SlidersHorizontal className="size-3.5" />
-              Filters
+              <span className="hidden sm:inline">Filters</span>
             </Button>
             {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
                 <RotateCcw className="size-3.5" />
-                Reset
+                <span className="hidden sm:inline">Reset</span>
               </Button>
             )}
           </div>
@@ -581,7 +583,7 @@ function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (
   const recordedAt = payment.paid_at ?? payment.created_at;
 
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{payment.payment_number ?? `PAY-${payment.id}`}</p>
@@ -604,7 +606,7 @@ function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (
       </div>
 
       <div className="mt-3 grid gap-2 text-xs">
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Work Job</p>
           {workJob ? (
             <Link href={`/dashboard/work-jobs/${workJob.id}`} className="font-medium text-primary hover:underline">
@@ -613,17 +615,17 @@ function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (
           ) : (
             <p className="font-medium">-</p>
           )}
-        </div>
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        </AdminMobileRecordDetail>
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Customer</p>
           <p className="font-medium">{workJob?.full_name ?? payment.provider_payer_email ?? "-"}</p>
           <p className="text-muted-foreground">{workJob?.phone_number ?? workJob?.email ?? payment.provider_payer_email ?? "-"}</p>
-        </div>
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        </AdminMobileRecordDetail>
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Recorded</p>
           <p className="font-medium">{formatPaymentDate(recordedAt)}</p>
           {payment.creator?.full_name && <p className="text-muted-foreground">By {payment.creator.full_name}</p>}
-        </div>
+        </AdminMobileRecordDetail>
       </div>
 
       {(payment.can_refund || workJob) && (
@@ -648,7 +650,7 @@ function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (
           )}
         </div>
       )}
-    </article>
+    </AdminMobileRecord>
   );
 }
 
@@ -657,20 +659,6 @@ function PaymentBadge({ className, children }: { className?: string; children: R
     <Badge variant="outline" className={cn("whitespace-nowrap", className)}>
       {children}
     </Badge>
-  );
-}
-
-function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: ComponentType<{ className?: string }> }) {
-  return (
-    <div className="flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
-        <Icon className="size-4" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate text-base font-semibold leading-tight sm:text-lg">{value}</p>
-      </div>
-    </div>
   );
 }
 

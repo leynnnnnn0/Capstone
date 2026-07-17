@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, LogIn, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -103,12 +103,21 @@ export default function SogSiteHeader({
           })}
         </nav>
 
-        <Link
-          href={quoteHref}
-          className="hidden min-h-11 items-center gap-3 rounded-full bg-slate-950 px-6 text-sm font-extralight text-white shadow-lg shadow-slate-950/10 transition-transform hover:-translate-y-0.5 lg:inline-flex"
-        >
-          Get a quote <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="hidden items-center gap-2 lg:flex">
+          <Link
+            href="/login"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-800 transition-colors hover:border-slate-950 hover:text-slate-950"
+          >
+            <LogIn className="h-4 w-4" />
+            Login
+          </Link>
+          <Link
+            href={quoteHref}
+            className="inline-flex min-h-11 items-center gap-3 rounded-full bg-slate-950 px-6 text-sm font-extralight text-white shadow-lg shadow-slate-950/10 transition-transform hover:-translate-y-0.5"
+          >
+            Get a quote <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
         <button
           type="button"
@@ -152,9 +161,20 @@ export default function SogSiteHeader({
               );
             })}
             <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="mt-1 inline-flex items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 hover:border-slate-950"
+            >
+              <span className="inline-flex items-center gap-2">
+                <LogIn className="h-4 w-4" />
+                Login
+              </span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
               href={quoteHref}
               onClick={() => setMobileMenuOpen(false)}
-              className="mt-1 inline-flex items-center justify-between rounded-xl bg-slate-950 px-4 py-3 text-white"
+              className="inline-flex items-center justify-between rounded-xl bg-slate-950 px-4 py-3 text-white"
             >
               Get a quote <ArrowRight className="h-4 w-4" />
             </Link>

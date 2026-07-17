@@ -34,6 +34,7 @@ import {
 } from "recharts";
 
 import { Badge } from "@/components/ui/badge";
+import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
@@ -242,7 +243,7 @@ export default function AdminSalesPage() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 xl:grid-cols-7">
         <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} featured />
         <MetricCard label="Paid Sales" value={formatPeso(summary?.gross_sales ?? 0)} icon={WalletCards} />
         <MetricCard label="Outstanding" value={formatPeso(summary?.outstanding_amount ?? 0)} icon={BriefcaseBusiness} />
@@ -460,25 +461,25 @@ function MetricCard({
   return (
     <article
       className={cn(
-        "relative min-h-40 overflow-hidden rounded-[1.6rem] p-5 text-[#17324d] shadow-[0_14px_38px_rgba(22,45,74,0.055)] sm:p-6",
+        "relative min-h-[104px] overflow-hidden rounded-xl p-3 text-[#17324d] shadow-[0_14px_38px_rgba(22,45,74,0.055)] sm:min-h-40 sm:rounded-[1.6rem] sm:p-6",
         surface,
         featured && "md:col-span-2 xl:col-span-2",
       )}
     >
-      <div className="relative flex h-full min-h-28 flex-col justify-between gap-6">
-        <div className="flex items-start justify-between gap-3">
+      <div className="relative flex h-full min-h-20 flex-col justify-between gap-2 sm:min-h-28 sm:gap-6">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#6f879b]">
+            <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-[#6f879b] sm:text-[9px] sm:tracking-[0.2em]">
               {featured ? "Revenue performance" : "Sales indicator"}
             </p>
-            <h2 className="mt-2 text-sm font-semibold">{label}</h2>
+            <h2 className="mt-1 text-[11px] font-semibold leading-tight sm:mt-2 sm:text-sm">{label}</h2>
           </div>
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#162d4a] text-white shadow-sm">
-            <Icon className="size-4" />
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#162d4a] text-white shadow-sm sm:size-10 sm:rounded-2xl">
+            <Icon className="size-3.5 sm:size-4" />
           </span>
         </div>
-        <p className={cn("truncate font-semibold tracking-[-0.05em]", featured ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl")}>{value}</p>
-        <Icon className="pointer-events-none absolute -bottom-6 -right-4 size-24 opacity-[0.05]" />
+        <p className={cn("truncate text-lg font-semibold tracking-[-0.05em]", featured ? "sm:text-4xl" : "sm:text-3xl")}>{value}</p>
+        <Icon className="pointer-events-none absolute -bottom-3 -right-2 size-14 opacity-[0.05] sm:-bottom-6 sm:-right-4 sm:size-24" />
       </div>
     </article>
   );
@@ -616,7 +617,7 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
 
 function RecentPaymentCard({ payment }: { payment: SalesPaymentRow }) {
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{payment.payment_number ?? `PAY-${payment.id}`}</p>
@@ -631,7 +632,7 @@ function RecentPaymentCard({ payment }: { payment: SalesPaymentRow }) {
         <Badge variant="outline" className={cn("w-fit", statusClass(payment.status))}>{payment.status_label ?? "-"}</Badge>
         <span className="text-xs text-muted-foreground">{payment.method_label ?? "-"} · {payment.type_label ?? "-"}</span>
       </div>
-      <div className="mt-3 rounded-md bg-muted/40 px-2 py-1.5 text-xs">
+      <AdminMobileRecordDetail className="mt-3 text-xs">
         <p className="text-muted-foreground">Work Job</p>
         {payment.work_job_id ? (
           <>
@@ -643,8 +644,8 @@ function RecentPaymentCard({ payment }: { payment: SalesPaymentRow }) {
         ) : (
           <p className="font-medium">-</p>
         )}
-      </div>
-    </article>
+      </AdminMobileRecordDetail>
+    </AdminMobileRecord>
   );
 }
 
@@ -825,7 +826,7 @@ function OutstandingTable({
 
 function OutstandingCard({ row }: { row: SalesReport["tables"]["outstanding_work_jobs"][number] }) {
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href={`/dashboard/work-jobs/${row.id}`} className="truncate text-sm font-semibold text-primary hover:underline">
@@ -840,17 +841,17 @@ function OutstandingCard({ row }: { row: SalesReport["tables"]["outstanding_work
         {row.schedule && <span className="text-xs text-muted-foreground">{row.schedule}</span>}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Next Due</p>
           <p className="font-medium">{row.next_due_type ? titleCase(row.next_due_type) : "Balance"}</p>
           <p className="text-muted-foreground">{formatPeso(row.next_due_amount)}</p>
-        </div>
-        <div className="rounded-md bg-muted/40 px-2 py-1.5">
+        </AdminMobileRecordDetail>
+        <AdminMobileRecordDetail>
           <p className="text-muted-foreground">Paid</p>
           <p className="font-medium">{formatPeso(row.paid_amount)}</p>
-        </div>
+        </AdminMobileRecordDetail>
       </div>
-    </article>
+    </AdminMobileRecord>
   );
 }
 

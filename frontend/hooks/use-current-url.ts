@@ -43,13 +43,16 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
   };
 
   const isCurrentOrParentUrl = (urlToCheck: Href, currentUrl?: string) => {
-    return isCurrentUrl(urlToCheck, currentUrl, true);
+    const target = toUrl(urlToCheck).replace(/\/$/, "") || "/";
+    const current = (currentUrl ?? pathname).replace(/\/$/, "") || "/";
+
+    return current === target || (target !== "/" && current.startsWith(`${target}/`));
   };
 
   const whenCurrentUrl: WhenCurrentUrlFn = (
     urlToCheck,
     ifTrue,
-    ifFalse = null as any,
+    ifFalse = null as never,
   ) => {
     return isCurrentUrl(urlToCheck) ? ifTrue : ifFalse;
   };

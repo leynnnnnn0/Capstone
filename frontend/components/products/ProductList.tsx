@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
+import { AdminMobileRecord } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
@@ -152,17 +153,17 @@ export default function ProductList() {
 
       <Card className="border-transparent bg-white">
         <div className="p-3">
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex min-w-0 items-center gap-2">
             <AdminTableSearch value={search} onChange={setSearch} placeholder="Search products..." />
-            <div className="flex gap-2">
-              <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
+            <div className="flex shrink-0 gap-2">
+              <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
                 <SlidersHorizontal className="size-3.5" />
-                Filters
+                <span className="hidden sm:inline">Filters</span>
               </Button>
               {hasFilters && (
-                <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
+                <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
                   <RotateCcw className="size-3.5" />
-                  Reset
+                  <span className="hidden sm:inline">Reset</span>
                 </Button>
               )}
             </div>
@@ -337,9 +338,9 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
   const cover = productCover(product);
 
   return (
-    <article className="rounded-lg border bg-card p-3 shadow-xs">
+    <AdminMobileRecord>
       <div className="flex items-start gap-3">
-        <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+        <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce4ea] bg-[#f4f7f9]">
           {cover ? (
             <img
               src={cover}
@@ -366,7 +367,7 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
           </div>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 w-fit">
+      <div className="mt-4 flex justify-end gap-1 border-t border-[#e8edf1] pt-3">
         <Button asChild size="icon-sm" variant="ghost">
           <Link href={`/dashboard/products/${product.id}`}>
             <Eye className="h-3.5 w-3.5" />
@@ -384,6 +385,6 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
-    </article>
+    </AdminMobileRecord>
   );
 }

@@ -65,11 +65,11 @@ export default function TrackPage() {
         description="Enter your appointment or work job number to check its current status, schedule, and quotation details."
       />
 
-      <main className="px-2 py-3 sm:px-3">
-        <div className="min-h-[34rem] rounded-[2rem] bg-[#f3f6f8] px-5 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
-        <div className="mx-auto mb-10 max-w-2xl">
+      <main className="py-2 sm:px-3 sm:py-3">
+        <div className="min-h-0 bg-white px-4 py-8 sm:min-h-[34rem] sm:rounded-[2rem] sm:bg-[#f3f6f8] sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+        <div className="mx-auto mb-6 max-w-3xl sm:mb-10">
           <form onSubmit={handleSubmit} className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_24px_80px_rgba(22,45,74,0.09)]">
-            <div className="px-5 py-6 sm:px-8 sm:py-8">
+            <div className="px-4 py-5 sm:px-8 sm:py-8">
               <label htmlFor="reference" className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#667584]">
                 Appointment or Work Job Number
               </label>
@@ -131,19 +131,19 @@ export default function TrackPage() {
           )
         )}
 
-        <div className="mx-auto mt-10 max-w-3xl">
-          <div className="flex flex-col items-start gap-4 rounded-[1.5rem] border border-[#dce4ea] bg-[#eaf2f8] p-5 sm:flex-row sm:items-center sm:p-6">
+        <div className="mx-auto mt-6 max-w-3xl sm:mt-10">
+          <div className="flex flex-col items-stretch gap-4 rounded-[1.5rem] border border-[#dce4ea] bg-[#eaf2f8] p-5 sm:flex-row sm:items-center sm:p-6">
             <div className="flex-1">
               <p className="mb-1 text-sm font-semibold text-[#101820]">Need help?</p>
               <p className="text-xs leading-relaxed text-[#667584]">
                 Can&apos;t find your reference number or have questions about your request?
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/login" className="rounded-full border border-[#b9cbd9] bg-white px-4 py-2.5 text-xs font-semibold text-[#2c5282]">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              <Link href="/login" className="rounded-full border border-[#b9cbd9] bg-white px-4 py-2.5 text-center text-xs font-semibold text-[#2c5282]">
                 Customer account
               </Link>
-              <Link href="/get-quote" className="rounded-full bg-[#162d4a] px-4 py-2.5 text-xs font-semibold text-white">
+              <Link href="/get-quote" className="rounded-full bg-[#162d4a] px-4 py-2.5 text-center text-xs font-semibold text-white">
                 New Quote
               </Link>
             </div>
