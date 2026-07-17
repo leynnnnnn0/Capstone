@@ -50,7 +50,7 @@ export default function CustomerWorkJobRatingCard({
 
   if (!canRate && !existingRating) {
     return (
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <MessageSquareHeart className="size-4" />
@@ -112,7 +112,7 @@ export default function CustomerWorkJobRatingCard({
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <MessageSquareHeart className="size-4" />

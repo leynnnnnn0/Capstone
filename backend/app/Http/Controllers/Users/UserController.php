@@ -31,6 +31,23 @@ class UserController extends Controller
                 ->where(fn ($query) => $query
                     ->where('role', $role)
                     ->orWhereHas('roles', fn ($query) => $query->where('name', $role))))
+            ->when($request->string('email_status')->toString(), function ($query, string $status) {
+                $status === 'verified'
+                    ? $query->whereNotNull('email_verified_at')
+                    : $query->whereNull('email_verified_at');
+            })
+            ->when($request->string('phone_status')->toString(), function ($query, string $status) {
+                $status === 'available'
+                    ? $query->whereNotNull('phone_number')->where('phone_number', '!=', '')
+                    : $query->where(fn ($query) => $query->whereNull('phone_number')->orWhere('phone_number', ''));
+            })
+            ->when($request->string('two_factor')->toString(), function ($query, string $status) {
+                $status === 'enabled'
+                    ? $query->whereNotNull('two_factor_confirmed_at')
+                    : $query->whereNull('two_factor_confirmed_at');
+            })
+            ->when($request->date('created_from'), fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
+            ->when($request->date('created_to'), fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
             ->latest()
             ->paginate((int) $request->input('per_page', 15));
 

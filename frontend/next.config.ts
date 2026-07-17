@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
     "192.168.254.183",
     "thankworthy-chuffily-elizebeth.ngrok-free.dev",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.ngrok-free.dev",
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

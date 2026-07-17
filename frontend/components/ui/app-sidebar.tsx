@@ -1,17 +1,17 @@
 'use client';
 
+import type { CSSProperties } from "react";
+
 import {
   CalendarDays,
   BriefcaseBusiness,
   ChartNoAxesCombined,
-  GitGraphIcon,
   LayoutGrid,
   Package,
   ShieldCheck,
   User2Icon,
   WalletCards,
 } from "lucide-react";
-import { NavFooter } from "@/components/ui/nav-footer";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import { can } from "@/features/auth/current-user-api";
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NavItem } from "@/types/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const mainNavItems: NavItem[] = [
   {
@@ -84,38 +85,51 @@ const mainNavItems: NavItem[] = [
   },
 ];
 
-const footerNavItems: NavItem[] = [
-  {
-    title: "Github",
-    href: "https://github.com/leynnnnnn0/nextjs-laravel-auth-boilerplate.git",
-    icon: GitGraphIcon,
-  },
-];
-
 export function AppSidebar() {
   const { user } = useCurrentUser();
   const visibleItems = mainNavItems.filter((item) => !item.permission || can(user, item.permission));
 
   return (
-    <Sidebar collapsible="icon" variant="inset">
-      <SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      variant="inset"
+      className="admin-sidebar"
+      style={
+        {
+          "--sidebar": "#162d4a",
+          "--sidebar-foreground": "#ffffff",
+          "--sidebar-primary": "#ffffff",
+          "--sidebar-primary-foreground": "#162d4a",
+          "--sidebar-accent": "rgba(255, 255, 255, 0.1)",
+          "--sidebar-accent-foreground": "#ffffff",
+          "--sidebar-border": "rgba(255, 255, 255, 0.12)",
+          "--sidebar-ring": "#8db3cf",
+        } as CSSProperties
+      }
+    >
+      <SidebarHeader className="bg-[#162d4a] px-3 pb-4 pt-3 text-white">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="h-14 px-2 hover:bg-white/10 data-[state=open]:bg-white/10">
               <Link href="/dashboard" prefetch>
-                <span className="text-sm text-center font-bold">SOG Glass And Alumninum</span>
+                <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/95 p-0.5 shadow-sm">
+                  <Image src="/images/sog-logo.png" width={40} height={40} alt="SOG logo" />
+                </span>
+                <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white">SOG Admin</span>
+                  <span className="mt-0.5 block truncate text-[10px] font-medium text-white/45">Glass &amp; Aluminum Services</span>
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-[#162d4a] text-white">
         <NavMain items={visibleItems} />
       </SidebarContent>
 
-      <SidebarFooter>
-        <NavFooter items={footerNavItems} className="mt-auto" />
+      <SidebarFooter className="bg-[#162d4a] text-white">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

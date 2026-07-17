@@ -150,9 +150,9 @@ export default function CustomerLocationCard({
   }, [addressLat, addressLng, hasPinnedLocation]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
       <div className={compact ? "px-4 pb-3 pt-4" : "px-5 pb-4 pt-5"}>
-        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
+        <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
           Customer Location
         </h2>
         <div className="flex items-start gap-3">

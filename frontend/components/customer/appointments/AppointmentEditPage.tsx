@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
+import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerAppointment } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
@@ -21,25 +22,25 @@ export default function AppointmentEditPage({ appointmentId }: { appointmentId: 
 
   return (
     <>
-      <div className="mb-6">
-        <Link href={`/account/appointments/${appointment.id}`} className="text-sm font-medium text-primary hover:underline">
-          Back to appointment
-        </Link>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-primary">Edit Appointment</p>
-        <h1 className="mt-2 text-base font-medium text-slate-950">
-          {appointment.can_edit ? "Update your request" : "Editing locked"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {appointment.can_edit
+      <CustomerPageHeader
+        eyebrow="Edit Appointment"
+        title={appointment.can_edit ? "Update your request." : "Editing is locked."}
+        description={
+          appointment.can_edit
             ? "Pending appointments can be edited before SOG confirms your inspection."
-            : "This appointment is no longer pending, so changes must be coordinated with the SOG team."}
-        </p>
-      </div>
+            : "This appointment is no longer pending, so changes must be coordinated with the SOG team."
+        }
+        action={
+          <Link href={`/account/appointments/${appointment.id}`} className="inline-flex rounded-full border border-white/25 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+            Back to appointment
+          </Link>
+        }
+      />
 
       {appointment.can_edit ? (
         <AppointmentForm appointment={appointment} />
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white p-8 text-sm font-medium text-slate-600">
+        <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-8 text-sm font-medium text-[#667584]">
           You cannot edit this appointment because its status is {appointment.status_label}.
         </div>
       )}

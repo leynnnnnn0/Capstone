@@ -3,8 +3,10 @@
 
 namespace App\Http\Requests\WorkJobs;
 
+use App\Enums\FabricationStatus;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Throwable;
 
@@ -51,6 +53,14 @@ class StoreWorkJobRequest extends FormRequest
             // ── Notes ─────────────────────────────────────────
             'notes' => ['nullable', 'string', 'max:2000'],
 
+            // ── Fabrication ─────────────────────────────────────
+            'fabrication_status' => [
+                'sometimes',
+                Rule::enum(FabricationStatus::class),
+            ],
+            'fabrication_expected_completion_date' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'fabrication_notes' => ['nullable', 'string', 'max:2000'],
+
             // ── Payment Terms ─────────────────────────────────
             'is_down_payment_required' => ['sometimes', 'boolean'],
             'down_payment_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
@@ -82,6 +92,17 @@ class StoreWorkJobRequest extends FormRequest
                 }
             } catch (Throwable) {
                 // Existing date/time rules handle malformed values.
+            }
+
+            $fabricationStatus = FabricationStatus::tryFrom(
+                (string) $this->input('fabrication_status', FabricationStatus::NotRequired->value)
+            );
+
+            if ($fabricationStatus?->requiresExpectedCompletionDate() && ! $this->filled('fabrication_expected_completion_date')) {
+                $validator->errors()->add(
+                    'fabrication_expected_completion_date',
+                    'Provide the customer with an expected fabrication completion date.'
+                );
             }
         });
     }

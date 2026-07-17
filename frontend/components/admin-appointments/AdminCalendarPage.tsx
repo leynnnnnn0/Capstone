@@ -42,10 +42,10 @@ export default function AdminCalendarPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Calendar</p>
-        <h1 className="mt-1 text-lg font-semibold tracking-tight sm:text-xl">Calendar</h1>
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+      <div className="rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Team scheduling</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Calendar</h1>
+        <p className="mt-1 text-xs text-white/55 sm:text-sm">
           {isWorker ? "Your assigned schedule." : "Appointments overview and workers schedule."}
         </p>
       </div>

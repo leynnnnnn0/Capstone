@@ -3,6 +3,7 @@
 
 namespace App\Models;
 
+use App\Enums\FabricationStatus;
 use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,6 +35,12 @@ class WorkJob extends Model implements AuditableContract
         'scheduled_time_from',
         'scheduled_time_until',
         'status',
+        'fabrication_status',
+        'fabrication_expected_completion_date',
+        'fabrication_started_at',
+        'fabrication_completed_at',
+        'fabrication_notes',
+        'fabrication_updated_at',
         'back_job_reason',
         'back_job_reason_other',
         'back_job_details',
@@ -44,6 +51,11 @@ class WorkJob extends Model implements AuditableContract
 
     protected $casts = [
         'status' => WorkJobStatus::class,
+        'fabrication_status' => FabricationStatus::class,
+        'fabrication_expected_completion_date' => 'date:Y-m-d',
+        'fabrication_started_at' => 'datetime',
+        'fabrication_completed_at' => 'datetime',
+        'fabrication_updated_at' => 'datetime',
         'back_job_reason' => WorkJobBackJobReason::class,
         'is_down_payment_required' => 'boolean',
         'down_payment_percentage' => 'decimal:2',

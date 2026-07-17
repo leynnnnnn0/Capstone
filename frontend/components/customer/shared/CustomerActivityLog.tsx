@@ -72,8 +72,8 @@ export default function CustomerActivityLog({
   const hiddenCount = remarks.length - INITIAL_VISIBLE;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
+    <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+      <h2 className="mb-5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
         Activity Log
       </h2>
 
@@ -116,7 +116,7 @@ export default function CustomerActivityLog({
                       </span>
                     </p>
                     {remark.message && (
-                      <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="mt-1.5 flex items-start gap-1.5 rounded-xl border border-[#dce4ea] bg-[#f3f6f8] px-3 py-2">
                         <MessageSquare
                           size={12}
                           className="mt-0.5 shrink-0 text-slate-500"

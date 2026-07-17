@@ -22,8 +22,8 @@ export default function CustomerQuoteImageList({
   const visibleItems = showAllItems ? items : items.slice(0, 1);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-primary">
+    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+      <h2 className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
         Quotation Items
       </h2>
       <div className="grid gap-3 sm:grid-cols-2">

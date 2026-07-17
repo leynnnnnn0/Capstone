@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import AppointmentForm from "@/components/customer/appointments/AppointmentForm";
+import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import {
   getCustomerAppointment,
@@ -60,21 +61,17 @@ export default function AppointmentCreatePage() {
 
   return (
     <>
-      <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-          {isRebook ? "Rebook Appointment" : "New Appointment"}
-        </p>
-        <h1 className="mt-2 text-base font-medium text-slate-950">
-          {isRebook ? "Book this appointment again" : "Book an inspection"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {isRebook
+      <CustomerPageHeader
+        eyebrow={isRebook ? "Rebook Appointment" : "New Appointment"}
+        title={isRebook ? "Book this visit again." : "Book an inspection."}
+        description={
+          isRebook
             ? "We filled in your previous details and quote items. You can adjust anything before submitting."
             : latestPrefill
               ? "We filled in your latest appointment details. Quote items start empty for this new request."
-              : "Create a request with or without quote items. Quote items can still be added through the quote flow."}
-        </p>
-      </div>
+              : "Create a request with or without quote items. Quote items can still be added through the quote flow."
+        }
+      />
 
       {loading ? (
         <FormPageSkeleton />

@@ -35,6 +35,7 @@ class WorkJobResource extends JsonResource
             'scheduled_time_until' => $this->scheduled_time_until,
             'status'               => $this->status->value,
             'status_label'         => $this->status->label(),
+            'fabrication'          => $this->fabricationData(),
             'back_job_reason'      => $this->back_job_reason?->value,
             'back_job_reason_label' => $this->back_job_reason?->label(),
             'back_job_reason_other' => $this->back_job_reason_other,
@@ -107,6 +108,31 @@ class WorkJobResource extends JsonResource
             'back_job_reason'      => $workJob->back_job_reason?->value,
             'back_job_reason_label' => $workJob->back_job_reason?->label(),
             'back_job_details'     => $workJob->back_job_details,
+        ];
+    }
+
+    private function fabricationData(): array
+    {
+        $status = $this->fabrication_status;
+        $expectedDate = $this->fabrication_expected_completion_date;
+        $daysRemaining = $expectedDate
+            ? (int) now()->startOfDay()->diffInDays($expectedDate->copy()->startOfDay(), false)
+            : null;
+
+        return [
+            'status' => $status->value,
+            'status_label' => $status->label(),
+            'description' => $status->customerDescription(),
+            'progress_percentage' => $status->progressPercentage(),
+            'expected_completion_date' => $expectedDate?->format('Y-m-d'),
+            'days_remaining' => $daysRemaining,
+            'is_overdue' => $daysRemaining !== null
+                && $daysRemaining < 0
+                && $status->requiresExpectedCompletionDate(),
+            'started_at' => $this->fabrication_started_at,
+            'completed_at' => $this->fabrication_completed_at,
+            'notes' => $this->fabrication_notes,
+            'updated_at' => $this->fabrication_updated_at,
         ];
     }
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
+import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { Button } from "@/components/ui/button";
 import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerAppointments } from "@/features/customer/customer-api";
@@ -37,18 +38,16 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Appointments</p>
-          <h1 className="mt-2 text-base font-medium text-slate-950">Your inspection requests</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Create, review, edit pending requests, or cancel appointments.
-          </p>
-        </div>
-        <Link href="/account/appointments/new" className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-white">
-          New Appointment
-        </Link>
-      </div>
+      <CustomerPageHeader
+        eyebrow="Appointments"
+        title="Your inspection requests."
+        description="Create a new request, review confirmed schedules, or manage appointments that still need changes."
+        action={
+          <Link href="/account/appointments/new" className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#162d4a] transition-colors hover:bg-[#c8dae8]">
+            New appointment
+          </Link>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loading ? (
@@ -61,14 +60,14 @@ export default function AppointmentsPage() {
       </div>
 
       {!loading && appointments.length === 0 && (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="font-medium text-slate-900">No appointments yet</p>
-          <p className="mt-1 text-sm text-slate-500">Start by creating your first inspection request.</p>
+        <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-12 text-center">
+          <p className="text-lg font-medium text-[#101820]">No appointments yet</p>
+          <p className="mt-2 text-sm text-[#667584]">Start by creating your first inspection request.</p>
         </div>
       )}
 
       {meta && meta.last_page > 1 && (
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-full bg-white p-2">
           <Button
             type="button"
             variant="outline"

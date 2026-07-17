@@ -1,4 +1,4 @@
-import type { CustomerStatus, CustomerWorkJob } from "@/features/customer/types";
+import type { CustomerFabricationStatus, CustomerStatus, CustomerWorkJob } from "@/features/customer/types";
 import type { PaginatedResponse } from "@/features/products/types";
 
 export type AdminWorkJob = CustomerWorkJob;
@@ -41,7 +41,16 @@ export type AdminWorkJobForm = {
   worker_ids: number[];
   is_down_payment_required: boolean;
   down_payment_percentage: number;
+  fabrication_status: CustomerFabricationStatus;
+  fabrication_expected_completion_date: string;
+  fabrication_notes: string;
   notes: string;
+};
+
+export type AdminFabricationUpdate = {
+  status: CustomerFabricationStatus;
+  expected_completion_date: string | null;
+  notes: string | null;
 };
 
 export type AdminBackJobForm = {

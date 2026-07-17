@@ -2,9 +2,6 @@ import {
   CalendarDays,
   Clock,
   FileText,
-  Mail,
-  Phone,
-  User,
   UserRoundCheck,
   Wrench,
 } from "lucide-react";
@@ -26,14 +23,11 @@ export default function AppointmentInfoCard({ appointment }: { appointment: Cust
     : "Pending assignment";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
-        Appointment Details
+    <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-6">
+      <h2 className="mb-5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
+        Visit &amp; Service Details
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Info icon={User} label="Customer" value={appointment.full_name} />
-        <Info icon={Phone} label="Phone" value={appointment.phone_number} />
-        <Info icon={Mail} label="Email" value={appointment.email ?? "-"} />
         <Info icon={Wrench} label="Service Type" value={serviceType} />
         <Info
           icon={CalendarDays}

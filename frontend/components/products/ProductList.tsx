@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, ImageOff, Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, ImageOff, Package, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,18 +19,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { deleteProduct, fetchProducts } from "@/features/products/product-api";
-import type { PaginatedResponse, Product } from "@/features/products/types";
+import { deleteProduct, fetchCategories, fetchProducts } from "@/features/products/product-api";
+import type { Category, PaginatedResponse, Product } from "@/features/products/types";
 import {
   formatCurrency,
   productCover,
   productVariants,
 } from "@/features/products/product-utils";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 export default function ProductList() {
   const router = useRouter();
@@ -39,15 +41,38 @@ export default function ProductList() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const filters = useMemo(
     () => ({
       search: searchParams.get("search") ?? "",
       is_active: searchParams.get("is_active") ?? "all",
+      category_id: searchParams.get("category_id") ?? "all",
+      unit: searchParams.get("unit") ?? "all",
+      has_3d_model: searchParams.get("has_3d_model") ?? "all",
+      has_warranty: searchParams.get("has_warranty") ?? "all",
+      has_variants: searchParams.get("has_variants") ?? "all",
+      sort: searchParams.get("sort") ?? "newest",
       per_page: searchParams.get("per_page") ?? "15",
     }),
     [searchParams],
   );
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const hasFilters = Boolean(
+    search ||
+    filters.is_active !== "all" ||
+    filters.category_id !== "all" ||
+    filters.unit !== "all" ||
+    filters.has_3d_model !== "all" ||
+    filters.has_warranty !== "all" ||
+    filters.has_variants !== "all" ||
+    filters.sort !== "newest",
+  );
+
+  useEffect(() => {
+    fetchCategories().then(setCategories);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -62,12 +87,15 @@ export default function ProductList() {
     };
   }, [filters]);
 
-  const applySearch = () => {
+  useEffect(() => {
+    if (search.trim() !== debouncedSearch) return;
+    if (debouncedSearch === filters.search) return;
     const params = new URLSearchParams(searchParams.toString());
-    if (search) params.set("search", search);
+    if (debouncedSearch) params.set("search", debouncedSearch);
     else params.delete("search");
-    router.push(`/dashboard/products?${params.toString()}`);
-  };
+    params.delete("page");
+    router.replace(`/dashboard/products${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [debouncedSearch, filters.search, router, search, searchParams]);
 
   const removeProduct = async () => {
     if (!deleteTarget) return;
@@ -91,16 +119,30 @@ export default function ProductList() {
 
   const products = response?.data ?? [];
 
+  function setFilter(key: string, value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all" || (key === "sort" && value === "newest")) params.delete(key);
+    else params.set(key, value);
+    params.delete("page");
+    router.replace(`/dashboard/products${params.toString() ? `?${params.toString()}` : ""}`);
+  }
+
+  function resetFilters() {
+    setSearch("");
+    router.replace("/dashboard/products");
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Products</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Product catalog</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Products</h1>
+          <p className="mt-1 text-sm text-white/55">
             {response?.meta?.total ?? products.length} total products
           </p>
         </div>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="bg-white text-[#162d4a] hover:bg-[#edf3f7]">
           <Link href="/dashboard/products/create">
             <Plus className="h-3.5 w-3.5" />
             New Product
@@ -108,25 +150,34 @@ export default function ProductList() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-transparent bg-white">
         <div className="p-3">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") applySearch();
-                }}
-                className="pl-8"
-                placeholder="Search products..."
-              />
+            <AdminTableSearch value={search} onChange={setSearch} placeholder="Search products..." />
+            <div className="flex gap-2">
+              <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
+                <SlidersHorizontal className="size-3.5" />
+                Filters
+              </Button>
+              {hasFilters && (
+                <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
+                  <RotateCcw className="size-3.5" />
+                  Reset
+                </Button>
+              )}
             </div>
-            <Button type="button" variant="outline" onClick={applySearch}>
-              Search
-            </Button>
           </div>
+          {filtersOpen && (
+            <div className="mt-3 grid gap-3 border-t border-[#e4ebf0] pt-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ProductFilter label="Status" value={filters.is_active} onChange={(value) => setFilter("is_active", value)} options={[["all", "All products"], ["true", "Active"], ["false", "Inactive"]]} />
+              <ProductFilter label="Category" value={filters.category_id} onChange={(value) => setFilter("category_id", value)} options={[["all", "All categories"], ...categories.map((category) => [String(category.id), category.name] as [string, string])]} />
+              <ProductFilter label="Unit" value={filters.unit} onChange={(value) => setFilter("unit", value)} options={[["all", "All units"], ["sqm", "Square meter"], ["sqft", "Square foot"], ["meter", "Meter"], ["piece", "Piece"], ["set", "Set"]]} />
+              <ProductFilter label="3D model" value={filters.has_3d_model} onChange={(value) => setFilter("has_3d_model", value)} options={[["all", "Any"], ["true", "With 3D model"], ["false", "Without 3D model"]]} />
+              <ProductFilter label="Warranty" value={filters.has_warranty} onChange={(value) => setFilter("has_warranty", value)} options={[["all", "Any"], ["true", "With warranty"], ["false", "Without warranty"]]} />
+              <ProductFilter label="Variants" value={filters.has_variants} onChange={(value) => setFilter("has_variants", value)} options={[["all", "Any"], ["true", "With variants"], ["false", "Without variants"]]} />
+              <ProductFilter label="Sort by" value={filters.sort} onChange={(value) => setFilter("sort", value)} options={[["newest", "Newest first"], ["oldest", "Oldest first"], ["name_asc", "Name A–Z"], ["price_asc", "Price: low to high"], ["price_desc", "Price: high to low"]]} />
+            </div>
+          )}
         </div>
       </Card>
 
@@ -250,6 +301,34 @@ export default function ProductList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+function ProductFilter({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<[string, string]>;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-10 w-full rounded-xl">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(([optionValue, optionLabel]) => (
+            <SelectItem key={optionValue} value={optionValue}>{optionLabel}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

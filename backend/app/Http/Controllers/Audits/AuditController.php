@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Audits;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use OwenIt\Auditing\Models\Audit;
@@ -11,10 +12,35 @@ class AuditController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $search = $request->string('search')->trim()->toString();
+
         $audits = Audit::query()
             ->with('user')
+            ->when($search, function ($query, string $search) {
+                $query->where(function ($query) use ($search) {
+                    $query
+                        ->where('event', 'like', "%{$search}%")
+                        ->orWhere('auditable_type', 'like', "%{$search}%")
+                        ->orWhere('ip_address', 'like', "%{$search}%")
+                        ->orWhere('url', 'like', "%{$search}%")
+                        ->orWhereHasMorph('user', [User::class], function ($userQuery) use ($search) {
+                            $userQuery->where(function ($userQuery) use ($search) {
+                                $userQuery
+                                    ->where('first_name', 'like', "%{$search}%")
+                                    ->orWhere('last_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                            });
+                        });
+
+                    if (ctype_digit($search)) {
+                        $query->orWhere('auditable_id', (int) $search);
+                    }
+                });
+            })
             ->when($request->string('event')->toString(), fn ($query, $event) => $query->where('event', $event))
             ->when($request->string('auditable_type')->toString(), fn ($query, $type) => $query->where('auditable_type', $type))
+            ->when($request->date('date_from'), fn ($query, $date) => $query->whereDate('created_at', '>=', $date))
+            ->when($request->date('date_to'), fn ($query, $date) => $query->whereDate('created_at', '<=', $date))
             ->latest()
             ->paginate((int) $request->integer('per_page', 25));
 
@@ -26,7 +52,7 @@ class AuditController extends Controller
                 'auditable_id' => $audit->auditable_id,
                 'user' => $audit->user ? [
                     'id' => $audit->user->id,
-                    'name' => trim(($audit->user->first_name ?? '') . ' ' . ($audit->user->last_name ?? '')) ?: $audit->user->email,
+                    'name' => trim(($audit->user->first_name ?? '').' '.($audit->user->last_name ?? '')) ?: $audit->user->email,
                     'email' => $audit->user->email,
                 ] : null,
                 'old_values' => $audit->old_values,
@@ -62,7 +88,7 @@ class AuditController extends Controller
             'auditable_id' => $audit->auditable_id,
             'user' => $audit->user ? [
                 'id' => $audit->user->id,
-                'name' => trim(($audit->user->first_name ?? '') . ' ' . ($audit->user->last_name ?? '')) ?: $audit->user->email,
+                'name' => trim(($audit->user->first_name ?? '').' '.($audit->user->last_name ?? '')) ?: $audit->user->email,
                 'email' => $audit->user->email,
             ] : null,
             'old_values' => $audit->old_values,

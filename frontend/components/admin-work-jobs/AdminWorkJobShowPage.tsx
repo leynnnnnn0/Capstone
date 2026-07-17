@@ -8,6 +8,7 @@ import CustomerLocationCard from "@/components/customer/shared/CustomerLocationC
 import AdminWorkJobBackJobsCard from "@/components/admin-work-jobs/AdminWorkJobBackJobsCard";
 import AdminWorkJobChargesCard from "@/components/admin-work-jobs/AdminWorkJobChargesCard";
 import AdminWorkJobDetailsCard from "@/components/admin-work-jobs/AdminWorkJobDetailsCard";
+import AdminWorkJobFabricationCard from "@/components/admin-work-jobs/AdminWorkJobFabricationCard";
 import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader";
 import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobPaymentsCard";
 import AdminWorkJobRatingCard from "@/components/admin-work-jobs/AdminWorkJobRatingCard";
@@ -59,6 +60,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
       <AdminWorkJobHeader workJob={workJob} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage={!isWorker} />
           <AdminWorkJobDetailsCard workJob={workJob} />
           <CustomerLocationCard address={workJob.address ?? ""} addressLat={workJob.address_lat} addressLng={workJob.address_lng} compact />
         </div>

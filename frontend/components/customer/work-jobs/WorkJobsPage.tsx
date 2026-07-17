@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
+import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { Button } from "@/components/ui/button";
 import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
 import { getCustomerWorkJobs } from "@/features/customer/customer-api";
@@ -36,13 +37,11 @@ export default function WorkJobsPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Work Jobs</p>
-        <h1 className="mt-2 text-base font-medium text-slate-950">Installation and service jobs</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Work jobs are created by the SOG team after your appointment or quote is approved.
-        </p>
-      </div>
+      <CustomerPageHeader
+        eyebrow="Work Jobs"
+        title="Installation in motion."
+        description="Follow scheduled installations, assigned teams, service progress, payments, and completion updates in one place."
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {loading ? (
@@ -55,16 +54,16 @@ export default function WorkJobsPage() {
       </div>
 
       {!loading && workJobs.length === 0 && (
-        <div className="rounded-lg border border-dashed border-slate-200 bg-white p-10 text-center">
-          <p className="font-medium text-slate-900">No work jobs yet</p>
-          <p className="mt-1 text-sm text-slate-500">
+        <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-12 text-center">
+          <p className="text-lg font-medium text-[#101820]">No work jobs yet</p>
+          <p className="mt-2 text-sm text-[#667584]">
             Your work jobs will appear here when our team schedules installation or service.
           </p>
         </div>
       )}
 
       {meta && meta.last_page > 1 && (
-        <div className="mt-5 flex items-center justify-end gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-full bg-white p-2">
           <Button
             type="button"
             variant="outline"

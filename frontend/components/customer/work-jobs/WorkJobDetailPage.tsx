@@ -4,14 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, CalendarDays, Clock, FileText, Mail, Phone, User, UserRoundCheck, Wrench } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, Clock, FileText, UserRoundCheck, Wrench } from "lucide-react";
 
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
-import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
-import CustomerQuoteImageList from "@/components/customer/shared/CustomerQuoteImageList";
+import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/CustomerWorkJobBackJobsCard";
+import CustomerFabricationProgressCard from "@/components/customer/work-jobs/CustomerFabricationProgressCard";
 import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/CustomerWorkJobPaymentCard";
 import CustomerWorkJobRatingCard from "@/components/customer/work-jobs/CustomerWorkJobRatingCard";
 import { Button } from "@/components/ui/button";
@@ -58,22 +58,33 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="relative mb-6 flex flex-col gap-6 overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-8 text-white sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
+        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#608db9]/25 blur-3xl" />
         <div>
           <button
             onClick={() => router.back()}
-            className="mb-3 text-sm font-medium text-primary hover:underline"
+            className="relative mb-4 text-xs font-semibold text-white/55 hover:text-white"
           >
             Back
           </button>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
+          <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8dae8]">
             {workJob.work_job_number}
           </p>
-          <h1 className="mt-1 text-sm font-medium text-slate-950">
-            {workJob.full_name}
+          <h1 className="relative mt-2 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
+            Work job details
           </h1>
         </div>
-        <CustomerStatusBadge status={workJob.status} />
+        <div className="relative flex flex-wrap items-center gap-3">
+          <CustomerStatusBadge status={workJob.status} />
+          <CustomerContactLocationSheet
+            fullName={workJob.full_name}
+            phoneNumber={workJob.phone_number}
+            email={workJob.email}
+            address={workJob.address}
+            addressLat={workJob.address_lat}
+            addressLng={workJob.address_lng}
+          />
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -81,17 +92,12 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
           <CustomerWorkJobBackJobsCard workJob={workJob} />
 
+          <CustomerFabricationProgressCard workJob={workJob} />
+
           <WorkJobInfoCard workJob={workJob} />
 
-          <CustomerLocationCard
-            address={workJob.address}
-            addressLat={workJob.address_lat}
-            addressLng={workJob.address_lng}
-            compact
-          />
-
           {/* <CustomerQuoteImageList quotation={quotation} /> */}
-          <WorkJobWarrantyCard workJob={workJob} />
+          <WorkJobWarrantyCard workJob={workJob} customer />
 
           <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
         </section>
@@ -127,14 +133,11 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
     : "Pending assignment";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
       <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
-        Work Job Details
+        Schedule &amp; Service Details
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Info icon={User} label="Customer" value={workJob.full_name} />
-        <Info icon={Phone} label="Phone" value={workJob.phone_number} />
-        <Info icon={Mail} label="Email" value={workJob.email ?? "-"} />
         <Info icon={Wrench} label="Service Type" value={serviceType} />
         <Info
           icon={CalendarDays}
@@ -161,7 +164,7 @@ function LinkedAppointmentCard({ workJob }: { workJob: CustomerWorkJob }) {
   if (!workJob.appointment) return null;
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">

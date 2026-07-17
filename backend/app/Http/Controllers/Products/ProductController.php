@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Controllers/Products/ProductController.php
 
 namespace App\Http\Controllers\Products;
@@ -39,24 +40,42 @@ class ProductController extends Controller
             ])
             ->when(
                 $request->search,
-                fn($q) =>
-                $q->where('name', 'like', "%{$request->search}%")
+                fn ($q) => $q->where('name', 'like', "%{$request->search}%")
             )
             ->when(
                 $request->has('is_active'),
-                fn($q) =>
-                $q->where('is_active', $request->boolean('is_active'))
+                fn ($q) => $q->where('is_active', $request->boolean('is_active'))
             )
             ->when(
                 $request->category_id,
-                fn($q) =>
-                $q->whereHas(
+                fn ($q) => $q->whereHas(
                     'categories',
-                    fn($q) =>
-                    $q->where('categories.id', $request->category_id)
+                    fn ($q) => $q->where('categories.id', $request->category_id)
                 )
             )
-            ->latest()
+            ->when($request->string('unit')->toString(), fn ($q, string $unit) => $q->where('unit', $unit))
+            ->when($request->has('has_3d_model'), fn ($q) => $request->boolean('has_3d_model')
+                ? $q->whereHas('product_3d_model')
+                : $q->whereDoesntHave('product_3d_model'))
+            ->when($request->has('has_warranty'), fn ($q) => $request->boolean('has_warranty')
+                ? $q->whereHas('product_warranty')
+                : $q->whereDoesntHave('product_warranty'))
+            ->when($request->has('has_variants'), fn ($q) => $request->boolean('has_variants')
+                ? $q->whereHas('product_variants')
+                : $q->whereDoesntHave('product_variants'))
+            ->when(
+                $request->string('sort')->toString(),
+                function ($q, string $sort) {
+                    match ($sort) {
+                        'oldest' => $q->oldest(),
+                        'name_asc' => $q->orderBy('name'),
+                        'price_asc' => $q->orderBy('price_per_unit'),
+                        'price_desc' => $q->orderByDesc('price_per_unit'),
+                        default => $q->latest(),
+                    };
+                },
+                fn ($q) => $q->latest()
+            )
             ->paginate($request->per_page ?? 15);
 
         return response()->json(ProductResource::collection($products));
@@ -79,7 +98,7 @@ class ProductController extends Controller
 
             return response()->json([
                 'message' => 'Product created successfully.',
-                'data'    => new ProductResource($product),
+                'data' => new ProductResource($product),
             ], 201);
         } catch (Throwable $e) {
             Log::error('Failed to create product', [
@@ -140,12 +159,12 @@ class ProductController extends Controller
 
             return response()->json([
                 'message' => 'Product updated successfully.',
-                'data'    => new ProductResource($product),
+                'data' => new ProductResource($product),
             ]);
         } catch (Throwable $e) {
             Log::error('Failed to update product', [
                 'product_id' => $product->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
@@ -168,7 +187,7 @@ class ProductController extends Controller
         } catch (Throwable $e) {
             Log::error('Failed to delete product', [
                 'product_id' => $product->id,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([

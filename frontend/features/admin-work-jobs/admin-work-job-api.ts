@@ -6,6 +6,7 @@ import type {
   AdminWorkJobFilters,
   AdminWorkJobForm,
   WorkJobCollection,
+  AdminFabricationUpdate,
 } from "./types";
 import type { CustomerPaymentMethod, CustomerPaymentType } from "@/features/customer/types";
 import type {
@@ -48,6 +49,13 @@ export function createAdminWorkJob(payload: AdminWorkJobForm) {
 
 export function updateAdminWorkJob(id: string | number, payload: AdminWorkJobForm) {
   return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateWorkJobFabrication(id: number, payload: AdminFabricationUpdate) {
+  return api<ResourceResponse<AdminWorkJob>>(`/api/v1/work-jobs/${id}/fabrication`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });

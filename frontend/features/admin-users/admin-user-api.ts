@@ -3,7 +3,17 @@ import type { AdminUser, AdminUserForm, UserCollection, UserOptions } from "./ty
 
 type ResourceResponse<T> = { data: T };
 
-export function fetchAdminUsers(filters: { search?: string; role?: string } = {}) {
+export type AdminUserFilters = {
+  search?: string;
+  role?: string;
+  email_status?: string;
+  phone_status?: string;
+  two_factor?: string;
+  created_from?: string;
+  created_to?: string;
+};
+
+export function fetchAdminUsers(filters: AdminUserFilters = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value && value !== "all") params.set(key, value);

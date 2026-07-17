@@ -9,12 +9,12 @@ import {
   ClipboardList,
   Eye,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   UserCheck,
 } from "lucide-react";
 
 import AdminAppointmentStatusBadge from "@/components/admin-appointments/AdminAppointmentStatusBadge";
+import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
@@ -43,6 +43,7 @@ import {
 import type { AdminAppointment, AppointmentCollection } from "@/features/admin-appointments/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { currentPathWithSearch, withReturnTo } from "@/lib/return-to";
 
 export default function AdminAppointmentsPage() {
@@ -67,6 +68,7 @@ export default function AdminAppointmentsPage() {
     }),
     [searchParams],
   );
+  const debouncedSearch = useDebouncedValue(search.trim());
   const returnTo = useMemo(() => currentPathWithSearch(pathname, searchParams), [pathname, searchParams]);
 
   const reload = useCallback(() => {
@@ -86,6 +88,16 @@ export default function AdminAppointmentsPage() {
   }, [filters]);
 
   useEffect(() => reload(), [reload]);
+  useEffect(() => {
+    if (search.trim() !== debouncedSearch) return;
+    if (debouncedSearch === filters.search) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("returnTo");
+    params.delete("page");
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    else params.delete("search");
+    router.replace(`/dashboard/appointments${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [debouncedSearch, filters.search, router, search, searchParams]);
   useRealtimeRefresh(() => {
     setLoading(true);
     reload();
@@ -116,13 +128,14 @@ export default function AdminAppointmentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Appointments</h1>
-          <p className="text-sm text-muted-foreground">{total} total appointment{total === 1 ? "" : "s"}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Customer scheduling</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Appointments</h1>
+          <p className="mt-1 text-sm text-white/55">{total} total appointment{total === 1 ? "" : "s"}</p>
         </div>
         {!isWorker && (
-          <Button asChild size="sm" className="gap-1.5">
+          <Button asChild size="sm" className="gap-1.5 bg-white text-[#162d4a] hover:bg-[#edf3f7]">
             <Link href="/dashboard/appointments/create">
               <CalendarDays className="size-3.5" />
               New Appointment
@@ -138,27 +151,16 @@ export default function AdminAppointmentsPage() {
         <StatCard label="Completed" value={appointments.filter((item) => item.status === "completed").length} icon={ClipboardList} />
       </div>
 
-      <div className="rounded-lg border bg-card p-3">
+      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, phone, appointment #..."
-              className="pl-8"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") applyFilter({ search });
-              }}
-            />
-          </div>
+          <AdminTableSearch value={search} onChange={setSearch} placeholder="Search by name, phone, appointment #..." />
           <div className="grid grid-cols-2 gap-2 sm:flex">
-            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
               <SlidersHorizontal className="size-3.5" />
               Filters
             </Button>
             {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
                 <RotateCcw className="size-3.5" />
                 Reset
               </Button>

@@ -8,14 +8,19 @@ export function UserInfo({
   user: User;
   showEmail?: boolean;
 }) {
-  const getInitials = "TODO";
+  const initials = user.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "SOG";
 
   return (
     <>
       <Avatar className="h-8 w-8 overflow-hidden rounded-full">
         <AvatarImage src={user.avatar} alt={user.name} />
-        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-          TODO
+        <AvatarFallback className="rounded-full bg-[#dbe9f3] text-xs font-bold text-[#162d4a]">
+          {initials}
         </AvatarFallback>
       </Avatar>
       <div className="grid flex-1 text-left text-sm leading-tight">

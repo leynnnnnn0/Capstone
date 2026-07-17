@@ -91,6 +91,19 @@ const workJobSchema = z.object({
     .number()
     .min(1, "Down payment must be at least 1%.")
     .max(100, "Down payment cannot exceed 100%."),
+  fabrication_status: z.enum([
+    "not_required",
+    "pending",
+    "materials_preparation",
+    "waiting_for_materials",
+    "queued",
+    "in_progress",
+    "quality_check",
+    "on_hold",
+    "ready_for_installation",
+  ]),
+  fabrication_expected_completion_date: z.string().optional(),
+  fabrication_notes: z.string().max(2000, "Fabrication notes must be 2000 characters or fewer.").optional(),
   notes: z.string().max(2000, "Notes must be 2000 characters or fewer.").optional(),
 }).superRefine((value, context) => {
   if (value.service_type === "other" && !value.service_type_other?.trim()) {
@@ -98,6 +111,18 @@ const workJobSchema = z.object({
       code: "custom",
       path: ["service_type_other"],
       message: "Describe the service type.",
+    });
+  }
+
+  if (
+    value.fabrication_status !== "not_required" &&
+    value.fabrication_status !== "ready_for_installation" &&
+    !value.fabrication_expected_completion_date
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["fabrication_expected_completion_date"],
+      message: "Set an expected fabrication completion date for the customer.",
     });
   }
 
@@ -387,7 +412,54 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
           </section>
 
           <section className="rounded-lg border bg-card p-5 shadow-sm">
-            <SectionTitle title="Payment Terms" description="Choose whether the customer must pay a down payment before the job continues." />
+            <SectionTitle title="Fabrication Plan" description="Tell the customer what happens between approval and installation." />
+            <div className="mt-4 rounded-lg border bg-muted/30 p-4">
+              <label className="flex items-start gap-3">
+                <Checkbox
+                  checked={data.fabrication_status !== "not_required"}
+                  onCheckedChange={(checked) => {
+                    setField("fabrication_status", checked === true ? "pending" : "not_required");
+                    if (checked !== true) {
+                      setField("fabrication_expected_completion_date", "");
+                      setField("fabrication_notes", "");
+                    }
+                  }}
+                />
+                <span>
+                  <span className="block text-sm font-medium">This job includes fabrication</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                    Turn this off for repair, maintenance, or other services that go directly to scheduling.
+                  </span>
+                </span>
+              </label>
+              {data.fabrication_status !== "not_required" && (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <Field label="Expected Completion" error={errors.fabrication_expected_completion_date}>
+                    <Input
+                      type="date"
+                      min={today}
+                      value={data.fabrication_expected_completion_date}
+                      onChange={(event) => setField("fabrication_expected_completion_date", event.target.value)}
+                    />
+                  </Field>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="fabrication_notes">Customer-visible update</Label>
+                    <Textarea
+                      id="fabrication_notes"
+                      value={data.fabrication_notes}
+                      onChange={(event) => setField("fabrication_notes", event.target.value)}
+                      className="min-h-20 resize-none"
+                      placeholder="Example: Materials confirmed; fabrication starts Monday."
+                    />
+                    {errors.fabrication_notes && <p className="text-xs font-medium text-destructive">{errors.fabrication_notes}</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-lg border bg-card p-5 shadow-sm">
+            <SectionTitle title="Payment Terms" description="Down payment is optional for every work job." />
             <div className="mt-4 rounded-lg border bg-muted/30 p-4">
               <label className="flex items-start gap-3">
                 <Checkbox
@@ -397,7 +469,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
                 <span>
                   <span className="block text-sm font-medium">Require down payment</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    The customer can still pay the full balance, but the remaining balance is blocked until the down payment is complete.
+                    Leave this unchecked when the customer can proceed without a down payment.
                   </span>
                 </span>
               </label>
@@ -441,6 +513,13 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
               <SummaryRow label="Time" value={`${data.scheduled_time_from || "-"} - ${data.scheduled_time_until || "-"}`} />
               <SummaryRow label="Workers" value={data.worker_ids.length ? `${data.worker_ids.length} assigned` : "None"} />
               <SummaryRow label="Quote Total" value={`₱${Number(quoteTotal).toLocaleString("en-PH")}`} />
+              <SummaryRow
+                label="Fabrication"
+                value={data.fabrication_status === "not_required" ? "Not required" : "Required"}
+              />
+              {data.fabrication_status !== "not_required" && (
+                <SummaryRow label="Fabrication ETA" value={data.fabrication_expected_completion_date || "Set date"} />
+              )}
               <SummaryRow
                 label="Down Payment"
                 value={data.is_down_payment_required ? `₱${downPaymentAmount.toLocaleString("en-PH")}` : "Not required"}

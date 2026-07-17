@@ -31,7 +31,9 @@ class WorkJobPaymentService
      */
     public function summary(WorkJob $workJob): array
     {
-        $workJob->loadMissing([
+        // Billing must always reflect charges/payments written after this model
+        // instance was loaded (for example, while an online checkout is open).
+        $workJob->load([
             'quotation.quotation_items.before_images',
             'quotation.quotation_items.after_images',
             'payments.refunds',

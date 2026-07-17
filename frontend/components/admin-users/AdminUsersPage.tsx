@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
-import { Edit2, Plus, RefreshCw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { Edit2, Plus, RefreshCw, RotateCcw, ShieldCheck, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import NameInput from "@/components/form/NameInput";
@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApiError } from "@/lib/api";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   createAdminUser,
   deleteAdminUser,
@@ -79,6 +81,12 @@ export default function AdminUsersPage() {
   const [options, setOptions] = useState<UserOptions>({ roles: [], permissions: [] });
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
+  const [emailStatus, setEmailStatus] = useState("all");
+  const [phoneStatus, setPhoneStatus] = useState("all");
+  const [twoFactor, setTwoFactor] = useState("all");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [form, setForm] = useState<AdminUserForm>(emptyForm);
@@ -88,6 +96,25 @@ export default function AdminUsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const userFilters = useMemo(() => ({
+    search: debouncedSearch,
+    role,
+    email_status: emailStatus,
+    phone_status: phoneStatus,
+    two_factor: twoFactor,
+    created_from: createdFrom,
+    created_to: createdTo,
+  }), [createdFrom, createdTo, debouncedSearch, emailStatus, phoneStatus, role, twoFactor]);
+  const hasFilters = Boolean(
+    search ||
+    role !== "all" ||
+    emailStatus !== "all" ||
+    phoneStatus !== "all" ||
+    twoFactor !== "all" ||
+    createdFrom ||
+    createdTo,
+  );
 
   const users = response?.data ?? [];
   const permissionOptions = useMemo(
@@ -102,7 +129,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     let active = true;
 
-    fetchAdminUsers({ search, role })
+    fetchAdminUsers(userFilters)
       .then((next) => {
         if (active) setResponse(next);
       })
@@ -113,7 +140,7 @@ export default function AdminUsersPage() {
     return () => {
       active = false;
     };
-  }, [search, role]);
+  }, [userFilters]);
 
   function openCreate() {
     setEditing(null);
@@ -172,7 +199,7 @@ export default function AdminUsersPage() {
       toast.success(editing ? "User updated successfully." : "User created successfully.");
       setConfirmSaveOpen(false);
       setDialogOpen(false);
-      setResponse(await fetchAdminUsers({ search, role }));
+      setResponse(await fetchAdminUsers(userFilters));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to save user.");
       if (error instanceof ApiError && error.errors) {
@@ -193,7 +220,7 @@ export default function AdminUsersPage() {
       await deleteAdminUser(deleteTarget.id);
       toast.success("User deleted successfully.");
       setDeleteTarget(null);
-      setResponse(await fetchAdminUsers({ search, role }));
+      setResponse(await fetchAdminUsers(userFilters));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete user.");
     } finally {
@@ -203,34 +230,52 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary">Access Control</p>
-          <h1 className="mt-2 text-xl font-semibold tracking-tight">Users</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage staff, customers, roles, and permission overrides.</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Access control</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Users</h1>
+          <p className="mt-1 text-sm text-white/55">Manage staff, customers, roles, and permission overrides.</p>
         </div>
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" className="bg-white text-[#162d4a] hover:bg-[#edf3f7]">
           <Plus className="size-4" />
           New User
         </Button>
       </div>
 
-      <div className="grid gap-2 rounded-lg border bg-card p-3 md:grid-cols-[1fr_220px]">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search users..." className="pl-9" />
+      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <AdminTableSearch value={search} onChange={setSearch} placeholder="Search users..." />
+          <div className="flex gap-2">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
+              <SlidersHorizontal className="size-3.5" />
+              Filters
+            </Button>
+            {hasFilters && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => {
+                setSearch("");
+                setRole("all");
+                setEmailStatus("all");
+                setPhoneStatus("all");
+                setTwoFactor("all");
+                setCreatedFrom("");
+                setCreatedTo("");
+              }} className="h-11 gap-1.5 rounded-xl px-4">
+                <RotateCcw className="size-3.5" />
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
-        <Select value={role} onValueChange={setRole}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All roles</SelectItem>
-            {options.roles.map((item) => (
-              <SelectItem key={item} value={item}>{roleLabels[item] ?? item}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {filtersOpen && (
+          <div className="mt-3 grid gap-3 border-t border-[#e4ebf0] pt-3 sm:grid-cols-2 lg:grid-cols-4">
+            <UserFilter label="Role" value={role} onChange={setRole} options={[["all", "All roles"], ...options.roles.map((item) => [item, roleLabels[item] ?? item] as [string, string])]} />
+            <UserFilter label="Email" value={emailStatus} onChange={setEmailStatus} options={[["all", "Any verification status"], ["verified", "Verified"], ["unverified", "Unverified"]]} />
+            <UserFilter label="Phone number" value={phoneStatus} onChange={setPhoneStatus} options={[["all", "Any"], ["available", "Has phone number"], ["missing", "Missing phone number"]]} />
+            <UserFilter label="Two-factor authentication" value={twoFactor} onChange={setTwoFactor} options={[["all", "Any"], ["enabled", "Enabled"], ["disabled", "Disabled"]]} />
+            <UserDateFilter label="Created from" value={createdFrom} onChange={setCreatedFrom} />
+            <UserDateFilter label="Created to" value={createdTo} onChange={setCreatedTo} />
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 md:hidden">
@@ -431,6 +476,43 @@ export default function AdminUsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+function UserFilter({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<[string, string]>;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-10 w-full rounded-xl">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(([optionValue, optionLabel]) => (
+            <SelectItem key={optionValue} value={optionValue}>{optionLabel}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function UserDateFilter({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <Input type="date" value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-xl" />
     </div>
   );
 }

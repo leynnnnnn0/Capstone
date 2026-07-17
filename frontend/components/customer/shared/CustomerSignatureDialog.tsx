@@ -49,9 +49,13 @@ export default function CustomerSignatureDialog({
   useEffect(() => {
     if (!open) return;
 
-    setName(defaultName ?? "");
-    setError("");
-    clearCanvas();
+    const frame = window.requestAnimationFrame(() => {
+      setName(defaultName ?? "");
+      setError("");
+      clearCanvas();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [defaultName, open]);
 
   function point(event: PointerEvent<HTMLCanvasElement>) {

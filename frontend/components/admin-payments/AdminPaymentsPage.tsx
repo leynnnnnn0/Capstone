@@ -13,7 +13,6 @@ import {
   Loader2,
   ReceiptText,
   RotateCcw,
-  Search,
   SlidersHorizontal,
   WalletCards,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import NumericInput from "@/components/form/NumericInput";
+import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +74,7 @@ import type {
   CustomerPaymentMethod,
 } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,7 @@ export default function AdminPaymentsPage() {
     }),
     [searchParams],
   );
+  const debouncedSearch = useDebouncedValue(search.trim());
 
   const loadPayments = useCallback(
     (ignoreResult?: () => boolean) => {
@@ -154,6 +156,16 @@ export default function AdminPaymentsPage() {
       ignored = true;
     };
   }, [loadPayments]);
+
+  useEffect(() => {
+    if (search.trim() !== debouncedSearch) return;
+    if (debouncedSearch === filters.search) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    else params.delete("search");
+    router.replace(`/dashboard/payments${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [debouncedSearch, filters.search, router, search, searchParams]);
 
   useRealtimeRefresh(() => loadPayments(), ["payment", "work_job"]);
 
@@ -254,11 +266,11 @@ export default function AdminPaymentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Payments</p>
-          <h1 className="text-xl font-semibold tracking-tight">Payment Records</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Payments</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Payment Records</h1>
+          <p className="mt-1 text-sm text-white/55">
             {total} payment record{total === 1 ? "" : "s"} across customer work jobs.
           </p>
         </div>
@@ -273,36 +285,22 @@ export default function AdminPaymentsPage() {
         <StatCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} />
       </div>
 
-      <div className="rounded-lg border bg-card p-3">
+      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search payment #, capture ID, customer, work job..."
-              className="pl-8"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") applyFilter({ search });
-              }}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <Button type="button" size="sm" onClick={() => applyFilter({ search })}>
-              Search
-            </Button>
+          <AdminTableSearch value={search} onChange={setSearch} placeholder="Search payment #, capture ID, customer, work job..." />
+          <div className="flex flex-wrap gap-2 sm:flex-nowrap">
             <Button
               type="button"
               variant={filtersOpen ? "secondary" : "outline"}
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="gap-1.5"
+              className="h-11 gap-1.5 rounded-xl px-4"
             >
               <SlidersHorizontal className="size-3.5" />
               Filters
             </Button>
             {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
                 <RotateCcw className="size-3.5" />
                 Reset
               </Button>

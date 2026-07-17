@@ -72,6 +72,9 @@ export function emptyWorkJobForm(): AdminWorkJobForm {
     worker_ids: [],
     is_down_payment_required: false,
     down_payment_percentage: 20,
+    fabrication_status: "pending",
+    fabrication_expected_completion_date: "",
+    fabrication_notes: "",
     notes: "",
   };
 }
@@ -96,6 +99,9 @@ export function workJobFormFromAppointment(appointment: AdminAppointment): Admin
     worker_ids: appointment.workers.map((worker) => worker.id),
     is_down_payment_required: false,
     down_payment_percentage: 20,
+    fabrication_status: defaultFabricationStatus(appointment.service_type),
+    fabrication_expected_completion_date: "",
+    fabrication_notes: "",
     notes: appointment.additional_notes ?? "",
   };
 }
@@ -120,8 +126,15 @@ export function workJobFormFromWorkJob(workJob: AdminWorkJob): AdminWorkJobForm 
     worker_ids: workJob.workers.map((worker) => worker.id),
     is_down_payment_required: workJob.is_down_payment_required ?? false,
     down_payment_percentage: workJob.down_payment_percentage ?? 20,
+    fabrication_status: workJob.fabrication.status,
+    fabrication_expected_completion_date: workJob.fabrication.expected_completion_date ?? "",
+    fabrication_notes: workJob.fabrication.notes ?? "",
     notes: workJob.notes ?? "",
   };
+}
+
+function defaultFabricationStatus(serviceType: string): "pending" | "not_required" {
+  return ["installation", "quotation"].includes(serviceType) ? "pending" : "not_required";
 }
 
 export function formatWorkJobDate(value?: string | null) {

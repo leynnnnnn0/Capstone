@@ -49,20 +49,26 @@ export default function CustomerNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-5 px-4 sm:px-6 lg:px-8">
-        <Link href="/account" className="flex shrink-0 items-center">
+    <header className="sticky top-0 z-40 bg-[#f3f6f8]/95 px-2 pt-2 backdrop-blur-xl sm:px-3 sm:pt-3">
+      <div className="mx-auto w-full max-w-[1440px] overflow-hidden rounded-[1.25rem] border border-[#dce4ea] bg-white shadow-[0_12px_40px_rgba(22,45,74,0.06)]">
+        <div className="flex h-[4.5rem] items-center gap-5 px-4 sm:px-6 lg:px-8">
+        <Link href="/account" className="flex shrink-0 items-center gap-3">
           <Image
             src="/images/sog-logo.png"
             alt="SOG Glass & Aluminum"
             width={1408}
             height={768}
-            className="h-9 w-auto"
+            className="h-11 w-auto"
             priority
           />
+          <span className="hidden text-[9px] font-bold uppercase leading-[1.45] tracking-[0.16em] text-[#26384a] sm:block">
+            Glass &amp; Aluminum
+            <br />
+            Customer Portal
+          </span>
         </Link>
 
-        <nav className="hidden h-full items-center gap-1 lg:flex">
+        <nav className="ml-6 hidden items-center gap-1 rounded-full bg-[#f3f6f8] p-1 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.exact
@@ -74,33 +80,30 @@ export default function CustomerNavbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex h-full items-center gap-1.5 px-2.5 text-[11px] font-medium text-slate-600 transition-colors hover:text-primary",
-                  active && "text-primary",
+                  "flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold text-[#667584] transition-all hover:text-[#162d4a]",
+                  active && "bg-[#162d4a] text-white shadow-sm hover:text-white",
                 )}
               >
-                <Icon className="size-3.5" />
+                <Icon className="size-4" />
                 {item.label}
-                {active && (
-                  <span className="absolute bottom-0 left-3 right-3 h-[3px] rounded-full bg-primary" />
-                )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
-          <NotificationBell className="hidden text-slate-700 hover:bg-slate-100 sm:inline-flex" />
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+          <NotificationBell className="hidden rounded-full text-[#536372] hover:bg-[#f3f6f8] sm:inline-flex" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-slate-100"
+                className="flex items-center gap-2 rounded-full border border-[#dce4ea] p-1 pr-2 text-left transition-colors hover:border-[#b9cbd9] hover:bg-[#f8fafb] sm:pr-3"
               >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-slate-200 text-xs font-medium text-slate-700">
+                <span className="flex size-9 items-center justify-center rounded-full bg-[#eaf2f8] text-xs font-bold text-[#2c5282]">
                   {initials || "CU"}
                 </span>
-                <span className="hidden text-xs font-medium text-slate-800 sm:inline">
+                <span className="hidden max-w-36 truncate text-xs font-semibold text-[#26384a] sm:inline">
                   {displayName}
                 </span>
                 <ChevronDown className="hidden size-3.5 text-slate-500 sm:inline" />
@@ -126,8 +129,8 @@ export default function CustomerNavbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-      <nav className="flex overflow-x-auto border-t border-slate-100 px-3 lg:hidden">
+        </div>
+      <nav className="grid grid-cols-3 border-t border-[#e8edf1] px-2 lg:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = item.exact
@@ -139,19 +142,20 @@ export default function CustomerNavbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex min-w-max items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-slate-600",
-                active && "text-primary",
+                "relative flex items-center justify-center gap-1.5 px-2 py-3 text-[11px] font-semibold text-[#667584] transition-colors",
+                active && "text-[#162d4a]",
               )}
             >
               <Icon className="size-4" />
               {item.label}
               {active && (
-                <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-primary" />
+                <span className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full bg-[#2563eb]" />
               )}
             </Link>
           );
         })}
       </nav>
+      </div>
     </header>
   );
 }

@@ -275,3 +275,64 @@
     @apply font-sans;
     }
 }
+
+/* Scoped styling for the authenticated operations workspace. */
+.admin-sidebar[data-sidebar="sidebar"],
+.admin-sidebar [data-sidebar="sidebar"] {
+  background: #162d4a;
+  color: white;
+  border: 0;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(18, 42, 70, 0.2);
+}
+
+.admin-workspace [data-slot="card"] {
+  border-color: #dce4ea;
+  border-radius: 1.25rem;
+  box-shadow: 0 18px 55px rgba(22, 45, 74, 0.055);
+}
+
+.admin-workspace table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-workspace thead {
+  background: #edf3f7;
+}
+
+.admin-workspace th {
+  color: #6f8498;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-workspace tbody tr {
+  border-color: #e5ebef;
+}
+
+.admin-workspace tbody tr:hover {
+  background: #f6f9fb;
+}
+
+.admin-workspace input,
+.admin-workspace textarea,
+.admin-workspace button[role="combobox"] {
+  border-color: #d7e1e8;
+  background-color: white;
+}
+
+.admin-workspace input:focus,
+.admin-workspace textarea:focus,
+.admin-workspace button[role="combobox"]:focus {
+  border-color: #608db9;
+}
+
+@media (max-width: 767px) {
+  .admin-workspace [data-slot="card"] {
+    border-radius: 1rem;
+  }
+}

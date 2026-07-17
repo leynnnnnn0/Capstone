@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Enums\FabricationStatus;
 use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use App\Events\WorkJobChanged;
@@ -33,6 +34,9 @@ class WorkJobService
     public function create(array $data, ?User $actor = null): WorkJob
     {
         $customerId = $this->resolveCustomerId($data, $actor);
+        $fabricationStatus = isset($data['fabrication_status'])
+            ? FabricationStatus::from($data['fabrication_status'])
+            : $this->defaultFabricationStatus($data['service_type']);
         $this->ensureWorkersAvailable(
             $data['worker_ids'],
             $data['scheduled_date'],
@@ -41,7 +45,7 @@ class WorkJobService
             $data['appointment_id'] ?? null
         );
 
-        $workJob = DB::transaction(function () use ($data, $actor, $customerId) {
+        $workJob = DB::transaction(function () use ($data, $actor, $customerId, $fabricationStatus) {
             $workerIds = $data['worker_ids'];
 
             $workJob = WorkJob::create([
@@ -62,6 +66,12 @@ class WorkJobService
                 'scheduled_time_from'  => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
                 'status'               => WorkJobStatus::Confirmed,
+                'fabrication_status'   => $fabricationStatus,
+                'fabrication_expected_completion_date' => $fabricationStatus === FabricationStatus::NotRequired
+                    ? null
+                    : ($data['fabrication_expected_completion_date'] ?? null),
+                'fabrication_notes'    => $data['fabrication_notes'] ?? null,
+                'fabrication_updated_at' => now(),
                 'notes'                => $data['notes'] ?? null,
                 'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
                 'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
@@ -99,6 +109,10 @@ class WorkJobService
         );
 
         $workJob = DB::transaction(function () use ($workJob, $data, $actor, $customerId) {
+            $fabricationStatus = isset($data['fabrication_status'])
+                ? FabricationStatus::from($data['fabrication_status'])
+                : $workJob->fabrication_status;
+
             $workJob->update([
                 'appointment_id'       => $data['appointment_id'] ?? null,
                 'quotation_id'         => $data['quotation_id'] ?? null,
@@ -116,6 +130,20 @@ class WorkJobService
                 'scheduled_date'       => $data['scheduled_date'],
                 'scheduled_time_from'  => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
+                'fabrication_status'   => $fabricationStatus,
+                'fabrication_expected_completion_date' => $fabricationStatus === FabricationStatus::NotRequired
+                    ? null
+                    : ($data['fabrication_expected_completion_date'] ?? $workJob->fabrication_expected_completion_date),
+                'fabrication_notes'    => $fabricationStatus === FabricationStatus::NotRequired
+                    ? null
+                    : ($data['fabrication_notes'] ?? $workJob->fabrication_notes),
+                'fabrication_started_at' => $fabricationStatus === FabricationStatus::NotRequired
+                    ? null
+                    : $workJob->fabrication_started_at,
+                'fabrication_completed_at' => $fabricationStatus === FabricationStatus::NotRequired
+                    ? null
+                    : $workJob->fabrication_completed_at,
+                'fabrication_updated_at' => isset($data['fabrication_status']) ? now() : $workJob->fabrication_updated_at,
                 'notes'                => $data['notes'] ?? null,
                 'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
                 'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
@@ -214,6 +242,8 @@ class WorkJobService
                 'scheduled_time_from'  => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
                 'status'               => WorkJobStatus::Confirmed,
+                'fabrication_status'   => FabricationStatus::NotRequired,
+                'fabrication_updated_at' => now(),
                 'back_job_reason'      => $reason,
                 'back_job_reason_other' => $data['back_job_reason_other'] ?? null,
                 'back_job_details'     => $data['back_job_details'],
@@ -375,6 +405,66 @@ class WorkJobService
         );
     }
 
+    /**
+     * Update fabrication independently from payment and installation progress.
+     */
+    public function updateFabrication(WorkJob $workJob, array $data, User $actor): WorkJob
+    {
+        $status = FabricationStatus::from($data['status']);
+        $wasReady = $workJob->fabrication_status === FabricationStatus::ReadyForInstallation;
+        $isReady = $status === FabricationStatus::ReadyForInstallation;
+        $isNotRequired = $status === FabricationStatus::NotRequired;
+        $startedAt = $workJob->fabrication_started_at;
+
+        if ($status === FabricationStatus::InProgress && ! $startedAt) {
+            $startedAt = now();
+        }
+
+        $message = $this->fabricationUpdateMessage(
+            $status,
+            $data['expected_completion_date'] ?? null,
+            $data['notes'] ?? null
+        );
+
+        DB::transaction(function () use (
+            $workJob,
+            $status,
+            $data,
+            $actor,
+            $message,
+            $startedAt,
+            $wasReady,
+            $isReady,
+            $isNotRequired
+        ) {
+            $workJob->update([
+                'fabrication_status' => $status,
+                'fabrication_expected_completion_date' => $isNotRequired
+                    ? null
+                    : ($data['expected_completion_date'] ?? $workJob->fabrication_expected_completion_date),
+                'fabrication_started_at' => $isNotRequired ? null : $startedAt,
+                'fabrication_completed_at' => $isNotRequired
+                    ? null
+                    : ($isReady
+                        ? ($workJob->fabrication_completed_at ?? now())
+                        : ($wasReady ? null : $workJob->fabrication_completed_at)),
+                'fabrication_notes' => $isNotRequired ? null : ($data['notes'] ?? null),
+                'fabrication_updated_at' => now(),
+            ]);
+
+            $workJob->remarks()->create([
+                'user_id' => $actor->id,
+                'action' => "fabrication_{$status->value}",
+                'message' => $message,
+            ]);
+        });
+
+        $workJob = $workJob->fresh()->load($this->relations());
+        WorkJobChanged::dispatch($workJob, "fabrication_{$status->value}", $message, $actor);
+
+        return $workJob;
+    }
+
     private function transition(WorkJob $workJob, WorkJobStatus $next, User $actor, string $message): WorkJob
     {
         $this->ensureCanTransition($workJob, $next);
@@ -452,6 +542,31 @@ class WorkJobService
     private function backJobCreatedMessage(WorkJob $backJob, WorkJobBackJobReason $reason, string $details): string
     {
         return "Back job {$backJob->work_job_number} scheduled ({$reason->label()}). {$details}";
+    }
+
+    private function defaultFabricationStatus(string $serviceType): FabricationStatus
+    {
+        return in_array($serviceType, ['installation', 'quotation'], true)
+            ? FabricationStatus::Pending
+            : FabricationStatus::NotRequired;
+    }
+
+    private function fabricationUpdateMessage(
+        FabricationStatus $status,
+        ?string $expectedCompletionDate,
+        ?string $notes
+    ): string {
+        $message = "Fabrication updated to {$status->label()}.";
+
+        if ($expectedCompletionDate && $status !== FabricationStatus::ReadyForInstallation) {
+            $message .= " Expected completion: {$expectedCompletionDate}.";
+        }
+
+        if (filled($notes)) {
+            $message .= ' '.trim($notes);
+        }
+
+        return $message;
     }
 
     private function resolveCustomerId(array $data, ?User $actor): int

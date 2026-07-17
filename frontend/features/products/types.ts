@@ -101,6 +101,11 @@ export type ProductListFilters = {
   search?: string;
   is_active?: string;
   category_id?: string;
+  unit?: string;
+  has_3d_model?: string;
+  has_warranty?: string;
+  has_variants?: string;
+  sort?: string;
   per_page?: string;
 };
 

@@ -80,7 +80,7 @@ export default function CustomerWorkJobPaymentCard({
   const canPayOnline = Boolean(config?.enabled && config.client_id && summary.can_accept_payment);
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

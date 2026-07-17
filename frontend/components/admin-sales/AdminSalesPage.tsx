@@ -35,7 +35,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
@@ -76,7 +76,7 @@ import { cn } from "@/lib/utils";
 
 const trendChartConfig = {
   sales: { label: "Paid", color: "#608DB9" },
-  pending: { label: "Pending", color: "#f5b811" },
+  pending: { label: "Pending", color: "#9aabba" },
 } satisfies ChartConfig;
 
 const methodChartConfig = {
@@ -87,7 +87,7 @@ const productChartConfig = {
   revenue: { label: "Revenue", color: "#608DB9" },
 } satisfies ChartConfig;
 
-const PIE_COLORS = ["#608DB9", "#f5b811", "#16a34a", "#ef4444", "#8b5cf6", "#14b8a6"];
+const PIE_COLORS = ["#162d4a", "#315b7d", "#608db9", "#83a8c5", "#a9c3d6", "#cbdbe7"];
 
 export default function AdminSalesPage() {
   const router = useRouter();
@@ -168,26 +168,26 @@ export default function AdminSalesPage() {
   const activeFilters = Boolean(filters.date_from || filters.date_to || filters.group_by === "month");
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-5 lg:space-y-6">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Sales</p>
-          <h1 className="text-xl font-semibold tracking-tight">Sales Report</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Sales intelligence</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Sales Report</h1>
+          <p className="mt-1 text-sm text-white/55">
             Track paid sales, pending collections, outstanding balances, and top revenue drivers.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={!hasExportRows || exporting !== null} onClick={() => handleExport("csv")}>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5 bg-white text-[#162d4a] hover:bg-[#edf3f7] hover:text-[#162d4a]" disabled={!hasExportRows || exporting !== null} onClick={() => handleExport("csv")}>
             {exporting === "csv" ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
             CSV
           </Button>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={!hasExportRows || exporting !== null} onClick={() => handleExport("xlsx")}>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5 bg-white text-[#162d4a] hover:bg-[#edf3f7] hover:text-[#162d4a]" disabled={!hasExportRows || exporting !== null} onClick={() => handleExport("xlsx")}>
             {exporting === "xlsx" ? <Loader2 className="size-3.5 animate-spin" /> : <FileSpreadsheet className="size-3.5" />}
             Excel
           </Button>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={!report || exporting !== null} onClick={() => handleExport("pdf")}>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5 bg-white text-[#162d4a] hover:bg-[#edf3f7] hover:text-[#162d4a]" disabled={!report || exporting !== null} onClick={() => handleExport("pdf")}>
             {exporting === "pdf" ? <Loader2 className="size-3.5 animate-spin" /> : <FileText className="size-3.5" />}
             PDF
           </Button>
@@ -198,28 +198,39 @@ export default function AdminSalesPage() {
         </div>
       </div>
 
-      <Card className="rounded-lg">
-        <CardContent className="p-3">
-          <div className="grid gap-2 md:grid-cols-[1fr_1fr_180px_auto]">
-            <FilterDate label="From" value={filters.date_from ?? ""} onChange={(value) => applyFilter({ date_from: value })} />
-            <FilterDate label="To" value={filters.date_to ?? ""} onChange={(value) => applyFilter({ date_to: value })} />
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Group By</label>
-              <Select value={filters.group_by ?? "day"} onValueChange={(value) => applyFilter({ group_by: value as "day" | "month" })}>
-                <SelectTrigger className="h-9 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">Daily</SelectItem>
-                  <SelectItem value="month">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+      <Card className="border-transparent bg-white">
+        <CardContent className="p-4 sm:p-5">
+          <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-end lg:gap-6">
+            <div className="flex items-center gap-3 lg:pb-0.5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#edf3f7] text-[#315b7d]">
+                <CalendarRange className="size-4" />
+              </span>
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">Report controls</p>
+                <p className="mt-1 text-sm font-semibold text-[#162d4a]">Reporting period</p>
+              </div>
             </div>
-            <div className="flex items-end">
-              <Button type="button" variant="ghost" size="sm" disabled={!activeFilters} onClick={resetFilters} className="gap-1.5">
-                <RefreshCcw className="size-3.5" />
-                Reset
-              </Button>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_150px_auto]">
+              <FilterDate label="From" value={filters.date_from ?? ""} onChange={(value) => applyFilter({ date_from: value })} />
+              <FilterDate label="To" value={filters.date_to ?? ""} onChange={(value) => applyFilter({ date_to: value })} />
+              <div className="space-y-1 sm:col-span-1">
+                <label className="text-xs font-medium text-muted-foreground">Group By</label>
+                <Select value={filters.group_by ?? "day"} onValueChange={(value) => applyFilter({ group_by: value as "day" | "month" })}>
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Daily</SelectItem>
+                    <SelectItem value="month">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end sm:justify-end">
+                <Button type="button" variant="ghost" size="sm" disabled={!activeFilters} onClick={resetFilters} className="gap-1.5">
+                  <RefreshCcw className="size-3.5" />
+                  Reset
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -231,8 +242,8 @@ export default function AdminSalesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-6">
-        <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+        <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} featured />
         <MetricCard label="Paid Sales" value={formatPeso(summary?.gross_sales ?? 0)} icon={WalletCards} />
         <MetricCard label="Outstanding" value={formatPeso(summary?.outstanding_amount ?? 0)} icon={BriefcaseBusiness} />
         <MetricCard label="Pending" value={formatPeso(summary?.pending_amount ?? 0)} icon={ReceiptText} />
@@ -240,16 +251,25 @@ export default function AdminSalesPage() {
         <MetricCard label="Collection Rate" value={formatPercent(summary?.collection_rate ?? 0)} icon={ChartNoAxesCombined} />
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-        <Card className="rounded-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold sm:text-base">Sales Trend</CardTitle>
-            <CardDescription>Paid and pending amounts by {filters.group_by === "month" ? "month" : "day"}.</CardDescription>
-          </CardHeader>
+      <SalesSectionHeading
+        eyebrow="Revenue performance"
+        title="Understand how collections are moving."
+        description="Compare paid and pending revenue, customer payment behavior, and the products driving each period."
+      />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
+        <Card className="border-transparent bg-white">
+          <SalesPanelHeading
+            eyebrow="Cash flow"
+            title="Sales Trend"
+            description={`Paid and pending amounts by ${filters.group_by === "month" ? "month" : "day"}.`}
+            icon={TrendingUp}
+          />
           <CardContent>
-            {loading ? <ChartLoading /> : report?.charts.sales_by_period.length ? (
-              <ChartContainer config={trendChartConfig} className="h-[220px] w-full sm:h-[240px] xl:h-[260px]">
-                <AreaChart data={report.charts.sales_by_period} margin={{ left: 0, right: 8, top: 12 }}>
+            <div className="rounded-[1.4rem] bg-[#f3f7fa] p-2 sm:p-4">
+              {loading ? <ChartLoading /> : report?.charts.sales_by_period.length ? (
+                <ChartContainer config={trendChartConfig} className="h-[220px] w-full sm:h-[240px] xl:h-[260px]">
+                  <AreaChart data={report.charts.sales_by_period} margin={{ left: 0, right: 8, top: 12 }}>
                   <defs>
                     <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-sales)" stopOpacity={0.35} />
@@ -266,22 +286,21 @@ export default function AdminSalesPage() {
                   <Tooltip content={<ChartTooltipContent />} />
                   <Area type="monotone" dataKey="sales" stroke="var(--color-sales)" fill="url(#salesFill)" strokeWidth={2} />
                   <Area type="monotone" dataKey="pending" stroke="var(--color-pending)" fill="url(#pendingFill)" strokeWidth={2} />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <EmptyChart label="No sales trend yet." />
-            )}
+                  </AreaChart>
+                </ChartContainer>
+              ) : (
+                <EmptyChart label="No sales trend yet." />
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold sm:text-base">Payment Methods</CardTitle>
-            <CardDescription>Revenue split by payment channel.</CardDescription>
-          </CardHeader>
+        <Card className="border-transparent bg-white">
+          <SalesPanelHeading eyebrow="Channels" title="Payment Methods" description="Revenue split by payment channel." icon={WalletCards} />
           <CardContent>
-            {loading ? <ChartLoading /> : report?.charts.payment_methods.length ? (
-              <div className="grid gap-3 md:grid-cols-[1fr_150px] xl:grid-cols-1 2xl:grid-cols-[1fr_150px]">
+            <div className="rounded-[1.4rem] bg-[#edf3f7] p-3 sm:p-4">
+              {loading ? <ChartLoading /> : report?.charts.payment_methods.length ? (
+                <div className="grid gap-3 md:grid-cols-[1fr_150px] xl:grid-cols-1 2xl:grid-cols-[1fr_150px]">
                 <ChartContainer config={methodChartConfig} className="h-[200px] w-full sm:h-[220px]">
                   <PieChart>
                     <Tooltip content={<ChartTooltipContent />} />
@@ -300,23 +319,22 @@ export default function AdminSalesPage() {
                   </PieChart>
                 </ChartContainer>
                 <BreakdownLegend data={report.charts.payment_methods} labelKey="method" />
-              </div>
-            ) : (
-              <EmptyChart label="No paid methods yet." />
-            )}
+                </div>
+              ) : (
+                <EmptyChart label="No paid methods yet." />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-2">
-        <Card className="rounded-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold sm:text-base">Payment Types</CardTitle>
-            <CardDescription>Full, down payment, balance, and additional charge collections.</CardDescription>
-          </CardHeader>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card className="border-transparent bg-white">
+          <SalesPanelHeading eyebrow="Collection mix" title="Payment Types" description="Full, down payment, balance, and additional charge collections." icon={ReceiptText} />
           <CardContent>
-            {loading ? <ChartLoading /> : report?.charts.payment_types.length ? (
-              <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
+            <div className="rounded-[1.4rem] bg-[#f3f7fa] p-2 sm:p-4">
+              {loading ? <ChartLoading /> : report?.charts.payment_types.length ? (
+                <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
                 <BarChart data={report.charts.payment_types} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="4 4" />
                   <XAxis dataKey="type" tickLine={false} axisLine={false} tickMargin={8} />
@@ -324,21 +342,20 @@ export default function AdminSalesPage() {
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="value" fill="#608DB9" radius={[6, 6, 0, 0]} />
                 </BarChart>
-              </ChartContainer>
-            ) : (
-              <EmptyChart label="No payment types yet." />
-            )}
+                </ChartContainer>
+              ) : (
+                <EmptyChart label="No payment types yet." />
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold sm:text-base">Top Products</CardTitle>
-            <CardDescription>Approved quotation items attached to paid work jobs.</CardDescription>
-          </CardHeader>
+        <Card className="border-transparent bg-white">
+          <SalesPanelHeading eyebrow="Product demand" title="Top Products" description="Approved quotation items attached to paid work jobs." icon={BriefcaseBusiness} />
           <CardContent>
-            {loading ? <ChartLoading /> : report?.charts.top_products.length ? (
-              <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
+            <div className="rounded-[1.4rem] bg-[#edf3f7] p-2 sm:p-4">
+              {loading ? <ChartLoading /> : report?.charts.top_products.length ? (
+                <ChartContainer config={productChartConfig} className="h-[210px] w-full sm:h-[230px]">
                 <BarChart data={report.charts.top_products} layout="vertical" margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid horizontal={false} strokeDasharray="4 4" />
                   <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={compactPeso} />
@@ -346,15 +363,22 @@ export default function AdminSalesPage() {
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 6, 6, 0]} />
                 </BarChart>
-              </ChartContainer>
-            ) : (
-              <EmptyChart label="No product revenue yet." />
-            )}
+                </ChartContainer>
+              ) : (
+                <EmptyChart label="No product revenue yet." />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
+      <SalesSectionHeading
+        eyebrow="Revenue activity"
+        title="Follow every collection that matters."
+        description="Recent payments, leading customers, and balances that still need action."
+      />
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
         <RecentPaymentsTable payments={report?.tables.recent_payments ?? []} loading={loading} />
         <TopLists
           customers={report?.tables.top_customers ?? []}
@@ -369,17 +393,94 @@ export default function AdminSalesPage() {
   );
 }
 
-function MetricCard({ label, value, icon: Icon }: { label: string; value: string; icon: ComponentType<{ className?: string }> }) {
+function SalesSectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5 rounded-lg border bg-card px-3 py-2.5">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
-        <Icon className="size-4" />
+    <div className="flex flex-col gap-2 px-1 pt-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#608db9]">{eyebrow}</p>
+        <h2 className="mt-2 text-xl font-semibold tracking-[-0.035em] text-[#162d4a] sm:text-2xl">{title}</h2>
       </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate text-base font-semibold leading-tight sm:text-lg">{value}</p>
-      </div>
+      <p className="max-w-xl text-xs leading-5 text-[#728596] sm:text-right sm:text-sm">{description}</p>
     </div>
+  );
+}
+
+function SalesPanelHeading({
+  eyebrow,
+  title,
+  description,
+  icon: Icon,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
+  return (
+    <CardHeader className="flex-row items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">{eyebrow}</p>
+        <h3 className="mt-2 text-base font-semibold tracking-[-0.025em] text-[#162d4a] sm:text-lg">{title}</h3>
+        <p className="mt-1 text-xs leading-5 text-[#7b8d9c] sm:text-sm">{description}</p>
+      </div>
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#edf3f7] text-[#315b7d]">
+        <Icon className="size-4" />
+      </span>
+    </CardHeader>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  icon: Icon,
+  featured = false,
+}: {
+  label: string;
+  value: string;
+  icon: ComponentType<{ className?: string }>;
+  featured?: boolean;
+}) {
+  const surface = featured
+    ? "bg-[#dcecf8]"
+    : label === "Outstanding" || label === "Collection Rate"
+      ? "bg-[#e4eaf0]"
+      : label === "Pending"
+        ? "bg-[#f1f5f8]"
+        : "bg-[#e8f0f6]";
+
+  return (
+    <article
+      className={cn(
+        "relative min-h-40 overflow-hidden rounded-[1.6rem] p-5 text-[#17324d] shadow-[0_14px_38px_rgba(22,45,74,0.055)] sm:p-6",
+        surface,
+        featured && "md:col-span-2 xl:col-span-2",
+      )}
+    >
+      <div className="relative flex h-full min-h-28 flex-col justify-between gap-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#6f879b]">
+              {featured ? "Revenue performance" : "Sales indicator"}
+            </p>
+            <h2 className="mt-2 text-sm font-semibold">{label}</h2>
+          </div>
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#162d4a] text-white shadow-sm">
+            <Icon className="size-4" />
+          </span>
+        </div>
+        <p className={cn("truncate font-semibold tracking-[-0.05em]", featured ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl")}>{value}</p>
+        <Icon className="pointer-events-none absolute -bottom-6 -right-4 size-24 opacity-[0.05]" />
+      </div>
+    </article>
   );
 }
 
@@ -438,16 +539,8 @@ function BreakdownLegend<T extends SalesBreakdownPoint>({ data, labelKey }: { da
 
 function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[]; loading: boolean }) {
   return (
-    <Card className="rounded-lg">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <CardTitle className="text-sm font-semibold sm:text-base">Recent Payments</CardTitle>
-            <CardDescription>Latest payment activity across work jobs.</CardDescription>
-          </div>
-          <Search className="size-4 text-muted-foreground" />
-        </div>
-      </CardHeader>
+    <Card className="border-transparent bg-white">
+      <SalesPanelHeading eyebrow="Latest activity" title="Recent Payments" description="Latest payment activity across work jobs." icon={Search} />
       <CardContent>
         <div className="space-y-2 md:hidden">
           {loading ? (
@@ -462,7 +555,7 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
             </div>
           )}
         </div>
-        <div className="hidden overflow-hidden rounded-lg border md:block">
+        <div className="hidden overflow-hidden rounded-xl border border-[#e1e8ed] md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -567,11 +660,8 @@ function TopLists({
   loading: boolean;
 }) {
   return (
-    <Card className="rounded-lg">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Revenue Leaders</CardTitle>
-        <CardDescription>Customers, work jobs, and products driving sales.</CardDescription>
-      </CardHeader>
+    <Card className="border-transparent bg-white">
+      <SalesPanelHeading eyebrow="Top performers" title="Revenue Leaders" description="Customers, work jobs, and products driving sales." icon={TrendingUp} />
       <CardContent className="grid gap-4">
         <TopListSection
           title="Top Customers"
@@ -634,7 +724,7 @@ function TopListSection({
           ))
         ) : rows.length > 0 ? (
           rows.slice(0, 4).map((row) => (
-            <div key={row.key} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2">
+            <div key={row.key} className="flex items-start justify-between gap-3 rounded-xl border border-[#e3eaf0] bg-[#f6f9fb] px-3 py-2.5 transition-colors hover:bg-[#edf3f7]">
               <div className="min-w-0">
                 {row.href ? (
                   <Link href={row.href} className="font-medium text-primary hover:underline">{row.label}</Link>
@@ -662,11 +752,13 @@ function OutstandingTable({
   loading: boolean;
 }) {
   return (
-    <Card className="rounded-lg">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Outstanding Balances</CardTitle>
-        <CardDescription>Work jobs that still need down payment, balance, or additional charge collection.</CardDescription>
-      </CardHeader>
+    <Card className="border-transparent bg-white">
+      <SalesPanelHeading
+        eyebrow="Needs attention"
+        title="Outstanding Balances"
+        description="Work jobs that still need down payment, balance, or additional charge collection."
+        icon={BriefcaseBusiness}
+      />
       <CardContent>
         <div className="space-y-2 md:hidden">
           {loading ? (
@@ -681,7 +773,7 @@ function OutstandingTable({
             </div>
           )}
         </div>
-        <div className="hidden overflow-hidden rounded-lg border md:block">
+        <div className="hidden overflow-hidden rounded-xl border border-[#e1e8ed] md:block">
           <Table>
             <TableHeader>
               <TableRow>

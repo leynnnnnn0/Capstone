@@ -143,10 +143,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Settings</p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight">Profile and security</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage your account information, password, and two-factor authentication.</p>
+      <div className="rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Settings</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Profile and security</h1>
+        <p className="mt-1 text-sm text-white/55">Manage your account information, password, and two-factor authentication.</p>
       </div>
 
       <div className="inline-flex rounded-lg border bg-muted p-1">

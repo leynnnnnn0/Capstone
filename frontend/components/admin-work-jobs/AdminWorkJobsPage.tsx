@@ -11,11 +11,11 @@ import {
   Eye,
   PlayCircle,
   RotateCcw,
-  Search,
   SlidersHorizontal,
 } from "lucide-react";
 
 import AdminWorkJobStatusBadge from "@/components/admin-work-jobs/AdminWorkJobStatusBadge";
+import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob, WorkJobCollection } from "@/features/admin-work-jobs/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 export default function AdminWorkJobsPage() {
   const { user } = useCurrentUser();
@@ -66,6 +67,7 @@ export default function AdminWorkJobsPage() {
     }),
     [searchParams],
   );
+  const debouncedSearch = useDebouncedValue(search.trim());
 
   const reload = useCallback(() => {
     let mounted = true;
@@ -84,6 +86,15 @@ export default function AdminWorkJobsPage() {
   }, [filters]);
 
   useEffect(() => reload(), [reload]);
+  useEffect(() => {
+    if (search.trim() !== debouncedSearch) return;
+    if (debouncedSearch === filters.search) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("page");
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    else params.delete("search");
+    router.replace(`/dashboard/work-jobs${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [debouncedSearch, filters.search, router, search, searchParams]);
   useRealtimeRefresh(() => {
     setLoading(true);
     reload();
@@ -113,13 +124,14 @@ export default function AdminWorkJobsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Work Jobs</h1>
-          <p className="text-sm text-muted-foreground">{total} total work job{total === 1 ? "" : "s"}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Field operations</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Work Jobs</h1>
+          <p className="mt-1 text-sm text-white/55">{total} total work job{total === 1 ? "" : "s"}</p>
         </div>
         {!isWorker && (
-          <Button asChild size="sm" className="gap-1.5">
+          <Button asChild size="sm" className="gap-1.5 bg-white text-[#162d4a] hover:bg-[#edf3f7]">
             <Link href="/dashboard/work-jobs/create">
               <BriefcaseBusiness className="size-3.5" />
               New Work Job
@@ -135,27 +147,16 @@ export default function AdminWorkJobsPage() {
         <StatCard label="Completed" value={workJobs.filter((item) => item.status === CustomerStatus.Completed).length} icon={CheckCircle2} />
       </div>
 
-      <div className="rounded-lg border bg-card p-3">
+      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, phone, work job #..."
-              className="pl-8"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") applyFilter({ search });
-              }}
-            />
-          </div>
+          <AdminTableSearch value={search} onChange={setSearch} placeholder="Search by name, phone, work job #..." />
           <div className="grid grid-cols-2 gap-2 sm:flex">
-            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="gap-1.5">
+            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="h-11 gap-1.5 rounded-xl px-4">
               <SlidersHorizontal className="size-3.5" />
               Filters
             </Button>
             {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">
+              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="h-11 gap-1.5 rounded-xl px-4">
                 <RotateCcw className="size-3.5" />
                 Reset
               </Button>

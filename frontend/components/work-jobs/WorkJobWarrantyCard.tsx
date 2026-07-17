@@ -14,11 +14,24 @@ const warrantyStatusClass: Record<CustomerWorkJobWarrantyStatus, string> = {
   voided: "border-red-200 bg-red-50 text-red-700",
 };
 
-export default function WorkJobWarrantyCard({ workJob }: { workJob: CustomerWorkJob }) {
+export default function WorkJobWarrantyCard({
+  workJob,
+  customer = false,
+}: {
+  workJob: CustomerWorkJob;
+  customer?: boolean;
+}) {
   const warranty = workJob.warranty;
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section
+      className={cn(
+        "border bg-white p-5",
+        customer
+          ? "rounded-[1.5rem] border-[#dce4ea] shadow-[0_18px_60px_rgba(22,45,74,0.06)]"
+          : "rounded-lg border-slate-200 shadow-sm",
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShieldCheck className="size-4 text-primary" />

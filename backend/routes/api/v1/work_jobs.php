@@ -12,6 +12,7 @@ use App\Http\Controllers\WorkJobs\ReopenWorkJobController;
 use App\Http\Controllers\WorkJobs\RescheduleWorkJobController;
 use App\Http\Controllers\WorkJobs\WorkJobChargeController;
 use App\Http\Controllers\WorkJobs\WorkJobController;
+use App\Http\Controllers\WorkJobs\UpdateWorkJobFabricationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->group(function () {
@@ -19,6 +20,7 @@ Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->grou
     Route::get('work-jobs/{workJob}', [WorkJobController::class, 'show']);
     Route::post('work-jobs', [WorkJobController::class, 'store']);
     Route::patch('work-jobs/{workJob}', [WorkJobController::class, 'update']);
+    Route::patch('work-jobs/{workJob}/fabrication', UpdateWorkJobFabricationController::class);
 
     Route::post(
         'appointments/{appointment}/work-job',

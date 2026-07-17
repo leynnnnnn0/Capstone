@@ -220,7 +220,7 @@ export default function AppointmentForm({
 
   return (
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]">
-      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-7">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField kind="name" label="First Name" value={data.first_name} error={errors.first_name} onChange={(value) => setField("first_name", value)} />
           <TextField kind="name" label="Last Name" value={data.last_name} error={errors.last_name} onChange={(value) => setField("last_name", value)} />
@@ -307,7 +307,7 @@ export default function AppointmentForm({
               </p>
             </div>
             {productsLoading ? (
-              <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div className="space-y-4 rounded-[1.25rem] border border-[#dce4ea] bg-[#f3f6f8] p-5">
                 <Skeleton className="h-5 w-40" />
                 <div className="grid gap-3 sm:grid-cols-3">
                   {Array.from({ length: 3 }).map((_, index) => (
@@ -361,32 +361,32 @@ export default function AppointmentForm({
         )}
       </div>
 
-      <aside className="h-fit rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-sm font-semibold text-slate-950">
+      <aside className="h-fit rounded-[1.5rem] bg-[#162d4a] p-5 text-white shadow-[0_20px_65px_rgba(22,45,74,0.16)] sm:p-6 lg:sticky lg:top-28">
+        <p className="text-lg font-medium tracking-[-0.025em] text-white">
           {appointment ? "Update Appointment" : includePrefillQuotation ? "Rebook Appointment" : "Create Appointment"}
         </p>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
+        <p className="mt-2 text-sm leading-6 text-white/60">
           You can edit this appointment while it is still pending. Once confirmed,
           our team will manage schedule changes with you directly.
         </p>
         {errors.form && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
         {quoteCart.length > 0 && (
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+          <div className="mt-4 rounded-[1rem] border border-white/15 bg-white/[0.07] p-4 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-500">Quote items</span>
-              <span className="font-medium text-slate-900">{quoteCart.length}</span>
+              <span className="text-white/55">Quote items</span>
+              <span className="font-medium text-white">{quoteCart.length}</span>
             </div>
             <div className="mt-1 flex items-center justify-between gap-3">
-              <span className="text-slate-500">Estimated total</span>
-              <span className="font-medium text-primary">{formatCurrency(quoteTotal(quoteCart))}</span>
+              <span className="text-white/55">Estimated total</span>
+              <span className="font-medium text-[#c8dae8]">{formatCurrency(quoteTotal(quoteCart))}</span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
+            <p className="mt-2 text-xs leading-5 text-white/45">
               Estimate only. Final quotation is subject to SOG approval after
               measurements and site conditions are checked during the ocular visit.
             </p>
           </div>
         )}
-        <Button type="submit" className="mt-5 h-11 w-full" disabled={saving}>
+        <Button type="submit" className="mt-5 h-11 w-full rounded-full bg-white text-[#162d4a] hover:bg-[#c8dae8]" disabled={saving}>
           {saving
             ? "Saving..."
             : appointment

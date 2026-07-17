@@ -126,6 +126,31 @@ export type CustomerWorkJobRating = {
 
 export type CustomerWorkJobWarrantyStatus = "active" | "expired" | "voided";
 
+export type CustomerFabricationStatus =
+  | "not_required"
+  | "pending"
+  | "materials_preparation"
+  | "waiting_for_materials"
+  | "queued"
+  | "in_progress"
+  | "quality_check"
+  | "on_hold"
+  | "ready_for_installation";
+
+export type CustomerWorkJobFabrication = {
+  status: CustomerFabricationStatus;
+  status_label: string;
+  description: string;
+  progress_percentage: number;
+  expected_completion_date: string | null;
+  days_remaining: number | null;
+  is_overdue: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  updated_at: string | null;
+};
+
 export type CustomerWorkJobWarranty = {
   id: number;
   warranty_number: string | null;
@@ -311,6 +336,7 @@ export type CustomerWorkJob = {
   scheduled_time_until: string | null;
   status: CustomerStatus;
   status_label: string;
+  fabrication: CustomerWorkJobFabrication;
   back_job_reason: string | null;
   back_job_reason_label: string | null;
   back_job_reason_other: string | null;
