@@ -11,16 +11,37 @@ export function createLabel(text: string, color: string) {
   }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.font = "650 36px Arial, sans-serif";
+  context.shadowColor = "rgba(13, 31, 51, 0.28)";
+  context.shadowBlur = 18;
+  context.shadowOffsetY = 8;
+  context.fillStyle = "rgba(255, 255, 255, 0.94)";
+  context.beginPath();
+  context.roundRect(22, 18, 468, 92, 30);
+  context.fill();
+
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetY = 0;
+  context.strokeStyle = "rgba(220, 228, 234, 0.95)";
+  context.lineWidth = 2;
+  context.stroke();
+
   context.fillStyle = color;
-  context.strokeStyle = "rgba(2, 6, 23, 0.82)";
-  context.lineWidth = 7;
-  context.shadowColor = "rgba(2, 6, 23, 0.75)";
-  context.shadowBlur = 8;
+  context.beginPath();
+  context.roundRect(48, 44, 8, 40, 4);
+  context.fill();
+
+  let fontSize = 36;
+  context.font = `600 ${fontSize}px "Instrument Sans Variable", "Instrument Sans", sans-serif`;
+  while (context.measureText(text).width > 370 && fontSize > 24) {
+    fontSize -= 2;
+    context.font = `600 ${fontSize}px "Instrument Sans Variable", "Instrument Sans", sans-serif`;
+  }
+
+  context.fillStyle = "#162d4a";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.strokeText(text, canvas.width / 2, canvas.height / 2);
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
+  context.fillText(text, 276, canvas.height / 2);
 
   const texture = new THREE.CanvasTexture(canvas);
   const material = new THREE.SpriteMaterial({

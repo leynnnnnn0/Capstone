@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  deleteAllNotifications,
   deleteNotification,
   fetchNotifications,
   markAllNotificationsAsRead,
@@ -94,6 +95,12 @@ export function useNotifications() {
     setUnreadCount(response.unread_count);
   }
 
+  async function removeAll() {
+    const response = await deleteAllNotifications();
+    setNotifications([]);
+    setUnreadCount(response.unread_count);
+  }
+
   return {
     notifications,
     unreadCount,
@@ -101,5 +108,6 @@ export function useNotifications() {
     markAsRead: read,
     markAllAsRead: readAll,
     deleteNotification: remove,
+    deleteAllNotifications: removeAll,
   };
 }

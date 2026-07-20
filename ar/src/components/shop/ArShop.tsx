@@ -9,7 +9,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
 import {
@@ -64,12 +64,20 @@ export function ArShop({
   onOpenSummary,
   onAddToQuote,
 }: ArShopProps) {
+  const shopRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    shopRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [detailModel?.id]);
+
   return (
     <section
-      className="pointer-events-auto absolute inset-0 z-20 overflow-y-auto bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] text-slate-950"
+      ref={shopRef}
+      className="pointer-events-auto absolute inset-0 z-20 overflow-y-auto bg-[#edf2f6] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] text-[#162d4a] sm:px-6 sm:pt-6"
       data-xr-ui="true"
+      data-slot="ar-shop"
     >
-      <div className="mx-auto flex w-full max-w-md flex-col gap-6 pb-5">
+      <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-5 pb-3 sm:gap-6">
         {detailModel ? (
           <ShopProductDetail
             model={detailModel}
@@ -145,46 +153,63 @@ function ShopCatalog({
 
   return (
     <>
-      <header className="flex items-center justify-between">
-        <button
-          type="button"
-          className="grid size-11 place-items-center rounded-full bg-white text-[#234a6f] shadow-[0_10px_28px_rgba(96,141,185,0.14)] ring-1 ring-[#dbe8f4]"
-          aria-label="Menu"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <Menu className="size-5" />
-        </button>
-        <LogoHomeButton />
-        <button
-          type="button"
-          className="relative grid size-11 place-items-center rounded-full bg-white text-[#234a6f] shadow-[0_10px_28px_rgba(96,141,185,0.14)] ring-1 ring-[#dbe8f4]"
-          aria-label="Quote summary"
-          onClick={onOpenSummary}
-        >
-          <ClipboardList className="size-5" />
-          {activeObjectCount > 0 && (
-            <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-[#f5b811] px-1.5 text-[11px] font-black text-white">
-              {activeObjectCount}
-            </span>
-          )}
-        </button>
+      <header className="relative overflow-hidden rounded-[1.75rem] bg-[#162d4a] p-4 text-white shadow-[0_22px_65px_rgba(22,45,74,0.18)] sm:p-6 lg:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full border border-white/10 bg-[#608db9]/15" />
+        <div className="pointer-events-none absolute -bottom-24 left-1/3 size-48 rounded-full bg-white/[0.035]" />
+
+        <div className="relative flex items-center justify-between">
+          <button
+            type="button"
+            className="grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-white transition hover:bg-white/10"
+            aria-label="Menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <Menu className="size-5" />
+          </button>
+          <LogoHomeButton dark />
+          <button
+            type="button"
+            className="relative grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-white transition hover:bg-white/10"
+            aria-label="Quote summary"
+            onClick={onOpenSummary}
+          >
+            <ClipboardList className="size-5" />
+            {activeObjectCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 grid min-w-5 place-items-center rounded-full bg-[#608db9] px-1.5 text-[10px] font-bold text-white ring-2 ring-[#162d4a]">
+                {activeObjectCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="relative mt-8 max-w-2xl sm:mt-12">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#b9cfe0]">
+            SOG augmented reality
+          </p>
+          <h1 className="mt-2 text-3xl font-medium leading-[0.98] tracking-[-0.045em] sm:text-5xl">
+            Find the right fit before installation.
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
+            Explore the catalog, preview products at scale, and carry accurate dimensions into your quote.
+          </p>
+        </div>
       </header>
 
       {menuOpen && <ShopMenu onClose={() => setMenuOpen(false)} />}
 
-      <section className="grid gap-4">
+      <section className="grid gap-3 rounded-[1.5rem] border border-[#dce4ea] bg-white p-3 shadow-[0_14px_42px_rgba(22,45,74,0.055)] sm:p-4">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-              SOG AR catalog
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
+              Product catalog
             </p>
-            <h1 className="mt-2 text-[2rem] font-black leading-none tracking-normal text-[#0f172a]">
+            <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162d4a] sm:text-2xl">
               Discover products
-            </h1>
+            </h2>
           </div>
           <button
           type="button"
-          className="grid size-11 place-items-center rounded-full bg-white text-[#234a6f] shadow-sm ring-1 ring-[#dbe8f4]"
+          className="grid size-10 place-items-center rounded-xl bg-[#edf3f7] text-[#315b7d] transition hover:bg-[#dfeaf1]"
           aria-label="Filters"
           onClick={() => setFiltersOpen((open) => !open)}
         >
@@ -193,27 +218,27 @@ function ShopCatalog({
         </div>
 
         <label className="relative block">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#7e94a7]" />
           <input
             type="search"
             value={searchQuery}
             placeholder="Search products"
-            className="h-14 w-full rounded-full border-0 bg-[#f5f9fd] pl-12 pr-5 text-base font-semibold text-[#0f172a] outline-none ring-1 ring-[#dbe8f4] placeholder:text-[#8ea3bd] focus:ring-2 focus:ring-[#608db9]"
+            className="h-12 w-full rounded-xl border-0 bg-[#f4f7f9] pl-11 pr-4 text-sm font-medium text-[#162d4a] outline-none ring-1 ring-[#dce4ea] placeholder:text-[#8ca0b2] focus:ring-2 focus:ring-[#608db9]"
             onChange={(event) => onSearchChange(event.target.value)}
           />
         </label>
 
         {filtersOpen && (
-          <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {categories.map((category) => (
               <button
                 type="button"
                 key={category.id}
                 className={cn(
-                  "h-14 shrink-0 rounded-full px-6 text-base font-bold transition",
+                  "h-10 shrink-0 rounded-xl px-4 text-sm font-semibold transition",
                   category.id === activeCategoryId
-                    ? "bg-[#608db9] text-white shadow-[0_10px_24px_rgba(96,141,185,0.26)]"
-                    : "bg-[#f5f9fd] text-[#234a6f]",
+                    ? "bg-[#162d4a] text-white shadow-[0_8px_20px_rgba(22,45,74,0.18)]"
+                    : "bg-[#edf3f7] text-[#315b7d] hover:bg-[#dfeaf1]",
                 )}
                 onClick={() => onCategoryChange(category.id)}
               >
@@ -226,36 +251,37 @@ function ShopCatalog({
 
       <button
         type="button"
-        className="grid grid-cols-[minmax(0,1fr)_8.5rem] items-center gap-4 rounded-[2rem] bg-[#f5f9fd] p-4 text-left shadow-[0_18px_44px_rgba(96,141,185,0.12)] ring-1 ring-[#dbe8f4]"
+        className="group grid grid-cols-[minmax(0,1fr)_7.5rem] items-center gap-4 overflow-hidden rounded-[1.75rem] border border-[#dce4ea] bg-white p-4 text-left shadow-[0_18px_50px_rgba(22,45,74,0.07)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(22,45,74,0.12)] sm:grid-cols-[minmax(0,1fr)_13rem] sm:p-6 lg:grid-cols-[minmax(0,1fr)_18rem]"
         onClick={() => onOpenDetail(selectedModel)}
       >
-        <span className="grid gap-2">
-          <span className="w-max rounded-full bg-[#f5b811] px-3 py-1 text-xs font-black text-white">
+        <span className="grid gap-2 sm:gap-3">
+          <span className="w-max rounded-full bg-[#e8f0f5] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#315b7d]">
             AR ready
           </span>
-          <strong className="line-clamp-2 text-xl font-black leading-tight">
+          <strong className="line-clamp-2 text-xl font-semibold leading-tight tracking-[-0.03em] text-[#162d4a] sm:text-3xl">
             {selectedModel.label}
           </strong>
-          <span className="line-clamp-2 text-sm leading-5 text-slate-500">
+          <span className="line-clamp-2 text-sm leading-5 text-[#6f879b] sm:max-w-xl">
             {selectedModel.description}
           </span>
-          <span className="w-max rounded-full bg-[#608db9] px-4 py-2 text-sm font-bold text-white">
+          <span className="w-max rounded-xl bg-[#162d4a] px-4 py-2 text-xs font-semibold text-white transition group-hover:bg-[#315b7d]">
             View details
           </span>
         </span>
-        <ProductImage model={selectedModel} className="h-32 rounded-[1.5rem]" />
+        <ProductImage model={selectedModel} className="h-32 rounded-[1.35rem] sm:h-44 lg:h-52" />
       </button>
 
-      <section className="grid gap-4">
+      <section className="grid gap-4 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_14px_42px_rgba(22,45,74,0.05)] sm:p-6">
         <div>
           <div>
-            <h2 className="text-2xl font-black tracking-normal">Products</h2>
-            <p className="text-sm font-semibold text-slate-400">{catalogStatus}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">Browse collection</p>
+            <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162d4a] sm:text-2xl">Products</h2>
+            <p className="mt-1 text-sm text-[#7e94a7]">{catalogStatus}</p>
           </div>
         </div>
 
         {visibleModels.length > 0 ? (
-          <div className="grid grid-cols-2 gap-x-5 gap-y-7">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             {visibleModels.map((model) => (
               <ProductTile
                 key={model.id}
@@ -269,17 +295,17 @@ function ShopCatalog({
             ))}
           </div>
         ) : (
-          <div className="rounded-[1.5rem] bg-[#f5f9fd] p-5 text-sm font-semibold text-[#6b7f99] ring-1 ring-[#dbe8f4]">
+          <div className="rounded-[1.25rem] border border-dashed border-[#cfdbe4] bg-[#f4f7f9] p-6 text-sm text-[#6f879b]">
             No products found for “{searchQuery}”.
           </div>
         )}
       </section>
 
-      <div className="-mx-5 grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-t border-slate-100 bg-white px-5 py-4">
+      <div className="sticky bottom-0 z-30 -mx-1 grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-[1.35rem] border border-white/80 bg-white/95 p-2 shadow-[0_-10px_35px_rgba(22,45,74,0.1)] backdrop-blur-xl sm:mx-0 sm:ml-auto sm:w-fit sm:min-w-[24rem]">
         <Button
           type="button"
           size="lg"
-          className="h-14 rounded-[1.4rem] bg-[#608db9] text-base text-white hover:bg-[#507da8]"
+          className="h-12 rounded-xl bg-[#162d4a] px-6 text-sm font-semibold text-white hover:bg-[#315b7d]"
           onClick={onStartSession}
         >
           <Play className="size-4" />
@@ -290,7 +316,7 @@ function ShopCatalog({
             type="button"
             variant="outline"
             size="lg"
-            className="h-14 rounded-[1.4rem] px-4"
+            className="h-12 rounded-xl border-[#dce4ea] px-4 text-[#315b7d]"
             onClick={onOpenSummary}
           >
             Quote
@@ -330,21 +356,22 @@ function ShopProductDetail({
 
   return (
     <>
-      <header className="flex items-center justify-between">
+      <header className="relative flex items-center justify-between overflow-hidden rounded-[1.75rem] bg-[#162d4a] p-4 text-white shadow-[0_22px_65px_rgba(22,45,74,0.18)] sm:p-6">
+        <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full border border-white/10 bg-[#608db9]/15" />
         <button
           type="button"
-          className="grid size-11 place-items-center rounded-full bg-white text-[#234a6f] shadow-sm ring-1 ring-[#dbe8f4]"
+          className="relative grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.06] text-white transition hover:bg-white/10"
           aria-label="Back to products"
           onClick={onBack}
         >
           <ArrowLeft className="size-5" />
         </button>
-        <LogoHomeButton />
+        <LogoHomeButton dark />
         <button
           type="button"
           className={cn(
-            "grid size-11 place-items-center rounded-full bg-white shadow-sm ring-1 ring-[#dbe8f4]",
-            saved ? "text-[#f5b811]" : "text-[#234a6f]",
+            "relative grid size-11 place-items-center rounded-xl border border-white/10 bg-white/[0.06] transition hover:bg-white/10",
+            saved ? "text-[#b9cfe0]" : "text-white",
           )}
           aria-label={saved ? "Remove favorite" : "Save product"}
           aria-pressed={saved}
@@ -354,64 +381,60 @@ function ShopProductDetail({
         </button>
       </header>
 
-      <section className="grid gap-5">
+      <section className="grid gap-4 rounded-[1.75rem] border border-[#dce4ea] bg-white p-3 shadow-[0_18px_50px_rgba(22,45,74,0.07)] sm:p-5">
         <ProductImage
           model={model}
           image={selectedImage ?? undefined}
-          className="h-[22rem] rounded-[2.4rem]"
+          className="h-[19rem] rounded-[1.4rem] sm:h-[28rem]"
           large
         />
 
         {galleryImages.length > 1 && (
-          <div className="flex justify-center gap-4 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex justify-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {galleryImages.slice(0, 5).map((image) => (
               <button
                 type="button"
                 key={image}
                 className={cn(
-                  "grid size-20 shrink-0 place-items-center overflow-hidden rounded-[1.35rem] bg-white p-2 shadow-sm ring-4 transition",
-                  image === selectedImage ? "ring-[#608db9]" : "ring-slate-100",
+                  "grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f4f7f9] p-2 ring-2 transition sm:size-20",
+                  image === selectedImage ? "ring-[#608db9]" : "ring-[#e4ebf0]",
                 )}
                 onClick={() => setSelectedImage(image)}
               >
-                <img
-                  src={normalizeCatalogAssetUrl(image)}
-                  alt=""
-                  className="h-full w-full object-contain"
-                />
+                <ProductImage model={model} image={image} className="h-full w-full" />
               </button>
             ))}
           </div>
         )}
       </section>
 
-      <section className="grid gap-4">
+      <section className="grid gap-4 rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_14px_42px_rgba(22,45,74,0.05)] sm:p-6">
         <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-1 text-base font-black text-[#f2a11b]">
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#608db9]">
             ★ 4.8
           </span>
-          <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">
+          <span className="rounded-full bg-[#e8f0f5] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#315b7d]">
             AR ready
           </span>
         </div>
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-bold text-slate-400">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">
               {OBJECT_TYPES[model.type].label}
             </p>
-            <h1 className="mt-1 text-[2rem] font-black leading-tight tracking-normal">
+            <h1 className="mt-2 text-3xl font-medium leading-tight tracking-[-0.04em] text-[#162d4a] sm:text-4xl">
               {model.label}
             </h1>
           </div>
           {model.price != null && (
-            <strong className="shrink-0 text-2xl font-black text-[#608db9]">
+            <strong className="shrink-0 text-xl font-semibold text-[#315b7d] sm:text-2xl">
               {formatModelPrice(model.price, model.unit)}
             </strong>
           )}
         </div>
 
-        <p className="text-base leading-7 text-slate-600">{model.description}</p>
+        <p className="text-sm leading-6 text-[#6f879b] sm:text-base">{model.description}</p>
       </section>
 
       {model.variants?.length ? (
@@ -420,7 +443,7 @@ function ShopProductDetail({
             <button
               type="button"
               key={variant.id}
-              className="grid min-w-32 gap-2 rounded-[1.35rem] bg-slate-50 p-3 text-left ring-1 ring-slate-100"
+              className="grid min-w-36 gap-2 rounded-[1.25rem] border border-[#e4ebf0] bg-white p-3 text-left shadow-sm"
               onClick={() => {
                 const variantModel = createVariantModel(model, variant);
                 onOpenDetail(variantModel);
@@ -433,15 +456,15 @@ function ShopProductDetail({
                   className="h-20 w-full rounded-2xl object-contain"
                 />
               ) : (
-                <div className="grid h-20 place-items-center rounded-2xl bg-white">
-                  <Box className="size-8 text-slate-400" />
+                <div className="grid h-20 place-items-center rounded-xl bg-[#f4f7f9]">
+                  <Box className="size-8 text-[#7e94a7]" />
                 </div>
               )}
-              <strong className="line-clamp-2 text-sm font-black text-[#0f172a]">
+              <strong className="line-clamp-2 text-sm font-semibold text-[#162d4a]">
                 {variant.label}
               </strong>
               {variant.price != null && (
-                <span className="text-sm font-bold text-slate-500">
+                <span className="text-sm font-medium text-[#6f879b]">
                   {formatModelPrice(variant.price)}
                 </span>
               )}
@@ -463,9 +486,9 @@ function ShopProductDetail({
         </ProductRail>
       )}
 
-      <div className="-mx-5 grid gap-3 border-t border-slate-100 bg-white px-5 py-4">
+      <div className="sticky bottom-0 z-30 -mx-1 grid gap-2 rounded-[1.35rem] border border-white/80 bg-white/95 p-2 shadow-[0_-10px_35px_rgba(22,45,74,0.1)] backdrop-blur-xl sm:mx-0 sm:ml-auto sm:w-fit sm:min-w-[30rem]">
         {model.price != null && (
-          <strong className="text-2xl font-black leading-tight text-[#608db9]">
+          <strong className="px-2 pt-1 text-lg font-semibold leading-tight text-[#315b7d]">
             {formatModelPrice(model.price, model.unit)}
           </strong>
         )}
@@ -474,7 +497,7 @@ function ShopProductDetail({
             type="button"
             variant="outline"
             size="lg"
-            className="h-14 rounded-[1.4rem] border-[#dbe8f4] text-base font-black text-[#608db9]"
+            className="h-12 rounded-xl border-[#dce4ea] text-sm font-semibold text-[#315b7d]"
             onClick={() => onAddToQuote(model)}
           >
             Add to Quote
@@ -482,7 +505,7 @@ function ShopProductDetail({
           <Button
             type="button"
             size="lg"
-            className="h-14 rounded-[1.4rem] bg-[#608db9] text-base text-white hover:bg-[#507da8]"
+            className="h-12 rounded-xl bg-[#162d4a] text-sm font-semibold text-white hover:bg-[#315b7d]"
             onClick={() => {
               onSelectModel(model);
               onStartSession();
@@ -523,7 +546,7 @@ function createVariantModel(
 
 function ShopMenu({ onClose }: { onClose: () => void }) {
   return (
-    <nav className="grid gap-2 rounded-[1.5rem] bg-[#f5f9fd] p-3 text-[#234a6f] ring-1 ring-[#dbe8f4]">
+    <nav className="grid gap-1 rounded-[1.25rem] border border-[#dce4ea] bg-white p-2 text-[#315b7d] shadow-[0_14px_42px_rgba(22,45,74,0.08)]">
       {[
         ["Home", "/"],
         ["Products", "/products"],
@@ -533,7 +556,7 @@ function ShopMenu({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           key={href}
-          className="rounded-2xl px-4 py-3 text-left text-base font-bold hover:bg-white"
+          className="rounded-xl px-4 py-3 text-left text-sm font-semibold transition hover:bg-[#edf3f7]"
           onClick={() => {
             onClose();
             window.location.assign(href);
@@ -546,18 +569,21 @@ function ShopMenu({ onClose }: { onClose: () => void }) {
   );
 }
 
-function LogoHomeButton() {
+function LogoHomeButton({ dark = false }: { dark?: boolean }) {
   return (
     <button
       type="button"
-      className="grid size-12 place-items-center rounded-full"
+      className={cn(
+        "grid size-12 place-items-center rounded-xl transition",
+        dark ? "bg-white shadow-[0_8px_24px_rgba(0,0,0,0.16)]" : "bg-white ring-1 ring-[#dce4ea]",
+      )}
       aria-label="Go to home page"
       onClick={() => window.location.assign("/")}
     >
       <img
-        src="/images/sog-logo.png"
+        src="/ar/images/sog-logo.png"
         alt="SOG Glass and Aluminum"
-        className="size-12 object-contain"
+        className="size-10 object-contain"
       />
     </button>
   );
@@ -573,10 +599,11 @@ function ProductRail({
   children: ReactNode;
 }) {
   return (
-    <section className="grid gap-3">
+    <section className="grid gap-3 rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_14px_42px_rgba(22,45,74,0.05)] sm:p-5">
       <div>
-        <h2 className="text-xl font-black tracking-normal">{title}</h2>
-        <p className="text-sm font-semibold text-slate-400">{subtitle}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">Explore more</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#162d4a]">{title}</h2>
+        <p className="mt-1 text-sm text-[#7e94a7]">{subtitle}</p>
       </div>
       <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {children}
@@ -599,22 +626,25 @@ function ProductTile({
   return (
     <button
       type="button"
-      className={cn("grid min-w-0 gap-3 text-left", compact && "w-36 shrink-0")}
+      className={cn(
+        "grid min-w-0 gap-3 rounded-[1.25rem] border border-[#e4ebf0] bg-white p-2.5 text-left shadow-[0_8px_24px_rgba(22,45,74,0.05)] transition hover:-translate-y-0.5 hover:border-[#cbdbe6] hover:shadow-[0_14px_32px_rgba(22,45,74,0.1)]",
+        compact && "w-40 shrink-0",
+      )}
       onClick={onClick}
     >
       <ProductImage
         model={model}
-        className={cn(compact ? "h-32 rounded-[1.5rem]" : "h-44 rounded-[1.8rem]")}
+        className={cn(compact ? "h-32 rounded-xl" : "h-36 rounded-xl sm:h-44")}
       />
       <span className="grid gap-1">
         <span className="flex min-w-0 items-center gap-2">
-          <strong className="truncate text-lg font-black leading-tight text-[#0f172a]">
+          <strong className="truncate text-sm font-semibold leading-tight text-[#162d4a] sm:text-base">
             {model.label}
           </strong>
-          {selected && <CheckCircle2 className="size-4 shrink-0 text-[#f2bd38]" />}
+          {selected && <CheckCircle2 className="size-4 shrink-0 text-[#608db9]" />}
         </span>
         {model.price != null && (
-          <span className="text-base font-semibold text-slate-700">
+          <span className="text-sm font-medium text-[#6f879b]">
             {formatModelPrice(model.price, model.unit)}
           </span>
         )}
@@ -636,15 +666,20 @@ function ProductImage({
   large?: boolean;
 }) {
   const imageUrl = image ?? model.thumbnail;
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
 
   return (
     <div
       className={cn(
-        "relative grid place-items-center overflow-hidden bg-slate-50",
+        "relative grid place-items-center overflow-hidden bg-[#f4f7f9]",
         className,
       )}
     >
-      {imageUrl ? (
+      {imageUrl && !imageFailed ? (
         <img
           src={normalizeCatalogAssetUrl(imageUrl)}
           alt=""
@@ -652,6 +687,7 @@ function ProductImage({
             "h-full w-full object-contain",
             large ? "p-4 drop-shadow-[0_28px_30px_rgba(15,23,42,0.12)]" : "p-3",
           )}
+          onError={() => setImageFailed(true)}
         />
       ) : (
         <Box
@@ -673,7 +709,7 @@ function VariantDots({ model }: { model: ModelDefinition }) {
           key={index}
           className={cn(
             "size-2 rounded-full",
-            index === 0 ? "bg-[#608db9]" : index === 1 ? "bg-[#f5b811]" : "bg-[#b8c4b3]",
+            index === 0 ? "bg-[#315b7d]" : index === 1 ? "bg-[#8fb0c8]" : "bg-[#d6e1e8]",
           )}
         />
       ))}

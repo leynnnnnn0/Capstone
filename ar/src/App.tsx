@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Box,
   CheckCircle2,
+  ChevronDown,
   ChevronsDown,
   ChevronsLeft,
   ChevronsRight,
@@ -325,16 +326,31 @@ export default function App() {
   }, []);
 
   const confidenceCopy = useMemo(() => {
-    if (isV2 && v2Mode === "scanWall") return "Scan the reference wall, then tap or press Lock Wall.";
-    if (isV2 && v2Mode === "place") return "Wall locked. Tap any detected floor or wall area to place the model.";
-    if (isV3 && v2Mode === "place") return "Tap a wall or floor to place the next model.";
-    if (isPlacementFlow && v2Mode === "edit") return "Pinch to resize. Tap a wall or floor to move the model.";
-    if (capturePhase === "height") return "Height point: tap the top/end of the vertical height.";
-    if (confidence === "high") return "Surface locked. Tap to place a point.";
-    if (confidence === "medium") return "Surface detected. Hold steady or tap.";
-    if (confidence === "weak") return "Weak surface detection. Placement may be less accurate.";
-    return "Shape points snap straight or 90-degree. Tap the outline, then press Finish Shape.";
+    if (isV2 && v2Mode === "scanWall") return "Move slowly across the reference wall, then lock it.";
+    if (isV2 && v2Mode === "place") return "Tap a detected wall or floor to place the product.";
+    if (isV3 && v2Mode === "place") return "Tap a detected wall or floor to place the next product.";
+    if (isPlacementFlow && v2Mode === "edit") return "Pinch to resize, or tap another surface to reposition.";
+    if (capturePhase === "height") return "Tap the top edge to capture the product height.";
+    if (confidence === "high") return "Surface ready. Tap to place a point.";
+    if (confidence === "medium") return "Surface found. Hold steady for better accuracy.";
+    if (confidence === "weak") return "Keep moving slowly to improve surface accuracy.";
+    return "Trace the product outline, then finish the shape.";
   }, [capturePhase, confidence, isPlacementFlow, isV2, isV3, v2Mode]);
+
+  const arStageLabel = useMemo(() => {
+    if (isV2 && v2Mode === "scanWall") return "Step 1 · Scan wall";
+    if (isPlacementFlow && v2Mode === "place") return "Step 2 · Place product";
+    if (isPlacementFlow && v2Mode === "edit") return "Adjust product";
+    if (capturePhase === "height") return "Height capture";
+    return "Surface scan";
+  }, [capturePhase, isPlacementFlow, isV2, v2Mode]);
+
+  const arPrimaryActionLabel = useMemo(() => {
+    if (!isPlacementFlow) return capturePhase === "height" ? "Set height" : "Finish";
+    if (isV3 || v2Mode === "edit") return "Another";
+    if (v2WallLocked) return "Rescan";
+    return "Lock wall";
+  }, [capturePhase, isPlacementFlow, isV3, v2Mode, v2WallLocked]);
 
   useEffect(() => {
     confidenceRef.current = confidence;
@@ -1906,10 +1922,19 @@ export default function App() {
             <button type="button" aria-label="End AR session" onClick={requestExitSession}>
               <ArrowLeft className="size-5" />
             </button>
-            <div>
+            <button
+              type="button"
+              className="ar-product-switcher"
+              aria-label="Change current product"
+              onClick={() => {
+                setSessionPanelOpen(false);
+                setCatalogOpen(true);
+              }}
+            >
+              <span>Current product</span>
               <strong>{selectedV2Object ? findModel(selectedV2Object.modelId).label : selectedModel.label}</strong>
-              <span>Current item. Tap to change.</span>
-            </div>
+              <ChevronDown aria-hidden="true" />
+            </button>
             <button type="button" aria-label="Open guide" onClick={() => setArGuideVisible(true)}>
               <CircleHelp className="size-5" />
             </button>
@@ -2067,8 +2092,11 @@ export default function App() {
 
         {isActive && (!isV2 || v2Mode !== "edit") && (
           <div className={`reticle ${confidence}`}>
-            <span />
-            <p>{confidenceCopy}</p>
+            <span className="reticle-center" />
+            <p role="status" aria-live="polite">
+              <small>{arStageLabel}</small>
+              <strong>{confidenceCopy}</strong>
+            </p>
           </div>
         )}
 
@@ -2126,7 +2154,8 @@ export default function App() {
                 lockV2WallFromHit();
               }}
             >
-              <span />
+              <ScanLine className="size-5" />
+              <span>{arPrimaryActionLabel}</span>
             </button>
             <button type="button" onClick={openSummary}>
               <ClipboardList className="size-5" />
@@ -3096,7 +3125,7 @@ function ArProductDrawerDetail({
       <Button
         type="button"
         size="lg"
-        className="h-14 rounded-full bg-[#91abeb] text-base font-black text-white hover:bg-[#7f9ce2]"
+        className="h-12 rounded-xl bg-[#162d4a] text-sm font-semibold text-white hover:bg-[#315b7d]"
         onClick={() => onSelect(model)}
       >
         Select

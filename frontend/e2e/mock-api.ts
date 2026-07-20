@@ -267,7 +267,9 @@ export async function mockApi(page: Page) {
     }
     if (path === "/api/v1/products") return json(route, [product]);
     if (path === "/api/v1/track") return json(route, { data: trackingResult });
-    if (path === "/api/v1/notifications") return json(route, { data: [], unread_count: 0 });
+    if (path === "/api/v1/notifications" && ["GET", "DELETE"].includes(method)) {
+      return json(route, { data: [], unread_count: 0 });
+    }
     if (path === "/api/v1/customer/appointments") return json(route, paginated([appointment]));
     if (path === "/api/v1/customer/appointments/1") return json(route, { data: appointment });
     if (path === "/api/v1/customer/work-jobs") return json(route, paginated([workJob]));

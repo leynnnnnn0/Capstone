@@ -27,3 +27,9 @@ export function deleteNotification(id: string) {
     method: "DELETE",
   });
 }
+
+export function deleteAllNotifications() {
+  return api<NotificationResponse>("/api/v1/notifications", {
+    method: "DELETE",
+  });
+}

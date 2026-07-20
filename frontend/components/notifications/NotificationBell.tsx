@@ -28,7 +28,9 @@ import { toast } from "sonner";
 
 export function NotificationBell({ className }: { className?: string }) {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
   const {
     notifications,
     unreadCount,
@@ -36,6 +38,7 @@ export function NotificationBell({ className }: { className?: string }) {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
   } = useNotifications();
 
   async function confirmDeleteNotification() {
@@ -50,6 +53,19 @@ export function NotificationBell({ className }: { className?: string }) {
       toast.error("Unable to delete notification.");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function confirmDeleteAllNotifications() {
+    setDeletingAll(true);
+    try {
+      await deleteAllNotifications();
+      setDeleteAllOpen(false);
+      toast.success("All notifications deleted.");
+    } catch {
+      toast.error("Unable to delete all notifications.");
+    } finally {
+      setDeletingAll(false);
     }
   }
 
@@ -77,19 +93,31 @@ export function NotificationBell({ className }: { className?: string }) {
             <DropdownMenuLabel className="p-0 text-sm font-medium">
               Notifications
             </DropdownMenuLabel>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  void markAllAsRead();
-                  toast.success("Notifications marked as read.");
-                }}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                <CheckCheck className="size-3" />
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void markAllAsRead();
+                    toast.success("Notifications marked as read.");
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  <CheckCheck className="size-3" />
+                  Mark all read
+                </button>
+              )}
+              {!loading && notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteAllOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
+                >
+                  <Trash2 className="size-3" />
+                  Delete all
+                </button>
+              )}
+            </div>
           </div>
           <DropdownMenuSeparator />
           <div className="max-h-96 overflow-y-auto py-1">
@@ -161,6 +189,26 @@ export function NotificationBell({ className }: { className?: string }) {
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction disabled={deleting} onClick={confirmDeleteNotification}>
               {deleting ? "Deleting..." : "Delete Notification"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={deleteAllOpen} onOpenChange={(open) => !deletingAll && setDeleteAllOpen(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove every notification from your notification list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingAll}
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={confirmDeleteAllNotifications}
+            >
+              {deletingAll ? "Deleting..." : "Delete All Notifications"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

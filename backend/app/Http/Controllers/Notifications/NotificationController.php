@@ -53,4 +53,14 @@ class NotificationController extends Controller
             'unread_count' => $request->user()->unreadNotifications()->count(),
         ]);
     }
+
+    public function destroyAll(Request $request): JsonResponse
+    {
+        $request->user()->notifications()->delete();
+
+        return response()->json([
+            'data' => [],
+            'unread_count' => 0,
+        ]);
+    }
 }
