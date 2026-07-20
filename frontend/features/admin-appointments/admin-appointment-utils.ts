@@ -51,6 +51,7 @@ export function createAdminAppointmentForm(): AdminAppointmentForm {
     appointment_time_until: "11:00",
     worker_ids: [],
     quotation_notes: "",
+    quotation_expires_at: "",
   };
 }
 

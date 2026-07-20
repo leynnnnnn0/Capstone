@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, Plus, StickyNote, Users } from "lucide-react";
+import { CalendarDays, Calculator, CheckCircle2, Download, FileText, Images, Layers, Package, Plus, StickyNote, Users } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,6 +105,7 @@ const adminAppointmentSchema = z.object({
   appointment_time_until: requiredTimeSchema("End time"),
   worker_ids: z.array(z.number()),
   quotation_notes: z.string().max(2000, "Quotation notes must be 2000 characters or fewer.").optional(),
+  quotation_expires_at: z.string().optional(),
 }).superRefine((value, context) => {
   if (value.service_type === "other" && !value.service_type_other?.trim()) {
     context.addIssue({
@@ -188,6 +190,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             appointment_time_until: source.appointment_time_until ?? "11:00",
             worker_ids: source.workers.map((worker) => worker.id),
             quotation_notes: source.quotation?.notes ?? "",
+            quotation_expires_at: source.quotation?.expires_at ?? "",
           });
           if (source.quotation?.items.length) {
             setItems(customerItemsToLineItems(source.quotation.items, productResponse.data));
@@ -304,59 +307,50 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
 
   return (
     <>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mb-3 -ml-2 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="size-3.5" />
-            Back
-          </Button>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            {appointmentId ? "Edit Appointment" : rebookId ? "Rebook Appointment" : "Create Appointment"}
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">
-            {appointmentId ? "Edit appointment" : rebookId ? "New appointment from cancelled booking" : "New appointment"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {rebookId
-              ? "Review the copied details, set the new slot, and save it as a separate appointment."
-              : appointmentId
-                ? "Update the appointment details, schedule, workers, and quotation."
-              : "Create the appointment, set the slot, and attach a quotation when needed."}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setCalendarOpen(true)}
-          >
-            <CalendarDays className="size-3.5" />
-            Open Calendar
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={
-              hasQuotation ? () => setQuotationOpen(true) : startQuotation
-            }
-          >
-            <FileText className="size-3.5" />
-            {hasQuotation ? "Edit Quotation" : "Create Quotation"}
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        backHref={appointmentId ? `/dashboard/appointments/${appointmentId}` : "/dashboard/appointments"}
+        backLabel={appointmentId ? "Back to appointment" : "Back to appointments"}
+        eyebrow="Customer scheduling"
+        title={appointmentId ? "Edit appointment" : rebookId ? "Rebook appointment" : "Create appointment"}
+        description={
+          rebookId
+            ? "Review the copied details, set the new slot, and save it as a separate appointment."
+            : appointmentId
+              ? "Update the appointment details, schedule, workers, and quotation."
+              : "Create the appointment, set the slot, and attach a quotation when needed."
+        }
+        icon={CalendarDays}
+        recordLabel="Appointment record"
+        recordValue={appointmentId ? "Existing appointment" : rebookId ? "Rebooked appointment" : "New appointment"}
+        actions={(
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+              onClick={() => setCalendarOpen(true)}
+            >
+              <CalendarDays className="size-3.5" />
+              Open Calendar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+              onClick={
+                hasQuotation ? () => setQuotationOpen(true) : startQuotation
+              }
+            >
+              <FileText className="size-3.5" />
+              {hasQuotation ? "Edit Quotation" : "Create Quotation"}
+            </Button>
+          </>
+        )}
+      />
 
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[1fr_380px]">
+      <form onSubmit={submit} className="mt-5 grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="space-y-5">
           <section className="rounded-lg border bg-card p-5 shadow-sm">
             <SectionTitle
@@ -540,6 +534,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             <DraftQuotationSummary
               items={items}
               notes={data.quotation_notes ?? ""}
+              expiresAt={data.quotation_expires_at ?? ""}
             />
           )}
           <div className="rounded-lg border bg-card p-5 shadow-sm">
@@ -639,20 +634,35 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
           </SheetHeader>
 
           <div className="h-[calc(86vh-145px)] space-y-5 overflow-y-auto px-6 py-5">
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-1.5 text-xs font-semibold">
-                <StickyNote className="size-3.5" />
-                Quotation Notes
-              </label>
-              <Textarea
-                placeholder="Payment terms, delivery, warranty..."
-                rows={2}
-                value={data.quotation_notes ?? ""}
-                onChange={(event) =>
-                  setField("quotation_notes", event.target.value)
-                }
-                className="resize-none"
-              />
+            <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold">
+                  <StickyNote className="size-3.5" />
+                  Quotation Notes
+                </label>
+                <Textarea
+                  placeholder="Payment terms, delivery, warranty..."
+                  rows={2}
+                  value={data.quotation_notes ?? ""}
+                  onChange={(event) =>
+                    setField("quotation_notes", event.target.value)
+                  }
+                  className="resize-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="appointment-quotation-expires-at" className="flex items-center gap-1.5 text-xs font-semibold">
+                  <CalendarDays className="size-3.5" />
+                  Expiration Date <span className="font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <Input
+                  id="appointment-quotation-expires-at"
+                  type="date"
+                  value={data.quotation_expires_at ?? ""}
+                  onChange={(event) => setField("quotation_expires_at", event.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">Leave blank if this quotation does not expire.</p>
+              </div>
             </div>
 
             <Separator />
@@ -796,7 +806,7 @@ function PriceSummary({ items }: { items: AdminLineItem[] }) {
   );
 }
 
-function DraftQuotationSummary({ items, notes }: { items: AdminLineItem[]; notes: string }) {
+function DraftQuotationSummary({ items, notes, expiresAt }: { items: AdminLineItem[]; notes: string; expiresAt: string }) {
   const subtotal = items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0);
 
   return (
@@ -808,6 +818,9 @@ function DraftQuotationSummary({ items, notes }: { items: AdminLineItem[]; notes
             Quotation
           </h2>
           <p className="mt-3 text-xs text-muted-foreground">Created {formatToday()}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {expiresAt ? `Valid until ${formatDraftDate(expiresAt)}` : "No expiration date"}
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
           <Button type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs" disabled>
@@ -855,6 +868,15 @@ function DraftQuotationSummary({ items, notes }: { items: AdminLineItem[]; notes
       </div>
     </div>
   );
+}
+
+function formatDraftDate(value: string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "Asia/Manila",
+  }).format(new Date(`${value}T00:00:00+08:00`));
 }
 
 function DraftQuotationItem({ item, index }: { item: AdminLineItem; index: number }) {

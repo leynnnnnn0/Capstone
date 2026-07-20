@@ -9,6 +9,7 @@ use App\Models\QuotationItem;
 use App\Models\User;
 use App\Enums\AppointmentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 uses(RefreshDatabase::class);
 
@@ -74,6 +75,7 @@ it('creates a quotation successfully', function () {
             'appointment_id' => $this->appointment->id,
             'notes'          => 'Please install carefully.',
             'discount'       => 500.00,
+            'expires_at'     => '2026-08-31',
             'items'          => [
                 [
                     'product_id'       => $this->product->id,
@@ -95,6 +97,7 @@ it('creates a quotation successfully', function () {
                 'id',
                 'appointment_id',
                 'discount',
+                'expires_at',
                 'subtotal',
                 'total',
                 'items',
@@ -104,6 +107,8 @@ it('creates a quotation successfully', function () {
     $this->assertDatabaseHas('quotations', [
         'appointment_id' => $this->appointment->id,
     ]);
+
+    expect(Quotation::first()->expires_at?->toDateString())->toBe('2026-08-31');
 
     expect(Quotation::first()->quotation_items)->toHaveCount(1);
 });
@@ -229,6 +234,7 @@ it('updates a quotation and replaces all items', function () {
         ->putJson("/api/v1/quotations/{$quotation->id}", [
             'notes'    => 'Updated notes.',
             'discount' => 0,
+            'expires_at' => '2026-09-15',
             'items'    => [
                 [
                     'product_id'       => $this->product->id,
@@ -247,6 +253,59 @@ it('updates a quotation and replaces all items', function () {
 
     // Old 3 items replaced with 1 new item
     expect($quotation->fresh()->quotation_items)->toHaveCount(1);
+    expect($quotation->fresh()->expires_at?->toDateString())->toBe('2026-09-15');
+});
+
+it('allows a quotation to omit or clear its expiration date', function () {
+    $quotation = Quotation::factory()->withExpiration('2026-08-31')->create([
+        'appointment_id' => $this->appointment->id,
+    ]);
+
+    QuotationItem::factory()->create([
+        'quotation_id' => $quotation->id,
+        'product_id' => $this->product->id,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->putJson("/api/v1/quotations/{$quotation->id}", [
+            'expires_at' => null,
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'name' => 'Glass Door',
+                    'width' => 1,
+                    'height' => 1,
+                    'pieces' => 1,
+                    'amount_per_piece' => 1500,
+                    'total_amount' => 1500,
+                    'selected_options' => [],
+                ],
+            ],
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.expires_at', null);
+
+    expect($quotation->fresh()->expires_at)->toBeNull();
+});
+
+it('includes the optional expiration date in the quotation pdf', function () {
+    Pdf::fake();
+
+    $quotation = Quotation::factory()->withExpiration('2026-08-31')->create([
+        'appointment_id' => $this->appointment->id,
+    ]);
+
+    QuotationItem::factory()->create([
+        'quotation_id' => $quotation->id,
+        'product_id' => $this->product->id,
+        'status' => 'approved',
+    ]);
+
+    $this->get("/api/v1/quotations/{$quotation->id}/pdf")
+        ->assertOk();
+
+    Pdf::assertRespondedWithPdf(fn ($pdf) => $pdf->contains('Valid Until')
+        && $pdf->contains('08/31/2026'));
 });
 
 // ── Item Status ───────────────────────────────────────────────────
@@ -332,4 +391,3 @@ it('returns 422 when product does not exist', function () {
 });
 
 // ── Auth ──────────────────────────────────────────────────────────
-

@@ -60,6 +60,7 @@ class UpdateAppointmentRequest extends FormRequest
             'worker_ids' => ['nullable', 'array'],
             'worker_ids.*' => ['integer', 'exists:users,id'],
             'quotation_notes' => ['nullable', 'string', 'max:2000'],
+            'quotation_expires_at' => ['nullable', 'date_format:Y-m-d'],
             'items' => ['sometimes', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.name' => ['required', 'string', 'max:255'],

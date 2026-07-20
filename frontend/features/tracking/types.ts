@@ -41,6 +41,7 @@ export type TrackingResult = {
   grand_total: number;
   discount: number;
   quotation_notes: string | null;
+  quotation_expires_at: string | null;
   workers: string[];
   remarks: TrackingRemark[];
 };

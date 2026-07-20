@@ -18,11 +18,19 @@ class QuotationFactory extends Factory
             'appointment_id' => Appointment::factory(),
             'discount'       => $this->faker->randomFloat(2, 0, 1000),
             'notes'          => $this->faker->optional()->sentence(),
+            'expires_at'     => null,
         ];
     }
 
     public function noDiscount(): static
     {
         return $this->state(fn() => ['discount' => 0]);
+    }
+
+    public function withExpiration(?string $date = null): static
+    {
+        return $this->state(fn () => [
+            'expires_at' => $date ?? now()->addDays(30)->toDateString(),
+        ]);
     }
 }

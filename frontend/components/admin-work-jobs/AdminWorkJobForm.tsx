@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -286,32 +287,30 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
 
   return (
     <>
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            {isEditing ? "Edit Work Job" : "Create Work Job"}
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight">
-            {isEditing ? workJob?.work_job_number ?? "Edit work job" : "New work job"}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isEditing
-              ? "Update the work job details, schedule, workers, and payment terms."
-              : "Create the work job, set the production slot, and attach the quotation."}
-          </p>
-          {sourceLabel && <p className="mt-1 text-xs font-semibold text-primary">{sourceLabel}</p>}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setCalendarOpen(true)}>
-            <CalendarDays className="size-3.5" />
-            Open Calendar
-          </Button>
-          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setQuotationOpen(true)}>
-            <FileText className="size-3.5" />
-            {attachedQuotation ? "View Quotation" : "Create Quotation"}
-          </Button>
-        </div>
-      </div>
+      <AdminPageHeader
+        backHref={isEditing && workJobId ? `/dashboard/work-jobs/${workJobId}` : "/dashboard/work-jobs"}
+        backLabel={isEditing ? "Back to work job" : "Back to work jobs"}
+        eyebrow="Operations scheduling"
+        title={isEditing ? "Edit work job" : "Create work job"}
+        description={isEditing
+          ? "Update the work job details, schedule, workers, and payment terms."
+          : "Create the work job, set the production slot, and attach the quotation."}
+        icon={BriefcaseBusiness}
+        recordLabel="Work job record"
+        recordValue={sourceLabel ?? (isEditing ? "Existing work job" : "New work job")}
+        actions={(
+          <>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white" onClick={() => setCalendarOpen(true)}>
+              <CalendarDays className="size-3.5" />
+              Open Calendar
+            </Button>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white" onClick={() => setQuotationOpen(true)}>
+              <FileText className="size-3.5" />
+              {attachedQuotation ? "View Quotation" : "Create Quotation"}
+            </Button>
+          </>
+        )}
+      />
 
       <form onSubmit={submit} className="mt-5 grid gap-5 xl:grid-cols-[1fr_380px]">
         <div className="space-y-5">

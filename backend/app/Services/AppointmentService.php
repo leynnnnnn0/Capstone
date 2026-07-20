@@ -43,7 +43,7 @@ class AppointmentService
             $status = AppointmentStatus::tryFrom($validated['status'] ?? AppointmentStatus::Pending->value) ?? AppointmentStatus::Pending;
 
             $appointment = Appointment::create([
-                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes']),
+                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes', 'quotation_expires_at']),
                 'status'           => $status,
                 'consent_given_at' => $validated['consent'] ? now() : null,
             ]);
@@ -58,6 +58,7 @@ class AppointmentService
                     'appointment_id' => $appointment->id,
                     'items'          => $validated['items'],
                     'notes'          => $validated['quotation_notes'] ?? null,
+                    'expires_at'     => $validated['quotation_expires_at'] ?? null,
                 ], $actor);
             }
 
@@ -81,7 +82,7 @@ class AppointmentService
 
         $updated = DB::transaction(function () use ($appointment, $validated, $actor, $originalStatus) {
             $appointment->update([
-                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes']),
+                ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes', 'quotation_expires_at']),
             ]);
 
             if (array_key_exists('worker_ids', $validated)) {
@@ -93,12 +94,14 @@ class AppointmentService
                     $this->quotationService->update($appointment->quotation, [
                         'items' => $validated['items'],
                         'notes' => $validated['quotation_notes'] ?? null,
+                        'expires_at' => $validated['quotation_expires_at'] ?? null,
                     ], $actor);
                 } else {
                     $this->quotationService->create([
                         'appointment_id' => $appointment->id,
                         'items' => $validated['items'],
                         'notes' => $validated['quotation_notes'] ?? null,
+                        'expires_at' => $validated['quotation_expires_at'] ?? null,
                     ], $actor);
                 }
             }

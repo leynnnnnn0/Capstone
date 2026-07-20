@@ -16,6 +16,7 @@ class Quotation extends Model implements AuditableContract
         'appointment_id',
         'discount',
         'notes',
+        'expires_at',
         'customer_signed_at',
         'customer_signature_name',
         'customer_signature_path',
@@ -27,6 +28,7 @@ class Quotation extends Model implements AuditableContract
     ];
 
     protected $casts = [
+        'expires_at' => 'date',
         'customer_signed_at' => 'datetime',
         'signature_invalidated_at' => 'datetime',
     ];
@@ -77,6 +79,7 @@ class Quotation extends Model implements AuditableContract
 
         return hash('sha256', json_encode([
             'discount' => (string) ($this->discount ?? 0),
+            'expires_at' => $this->expires_at?->toDateString(),
             'items' => $payload,
         ], JSON_THROW_ON_ERROR));
     }

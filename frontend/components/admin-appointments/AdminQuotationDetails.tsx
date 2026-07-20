@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Calculator,
+  CalendarDays,
   CheckCircle2,
   Download,
   FileText,
@@ -178,6 +179,12 @@ export default function AdminQuotationDetails({
             </div>
           </div>
           <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>
+          {quotation.expires_at && (
+            <CardDescription className="flex items-center gap-1.5 text-xs">
+              <CalendarDays className="h-3 w-3" />
+              Valid until {formatQuoteDate(quotation.expires_at, quotation.id)}
+            </CardDescription>
+          )}
           {signature.status === "signed" && signature.signedAt && (
             <CardDescription className="text-xs">
               Signed by {signature.name ?? "customer"} on {formatQuoteDate(signature.signedAt, quotation.id)}

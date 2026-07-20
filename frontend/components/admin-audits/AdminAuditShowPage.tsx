@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
+import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
@@ -26,16 +25,16 @@ export default function AdminAuditShowPage({ auditId }: { auditId: string }) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="-ml-2 gap-1.5">
-          <Link href="/dashboard/audits">
-            <ArrowLeft className="size-4" />
-            Back to audit log
-          </Link>
-        </Button>
-        <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-primary">Audit #{audit.id}</p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight">{audit.auditable_type} #{audit.auditable_id}</h1>
-      </div>
+      <AdminPageHeader
+        backHref="/dashboard/audits"
+        backLabel="Back to audit log"
+        eyebrow="Security & governance"
+        title={`${audit.auditable_type} #${audit.auditable_id}`}
+        description={`Review the ${audit.event} event, responsible user, request context, and recorded value changes.`}
+        icon={ShieldCheck}
+        recordLabel="Audit record"
+        recordValue={`Audit #${audit.id}`}
+      />
 
       <Card>
         <CardHeader>

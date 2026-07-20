@@ -116,17 +116,27 @@ export function markAppointmentCompleted(id: number) {
   });
 }
 
-export function createAppointmentQuotation(appointmentId: number, items: QuoteItemPayload[], notes = "") {
+export function createAppointmentQuotation(
+  appointmentId: number,
+  items: QuoteItemPayload[],
+  notes = "",
+  expiresAt = "",
+) {
   return api(`/api/v1/quotations`, {
     method: "POST",
-    body: JSON.stringify({ appointment_id: appointmentId, items, notes }),
+    body: JSON.stringify({ appointment_id: appointmentId, items, notes, expires_at: expiresAt || null }),
   });
 }
 
-export function updateAppointmentQuotation(quotationId: number, items: QuoteItemPayload[], notes = "") {
+export function updateAppointmentQuotation(
+  quotationId: number,
+  items: QuoteItemPayload[],
+  notes = "",
+  expiresAt = "",
+) {
   return api(`/api/v1/quotations/${quotationId}`, {
     method: "PUT",
-    body: JSON.stringify({ items, notes }),
+    body: JSON.stringify({ items, notes, expires_at: expiresAt || null }),
   });
 }
 

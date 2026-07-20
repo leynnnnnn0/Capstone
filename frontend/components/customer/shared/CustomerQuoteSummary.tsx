@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Calculator, CheckCircle2, Download, FileText, Images, Layers, Maximize2, Package, PenLine } from "lucide-react";
+import { Calculator, CalendarDays, CheckCircle2, Download, FileText, Images, Layers, Maximize2, Package, PenLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,12 @@ export default function CustomerQuoteSummary({
           <p className="mt-3 text-xs text-slate-500">
             {quotation.created_at ? `Created ${formatDate(quotation.created_at)}` : "Quote summary"}
           </p>
+          {quotation.expires_at && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+              <CalendarDays className="size-3" />
+              Valid until {formatDate(quotation.expires_at)}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {canDownload && (

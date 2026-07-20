@@ -3,10 +3,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { Box, ExternalLink, ImageIcon, Package, Ruler, Settings2, ShieldCheck } from "lucide-react";
+import { Box, ExternalLink, ImageIcon, Package, Pencil, Ruler, Settings2, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
+import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,7 +22,6 @@ import {
   optionGroupOptions,
   product3DModel,
   productCategories,
-  productCover,
   productImages,
   productOptionGroups,
   productVariants,
@@ -33,52 +33,29 @@ export default function ProductDetails({ product }: { product: Product }) {
   const categories = productCategories(product);
   const variants = productVariants(product);
   const optionGroups = productOptionGroups(product);
-  const cover = productCover(product);
   const model3D = product3DModel(product);
   const warranty = productWarranty(product);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
-          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted">
-            {cover ? (
-              <img src={cover} alt={product.name} className="h-full w-full object-cover" />
-            ) : (
-              <Package className="h-7 w-7 text-muted-foreground" />
-            )}
-          </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
-              <Badge variant={product.is_active ? "default" : "secondary"}>
-                {product.is_active ? "Active" : "Inactive"}
-              </Badge>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {categories.map((category) => (
-                <Badge key={category.id} variant="outline">
-                  {category.name}
-                </Badge>
-              ))}
-              <span>
-                {formatCurrency(product.price_per_unit)} / {product.unit}
-              </span>
-            </div>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {product.description}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href="/dashboard/products">Back to Products</Link>
+      <AdminPageHeader
+        backHref="/dashboard/products"
+        backLabel="Back to products"
+        eyebrow="Product catalog"
+        title={product.name}
+        description={`${categories.map((category) => category.name).join(", ") || "Uncategorized"}${product.description ? ` · ${product.description}` : ""}`}
+        icon={Package}
+        recordLabel="Product record"
+        recordValue={`${product.is_active ? "Active" : "Inactive"} · ${formatCurrency(product.price_per_unit)} / ${product.unit}`}
+        actions={(
+          <Button asChild variant="outline" size="sm" className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+            <Link href={`/dashboard/products/${product.id}/edit`}>
+              <Pencil className="size-3.5" />
+              Edit product
+            </Link>
           </Button>
-          <Button asChild>
-            <Link href={`/dashboard/products/${product.id}/edit`}>Edit Product</Link>
-          </Button>
-        </div>
-      </div>
+        )}
+      />
 
       {images.length > 0 && (
         <Card>

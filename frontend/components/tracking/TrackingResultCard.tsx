@@ -101,11 +101,18 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
             </div>
 
             <div className="flex flex-col gap-3 bg-[#f3f6f8] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              {result.quotation_notes && (
-                <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-700">
-                  {result.quotation_notes}
-                </p>
-              )}
+              <div className="space-y-2">
+                {result.quotation_expires_at && (
+                  <p className="text-[11px] font-semibold text-slate-600">
+                    Valid until {formatDate(result.quotation_expires_at)}
+                  </p>
+                )}
+                {result.quotation_notes && (
+                  <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-700">
+                    {result.quotation_notes}
+                  </p>
+                )}
+              </div>
               <div className="ml-auto text-right">
                 {result.discount > 0 && (
                   <p className="text-[10px] font-semibold text-green-600">

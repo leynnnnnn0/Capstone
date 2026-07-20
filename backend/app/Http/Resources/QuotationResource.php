@@ -21,6 +21,7 @@ class QuotationResource extends JsonResource
             'id'             => $this->id,
             'appointment_id' => $this->appointment_id,
             'notes'          => $this->notes,
+            'expires_at'     => $this->expires_at?->toDateString(),
             'discount'       => $discount,
             'subtotal'       => $subtotal,
             'total'          => $subtotal - $discount,

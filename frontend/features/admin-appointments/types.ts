@@ -39,6 +39,7 @@ export type AdminAppointmentForm = {
   appointment_time_until: string;
   worker_ids: number[];
   quotation_notes?: string;
+  quotation_expires_at?: string;
   items?: QuoteItemPayload[];
 };
 

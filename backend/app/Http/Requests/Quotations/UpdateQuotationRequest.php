@@ -17,6 +17,7 @@ class UpdateQuotationRequest extends FormRequest
         return [
             'notes'    => ['nullable', 'string', 'max:2000'],
             'discount' => ['nullable', 'numeric', 'min:0'],
+            'expires_at' => ['nullable', 'date_format:Y-m-d'],
 
             'items'                                               => ['required', 'array', 'min:1'],
             'items.*.product_id'                                  => ['required', 'integer', 'exists:products,id'],

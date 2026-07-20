@@ -246,6 +246,7 @@ export type CustomerQuotationItemImage = {
 export type CustomerQuotation = {
   id: number;
   notes: string | null;
+  expires_at: string | null;
   discount: number;
   subtotal: number;
   total: number;

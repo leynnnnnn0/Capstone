@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Calculator, FileText, Package, Plus, RotateCcw, StickyNote } from "lucide-react";
+import { CalendarDays, Calculator, FileText, Package, Plus, RotateCcw, StickyNote } from "lucide-react";
 
 import AdminQuotationLineItemRow from "@/components/admin-appointments/AdminQuotationLineItemRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -47,6 +48,7 @@ export default function AdminQuotationEditor({
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<AdminLineItem[]>([]);
   const [notes, setNotes] = useState(appointment.quotation?.notes ?? "");
+  const [expiresAt, setExpiresAt] = useState(appointment.quotation?.expires_at ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,6 +66,7 @@ export default function AdminQuotationEditor({
             : [makeAdminLineItem()],
         );
         setNotes(appointment.quotation?.notes ?? "");
+        setExpiresAt(appointment.quotation?.expires_at ?? "");
         setErrors({});
       })
       .finally(() => setLoading(false));
@@ -81,6 +84,7 @@ export default function AdminQuotationEditor({
         : [makeAdminLineItem()],
     );
     setNotes(appointment.quotation?.notes ?? "");
+    setExpiresAt(appointment.quotation?.expires_at ?? "");
     setErrors({});
   }
 
@@ -94,8 +98,8 @@ export default function AdminQuotationEditor({
     setSaving(true);
     try {
       const payload = items.map(lineItemToPayload);
-      if (appointment.quotation) await updateAppointmentQuotation(appointment.quotation.id, payload, notes);
-      else await createAppointmentQuotation(appointment.id, payload, notes);
+      if (appointment.quotation) await updateAppointmentQuotation(appointment.quotation.id, payload, notes, expiresAt);
+      else await createAppointmentQuotation(appointment.id, payload, notes, expiresAt);
       onSaved();
       onOpenChange(false);
     } finally {
@@ -135,18 +139,33 @@ export default function AdminQuotationEditor({
           </div>
         ) : (
           <div className="h-[calc(86vh-145px)] space-y-5 overflow-y-auto px-6 py-5">
-            <div className="space-y-1.5">
-              <label className="flex items-center gap-1.5 text-xs font-semibold">
-                <StickyNote className="size-3.5" />
-                Quotation Notes
-              </label>
-              <Textarea
-                placeholder="Payment terms, delivery, warranty..."
-                rows={2}
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                className="resize-none"
-              />
+            <div className="grid gap-4 md:grid-cols-[1fr_260px]">
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold">
+                  <StickyNote className="size-3.5" />
+                  Quotation Notes
+                </label>
+                <Textarea
+                  placeholder="Payment terms, delivery, warranty..."
+                  rows={2}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  className="resize-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="quotation-expires-at" className="flex items-center gap-1.5 text-xs font-semibold">
+                  <CalendarDays className="size-3.5" />
+                  Expiration Date <span className="font-normal text-muted-foreground">(optional)</span>
+                </label>
+                <Input
+                  id="quotation-expires-at"
+                  type="date"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground">Leave blank if this quotation does not expire.</p>
+              </div>
             </div>
 
             <Separator />

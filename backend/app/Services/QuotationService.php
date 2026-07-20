@@ -25,6 +25,7 @@ class QuotationService
                 'appointment_id' => $data['appointment_id'],
                 'notes'          => $data['notes'] ?? null,
                 'discount'       => $data['discount'] ?? 0,
+                'expires_at'     => $data['expires_at'] ?? null,
             ]);
 
             $this->syncItems($quotation, $data['items']);
@@ -54,6 +55,7 @@ class QuotationService
             $quotation->update([
                 'notes'    => $data['notes'] ?? null,
                 'discount' => $data['discount'] ?? 0,
+                'expires_at' => $data['expires_at'] ?? null,
             ]);
 
             // Wipe and re-sync items — quotation items are

@@ -100,6 +100,9 @@
                     <tr>
                         <th class="bg-ink" style="background:#111111 !important; color:#ffffff; padding:5px 16px; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; border:1px solid #333; text-align:center;">Quote #</th>
                         <th class="bg-ink" style="background:#111111 !important; color:#ffffff; padding:5px 16px; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; border:1px solid #333; text-align:center;">Date</th>
+                        @if($quotation->expires_at)
+                            <th class="bg-ink" style="background:#111111 !important; color:#ffffff; padding:5px 16px; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; border:1px solid #333; text-align:center;">Valid Until</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -110,6 +113,11 @@
                         <td style="border:1px solid #e5e7eb; padding:7px 16px; text-align:center; font-size:10.5px; background:#fff;">
                             {{ $quotation->created_at->format('m/d/Y') }}
                         </td>
+                        @if($quotation->expires_at)
+                            <td style="border:1px solid #e5e7eb; padding:7px 16px; text-align:center; font-size:10.5px; font-weight:600; color:#8B6508; background:#fff;">
+                                {{ $quotation->expires_at->format('m/d/Y') }}
+                            </td>
+                        @endif
                     </tr>
                 </tbody>
             </table>

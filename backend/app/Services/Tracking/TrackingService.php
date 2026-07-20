@@ -59,6 +59,7 @@ class TrackingService
             'grand_total' => $this->grandTotal($quotation),
             'discount' => (float) ($quotation->discount ?? 0),
             'quotation_notes' => $quotation?->notes,
+            'quotation_expires_at' => $quotation?->expires_at?->toDateString(),
             'workers' => $appointment->workers->pluck('full_name')->values(),
             'remarks' => $appointment->remarks
                 ->sortByDesc('created_at')
@@ -105,6 +106,7 @@ class TrackingService
             'grand_total' => $this->grandTotal($quotation),
             'discount' => (float) ($quotation->discount ?? 0),
             'quotation_notes' => $quotation?->notes,
+            'quotation_expires_at' => $quotation?->expires_at?->toDateString(),
             'workers' => $workJob->workers->pluck('full_name')->values(),
             'remarks' => $workJob->remarks
                 ->sortByDesc('created_at')

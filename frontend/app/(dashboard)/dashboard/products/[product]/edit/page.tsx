@@ -2,9 +2,11 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Package } from "lucide-react";
 
 import ProductEditForm from "@/components/products/ProductEditForm";
 import { ProductErrorState, ProductLoadingState } from "@/components/products/ProductPageStates";
+import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { fetchCategories, fetchProduct } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
 
@@ -33,12 +35,16 @@ export default function ProductEditPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
-        <p className="text-sm text-muted-foreground">
-          Update the product basics and category assignments.
-        </p>
-      </div>
+      <AdminPageHeader
+        backHref={`/dashboard/products/${product.id}`}
+        backLabel="Back to product"
+        eyebrow="Product catalog"
+        title="Edit product"
+        description="Update the product basics, category assignments, media, variants, and options."
+        icon={Package}
+        recordLabel="Product record"
+        recordValue={product.name}
+      />
       <ProductEditForm product={product} categories={categories} />
     </div>
   );

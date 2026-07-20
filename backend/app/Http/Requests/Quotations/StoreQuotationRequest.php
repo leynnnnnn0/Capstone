@@ -19,6 +19,7 @@ class StoreQuotationRequest extends FormRequest
             'appointment_id' => ['required', 'integer', 'exists:appointments,id'],
             'notes'          => ['nullable', 'string', 'max:2000'],
             'discount'       => ['nullable', 'numeric', 'min:0'],
+            'expires_at'     => ['nullable', 'date_format:Y-m-d'],
 
             // ── Items ─────────────────────────────────────────
             ...$this->itemRules(),
