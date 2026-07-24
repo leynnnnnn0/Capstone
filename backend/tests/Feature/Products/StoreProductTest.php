@@ -24,6 +24,19 @@ $validPayload = fn () => [
     'is_active' => true,
 ];
 
+$minimalGlb = function (): string {
+    $json = json_encode([
+        'asset' => ['version' => '2.0'],
+        'scene' => 0,
+        'scenes' => [['nodes' => [0]]],
+        'nodes' => [['name' => 'Original root']],
+    ], JSON_UNESCAPED_SLASHES);
+    $json = str_pad($json, (strlen($json) + 3) & ~3, ' ');
+    $body = pack('V', strlen($json)).pack('V', 0x4E4F534A).$json;
+
+    return 'glTF'.pack('V', 2).pack('V', 12 + strlen($body)).$body;
+};
+
 // ── Happy Path ────────────────────────────────────────────────────
 
 it('creates a basic product successfully', function () use ($validPayload) {
@@ -145,6 +158,34 @@ it('serves product 3d models with cors headers for model viewer', function () us
         ->assertHeader('Access-Control-Allow-Origin', 'http://localhost:3000')
         ->assertHeader('Cross-Origin-Resource-Policy', 'cross-origin')
         ->assertHeader('Content-Type', 'model/gltf-binary');
+});
+
+it('serves a dimension-scaled glb for native ar viewers', function () use ($minimalGlb, $validPayload) {
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            '/api/v1/products',
+            $validPayload(),
+            [],
+            ['model_3d' => UploadedFile::fake()->createWithContent('sliding-door.glb', $minimalGlb())],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertStatus(201);
+
+    $model = Product::first()->product_3d_model;
+    $response = $this->get(
+        "/api/v1/product-3d-models/{$model->id}/file?ar_scale_x=0.01&ar_scale_y=0.02&ar_scale_z=0.03"
+    )
+        ->assertOk()
+        ->assertHeader('Content-Type', 'model/gltf-binary');
+    $glb = file_get_contents($response->baseResponse->getFile()->getPathname());
+    $jsonLength = unpack('Vlength', substr($glb, 12, 4))['length'];
+    $document = json_decode(trim(substr($glb, 20, $jsonLength)), true);
+    $scaledRoot = $document['nodes'][$document['scenes'][0]['nodes'][0]];
+
+    expect($scaledRoot['name'])->toBe('SOG_AR_METER_SCALE')
+        ->and($scaledRoot['scale'])->toBe([0.01, 0.02, 0.03])
+        ->and($scaledRoot['children'])->toBe([0]);
 });
 
 it('creates a product with variants', function () use ($validPayload) {

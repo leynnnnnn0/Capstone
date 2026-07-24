@@ -117,6 +117,9 @@ export default function PublicProductShow() {
               productName={product.name}
               productId={product.id}
               modelSrc={modelSrc}
+              categoryName={categories[0]?.name}
+              defaultWidthCm={Number(variants.find((variant) => variant.is_active)?.width)}
+              defaultHeightCm={Number(variants.find((variant) => variant.is_active)?.height)}
             />
           </div>
 
@@ -346,11 +349,17 @@ function ImageGallery({
   productName,
   productId,
   modelSrc,
+  categoryName,
+  defaultWidthCm,
+  defaultHeightCm,
 }: {
   images: ProductImage[];
   productName: string;
   productId: number;
   modelSrc?: string;
+  categoryName?: string;
+  defaultWidthCm?: number;
+  defaultHeightCm?: number;
 }) {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
@@ -402,7 +411,10 @@ function ImageGallery({
         <ProductArButton
           productId={productId}
           productName={productName}
+          categoryName={categoryName}
           modelSrc={modelSrc}
+          defaultWidthCm={defaultWidthCm}
+          defaultHeightCm={defaultHeightCm}
           className="bottom-4 right-4 hidden sm:inline-flex"
         />
       </div>
@@ -410,7 +422,10 @@ function ImageGallery({
       <ProductArButton
         productId={productId}
         productName={productName}
+        categoryName={categoryName}
         modelSrc={modelSrc}
+        defaultWidthCm={defaultWidthCm}
+        defaultHeightCm={defaultHeightCm}
         className="static w-full max-w-none justify-between sm:hidden"
       />
 
