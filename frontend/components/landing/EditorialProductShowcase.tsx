@@ -3,12 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, type PanInfo } from "framer-motion";
-import {
-  Box,
-  ChevronLeft,
-  ChevronRight,
-  Star,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -17,11 +12,8 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import type { Product } from "@/features/products/types";
 import {
-  model3DUrl,
-  product3DModel,
   productCategories,
   productCover,
 } from "@/features/products/product-utils";
@@ -42,57 +34,40 @@ type ShowcaseItem = {
   capability: string;
   cover: string;
   coverPosition?: string;
-  modelSrc: string;
   href: string;
 };
 
 type CarouselConfig = {
   CARD_WIDTH: number;
   GAP: number;
-  ARC_HEIGHT: number;
-  ROTATE_STEP: number;
-  MAX_ROTATE: number;
   HEIGHT_BOOST: number;
   BASE_HEIGHT: number;
-  visibleCards: number;
 };
 
 function getCarouselConfig(viewportWidth: number): CarouselConfig {
   if (viewportWidth < 640) {
     return {
-      CARD_WIDTH: 160,
+      CARD_WIDTH: 150,
       GAP: 10,
-      ARC_HEIGHT: 24,
-      ROTATE_STEP: 8,
-      MAX_ROTATE: 18,
       HEIGHT_BOOST: 30,
       BASE_HEIGHT: 240,
-      visibleCards: 3,
     };
   }
 
   if (viewportWidth < 1024) {
     return {
-      CARD_WIDTH: 170,
-      GAP: 14,
-      ARC_HEIGHT: 30,
-      ROTATE_STEP: 9,
-      MAX_ROTATE: 22,
+      CARD_WIDTH: 190,
+      GAP: 22,
       HEIGHT_BOOST: 35,
       BASE_HEIGHT: 260,
-      visibleCards: 5,
     };
   }
 
   return {
-    CARD_WIDTH: 200,
-    GAP: 20,
-    ARC_HEIGHT: 48,
-    ROTATE_STEP: 10,
-    MAX_ROTATE: 25,
+    CARD_WIDTH: 220,
+    GAP: 30,
     HEIGHT_BOOST: 45,
     BASE_HEIGHT: 300,
-    visibleCards: 7,
   };
 }
 
@@ -101,23 +76,8 @@ function getCardStyle(
   config: CarouselConfig,
   isVisible: boolean,
 ): CSSProperties {
-  const {
-    ARC_HEIGHT,
-    BASE_HEIGHT,
-    CARD_WIDTH,
-    GAP,
-    HEIGHT_BOOST,
-    MAX_ROTATE,
-    ROTATE_STEP,
-  } = config;
-  const angle = (offset * Math.PI) / 8;
-  const translateY = ARC_HEIGHT * (1 - Math.cos(angle));
-  const finalTranslateY = -translateY;
+  const { BASE_HEIGHT, CARD_WIDTH, GAP, HEIGHT_BOOST } = config;
   const translateX = offset * (CARD_WIDTH + GAP);
-  const rotateY = Math.max(
-    -MAX_ROTATE,
-    Math.min(MAX_ROTATE, -offset * ROTATE_STEP),
-  );
   const absOffset = Math.abs(offset);
   const height = BASE_HEIGHT + (absOffset === 0 ? HEIGHT_BOOST : 0);
 
@@ -125,7 +85,7 @@ function getCardStyle(
     width: CARD_WIDTH,
     height: `${height}px`,
     marginLeft: `${-CARD_WIDTH / 2}px`,
-    transform: `translateX(${translateX}px) translateY(${finalTranslateY}px) rotateY(${rotateY}deg)`,
+    transform: `translateX(${translateX}px)`,
     transformOrigin: "center bottom",
     zIndex: 100 - absOffset,
     opacity: isVisible ? 1 : 0,
@@ -136,29 +96,20 @@ function getCardStyle(
   };
 }
 
-function isCardWithinVisibleRange(
+function getCircularOffset(
   index: number,
   activeIndex: number,
   itemCount: number,
-  visibleCards: number,
 ) {
-  if (visibleCards >= itemCount) return true;
+  if (itemCount <= 1) return 0;
 
-  const radius = Math.floor(visibleCards / 2);
-  let start = activeIndex - radius;
-  let end = start + visibleCards - 1;
+  let offset = index - activeIndex;
+  const halfwayPoint = Math.floor(itemCount / 2);
 
-  if (start < 0) {
-    end -= start;
-    start = 0;
-  }
+  if (offset > halfwayPoint) offset -= itemCount;
+  if (offset < -halfwayPoint) offset += itemCount;
 
-  if (end >= itemCount) {
-    start -= end - itemCount + 1;
-    end = itemCount - 1;
-  }
-
-  return index >= Math.max(0, start) && index <= end;
+  return offset;
 }
 
 const showcaseDefinitions = [
@@ -219,7 +170,6 @@ function toShowcaseItem(product: Product, index: number): ShowcaseItem {
     material: definition.material,
     capability: "AR Ready",
     cover: definition.cover || productCover(product),
-    modelSrc: model3DUrl(product3DModel(product)),
     href: `/products/${product.id}`,
   };
 }
@@ -229,7 +179,6 @@ const fallbackItems: ShowcaseItem[] = showcaseDefinitions.map(
     key: `showcase-${index + 1}`,
     ...definition,
     capability: "AR Ready",
-    modelSrc: "",
     href: "/products",
   }),
 );
@@ -253,8 +202,6 @@ function subscribeToViewport(onStoreChange: () => void) {
     );
   };
 }
-// TODO: REMOVE THIS
-
 function getViewportWidth() {
   return window.innerWidth;
 }
@@ -353,24 +300,14 @@ export default function EditorialProductShowcase({
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.12}
           onDragEnd={handleDragEnd}
-          style={{
-            perspective: "900px",
-            perspectiveOrigin: "50% 50%",
-            transformStyle: "preserve-3d",
-          }}
         >
           <span className={styles.collectionNumber} aria-hidden="true">
             {String(activeIndex + 1).padStart(2, "0")}
           </span>
 
           {items.map((item, index) => {
-            const offset = index - activeIndex;
-            const isVisible = isCardWithinVisibleRange(
-              index,
-              activeIndex,
-              items.length,
-              carouselConfig.visibleCards,
-            );
+            const offset = getCircularOffset(index, activeIndex, items.length);
+            const isVisible = Math.abs(offset) <= 1;
             const isActive = index === activeIndex;
 
             return (
@@ -387,30 +324,16 @@ export default function EditorialProductShowcase({
                 onClick={() => setSelectedIndex(index)}
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
-                {isActive && item.modelSrc ? (
-                  <Product3DModelViewer
-                    src={item.modelSrc}
-                    title={`${item.name} interactive 3D model`}
-                    hideHeader
-                    ar
-                    className={cn(
-                      styles.modelViewer,
-                      "h-full rounded-none border-0 bg-slate-100",
-                    )}
-                    viewportClassName="h-full"
-                  />
-                ) : (
-                  <Image
-                    src={item.cover}
-                    alt={`${item.name} product preview`}
-                    fill
-                    sizes="(max-width: 639px) 160px, (max-width: 1023px) 170px, 200px"
-                    className={styles.cardMedia}
-                    style={{
-                      objectPosition: item.coverPosition ?? "center",
-                    }}
-                  />
-                )}
+                <Image
+                  src={item.cover}
+                  alt={`${item.name} product preview`}
+                  fill
+                  sizes="(max-width: 639px) 150px, (max-width: 1023px) 190px, 220px"
+                  className={styles.cardMedia}
+                  style={{
+                    objectPosition: item.coverPosition ?? "center",
+                  }}
+                />
                 <div className={styles.cardScrim} />
                 <span className={styles.cardIndex}>
                   {String(index + 1).padStart(2, "0")}
@@ -450,7 +373,6 @@ export default function EditorialProductShowcase({
               <span>{activeItem.material}</span>
               <span>·</span>
               <span className="inline-flex items-center gap-1">
-                {activeItem.modelSrc && <Box className="h-3.5 w-3.5" />}
                 {activeItem.capability}
               </span>
               <span className="hidden items-center gap-1 sm:inline-flex">

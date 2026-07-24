@@ -2,14 +2,17 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import type { DragEvent, KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
 import {
   AlertCircle,
   Box,
   ExternalLink,
+  GripVertical,
   ImagePlus,
   Plus,
   ShieldCheck,
+  Star,
   Trash2,
   X,
 } from "lucide-react";
@@ -45,7 +48,9 @@ import {
   imageUrl,
   MAX_VARIANT_IMAGES,
   model3DUrl,
+  newImageOrderToken,
   PRODUCT_UNITS,
+  productImageOrderToken,
   validate3DModelFile,
   validateImageFiles,
 } from "@/features/products/product-utils";
@@ -67,6 +72,8 @@ export function ImageUploader({
   max,
   onChange,
   onRemoveExisting,
+  imageOrder,
+  onOrderChange,
   error,
 }: {
   existingImages?: ProductImage[];
@@ -74,20 +81,121 @@ export function ImageUploader({
   max: number;
   onChange: (images: NewImageFile[]) => void;
   onRemoveExisting?: (imageId: number) => void;
+  imageOrder?: string[];
+  onOrderChange?: (imageOrder: string[]) => void;
   error?: string;
 }) {
+  const [draggedToken, setDraggedToken] = useState<string | null>(null);
+  const sortable = Boolean(imageOrder && onOrderChange);
+  const naturalItems = [
+    ...existingImages.map((image) => ({
+      token: productImageOrderToken(image),
+      kind: "existing" as const,
+      image,
+      src: imageUrl(image),
+    })),
+    ...images.map((image) => ({
+      token: newImageOrderToken(image),
+      kind: "new" as const,
+      image,
+      src: image.preview,
+    })),
+  ];
+  const itemsByToken = new Map(naturalItems.map((item) => [item.token, item]));
+  const orderedItems = [];
+  const seenTokens = new Set<string>();
+
+  for (const token of imageOrder ?? []) {
+    const item = itemsByToken.get(token);
+    if (item && !seenTokens.has(token)) {
+      orderedItems.push(item);
+      seenTokens.add(token);
+    }
+  }
+
+  for (const item of naturalItems) {
+    if (!seenTokens.has(item.token)) orderedItems.push(item);
+  }
+
+  const orderedTokens = orderedItems.map((item) => item.token);
+
   const addImages = (files: FileList | null) => {
     if (!files) return;
     const remaining = max - existingImages.length - images.length;
     if (remaining <= 0) return;
 
     const { valid } = validateImageFiles(Array.from(files));
-    onChange([...images, ...createImageDrafts(valid.slice(0, remaining))]);
+    const drafts = createImageDrafts(valid.slice(0, remaining));
+    onChange([...images, ...drafts]);
+    onOrderChange?.([
+      ...orderedTokens,
+      ...drafts.map(newImageOrderToken),
+    ]);
+  };
+
+  const moveImage = (token: string, destinationIndex: number) => {
+    if (!onOrderChange) return;
+
+    const currentIndex = orderedTokens.indexOf(token);
+    if (currentIndex < 0) return;
+
+    const nextOrder = [...orderedTokens];
+    nextOrder.splice(currentIndex, 1);
+    nextOrder.splice(
+      Math.max(0, Math.min(destinationIndex, nextOrder.length)),
+      0,
+      token,
+    );
+    onOrderChange(nextOrder);
+  };
+
+  const handleImageKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    token: string,
+    index: number,
+  ) => {
+    if (!sortable) return;
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      moveImage(token, 0);
+    }
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      moveImage(token, index - 1);
+    }
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      moveImage(token, index + 1);
+    }
+  };
+
+  const removeItem = (token: string) => {
+    const item = itemsByToken.get(token);
+    if (!item) return;
+
+    onOrderChange?.(orderedTokens.filter((itemToken) => itemToken !== token));
+
+    if (item.kind === "existing") {
+      onRemoveExisting?.(item.image.id);
+      return;
+    }
+
+    onChange(images.filter((image) => image.id !== item.image.id));
   };
 
   return (
     <div className="space-y-3">
-      <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center transition-colors hover:bg-muted/50">
+      <label
+        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed p-4 text-center transition-colors hover:bg-muted/50"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          addImages(event.dataTransfer.files);
+        }}
+      >
         <ImagePlus className="mb-2 h-6 w-6 text-muted-foreground" />
         <span className="text-sm font-medium">Drop images here or browse</span>
         <span className="text-xs text-muted-foreground">
@@ -102,48 +210,99 @@ export function ImageUploader({
         />
       </label>
       <FieldError message={error} />
-      {existingImages.length + images.length > 0 && (
-        <div className="grid grid-cols-4 gap-2">
-          {existingImages.map((image, index) => (
-            <div key={image.id} className="group relative aspect-square overflow-hidden rounded-md border">
-              <img src={imageUrl(image)} alt="" className="h-full w-full object-cover" />
-              {index === 0 && images.length === 0 && (
-                <span className="absolute inset-x-0 bottom-0 bg-primary py-0.5 text-center text-[9px] font-semibold text-white">
+      {orderedItems.length > 0 && (
+        <div className="grid grid-cols-4 gap-2" role="list">
+          {orderedItems.map((item, index) => (
+            <div
+              key={item.token}
+              role="listitem"
+              tabIndex={sortable ? 0 : -1}
+              draggable={sortable}
+              aria-label={`Product image ${index + 1}${index === 0 ? ", current cover" : ""}`}
+              className={`group relative aspect-square overflow-hidden rounded-md border bg-muted/30 outline-none transition ${
+                item.kind === "new" ? "ring-1 ring-primary/40" : ""
+              } ${
+                draggedToken === item.token
+                  ? "scale-95 border-primary opacity-60"
+                  : "focus-visible:ring-2 focus-visible:ring-primary"
+              }`}
+              onDragStart={(event: DragEvent<HTMLDivElement>) => {
+                if (!sortable) return;
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", item.token);
+                setDraggedToken(item.token);
+              }}
+              onDragOver={(event) => {
+                if (sortable) event.preventDefault();
+              }}
+              onDragEnter={(event) => {
+                if (!sortable || !draggedToken || draggedToken === item.token) return;
+                event.preventDefault();
+                moveImage(draggedToken, index);
+              }}
+              onDrop={(event) => {
+                if (!sortable) return;
+                event.preventDefault();
+                setDraggedToken(null);
+              }}
+              onDragEnd={() => setDraggedToken(null)}
+              onKeyDown={(event) =>
+                handleImageKeyDown(event, item.token, index)
+              }
+            >
+              <img
+                src={item.src}
+                alt=""
+                draggable={false}
+                className="h-full w-full object-cover"
+              />
+              {sortable && (
+                <span
+                  className="absolute left-1 top-1 grid h-6 w-6 cursor-grab place-items-center rounded-md bg-black/60 text-white active:cursor-grabbing"
+                  title="Drag to reorder"
+                >
+                  <GripVertical className="h-3.5 w-3.5" />
+                </span>
+              )}
+              {index === 0 && (
+                <span className="absolute inset-x-0 bottom-0 bg-primary py-1 text-center text-[9px] font-semibold text-white">
                   COVER
                 </span>
               )}
-              {onRemoveExisting && (
+              {item.kind === "new" && index !== 0 && (
+                <span className="absolute bottom-1 left-1 rounded bg-primary/85 px-1.5 py-0.5 text-[8px] font-bold text-white">
+                  NEW
+                </span>
+              )}
+              {sortable && index !== 0 && (
                 <button
                   type="button"
-                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => onRemoveExisting(image.id)}
+                  className="absolute bottom-1 right-1 grid h-6 w-6 place-items-center rounded-md bg-white/90 text-slate-600 shadow-sm transition hover:bg-white hover:text-primary"
+                  onClick={() => moveImage(item.token, 0)}
+                  aria-label={`Make image ${index + 1} the cover`}
+                  title="Make cover"
                 >
-                  <X className="h-3 w-3" />
+                  <Star className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {(item.kind === "new" || onRemoveExisting) && (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-md bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                  onClick={() => removeItem(item.token)}
+                  aria-label={`Remove image ${index + 1}`}
+                >
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           ))}
-          {images.map((image, index) => (
-            <div key={image.id} className="group relative aspect-square overflow-hidden rounded-md border ring-1 ring-primary/40">
-              <img src={image.preview} alt="" className="h-full w-full object-cover" />
-              {existingImages.length === 0 && index === 0 && (
-                <span className="absolute inset-x-0 bottom-0 bg-primary py-0.5 text-center text-[9px] font-semibold text-white">
-                  COVER
-                </span>
-              )}
-              <span className="absolute left-1 top-1 rounded bg-primary/80 px-1 py-0.5 text-[8px] font-bold text-white">
-                NEW
-              </span>
-              <button
-                type="button"
-                className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                onClick={() => onChange(images.filter((item) => item.id !== image.id))}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
         </div>
+      )}
+      {sortable && orderedItems.length > 1 && (
+        <p className="text-xs text-muted-foreground">
+          Drag images to reorder them. The first image is used as the cover.
+        </p>
       )}
       {existingImages.length + images.length > 0 && (
         <p className="text-xs text-muted-foreground">
@@ -177,12 +336,12 @@ export function Product3DModelUploader({
 
   useEffect(() => {
     if (!modelFile) {
-      setLocalPreviewUrl(null);
+      queueMicrotask(() => setLocalPreviewUrl(null));
       return;
     }
 
     const objectUrl = URL.createObjectURL(modelFile);
-    setLocalPreviewUrl(objectUrl);
+    queueMicrotask(() => setLocalPreviewUrl(objectUrl));
 
     return () => {
       URL.revokeObjectURL(objectUrl);

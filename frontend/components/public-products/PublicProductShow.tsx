@@ -403,9 +403,16 @@ function ImageGallery({
           productId={productId}
           productName={productName}
           modelSrc={modelSrc}
-          className="absolute bottom-4 right-4 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-primary/90"
+          className="bottom-4 right-4 hidden sm:inline-flex"
         />
       </div>
+
+      <ProductArButton
+        productId={productId}
+        productName={productName}
+        modelSrc={modelSrc}
+        className="static w-full max-w-none justify-between sm:hidden"
+      />
 
       {normalizedImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">

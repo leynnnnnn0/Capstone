@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  BookmarkCheck,
   Box,
   CheckCircle2,
   ChevronDown,
@@ -2341,8 +2342,9 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <DrawerHeader>
+            <DrawerHeader className="ar-drawer-header">
               <div>
+                <p className="ar-drawer-eyebrow">AR product library</p>
                 <DrawerTitle>
                   {shopDetailModel ? shopDetailModel.label : "Discover products"}
                 </DrawerTitle>
@@ -2356,7 +2358,7 @@ export default function App() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-slate-500"
+                className="ar-drawer-close"
                 onClick={() => {
                   if (shopDetailModel) {
                     setShopDetailModel(null);
@@ -2568,8 +2570,9 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <DrawerHeader>
+            <DrawerHeader className="ar-drawer-header">
               <div>
+                <p className="ar-drawer-eyebrow">Project estimate</p>
                 <DrawerTitle>Quote Summary</DrawerTitle>
                 <DrawerDescription>
                   Tap an AR item to go back and modify it.
@@ -2579,7 +2582,7 @@ export default function App() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-slate-500"
+                className="ar-drawer-close"
                 onClick={() => setSummaryOpen(false)}
               >
                 <X className="size-5" />
@@ -2659,8 +2662,9 @@ export default function App() {
             data-xr-ui="true"
             onPointerDown={markUiInteraction}
           >
-            <DrawerHeader>
+            <DrawerHeader className="ar-drawer-header">
               <div>
+                <p className="ar-drawer-eyebrow">Before you leave</p>
                 <DrawerTitle>Keep your quote items?</DrawerTitle>
                 <DrawerDescription>
                   You have {summaryQuoteItems.length} item
@@ -2671,7 +2675,7 @@ export default function App() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="rounded-full text-slate-500"
+                className="ar-drawer-close"
                 onClick={() => setExitPromptOpen(false)}
               >
                 <X className="size-5" />
@@ -2679,6 +2683,9 @@ export default function App() {
             </DrawerHeader>
 
             <div className="ar-exit-card">
+              <div className="ar-exit-icon" aria-hidden="true">
+                <BookmarkCheck className="size-5" />
+              </div>
               <div>
                 <strong>Save for later</strong>
                 <p>
@@ -3036,7 +3043,7 @@ function ArProductDrawerDetail({
     <div className="ar-product-detail">
       <div className="ar-product-hero">
         {selectedImage ? (
-          <img src={normalizeCatalogAssetUrl(selectedImage)} alt="" />
+          <ArCatalogImage src={selectedImage} />
         ) : (
           <Box className="size-14 text-slate-400" />
         )}
@@ -3051,7 +3058,7 @@ function ArProductDrawerDetail({
               className={image === selectedImage ? "selected" : ""}
               onClick={() => setSelectedImage(image)}
             >
-              <img src={normalizeCatalogAssetUrl(image)} alt="" />
+              <ArCatalogImage src={image} />
             </button>
           ))}
         </div>
@@ -3082,7 +3089,7 @@ function ArProductDrawerDetail({
                   onClick={() => onOpenDetail(variantModel)}
                 >
                   {variant.thumbnail ? (
-                    <img src={normalizeCatalogAssetUrl(variant.thumbnail)} alt="" />
+                    <ArCatalogImage src={variant.thumbnail} />
                   ) : (
                     <Box className="size-7 text-white" />
                   )}
@@ -3111,7 +3118,7 @@ function ArProductDrawerDetail({
                 onClick={() => onOpenDetail(relatedModel)}
               >
                 {relatedModel.thumbnail ? (
-                  <img src={normalizeCatalogAssetUrl(relatedModel.thumbnail)} alt="" />
+                  <ArCatalogImage src={relatedModel.thumbnail} />
                 ) : (
                   <Box className="size-9 text-slate-400" />
                 )}
@@ -3142,6 +3149,31 @@ function drawerProductImages(model: ModelDefinition) {
   ].filter((image): image is string => Boolean(image));
 
   return [...new Map(images.map((image) => [normalizeCatalogAssetUrl(image), image])).values()];
+}
+
+function ArCatalogImage({ src, className }: { src: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (failed) {
+    return (
+      <span className={cn("ar-catalog-image-fallback", className)} aria-hidden="true">
+        <Box className="size-8" />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={normalizeCatalogAssetUrl(src)}
+      alt=""
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function variantToModel(
@@ -3369,18 +3401,15 @@ function ModelCatalogPanel({
           <Button
             type="button"
             key={category.id}
-            variant={shop ? "ghost" : category.id === activeCategoryId ? "secondary" : "dark"}
+            variant="ghost"
             size={compact ? "sm" : "default"}
             className={cn(
-              "h-auto shrink-0 rounded-full px-4 py-2 text-left",
-              shop && "min-h-12 px-5 text-base shadow-sm",
+              "h-auto shrink-0 rounded-xl border px-4 py-2 text-left transition",
+              shop && "min-h-11 px-4 text-base",
               category.id !== activeCategoryId &&
-                (shop
-                  ? "border border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                  : "border border-white/10 bg-slate-950/60 text-slate-200"),
+                "border-[#e4ebf0] bg-white text-[#315b7d] hover:bg-[#edf3f7]",
               category.id === activeCategoryId &&
-                shop &&
-                "bg-[#608db9] text-white hover:bg-[#527fa9]",
+                "border-[#162d4a] bg-[#162d4a] text-white hover:bg-[#315b7d]",
             )}
             onClick={() => onCategoryChange(category.id)}
           >
@@ -3410,7 +3439,7 @@ function ModelCatalogPanel({
           <Card
             className={cn(
               "grid min-h-28 place-items-center border-dashed p-4 text-center text-sm text-muted-foreground",
-              shop ? "col-span-2 bg-card" : "bg-slate-950/50 text-slate-300",
+              shop ? "col-span-2 bg-white" : "bg-white text-[#6f879b]",
             )}
           >
             No AR-ready models match this selection yet.
@@ -3431,13 +3460,9 @@ function ModelCatalogPanel({
                 <Card
                   className={cn(
                     "h-full overflow-hidden transition duration-200 group-active:scale-[0.98]",
-                    shop
-                      ? "border-border bg-card shadow-lg shadow-slate-200/60"
-                      : "border-white/10 bg-white/10 text-white shadow-xl shadow-black/20 backdrop-blur-xl",
+                    "border-[#e4ebf0] bg-white text-[#162d4a] shadow-[0_12px_30px_rgba(22,45,74,0.07)]",
                     isSelected &&
-                      (shop
-                        ? "border-secondary ring-2 ring-secondary/30"
-                        : "border-secondary bg-secondary/15 ring-2 ring-secondary/25"),
+                      "border-[#608db9] bg-[#f7fafc] ring-2 ring-[#608db9]/20",
                   )}
                 >
                   <CardContent className="p-2">
@@ -3445,15 +3470,14 @@ function ModelCatalogPanel({
                       className={cn(
                         "relative grid overflow-hidden rounded-xl",
                         shop
-                          ? "h-40 place-items-center bg-muted"
-                          : "h-24 place-items-center bg-white/10",
+                          ? "h-40 place-items-center bg-[#f4f7f9]"
+                          : "h-24 place-items-center bg-[#f4f7f9]",
                       )}
                       style={{ border: `1px solid ${isSelected ? color : "transparent"}` }}
                     >
                       {model.thumbnail ? (
-                        <img
-                          src={normalizeCatalogAssetUrl(model.thumbnail)}
-                          alt=""
+                        <ArCatalogImage
+                          src={model.thumbnail}
                           className="h-full w-full object-contain p-2"
                         />
                       ) : (
@@ -3472,9 +3496,8 @@ function ModelCatalogPanel({
                     <div className="mt-3 grid gap-1">
                       <strong
                         className={cn(
-                          "truncate text-sm font-bold",
-                          shop && "text-lg",
-                          shop ? "text-foreground" : "text-white",
+                          "truncate text-sm font-semibold text-[#162d4a]",
+                          shop && "text-base",
                         )}
                       >
                         {model.label}
@@ -3483,13 +3506,18 @@ function ModelCatalogPanel({
                         className={cn(
                           "line-clamp-2 min-h-9 text-xs leading-snug",
                           shop && "text-sm",
-                          shop ? "text-muted-foreground" : "text-slate-300",
+                          "text-[#6f879b]",
                         )}
                       >
                         {model.description}
                       </small>
                       {model.price != null && (
-                        <b className={cn("mt-1 text-sm font-black text-primary", shop && "text-base")}>
+                        <b
+                          className={cn(
+                            "mt-1 text-sm font-semibold text-[#315b7d]",
+                            shop && "text-base",
+                          )}
+                        >
                           {formatModelPrice(model.price, model.unit)}
                         </b>
                       )}

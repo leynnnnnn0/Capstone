@@ -160,14 +160,20 @@ export default function ProductCreateForm({ categories }: { categories: Category
           <Card>
             <CardHeader>
               <CardTitle>Product Images</CardTitle>
-              <CardDescription>First image becomes the product cover.</CardDescription>
+              <CardDescription>
+                Drag images to reorder them. The first image becomes the product cover.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ImageUploader
                 images={data.images}
+                imageOrder={data.image_order}
                 max={MAX_PRODUCT_IMAGES}
                 error={errors.images}
                 onChange={(images) => setField("images", images)}
+                onOrderChange={(imageOrder) =>
+                  setField("image_order", imageOrder)
+                }
               />
             </CardContent>
           </Card>

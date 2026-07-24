@@ -196,17 +196,32 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
           <Card>
             <CardHeader>
               <CardTitle>Product Images</CardTitle>
-              <CardDescription>Remove existing images or add new uploads.</CardDescription>
+              <CardDescription>
+                Drag images to reorder them. The first image becomes the product cover.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ImageUploader
                 existingImages={visibleProductImages}
                 images={data.images}
+                imageOrder={data.image_order}
                 max={MAX_PRODUCT_IMAGES}
                 error={errors.images}
                 onChange={(images) => setField("images", images)}
+                onOrderChange={(imageOrder) =>
+                  setField("image_order", imageOrder)
+                }
                 onRemoveExisting={(imageId) =>
-                  setField("deleted_image_ids", [...data.deleted_image_ids, imageId])
+                  setData((current) => ({
+                    ...current,
+                    image_order: current.image_order.filter(
+                      (token) => token !== `existing:${imageId}`,
+                    ),
+                    deleted_image_ids: [
+                      ...current.deleted_image_ids,
+                      imageId,
+                    ],
+                  }))
                 }
               />
             </CardContent>

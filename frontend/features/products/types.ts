@@ -8,6 +8,7 @@ export type ProductImage = {
   id: number;
   image_url?: string;
   url?: string;
+  sort_order?: number;
 };
 
 export type Product3DModel = {
@@ -156,6 +157,7 @@ export type ProductFormState = {
   price_per_unit: string;
   is_active: boolean;
   images: NewImageFile[];
+  image_order: string[];
   deleted_image_ids: number[];
   model_3d: File | null;
   existing_3d_model: Product3DModel | null;

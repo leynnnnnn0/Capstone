@@ -1,4 +1,5 @@
 <?php
+
 // tests/Feature/Products/StoreProductTest.php
 
 use App\Models\Category;
@@ -15,12 +16,12 @@ beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
 });
 
-$validPayload = fn() => [
-    'name'           => 'Aluminum Glass Window',
-    'description'    => 'High quality aluminum frame with tempered glass.',
-    'unit'           => 'sqm',
+$validPayload = fn () => [
+    'name' => 'Aluminum Glass Window',
+    'description' => 'High quality aluminum frame with tempered glass.',
+    'unit' => 'sqm',
     'price_per_unit' => 1500.00,
-    'is_active'      => true,
+    'is_active' => true,
 ];
 
 // ── Happy Path ────────────────────────────────────────────────────
@@ -73,6 +74,36 @@ it('creates a product with images', function () use ($validPayload) {
     Storage::disk('public')->assertExists(
         Product::first()->product_images->first()->image_path
     );
+});
+
+it('uses the requested image order for the product cover', function () use ($validPayload) {
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            '/api/v1/products',
+            [
+                ...$validPayload(),
+                'image_order' => ['new:1', 'new:0'],
+            ],
+            [],
+            ['images' => [
+                UploadedFile::fake()->image('first-upload.jpg'),
+                UploadedFile::fake()->image('chosen-cover.jpg'),
+            ]],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertStatus(201);
+
+    $product = Product::first();
+    $imagesByUploadOrder = $product->product_images()
+        ->reorder()
+        ->orderBy('id')
+        ->get();
+
+    expect($imagesByUploadOrder[0]->sort_order)->toBe(1)
+        ->and($imagesByUploadOrder[1]->sort_order)->toBe(0)
+        ->and($product->fresh()->product_images->first()->id)
+        ->toBe($imagesByUploadOrder[1]->id);
 });
 
 it('creates a product with a 3d model', function () use ($validPayload) {
@@ -136,10 +167,10 @@ it('creates a product with option groups and options', function () use ($validPa
             ...$validPayload(),
             'option_groups' => [
                 [
-                    'name'        => 'Glass Type',
+                    'name' => 'Glass Type',
                     'is_required' => true,
-                    'sort_order'  => 1,
-                    'options'     => [
+                    'sort_order' => 1,
+                    'options' => [
                         ['name' => 'Clear Glass',    'price_modifier' => 0,   'sort_order' => 1],
                         ['name' => 'Tempered Glass', 'price_modifier' => 500, 'sort_order' => 2],
                     ],
@@ -160,15 +191,15 @@ it('creates a complete product with everything', function () use ($validPayload)
         ->postJson('/api/v1/products', [
             ...$validPayload(),
             'category_ids' => $categories->pluck('id')->toArray(),
-            'variants'     => [
+            'variants' => [
                 ['width' => 1.0, 'height' => 1.2, 'price' => 1800.00],
             ],
             'option_groups' => [
                 [
-                    'name'        => 'Glass Type',
+                    'name' => 'Glass Type',
                     'is_required' => true,
-                    'sort_order'  => 1,
-                    'options'     => [
+                    'sort_order' => 1,
+                    'options' => [
                         ['name' => 'Clear Glass', 'price_modifier' => 0, 'sort_order' => 1],
                     ],
                 ],

@@ -1,4 +1,5 @@
 import type {
+  NewImageFile,
   Product,
   Product3DModel,
   ProductFormState,
@@ -55,6 +56,7 @@ export function createInitialProductForm(): ProductFormState {
     price_per_unit: "",
     is_active: true,
     images: [],
+    image_order: [],
     deleted_image_ids: [],
     model_3d: null,
     existing_3d_model: null,
@@ -76,6 +78,7 @@ export function createProductEditForm(product: Product): ProductFormState {
     price_per_unit: String(product.price_per_unit ?? ""),
     is_active: product.is_active,
     images: [],
+    image_order: productImages(product).map(productImageOrderToken),
     deleted_image_ids: [],
     model_3d: null,
     existing_3d_model: product3DModel(product),
@@ -202,8 +205,29 @@ export function productCover(product: Product) {
   return normalizeAssetUrl(product.cover_image ?? imageUrl(productImages(product)[0]));
 }
 
+export function productImageOrderToken(image: ProductImage) {
+  return `existing:${image.id}`;
+}
+
+export function newImageOrderToken(image: NewImageFile) {
+  return `new:${image.id}`;
+}
+
 export function model3DUrl(model?: Product3DModel | null) {
-  return normalizeAssetUrl(model?.file_url ?? "");
+  const url = model?.file_url ?? "";
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.pathname.startsWith("/api/v1/product-3d-models/")) {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+  } catch {
+    if (url.startsWith("/api/v1/product-3d-models/")) return url;
+  }
+
+  return normalizeAssetUrl(url);
 }
 
 export function formatFileSize(bytes?: number | null) {
@@ -278,6 +302,27 @@ export function appendProductFormData(data: ProductFormState) {
 
   data.images.forEach((image) => {
     formData.append("images[]", image.file);
+  });
+
+  const newImageIndexes = new Map(
+    data.images.map((image, index) => [newImageOrderToken(image), index]),
+  );
+  const naturalOrder = [
+    ...data.image_order.filter((token) => token.startsWith("existing:")),
+    ...data.images.map(newImageOrderToken),
+  ];
+  const imageOrder = data.image_order.length > 0 ? data.image_order : naturalOrder;
+
+  imageOrder.forEach((token) => {
+    if (token.startsWith("existing:")) {
+      formData.append("image_order[]", token);
+      return;
+    }
+
+    const newImageIndex = newImageIndexes.get(token);
+    if (newImageIndex !== undefined) {
+      formData.append("image_order[]", `new:${newImageIndex}`);
+    }
   });
 
   data.deleted_image_ids.forEach((imageId) => {

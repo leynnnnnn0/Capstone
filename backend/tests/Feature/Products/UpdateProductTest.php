@@ -201,6 +201,50 @@ it('removes product and variant images during product update', function () {
     Storage::disk('public')->assertMissing($variantImage->image_path);
 });
 
+it('reorders existing and new product images for the cover', function () {
+    $product = Product::factory()->create();
+    $firstImage = $product->product_images()->create([
+        'image_path' => "products/{$product->id}/first.jpg",
+        'sort_order' => 0,
+    ]);
+    $secondImage = $product->product_images()->create([
+        'image_path' => "products/{$product->id}/second.jpg",
+        'sort_order' => 1,
+    ]);
+
+    Storage::disk('public')->put($firstImage->image_path, 'first-image');
+    Storage::disk('public')->put($secondImage->image_path, 'second-image');
+
+    $this->actingAs($this->admin)
+        ->call(
+            'POST',
+            "/api/v1/products/{$product->id}",
+            [
+                '_method' => 'PUT',
+                'image_order' => [
+                    'new:0',
+                    "existing:{$secondImage->id}",
+                    "existing:{$firstImage->id}",
+                ],
+            ],
+            [],
+            ['images' => [
+                UploadedFile::fake()->image('new-cover.jpg'),
+            ]],
+            ['CONTENT_TYPE' => 'multipart/form-data']
+        )
+        ->assertOk();
+
+    $orderedImages = $product->fresh()->product_images;
+    $newImage = $orderedImages->first();
+
+    expect($orderedImages->pluck('id')->all())->toBe([
+        $newImage->id,
+        $secondImage->id,
+        $firstImage->id,
+    ])->and($orderedImages->pluck('sort_order')->all())->toBe([0, 1, 2]);
+});
+
 it('replaces a product 3d model during product update', function () {
     $product = Product::factory()->create();
     $oldModel = $product->product_3d_model()->create([

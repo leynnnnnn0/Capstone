@@ -93,8 +93,6 @@
   background: #dce6ef;
   box-shadow: 0 22px 45px rgb(15 23 42 / 12%);
   cursor: pointer;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
 }
 
 .cardActive {
@@ -116,11 +114,6 @@
 
 .card:hover .cardMedia {
   transform: scale(1.035);
-}
-
-.modelViewer {
-  position: absolute;
-  inset: 0;
 }
 
 .cardScrim {

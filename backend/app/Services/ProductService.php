@@ -1,9 +1,11 @@
 <?php
+
 // app/Services/ProductService.php
 
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\ProductImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -11,7 +13,9 @@ use Illuminate\Support\Facades\Storage;
 class ProductService
 {
     private const DEFAULT_WARRANTY_DURATION_MONTHS = 12;
+
     private const DEFAULT_WARRANTY_COVERAGE = 'Covers workmanship concerns found after installation or service completion.';
+
     private const DEFAULT_WARRANTY_TERMS = 'Warranty claims are subject to SOG Glass & Aluminum inspection and do not cover misuse, accidental damage, or third-party alterations.';
 
     /**
@@ -28,43 +32,49 @@ class ProductService
 
             // 1 — Create product
             $product = Product::create([
-                'name'           => $data['name'],
-                'description'    => $data['description'],
-                'unit'           => $data['unit'],
+                'name' => $data['name'],
+                'description' => $data['description'],
+                'unit' => $data['unit'],
                 'price_per_unit' => $data['price_per_unit'],
-                'is_active'      => $data['is_active'] ?? true,
+                'is_active' => $data['is_active'] ?? true,
             ]);
 
             // 2 — Attach categories
-            if (!empty($data['category_ids'])) {
+            if (! empty($data['category_ids'])) {
                 $product->categories()->sync($data['category_ids']);
             }
 
             $this->syncWarranty($product, $data['warranty'] ?? []);
 
             // 3 — Upload product images
-            if (!empty($files['images'])) {
-                foreach ($files['images'] as $image) {
+            if (! empty($files['images'])) {
+                $imagePositions = $this->imageOrderPositions($data['image_order'] ?? []);
+                $nextFallbackPosition = count($imagePositions);
+
+                foreach ($files['images'] as $index => $image) {
                     $path = $image->store("products/{$product->id}", 'public');
-                    $product->product_images()->create(['image_path' => $path]);
+                    $product->product_images()->create([
+                        'image_path' => $path,
+                        'sort_order' => $imagePositions["new:{$index}"] ?? $nextFallbackPosition++,
+                    ]);
                 }
             }
 
-            if (!empty($files['model_3d'])) {
+            if (! empty($files['model_3d'])) {
                 $this->sync3DModel($product, $files['model_3d']);
             }
 
             // 4 — Create variants with their images
-            if (!empty($data['variants'])) {
+            if (! empty($data['variants'])) {
                 foreach ($data['variants'] as $index => $variantData) {
                     $variant = $product->product_variants()->create([
-                        'width'     => $variantData['width'],
-                        'height'    => $variantData['height'],
-                        'price'     => $variantData['price'],
+                        'width' => $variantData['width'],
+                        'height' => $variantData['height'],
+                        'price' => $variantData['price'],
                         'is_active' => $variantData['is_active'] ?? true,
                     ]);
 
-                    if (!empty($files['variants'][$index]['images'])) {
+                    if (! empty($files['variants'][$index]['images'])) {
                         foreach ($files['variants'][$index]['images'] as $image) {
                             $path = $image->store(
                                 "products/{$product->id}/variants/{$variant->id}",
@@ -79,21 +89,21 @@ class ProductService
             }
 
             // 5 — Create option groups with options
-            if (!empty($data['option_groups'])) {
+            if (! empty($data['option_groups'])) {
                 foreach ($data['option_groups'] as $groupData) {
                     $group = $product->product_option_groups()->create([
-                        'name'        => $groupData['name'],
+                        'name' => $groupData['name'],
                         'is_required' => $groupData['is_required'] ?? false,
-                        'sort_order'  => $groupData['sort_order'] ?? 0,
+                        'sort_order' => $groupData['sort_order'] ?? 0,
                     ]);
 
-                    if (!empty($groupData['options'])) {
+                    if (! empty($groupData['options'])) {
                         foreach ($groupData['options'] as $option) {
                             $group->product_options()->create([
-                                'name'           => $option['name'],
+                                'name' => $option['name'],
                                 'price_modifier' => $option['price_modifier'],
-                                'sort_order'     => $option['sort_order'] ?? 0,
-                                'is_active'      => $option['is_active'] ?? true,
+                                'sort_order' => $option['sort_order'] ?? 0,
+                                'is_active' => $option['is_active'] ?? true,
                             ]);
                         }
                     }
@@ -115,12 +125,12 @@ class ProductService
     {
         return DB::transaction(function () use ($product, $data, $files) {
             $product->update(array_filter([
-                'name'           => $data['name'] ?? null,
-                'description'    => $data['description'] ?? null,
-                'unit'           => $data['unit'] ?? null,
+                'name' => $data['name'] ?? null,
+                'description' => $data['description'] ?? null,
+                'unit' => $data['unit'] ?? null,
                 'price_per_unit' => $data['price_per_unit'] ?? null,
-                'is_active'      => $data['is_active'] ?? null,
-            ], fn($v) => !is_null($v)));
+                'is_active' => $data['is_active'] ?? null,
+            ], fn ($v) => ! is_null($v)));
 
             if (isset($data['category_ids'])) {
                 $product->categories()->sync($data['category_ids']);
@@ -130,24 +140,39 @@ class ProductService
                 $this->syncWarranty($product, $data['warranty'] ?? []);
             }
 
-            if (!empty($files['images'])) {
-                foreach ($files['images'] as $image) {
+            $newProductImages = [];
+
+            if (! empty($files['images'])) {
+                $nextSortOrder = ((int) $product->product_images()->reorder()->max('sort_order')) + 1;
+
+                foreach ($files['images'] as $index => $image) {
                     $path = $image->store("products/{$product->id}", 'public');
-                    $product->product_images()->create(['image_path' => $path]);
+                    $newProductImages[(int) $index] = $product->product_images()->create([
+                        'image_path' => $path,
+                        'sort_order' => $nextSortOrder++,
+                    ]);
                 }
             }
 
-            if (!empty($data['deleted_image_ids'])) {
+            if (! empty($data['deleted_image_ids'])) {
                 foreach ($data['deleted_image_ids'] as $imageId) {
                     $this->deleteImage($product->id, $imageId);
                 }
             }
 
-            if (!empty($data['delete_3d_model'])) {
+            if (array_key_exists('image_order', $data)) {
+                $this->syncProductImageOrder(
+                    $product,
+                    $data['image_order'] ?? [],
+                    $newProductImages,
+                );
+            }
+
+            if (! empty($data['delete_3d_model'])) {
                 $this->delete3DModel($product);
             }
 
-            if (!empty($files['model_3d'])) {
+            if (! empty($files['model_3d'])) {
                 $this->sync3DModel($product, $files['model_3d']);
             }
 
@@ -175,12 +200,12 @@ class ProductService
         $keptIds = collect($variants)
             ->pluck('id')
             ->filter()
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
 
         $variantsToDelete = $product->product_variants()
-            ->when($keptIds, fn($query) => $query->whereNotIn('id', $keptIds))
+            ->when($keptIds, fn ($query) => $query->whereNotIn('id', $keptIds))
             ->with('product_variant_images')
             ->get();
 
@@ -197,14 +222,14 @@ class ProductService
                 : $product->product_variants()->make();
 
             $variant->fill([
-                'width'     => $variantData['width'],
-                'height'    => $variantData['height'],
-                'price'     => $variantData['price'],
+                'width' => $variantData['width'],
+                'height' => $variantData['height'],
+                'price' => $variantData['price'],
                 'is_active' => $variantData['is_active'] ?? true,
             ]);
             $variant->save();
 
-            if (!empty($variantData['deleted_image_ids'])) {
+            if (! empty($variantData['deleted_image_ids'])) {
                 $imagesToDelete = $variant->product_variant_images()
                     ->whereIn('id', $variantData['deleted_image_ids'])
                     ->get();
@@ -215,7 +240,7 @@ class ProductService
                 }
             }
 
-            if (!empty($variantFiles[$index]['images'])) {
+            if (! empty($variantFiles[$index]['images'])) {
                 foreach ($variantFiles[$index]['images'] as $image) {
                     $path = $image->store(
                         "products/{$product->id}/variants/{$variant->id}",
@@ -241,12 +266,12 @@ class ProductService
         $keptGroupIds = collect($optionGroups)
             ->pluck('id')
             ->filter()
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
 
         $product->product_option_groups()
-            ->when($keptGroupIds, fn($query) => $query->whereNotIn('id', $keptGroupIds))
+            ->when($keptGroupIds, fn ($query) => $query->whereNotIn('id', $keptGroupIds))
             ->delete();
 
         foreach ($optionGroups as $groupData) {
@@ -255,9 +280,9 @@ class ProductService
                 : $product->product_option_groups()->make();
 
             $group->fill([
-                'name'        => $groupData['name'],
+                'name' => $groupData['name'],
                 'is_required' => $groupData['is_required'] ?? false,
-                'sort_order'  => $groupData['sort_order'] ?? 0,
+                'sort_order' => $groupData['sort_order'] ?? 0,
             ]);
             $group->save();
 
@@ -265,12 +290,12 @@ class ProductService
             $keptOptionIds = collect($options)
                 ->pluck('id')
                 ->filter()
-                ->map(fn($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
                 ->values()
                 ->all();
 
             $group->product_options()
-                ->when($keptOptionIds, fn($query) => $query->whereNotIn('id', $keptOptionIds))
+                ->when($keptOptionIds, fn ($query) => $query->whereNotIn('id', $keptOptionIds))
                 ->delete();
 
             foreach ($options as $option) {
@@ -279,10 +304,10 @@ class ProductService
                     : $group->product_options()->make();
 
                 $productOption->fill([
-                    'name'           => $option['name'],
+                    'name' => $option['name'],
                     'price_modifier' => $option['price_modifier'],
-                    'sort_order'     => $option['sort_order'] ?? 0,
-                    'is_active'      => $option['is_active'] ?? true,
+                    'sort_order' => $option['sort_order'] ?? 0,
+                    'is_active' => $option['is_active'] ?? true,
                 ]);
                 $productOption->save();
             }
@@ -294,9 +319,14 @@ class ProductService
      */
     public function addImages(Product $product, array $images): Product
     {
+        $nextSortOrder = ((int) $product->product_images()->reorder()->max('sort_order')) + 1;
+
         foreach ($images as $image) {
             $path = $image->store("products/{$product->id}", 'public');
-            $product->product_images()->create(['image_path' => $path]);
+            $product->product_images()->create([
+                'image_path' => $path,
+                'sort_order' => $nextSortOrder++,
+            ]);
         }
 
         return $product->load('product_images');
@@ -307,7 +337,7 @@ class ProductService
      */
     public function deleteImage(int $productId, int $imageId): void
     {
-        $image = \App\Models\ProductImage::where('product_id', $productId)
+        $image = ProductImage::where('product_id', $productId)
             ->findOrFail($imageId);
 
         Storage::disk('public')->delete($image->image_path);
@@ -339,7 +369,7 @@ class ProductService
      */
     private function sync3DModel(Product $product, mixed $file): void
     {
-        if (!$file instanceof UploadedFile) {
+        if (! $file instanceof UploadedFile) {
             return;
         }
 
@@ -348,11 +378,11 @@ class ProductService
         $path = $file->store("products/{$product->id}/models", 'public');
 
         $product->product_3d_model()->create([
-            'file_path'     => $path,
+            'file_path' => $path,
             'original_name' => $file->getClientOriginalName(),
-            'file_size'     => $file->getSize(),
-            'mime_type'     => $file->getClientMimeType(),
-            'is_default'    => true,
+            'file_size' => $file->getSize(),
+            'mime_type' => $file->getClientMimeType(),
+            'is_default' => true,
         ]);
     }
 
@@ -363,7 +393,7 @@ class ProductService
     {
         $model = $product->product_3d_model()->first();
 
-        if (!$model) {
+        if (! $model) {
             return;
         }
 
@@ -391,6 +421,53 @@ class ProductService
                 'terms' => $data['terms'] ?? self::DEFAULT_WARRANTY_TERMS,
             ],
         );
+    }
+
+    /**
+     * Persist the mixed existing/new order sent by the product image editor.
+     *
+     * Tokens use existing:{database id} for saved images and new:{upload index}
+     * for files in the current multipart request. Any omitted images are kept
+     * after the explicitly ordered items so older API clients remain safe.
+     */
+    private function syncProductImageOrder(
+        Product $product,
+        array $imageOrder,
+        array $newImages,
+    ): void {
+        $remainingImages = $product->product_images()
+            ->get()
+            ->keyBy('id');
+        $position = 0;
+
+        foreach ($imageOrder as $token) {
+            [$kind, $identifier] = array_pad(explode(':', (string) $token, 2), 2, null);
+            $image = $kind === 'new'
+                ? ($newImages[(int) $identifier] ?? null)
+                : $remainingImages->get((int) $identifier);
+
+            if (! $image || $image->product_id !== $product->id) {
+                continue;
+            }
+
+            $remainingImages->forget($image->id);
+            $image->update(['sort_order' => $position++]);
+        }
+
+        foreach ($remainingImages as $image) {
+            $image->update(['sort_order' => $position++]);
+        }
+    }
+
+    private function imageOrderPositions(array $imageOrder): array
+    {
+        $positions = [];
+
+        foreach ($imageOrder as $position => $token) {
+            $positions[(string) $token] = $position;
+        }
+
+        return $positions;
     }
 
     /**

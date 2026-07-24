@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Box } from "lucide-react";
+import { Box, RefreshCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ type Product3DModelViewerProps = {
 type ModelViewerElement = HTMLElement & {
   getDimensions?: () => { x: number; y: number; z: number };
   updateFraming?: () => void;
+  jumpCameraToGoal?: () => void;
 };
 
 export default function Product3DModelViewer({
@@ -38,14 +39,21 @@ export default function Product3DModelViewer({
   maxHeightMeters = 1.2,
 }: Product3DModelViewerProps) {
   const [ready, setReady] = useState(false);
+  const [viewerImportFailed, setViewerImportFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const viewerRef = useRef<ModelViewerElement | null>(null);
+  const loadError = viewerImportFailed || failedSrc === src;
 
   useEffect(() => {
     let mounted = true;
 
-    import("@google/model-viewer").then(() => {
-      if (mounted) setReady(true);
-    });
+    import("@google/model-viewer")
+      .then(() => {
+        if (mounted) setReady(true);
+      })
+      .catch(() => {
+        if (mounted) setViewerImportFailed(true);
+      });
 
     return () => {
       mounted = false;
@@ -61,6 +69,7 @@ export default function Product3DModelViewer({
     if (ar && arDefaultScale > 0) {
       viewer.setAttribute("scale", `${arDefaultScale} ${arDefaultScale} ${arDefaultScale}`);
       viewer.updateFraming?.();
+      viewer.jumpCameraToGoal?.();
       return;
     }
 
@@ -74,6 +83,7 @@ export default function Product3DModelViewer({
 
     viewer.setAttribute("scale", `${scale} ${scale} ${scale}`);
     viewer.updateFraming?.();
+    viewer.jumpCameraToGoal?.();
   }
 
   if (!src) {
@@ -103,7 +113,29 @@ export default function Product3DModelViewer({
         </div>
       )}
       <div className={cn(compact ? "h-48" : "h-80", viewportClassName)}>
-        {ready ? (
+        {loadError ? (
+          <div className="flex h-full items-center justify-center bg-slate-50 px-6 text-center">
+            <div>
+              <Box className="mx-auto h-7 w-7 text-slate-400" />
+              <p className="mt-3 text-sm font-semibold text-slate-700">
+                3D preview unavailable
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                The model could not be loaded. Check your connection and try again.
+              </p>
+              {!viewerImportFailed && (
+                <button
+                  type="button"
+                  onClick={() => setFailedSrc(null)}
+                  className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Try again
+                </button>
+              )}
+            </div>
+          </div>
+        ) : ready ? (
           <model-viewer
             ref={(element: HTMLElement | null) => {
               viewerRef.current = element as ModelViewerElement | null;
@@ -120,14 +152,12 @@ export default function Product3DModelViewer({
             }
             camera-controls
             auto-rotate={false}
-            camera-orbit="0deg 75deg 2.5m"
-            camera-target="0m 0m 0m"
-            field-of-view="30deg"
             shadow-intensity="0.85"
             environment-image="neutral"
             exposure="0.95"
             interaction-prompt="auto"
             onLoad={fitModelToRealWorldSize}
+            onError={() => setFailedSrc(src)}
             className="h-full w-full bg-gradient-to-b from-slate-50 to-slate-100"
           />
         ) : (

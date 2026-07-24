@@ -40,23 +40,23 @@ function DrawerContent({
   if (!open) return null;
 
   return (
-    <div className="pointer-events-auto fixed inset-0 z-40 flex items-end p-0 sm:p-3">
+    <div className="pointer-events-auto fixed inset-0 z-40 flex items-end p-0 sm:p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-[#0d1f33]/55 backdrop-blur-sm"
+        className="absolute inset-0 bg-[#0d1f33]/48 backdrop-blur-md"
         aria-label="Close drawer"
         onClick={() => onOpenChange?.(false)}
       />
       <section
         data-slot="drawer-content"
         className={cn(
-          "relative z-10 w-full rounded-t-[1.75rem] border border-white/80 bg-white p-4 text-[#162d4a] shadow-[0_26px_80px_rgba(13,31,51,0.28)] sm:rounded-[1.75rem] sm:p-5",
-          "max-h-[82dvh] overflow-y-auto",
+          "relative z-10 w-full rounded-t-[2rem] border border-white/80 bg-[#edf2f6] p-3 text-[#162d4a] shadow-[0_28px_90px_rgba(13,31,51,0.3)] sm:rounded-[2rem] sm:p-4",
+          "max-h-[88dvh] overflow-y-auto overscroll-contain",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-[#dce4ea]" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#b9cfe0]" />
         {children}
       </section>
     </div>
@@ -77,7 +77,7 @@ function DrawerTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2
       data-slot="drawer-title"
-      className={cn("text-xl font-semibold tracking-[-0.03em] text-[#162d4a]", className)}
+      className={cn("text-xl font-medium tracking-[-0.035em] text-[#162d4a]", className)}
       {...props}
     />
   );
@@ -87,7 +87,7 @@ function DrawerDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
     <p
       data-slot="drawer-description"
-      className={cn("mt-1 text-sm font-normal text-[#7e94a7]", className)}
+      className={cn("mt-1 text-sm font-normal leading-5 text-[#7e94a7]", className)}
       {...props}
     />
   );

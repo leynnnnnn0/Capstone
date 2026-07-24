@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Product extends Model implements AuditableContract
 {
-    /** @use HasFactory<\Database\Factories\ProductFactory> */
+    use Auditable;
+
+    /** @use HasFactory<ProductFactory> */
     use HasFactory;
-    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'name',
@@ -22,7 +25,7 @@ class Product extends Model implements AuditableContract
 
     protected $casts = [
         'price_per_unit' => 'decimal:2',
-        'is_active'      => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function categories()
@@ -32,7 +35,9 @@ class Product extends Model implements AuditableContract
 
     public function product_images()
     {
-        return $this->hasMany(ProductImage::class);
+        return $this->hasMany(ProductImage::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function product_variants()

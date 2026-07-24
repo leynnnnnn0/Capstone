@@ -32,8 +32,12 @@ export default function VariantPicker({
             }`}
           >
             {image && (
-              <div className="h-16 overflow-hidden">
-                <img src={image} alt={variantLabel(variant)} className="h-full w-full object-cover" />
+              <div className="flex h-28 items-center justify-center overflow-hidden bg-slate-50 p-2 sm:h-36 sm:p-3">
+                <img
+                  src={image}
+                  alt={variantLabel(variant)}
+                  className="h-full w-full object-contain"
+                />
               </div>
             )}
             <div className="p-2.5">
