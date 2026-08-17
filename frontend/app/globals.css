@@ -336,3 +336,53 @@
     border-radius: 1rem;
   }
 }
+
+.measurement-print-report {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4 portrait;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .measurement-print-report,
+  .measurement-print-report * {
+    visibility: visible !important;
+  }
+
+  .measurement-print-report {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100%;
+    overflow: visible !important;
+    background: white;
+    color: #0f172a;
+  }
+
+  .measurement-print-host {
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .measurement-print-report article,
+  .measurement-print-report > div > div {
+    break-inside: avoid;
+  }
+}

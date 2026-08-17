@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchAudits } from "@/features/audits/audit-api";
 import type { AuditRecord } from "@/features/audits/types";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -165,46 +165,46 @@ export default function AdminAuditsPage() {
             )}
           </div>
 
-          <div className="hidden overflow-hidden rounded-lg border md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Event</TableHead>
-                <TableHead>Record</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Changes</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableSkeletonRows columns={7} />
-              ) : audits.length ? audits.map((audit) => (
-                <TableRow key={audit.id}>
-                  <TableCell><Badge variant="outline">{audit.event}</Badge></TableCell>
-                  <TableCell className="text-sm">{audit.auditable_type} #{audit.auditable_id}</TableCell>
-                  <TableCell className="text-sm">{audit.user?.name ?? "System"}</TableCell>
-                  <TableCell className="max-w-[360px] truncate text-xs text-muted-foreground">
-                    {Object.keys(audit.new_values ?? {}).join(", ") || "No changed values"}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{audit.ip_address ?? "-"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDate(audit.created_at)}</TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/dashboard/audits/${audit.id}`}>View</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )) : (
+          <TableFrame className="hidden shadow-none md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-sm text-muted-foreground">No audit records yet.</TableCell>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Record</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Changes</TableHead>
+                  <TableHead>IP</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead />
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          </div>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableSkeletonRows columns={7} />
+                ) : audits.length ? audits.map((audit) => (
+                  <TableRow key={audit.id}>
+                    <TableCell><Badge variant="outline">{audit.event}</Badge></TableCell>
+                    <TableCell className="text-sm">{audit.auditable_type} #{audit.auditable_id}</TableCell>
+                    <TableCell className="text-sm">{audit.user?.name ?? "System"}</TableCell>
+                    <TableCell className="max-w-[360px] truncate text-xs text-muted-foreground">
+                      {Object.keys(audit.new_values ?? {}).join(", ") || "No changed values"}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{audit.ip_address ?? "-"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDate(audit.created_at)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/dashboard/audits/${audit.id}`}>View</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">No audit records yet.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableFrame>
 
           {meta && meta.last_page > 1 && (
             <PaginationControls meta={meta} loading={loading} onPageChange={setPage} />

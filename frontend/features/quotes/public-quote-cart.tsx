@@ -18,6 +18,10 @@ import {
   productVariants,
 } from "@/features/products/product-utils";
 import type { QuoteCartItem } from "@/features/quotes/types";
+import {
+  clearSavedArQuote,
+  removeSavedArQuoteItem,
+} from "@/features/quotes/ar-quote-handoff";
 
 const STORAGE_KEY = "sog_public_quote_cart";
 
@@ -59,8 +63,15 @@ export function PublicQuoteCartProvider({ children }: { children: ReactNode }) {
       hydrated,
       setCart,
       removeItem: (id: string) =>
-        setCart((current) => current.filter((item) => item.id !== id)),
-      clearCart: () => setCart([]),
+        setCart((current) => {
+          const removedItem = current.find((item) => item.id === id);
+          if (removedItem) removeSavedArQuoteItem(removedItem);
+          return current.filter((item) => item.id !== id);
+        }),
+      clearCart: () => {
+        clearSavedArQuote();
+        setCart([]);
+      },
     }),
     [cart, hydrated],
   );
@@ -126,10 +137,34 @@ function readStoredCart() {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.filter(isStoredQuoteCartItem);
+    return parsed
+      .filter(isStoredQuoteCartItem)
+      .map(normalizeStoredQuoteCartItem);
   } catch {
     return [];
   }
+}
+
+function normalizeStoredQuoteCartItem(item: QuoteCartItem): QuoteCartItem {
+  if (item.source !== "ar" || item.dimension_unit === "cm") return item;
+
+  const toCentimeters = (value: string | number) =>
+    String(Math.round(Number(value || 0) * 1000) / 10);
+  const segments = item.measurement_segments?.map(
+    (segment) => Math.round(segment * 1000) / 10,
+  );
+
+  return {
+    ...item,
+    dimension_unit: "cm",
+    width: toCentimeters(item.width),
+    height: toCentimeters(item.height),
+    measurement_segments: segments,
+    measurement_height:
+      item.measurement_height == null
+        ? undefined
+        : Math.round(item.measurement_height * 1000) / 10,
+  };
 }
 
 function isStoredQuoteCartItem(value: unknown): value is QuoteCartItem {

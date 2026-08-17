@@ -1,70 +1,72 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  BookmarkCheck,
-  Box,
-  CheckCircle2,
   ChevronDown,
-  ChevronsDown,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronsUp,
   CircleHelp,
   ClipboardList,
   Grid3X3,
-  Layers3,
-  Minus,
-  MousePointerClick,
-  Move3D,
-  PanelRightOpen,
-  Play,
-  Plus,
-  Ruler,
   ScanLine,
-  RotateCcwSquare,
-  RotateCwSquare,
-  Smartphone,
   Trash2,
   Undo2,
-  X,
 } from "lucide-react";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ArShop } from "./components/shop/ArShop";
-import { Badge } from "./components/ui/badge";
-import { Button } from "./components/ui/button";
-import { Card, CardContent } from "./components/ui/card";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "./components/ui/drawer";
-import { computeDimensions, formatDimensions } from "./features/measurement/dimensions";
-import { createLabel } from "./features/measurement/labels";
+import { computeDimensions } from "./features/measurement/dimensions";
 import {
   DEFAULT_MODEL,
   fetchProductModelCatalog,
   getModelById,
   MODEL_CATALOG,
   MODEL_CATEGORIES,
-  normalizeCatalogAssetUrl,
   type ModelCategoryId,
   type ModelCategory,
   type ModelDefinition,
-  type ModelVariantDefinition,
 } from "./features/measurement/model-catalog";
+import {
+  createGlassModel,
+  createMarker,
+  createObjectLabel,
+  createSegment,
+  createV2ObjectLabel,
+  createV2ObjectModel,
+  getPreferredPlaneKind,
+  getViewerForward,
+  recolorMeasurementGuides,
+  setReticleColor,
+} from "./features/measurement/model-visuals";
 import { OBJECT_TYPES } from "./features/measurement/object-types";
+import {
+  appendSurfaceSample,
+  applyAnchorPoseToObject,
+  createAnchorRelativeMatrix,
+  createCleanV2WallPlane,
+  createV2XrAnchor,
+  defaultV2DimensionsForModel,
+  formatV2Dimensions,
+  normalizeV2Dimensions,
+  stabilizeSurface,
+  syncObjectAnchorRelativeMatrix,
+  v3DragDistancePerPixel,
+} from "./features/measurement/placement-helpers";
+import {
+  createPlacementAxes,
+  projectPlacementToReferenceWall,
+  setV2RootTransform,
+} from "./features/measurement/wall-placement";
+import {
+  encodeArQuoteTransfer,
+  flowVersionFromPath,
+  frontendQuoteBaseUrl,
+} from "./features/measurement/quote-handoff";
 import {
   createMeasurementScene,
   disposeObject,
   resizeMeasurementScene,
   type MeasurementScene,
 } from "./features/measurement/scene";
+import { useQuoteWorkspace } from "./features/measurement/use-quote-workspace";
 import type {
   MeasuredObject,
-  MeasurementDimensions,
   MeasurementPoint,
   MeasurementSegment,
   ObjectType,
@@ -82,79 +84,37 @@ import {
   snapShapePoint,
 } from "./features/measurement/snapping";
 import { requestHitTestSession } from "./features/measurement/xr-session";
-import { metersToCentimeters } from "./lib/format";
-import { cn } from "./lib/utils";
-
-const VERSION = "react-vite-tier1-2026-05-17";
-
-// V2/V3 placement uses a thin 3D panel/frame fitted to real-world centimeter
-// dimensions. These constants keep the generated preview usable before the user
-// starts adjusting height, width, rotation, or position.
-const PREVIEW_MODEL_DEPTH_METERS = 0.012;
-const V2_DEFAULT_WIDTH_CM = 120;
-const V2_DEFAULT_HEIGHT_CM = 210;
-const V2_DEFAULT_DEPTH_CM = 12;
-const V2_NUDGE_METERS = 0.05;
-const V2_ROTATE_RADIANS = THREE.MathUtils.degToRad(7.5);
-const V2_WALL_BACK_OFFSET_METERS = 0.0762;
-const V2_MAX_WALL_NORMAL_Y = 0.18;
-const SAVED_AR_QUOTE_KEY = "sog-ar-saved-quote";
-type CapturePhase = "shape" | "height";
-type FlowVersion = "v1" | "v2" | "v3";
-type V2Mode = "scanWall" | "place" | "edit";
-const gltfLoader = new GLTFLoader();
-const modelCache = new Map<string, Promise<THREE.Group>>();
-
-type XRAnchorLike = {
-  anchorSpace: XRSpace;
-  delete?: () => void;
-};
-
-type XRHitTestResultWithAnchor = XRHitTestResult & {
-  createAnchor?: () => Promise<XRAnchorLike>;
-};
-
-interface ArQuoteTransferItem {
-  productId: number;
-  modelId: string;
-  label: string;
-  description: string;
-  segmentsCm: number[];
-  widthCm: number;
-  heightCm: number;
-  price?: number | null;
-}
-
-interface ArQuoteTransferPayload {
-  source: "sog-ar";
-  version: 1;
-  createdAt: string;
-  items: ArQuoteTransferItem[];
-}
-
-interface SummaryQuoteItem {
-  id: number;
-  label: string;
-  description: string;
-  dimensionsText: string;
-  price: number | null;
-}
-
-interface V2PlacedObject {
-  id: number;
-  type: ObjectType;
-  modelId: string;
-  root: THREE.Group;
-  model: THREE.Object3D;
-  label: THREE.Sprite;
-  anchor: THREE.Vector3;
-  anchorOffset: THREE.Vector3;
-  xrAnchor: XRAnchorLike | null;
-  widthDir: THREE.Vector3;
-  heightDir: THREE.Vector3;
-  depthDir: THREE.Vector3;
-  dimensions: MeasurementDimensions & { depthCm: number };
-}
+import {
+  VERSION,
+  type AnchorTrackingState,
+  type CapturePhase,
+  type FlowVersion,
+  type SurfaceSample,
+  type V2Mode,
+  type V2PlacedObject,
+  type V2PlacementAxes,
+  type XRHitTestResultWithAnchor,
+} from "./features/measurement/workspace-types";
+import {
+  DirectArEntry,
+  SessionObjectsPanel,
+} from "./features/measurement/workspace-components";
+import {
+  ExitPromptDrawer,
+  ProductCatalogDrawer,
+  QuoteSummaryDrawer,
+} from "./features/measurement/workspace-drawers";
+import {
+  ArGuidanceOverlays,
+  PlacementEditor,
+} from "./features/measurement/workspace-overlays";
+import {
+  arStageName,
+  confidenceInstruction,
+  primaryArAction,
+  relatedCatalogModels,
+  selectedById,
+} from "./features/measurement/workspace-selectors";
 
 export default function App() {
   // Refs hold WebXR and Three.js objects that must survive React renders without
@@ -171,6 +131,7 @@ export default function App() {
   const currentHitNormalRef = useRef<THREE.Vector3 | null>(null);
   const currentHitPlaneRef = useRef<MeasurementPlane | null>(null);
   const currentHitResultRef = useRef<XRHitTestResultWithAnchor | null>(null);
+  const currentHitPoseMatrixRef = useRef<THREE.Matrix4 | null>(null);
   const shapePlaneRef = useRef<MeasurementPlane | null>(null);
   const v2LockedWallRef = useRef<MeasurementPlane | null>(null);
   const confidenceRef = useRef<ReticleConfidence>("none");
@@ -184,22 +145,27 @@ export default function App() {
   const ignorePlacementUntilRef = useRef(0);
   const lastPlacementAtRef = useRef(0);
   const lastPlacementPositionRef = useRef<THREE.Vector3 | null>(null);
-  const hitStreakRef = useRef(0);
+  const anchoredPlacementPendingRef = useRef(false);
+  const missedHitFramesRef = useRef(0);
+  const surfaceSamplesRef = useRef<SurfaceSample[]>([]);
+  const anchorTrackingStateRef = useRef<AnchorTrackingState>("idle");
   const nextObjectIdRef = useRef(1);
   const nextV2ObjectIdRef = useRef(1);
 
   // The AR route decides which measuring flow is active: v1 is point-to-point,
   // v2 is wall scan + placement, and v3 is the simplified placement experiment.
-  const [flowVersion, setFlowVersionState] = useState<FlowVersion>(() =>
+  const [flowVersion] = useState<FlowVersion>(() =>
     flowVersionFromPath(window.location.pathname),
   );
   const [directArEntry] = useState(
     () => new URLSearchParams(window.location.search).get("direct") === "ar",
   );
-  const [status, setStatus] = useState("Ready. Tap Start AR.");
+  const [, setStatus] = useState("Ready. Tap Start AR.");
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
   const [isActive, setIsActive] = useState(false);
   const [confidence, setConfidence] = useState<ReticleConfidence>("none");
+  const [anchorTrackingState, setAnchorTrackingState] =
+    useState<AnchorTrackingState>("idle");
   const [showArGuide, setShowArGuide] = useState(false);
   const [showMovementCoach, setShowMovementCoach] = useState(false);
   const [capturePhase, setCapturePhase] = useState<CapturePhase>("shape");
@@ -217,7 +183,7 @@ export default function App() {
   const [selectedObjectId, setSelectedObjectId] = useState<number | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [shopDetailModel, setShopDetailModel] = useState<ModelDefinition | null>(null);
-  const [points, setPoints] = useState<MeasurementPoint[]>([]);
+  const [, setPoints] = useState<MeasurementPoint[]>([]);
   const pointsRef = useRef<MeasurementPoint[]>([]);
   const segmentsRef = useRef<MeasurementSegment[]>([]);
   const [objects, setObjects] = useState<MeasuredObject[]>([]);
@@ -232,7 +198,6 @@ export default function App() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
-  const [manualQuoteItems, setManualQuoteItems] = useState<ArQuoteTransferItem[]>([]);
   const sessionPanelOpenRef = useRef(false);
   const summaryOpenRef = useRef(false);
   const catalogOpenRef = useRef(false);
@@ -241,7 +206,6 @@ export default function App() {
   const modelCatalogRef = useRef<ModelDefinition[]>(MODEL_CATALOG);
   const flowVersionRef = useRef<FlowVersion>(flowVersion);
   const v2ModeRef = useRef<V2Mode>("scanWall");
-  const v3AutoPlacePendingRef = useRef(false);
   const v3PinchRef = useRef<{
     distance: number;
     widthCm: number;
@@ -259,25 +223,17 @@ export default function App() {
   const isV3 = flowVersion === "v3";
   const isPlacementFlow = isV2 || isV3;
   const activeObjectCount = isPlacementFlow ? v2Objects.length : objects.length;
-  const relatedShopModels = useMemo(() => {
-    const activeModel = shopDetailModel ?? selectedModel;
-    const sameCategoryModels = modelCatalog.filter(
-      (model) =>
-        model.id !== activeModel.id &&
-        (model.category === activeModel.category || model.type === activeModel.type),
-    );
-
-    return (sameCategoryModels.length
-      ? sameCategoryModels
-      : modelCatalog.filter((model) => model.id !== activeModel.id)
-    ).slice(0, 4);
-  }, [modelCatalog, selectedModel, shopDetailModel]);
+  const relatedShopModels = relatedCatalogModels(
+    modelCatalog,
+    selectedModel,
+    shopDetailModel,
+  );
   const selectedObject = useMemo(
-    () => objects.find((object) => object.id === selectedObjectId) ?? null,
+    () => selectedById(objects, selectedObjectId),
     [objects, selectedObjectId],
   );
   const selectedV2Object = useMemo(
-    () => v2Objects.find((object) => object.id === selectedV2ObjectId) ?? null,
+    () => selectedById(v2Objects, selectedV2ObjectId),
     [selectedV2ObjectId, v2Objects],
   );
 
@@ -318,40 +274,20 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const savedItems = readSavedArQuoteItems();
-
-    if (savedItems.length > 0) {
-      setManualQuoteItems(savedItems);
-    }
-  }, []);
-
-  const confidenceCopy = useMemo(() => {
-    if (isV2 && v2Mode === "scanWall") return "Move slowly across the reference wall, then lock it.";
-    if (isV2 && v2Mode === "place") return "Tap a detected wall or floor to place the product.";
-    if (isV3 && v2Mode === "place") return "Tap a detected wall or floor to place the next product.";
-    if (isPlacementFlow && v2Mode === "edit") return "Pinch to resize, or tap another surface to reposition.";
-    if (capturePhase === "height") return "Tap the top edge to capture the product height.";
-    if (confidence === "high") return "Surface ready. Tap to place a point.";
-    if (confidence === "medium") return "Surface found. Hold steady for better accuracy.";
-    if (confidence === "weak") return "Keep moving slowly to improve surface accuracy.";
-    return "Trace the product outline, then finish the shape.";
-  }, [capturePhase, confidence, isPlacementFlow, isV2, isV3, v2Mode]);
-
-  const arStageLabel = useMemo(() => {
-    if (isV2 && v2Mode === "scanWall") return "Step 1 · Scan wall";
-    if (isPlacementFlow && v2Mode === "place") return "Step 2 · Place product";
-    if (isPlacementFlow && v2Mode === "edit") return "Adjust product";
-    if (capturePhase === "height") return "Height capture";
-    return "Surface scan";
-  }, [capturePhase, isPlacementFlow, isV2, v2Mode]);
-
-  const arPrimaryActionLabel = useMemo(() => {
-    if (!isPlacementFlow) return capturePhase === "height" ? "Set height" : "Finish";
-    if (isV3 || v2Mode === "edit") return "Another";
-    if (v2WallLocked) return "Rescan";
-    return "Lock wall";
-  }, [capturePhase, isPlacementFlow, isV3, v2Mode, v2WallLocked]);
+  const copyContext = {
+    capturePhase,
+    confidence,
+    isPlacementFlow,
+    isV2,
+    isV3,
+    mode: v2Mode,
+  };
+  const confidenceCopy = confidenceInstruction(copyContext);
+  const arStageLabel = arStageName(copyContext);
+  const arPrimaryActionLabel = primaryArAction({
+    ...copyContext,
+    wallLocked: v2WallLocked,
+  });
 
   useEffect(() => {
     confidenceRef.current = confidence;
@@ -398,64 +334,21 @@ export default function App() {
     [],
   );
 
-  // Quote summary items are derived from actual AR objects in the scene.
-  // Manual quote items are separate because saved/catalog-selected products may
-  // not have an active 3D object yet.
-  const measuredQuoteItems = useMemo<SummaryQuoteItem[]>(() => {
-    if (isPlacementFlow) {
-      return v2Objects.map((object) => {
-        const model = findModel(object.modelId);
-
-        return {
-          id: object.id,
-          label: model.label,
-          description: model.description,
-          dimensionsText: formatQuoteDimensions(
-            object.dimensions.segmentsCm[0] ?? 0,
-            object.dimensions.heightCm,
-          ),
-          price: estimateQuotePrice(
-            object.dimensions.segmentsCm[0] ?? 0,
-            object.dimensions.heightCm,
-            model,
-          ),
-        };
-      });
-    }
-
-    return objects.map((object) => {
-      const model = findModel(object.modelId);
-      const widthCm = object.dimensions.segmentsCm.reduce(
-        (sum, segment) => sum + segment,
-        0,
-      );
-
-      return {
-        id: object.id,
-        label: model.label,
-        description: model.description,
-        dimensionsText: formatQuoteDimensions(widthCm, object.dimensions.heightCm),
-        price: estimateQuotePrice(widthCm, object.dimensions.heightCm, model),
-      };
-    });
-  }, [findModel, isPlacementFlow, objects, v2Objects]);
-
-  const summaryQuoteItems = useMemo(
-    () => [
-      ...manualQuoteItems.map((item, index) => transferItemToSummaryQuoteItem(item, index)),
-      ...measuredQuoteItems,
-    ],
-    [manualQuoteItems, measuredQuoteItems],
-  );
-
-  const summaryEstimatedTotal = useMemo(
-    () =>
-      summaryQuoteItems.reduce(
-        (total, item) => total + (item.price == null ? 0 : item.price),
-        0,
-      ),
-    [summaryQuoteItems],
-  );
+  const {
+    summaryItems: summaryQuoteItems,
+    estimatedTotal: summaryEstimatedTotal,
+    addModel: addQuoteModel,
+    transferItems: getQuoteTransferItems,
+    draftState: quoteDraftState,
+    saveDraft: saveQuoteDraft,
+    clearDraft: clearQuoteDraft,
+  } = useQuoteWorkspace({
+    flowVersion,
+    objects,
+    placementObjects: v2Objects,
+    findModel,
+    onStatus: setStatus,
+  });
 
   const log = useCallback((message: string) => {
     console.debug(`[SOG AR] ${message}`);
@@ -467,56 +360,31 @@ export default function App() {
     ignorePlacementUntilRef.current = performance.now() + 900;
   }, []);
 
-  const setFlowVersion = useCallback(
-    (version: FlowVersion) => {
-      markUiInteraction();
-      flowVersionRef.current = version;
-      setFlowVersionState(version);
-      window.history.replaceState(null, "", flowPath(version));
-      setSessionPanelOpen(false);
-      setCatalogOpen(false);
-      setSummaryOpen(false);
-      setStatus(
-        version === "v2"
-          ? "V2 ready. Tap Start AR, then tap once to place the selected model."
-          : "V1 ready. Tap Start AR to measure with points.",
-      );
-    },
-    [markUiInteraction],
-  );
-
-  const setV2Mode = useCallback((mode: V2Mode) => {
-    v2ModeRef.current = mode;
-    setV2ModeState(mode);
+  const resetSurfaceTracking = useCallback(() => {
+    surfaceSamplesRef.current = [];
+    missedHitFramesRef.current = 0;
+    currentHitPositionRef.current = null;
+    currentHitNormalRef.current = null;
+    currentHitPlaneRef.current = null;
+    currentHitResultRef.current = null;
+    currentHitPoseMatrixRef.current = null;
+    confidenceRef.current = "none";
+    setConfidence("none");
   }, []);
+
+  const setV2Mode = useCallback(
+    (mode: V2Mode) => {
+      v2ModeRef.current = mode;
+      setV2ModeState(mode);
+      resetSurfaceTracking();
+    },
+    [resetSurfaceTracking],
+  );
 
   const addModelToQuote = useCallback((model: ModelDefinition) => {
     markUiInteraction();
-    const productId = model.productId;
-
-    if (!productId) {
-      setStatus("Choose an uploaded product before adding it to quote.");
-      return;
-    }
-
-    const dimensions = defaultV2DimensionsForModel(model);
-    const widthCm = dimensions.segmentsCm[0] ?? 0;
-
-    setManualQuoteItems((items) => [
-      ...items,
-      {
-        productId,
-        modelId: model.id,
-        label: model.label,
-        description: model.description,
-        segmentsCm: dimensions.segmentsCm,
-        widthCm,
-        heightCm: dimensions.heightCm,
-        price: estimateQuotePrice(widthCm, dimensions.heightCm, model),
-      },
-    ]);
-    setStatus(`${model.label} added to quote.`);
-  }, [markUiInteraction]);
+    addQuoteModel(model);
+  }, [addQuoteModel, markUiInteraction]);
 
   const setArGuideVisible = useCallback((visible: boolean) => {
     showArGuideRef.current = visible;
@@ -533,7 +401,7 @@ export default function App() {
     setArGuideVisible(false);
     noSurfaceSinceRef.current = null;
     movementCoachCooldownUntilRef.current = performance.now() + 1800;
-    setStatus("Move the phone slowly until the reticle turns yellow or green.");
+    setStatus("Move your phone slowly. Wait for the circle to turn green, then tap.");
   }, [markUiInteraction, setArGuideVisible]);
 
   const selectModel = useCallback(
@@ -829,7 +697,6 @@ export default function App() {
       capturePhaseRef.current = "shape";
       v2LockedWallRef.current = null;
       setV2WallLocked(false);
-      v3AutoPlacePendingRef.current = flowVersionRef.current === "v3";
       setV2Mode(flowVersionRef.current === "v3" ? "place" : "scanWall");
       setArGuideVisible(true);
       setMovementCoachVisible(false);
@@ -837,12 +704,14 @@ export default function App() {
       lastViewerPositionRef.current = null;
       lastViewerMovementAtRef.current = performance.now();
       movementCoachCooldownUntilRef.current = performance.now() + 2500;
+      anchorTrackingStateRef.current = "idle";
+      setAnchorTrackingState("idle");
       setStatus(
         flowVersionRef.current === "v3"
-          ? "V3: model will appear in front of you. Pinch to resize or tap a wall/floor to move it."
+          ? "Point where the product should go. Move slowly, wait for green, then tap."
           : flowVersionRef.current === "v2"
-          ? "V2: scan the reference wall first. Tap or press Lock Wall when the reticle is steady."
-          : "Item 1: tap the outline. Segments snap straight or 90-degree.",
+          ? "Point at the wall and move slowly. Wait for green, then tap or press Lock wall."
+          : "Move slowly until the circle turns green, then tap the first outline point.",
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -927,24 +796,61 @@ export default function App() {
     }
   };
 
+  const updateAnchorTrackingState = (
+    nextState: AnchorTrackingState,
+    message?: string,
+  ) => {
+    if (anchorTrackingStateRef.current === nextState) return;
+
+    anchorTrackingStateRef.current = nextState;
+    setAnchorTrackingState(nextState);
+    if (message) setStatus(message);
+  };
+
   const updateV2Anchors = (frame: XRFrame, referenceSpace: XRReferenceSpace) => {
+    let anchoredObjectCount = 0;
+    let missingPoseCount = 0;
+
     for (const object of v2ObjectsRef.current) {
       if (!object.xrAnchor) continue;
+      anchoredObjectCount += 1;
 
       const anchorPose = frame.getPose(object.xrAnchor.anchorSpace, referenceSpace);
-      if (!anchorPose) continue;
+      if (!anchorPose || !object.anchorRelativeMatrix) {
+        object.missedAnchorPoseFrames += 1;
+        if (object.missedAnchorPoseFrames > 8) missingPoseCount += 1;
+        continue;
+      }
 
-      object.anchor.copy(
-        new THREE.Vector3().setFromMatrixPosition(
-          new THREE.Matrix4().fromArray(anchorPose.transform.matrix),
-        ),
+      object.missedAnchorPoseFrames = 0;
+      const anchorPoseMatrix = new THREE.Matrix4().fromArray(
+        anchorPose.transform.matrix,
       );
-      setV2RootTransform(object.root, object.anchor.clone().add(object.anchorOffset), {
-        widthDir: object.widthDir,
-        heightDir: object.heightDir,
-        depthDir: object.depthDir,
-      });
+      object.lastAnchorPoseMatrix = anchorPoseMatrix.clone();
+      applyAnchorPoseToObject(object, anchorPoseMatrix);
     }
+
+    if (anchoredObjectCount === 0) {
+      if (anchorTrackingStateRef.current !== "unavailable") {
+        updateAnchorTrackingState("idle");
+      }
+      return;
+    }
+
+    if (missingPoseCount > 0) {
+      updateAnchorTrackingState(
+        "recovering",
+        "Tracking paused. Move slowly and point back toward the placed product.",
+      );
+      return;
+    }
+
+    updateAnchorTrackingState(
+      "anchored",
+      anchorTrackingStateRef.current === "recovering"
+        ? "Tracking restored. The product is anchored again."
+        : undefined,
+    );
   };
 
   /**
@@ -961,21 +867,38 @@ export default function App() {
 
     const now = performance.now();
     trackViewerMotion(frame, localSpace, now);
-    placeV3InitialObjectIfNeeded();
-
     const results = frame.getHitTestResults(hitTestSource);
     const shouldShowPlacementReticle =
       flowVersionRef.current !== "v2" || v2ModeRef.current !== "edit";
 
     if (results.length === 0) {
-      hitStreakRef.current = 0;
+      missedHitFramesRef.current += 1;
+      if (
+        missedHitFramesRef.current <= 3 &&
+        surfaceSamplesRef.current.length > 0
+      ) {
+        confidenceRef.current = "medium";
+        setConfidence((previous) =>
+          previous === "medium" ? previous : "medium",
+        );
+        setReticleColor(measurementScene.reticle, "medium");
+        updateV2Anchors(frame, localSpace);
+        measurementScene.renderer.render(
+          measurementScene.scene,
+          measurementScene.camera,
+        );
+        return;
+      }
+
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
       currentHitPlaneRef.current = null;
       currentHitResultRef.current = null;
+      currentHitPoseMatrixRef.current = null;
+      surfaceSamplesRef.current = [];
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
-      setConfidence("none");
+      setConfidence((previous) => (previous === "none" ? previous : "none"));
       noteNoSurfaceFrame(now);
       updateV2Anchors(frame, localSpace);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
@@ -984,21 +907,40 @@ export default function App() {
 
     const pose = results[0].getPose(localSpace);
     if (!pose) {
-      hitStreakRef.current = 0;
+      missedHitFramesRef.current += 1;
+      if (
+        missedHitFramesRef.current <= 3 &&
+        surfaceSamplesRef.current.length > 0
+      ) {
+        confidenceRef.current = "medium";
+        setConfidence((previous) =>
+          previous === "medium" ? previous : "medium",
+        );
+        setReticleColor(measurementScene.reticle, "medium");
+        updateV2Anchors(frame, localSpace);
+        measurementScene.renderer.render(
+          measurementScene.scene,
+          measurementScene.camera,
+        );
+        return;
+      }
+
       currentHitPositionRef.current = null;
       currentHitNormalRef.current = null;
       currentHitPlaneRef.current = null;
       currentHitResultRef.current = null;
+      currentHitPoseMatrixRef.current = null;
+      surfaceSamplesRef.current = [];
       measurementScene.reticle.visible = false;
       confidenceRef.current = "none";
-      setConfidence("none");
+      setConfidence((previous) => (previous === "none" ? previous : "none"));
       noteNoSurfaceFrame(now);
       updateV2Anchors(frame, localSpace);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
       return;
     }
 
-    hitStreakRef.current += 1;
+    missedHitFramesRef.current = 0;
     const matrix = new THREE.Matrix4().fromArray(pose.transform.matrix);
     const rawPosition = new THREE.Vector3().setFromMatrixPosition(matrix);
     const detectedPlane = createMeasurementPlane(
@@ -1007,21 +949,43 @@ export default function App() {
       getPreferredPlaneKind(),
       getViewerForward(frame, localSpace),
     );
+    surfaceSamplesRef.current = appendSurfaceSample(
+      surfaceSamplesRef.current,
+      {
+        kind: detectedPlane.kind,
+        normal: detectedPlane.normal.clone(),
+        position: rawPosition.clone(),
+        quality: detectedPlane.quality,
+      },
+    );
+    const stabilizedSurface = stabilizeSurface(surfaceSamplesRef.current);
     const isHeightPhase = capturePhaseRef.current === "height";
+    const stabilizedPlane: MeasurementPlane = {
+      anchor: stabilizedSurface.position,
+      kind: detectedPlane.kind,
+      normal: stabilizedSurface.normal,
+      quality: stabilizedSurface.quality,
+    };
     const activePlane =
-      !isHeightPhase && shapePlaneRef.current ? shapePlaneRef.current : detectedPlane;
-    const cleanPosition = projectPointToPlane(rawPosition, activePlane);
+      !isHeightPhase && shapePlaneRef.current
+        ? shapePlaneRef.current
+        : stabilizedPlane;
+    const cleanPosition = projectPointToPlane(
+      stabilizedSurface.position,
+      activePlane,
+    );
 
     currentHitPositionRef.current = cleanPosition;
     currentHitNormalRef.current = activePlane.normal;
     currentHitPlaneRef.current = activePlane;
     currentHitResultRef.current = results[0] as XRHitTestResultWithAnchor;
+    currentHitPoseMatrixRef.current = matrix.clone();
     measurementScene.reticle.visible = shouldShowPlacementReticle;
     measurementScene.reticle.matrix.copy(
       createPlaneReticleMatrix(cleanPosition, activePlane),
     );
 
-    const nextConfidence = getConfidence(hitStreakRef.current, activePlane.quality);
+    const nextConfidence = stabilizedSurface.confidence;
     confidenceRef.current = nextConfidence;
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
     setReticleColor(measurementScene.reticle, nextConfidence);
@@ -1059,13 +1023,23 @@ export default function App() {
     const position = currentHitPositionRef.current;
     const activeConfidence = confidenceRef.current;
     if (!measurementScene || !position || activeConfidence === "none") {
-      setStatus("No surface detected yet. Move camera slowly.");
+      setStatus("No surface yet. Point at the wall or floor and move your phone slowly.");
       log("tap ignored: no active hit-test surface");
       return;
     }
 
+    if (activeConfidence !== "high") {
+      setStatus("Almost ready. Keep moving slowly and wait for the circle to turn green.");
+      log(`tap ignored: surface confidence ${activeConfidence}`);
+      return;
+    }
+
     if (flowVersionRef.current === "v3") {
-      void placeV3ObjectFromHit(position);
+      if (anchoredPlacementPendingRef.current) return;
+      anchoredPlacementPendingRef.current = true;
+      void placeV3ObjectFromHit(position).finally(() => {
+        anchoredPlacementPendingRef.current = false;
+      });
       return;
     }
 
@@ -1080,7 +1054,11 @@ export default function App() {
         return;
       }
 
-      void placeV2ObjectFromHit(position);
+      if (anchoredPlacementPendingRef.current) return;
+      anchoredPlacementPendingRef.current = true;
+      void placeV2ObjectFromHit(position).finally(() => {
+        anchoredPlacementPendingRef.current = false;
+      });
       return;
     }
 
@@ -1178,8 +1156,13 @@ export default function App() {
     const activePlane = currentHitPlaneRef.current;
     const position = currentHitPositionRef.current;
 
+    if (confidenceRef.current !== "high") {
+      setStatus("Keep moving slowly. Lock the wall when the circle turns green.");
+      return;
+    }
+
     if (!activePlane || !position) {
-      setStatus("No wall detected yet. Move the phone slowly across the reference wall.");
+      setStatus("No wall detected yet. Point at the wall and move your phone slowly.");
       return;
     }
 
@@ -1197,7 +1180,7 @@ export default function App() {
     v2LockedWallRef.current = cleanPlane;
     setV2WallLocked(true);
     setV2Mode("place");
-    setStatus("Reference wall locked. Now tap the floor or wall where the model should go.");
+    setStatus("Wall locked. Point where the product should go and wait for green.");
   };
 
   const rescanV2Wall = () => {
@@ -1205,7 +1188,7 @@ export default function App() {
     v2LockedWallRef.current = null;
     setV2WallLocked(false);
     setV2Mode("scanWall");
-    setStatus("Wall scan reset. Aim at the reference wall and lock it again.");
+    setStatus("Point at the wall and move slowly. Wait for green, then lock it.");
   };
 
   /**
@@ -1219,11 +1202,10 @@ export default function App() {
       setV2Mode("place");
       selectedV2ObjectIdRef.current = null;
       setSelectedV2ObjectId(null);
-      v3AutoPlacePendingRef.current = true;
       setSessionPanelOpen(false);
       setCatalogOpen(false);
       setSummaryOpen(false);
-      setStatus("Ready for another item. Tap a wall or floor, or wait for it to appear in front of you.");
+      setStatus("Ready for another item. Move slowly, wait for green, then tap.");
       return;
     }
 
@@ -1243,7 +1225,7 @@ export default function App() {
    * Create the Three.js object used by V2/V3 placement.
    *
    * It fits the product GLB into a centimeter-sized frame, adds a label, applies
-   * world-space axes, and attempts to attach an XR anchor for better stability.
+   * world-space axes, and attaches the result to a native XR anchor.
    */
   const createPlacedObject = async (
     anchor: THREE.Vector3,
@@ -1252,42 +1234,60 @@ export default function App() {
   ) => {
     const measurementScene = sceneRef.current;
     const localSpace = localSpaceRef.current;
+    const captureConfidence = confidenceRef.current;
     if (!measurementScene) return null;
+
+    const initialAnchorPoseMatrix = currentHitPoseMatrixRef.current?.clone() ?? null;
+    if (!localSpace || !hitResult?.createAnchor || !initialAnchorPoseMatrix) {
+      updateAnchorTrackingState("unavailable");
+      setStatus("Stable anchoring is unavailable. Move slowly, wait for green, and try again.");
+      return null;
+    }
+
+    const xrAnchor = await createV2XrAnchor(hitResult).catch((error) => {
+      log(`anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      return null;
+    });
+
+    if (!xrAnchor) {
+      updateAnchorTrackingState("unavailable");
+      setStatus("Android could not create a stable anchor. Keep the surface visible and try again.");
+      return null;
+    }
 
     const selectedModel = findModel(selectedModelIdRef.current);
     const dimensions = defaultV2DimensionsForModel(selectedModel);
     const root = new THREE.Group();
     const model = createV2ObjectModel(dimensions, selectedModel);
     const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions);
-    const anchorOffset =
-      flowVersionRef.current === "v2"
-        ? axes.depthDir.clone().multiplyScalar(-V2_WALL_BACK_OFFSET_METERS)
-        : new THREE.Vector3();
+    // The model is authored with its back face at local Z=0. Keeping the root
+    // directly on the reference plane makes the product sit flush on the wall.
+    const anchorOffset = new THREE.Vector3();
 
     setV2RootTransform(root, anchor.clone().add(anchorOffset), axes);
     root.name = `${flowVersionRef.current}-placed-object-${nextV2ObjectIdRef.current}`;
     root.add(model);
     root.add(label);
     measurementScene.scene.add(root);
-
-    const xrAnchor =
-      localSpace && hitResult?.createAnchor
-        ? await createV2XrAnchor(hitResult).catch((error) => {
-            log(`anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
-            return null;
-          })
-        : null;
+    root.updateMatrix();
 
     const object: V2PlacedObject = {
       id: nextV2ObjectIdRef.current,
       type: selectedModel.type,
       modelId: selectedModel.id,
+      captureConfidence,
       root,
       model,
       label,
       anchor: anchor.clone(),
       anchorOffset,
       xrAnchor,
+      anchorRelativeMatrix: createAnchorRelativeMatrix(
+        initialAnchorPoseMatrix,
+        root.matrix,
+      ),
+      lastAnchorPoseMatrix: initialAnchorPoseMatrix,
+      missedAnchorPoseFrames: 0,
       widthDir: axes.widthDir,
       heightDir: axes.heightDir,
       depthDir: axes.depthDir,
@@ -1300,24 +1300,9 @@ export default function App() {
     selectedV2ObjectIdRef.current = object.id;
     setSelectedV2ObjectId(object.id);
     setV2Mode("edit");
-    setStatus(`Item ${object.id} placed. Pinch or use controls to resize.`);
+    updateAnchorTrackingState("anchored");
+    setStatus(`Item ${object.id} anchored. You can now walk around it.`);
     return object;
-  };
-
-  const placeV3InitialObjectIfNeeded = () => {
-    const measurementScene = sceneRef.current;
-    if (
-      flowVersionRef.current !== "v3" ||
-      !v3AutoPlacePendingRef.current ||
-      !measurementScene
-    ) {
-      return;
-    }
-
-    const anchor = getPointInFrontOfCamera(measurementScene.camera, 1.25);
-    const axes = createCameraFacingPlacementAxes(measurementScene.camera);
-    v3AutoPlacePendingRef.current = false;
-    void createPlacedObject(anchor, axes);
   };
 
   const placeV3ObjectFromHit = async (position: THREE.Vector3) => {
@@ -1340,14 +1325,53 @@ export default function App() {
     const selectedObjectId = selectedV2ObjectIdRef.current;
 
     if (v2ModeRef.current === "edit" && selectedObjectId != null) {
-      updateV2ObjectTransform(selectedObjectId, (object) => ({
+      const currentObject = v2ObjectsRef.current.find(
+        (object) => object.id === selectedObjectId,
+      );
+      const nextAnchorPoseMatrix = currentHitPoseMatrixRef.current?.clone() ?? null;
+
+      if (!currentObject || !hitResult?.createAnchor || !nextAnchorPoseMatrix) {
+        updateAnchorTrackingState("unavailable");
+        setStatus("A stable anchor could not be created here. Keep scanning and try again.");
+        return;
+      }
+
+      const nextXrAnchor = await createV2XrAnchor(hitResult).catch((error) => {
+        log(`re-anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+      });
+
+      if (!nextXrAnchor) {
+        updateAnchorTrackingState("unavailable");
+        setStatus("The product could not be anchored at that spot. Keep scanning and try again.");
+        return;
+      }
+
+      currentObject.xrAnchor?.delete?.();
+      const updatedObject: V2PlacedObject = {
+        ...currentObject,
         anchor,
         anchorOffset: new THREE.Vector3(),
+        xrAnchor: nextXrAnchor,
+        anchorRelativeMatrix: null,
+        lastAnchorPoseMatrix: nextAnchorPoseMatrix,
+        missedAnchorPoseFrames: 0,
         widthDir: axes.widthDir,
         heightDir: axes.heightDir,
         depthDir: axes.depthDir,
-      }));
-      setStatus("Item moved to the detected surface.");
+      };
+      rebuildV2ObjectVisuals(updatedObject);
+      updatedObject.root.updateMatrix();
+      updatedObject.anchorRelativeMatrix = createAnchorRelativeMatrix(
+        nextAnchorPoseMatrix,
+        updatedObject.root.matrix,
+      );
+      v2ObjectsRef.current = v2ObjectsRef.current.map((object) =>
+        object.id === selectedObjectId ? updatedObject : object,
+      );
+      setV2Objects(v2ObjectsRef.current);
+      updateAnchorTrackingState("anchored");
+      setStatus("Item moved and anchored to the new surface.");
       return;
     }
 
@@ -1357,7 +1381,6 @@ export default function App() {
   const placeV2ObjectFromHit = async (position: THREE.Vector3) => {
     const measurementScene = sceneRef.current;
     const hitPlane = currentHitPlaneRef.current;
-    const localSpace = localSpaceRef.current;
     const hitResult = currentHitResultRef.current;
 
     if (!measurementScene || !hitPlane) {
@@ -1371,64 +1394,10 @@ export default function App() {
       return;
     }
 
-    const placementPlane = createCleanV2PlacementPlane(hitPlane, position);
-    if (!placementPlane) {
-      setStatus("Wall looks too slanted. Aim at a straighter wall area or tap the floor.");
-      return;
-    }
-
-    const selectedModel = findModel(selectedModelIdRef.current);
-    const type = selectedModel.type;
     const axes = createPlacementAxes(lockedWall, measurementScene.camera);
-    const dimensions = defaultV2DimensionsForModel(selectedModel);
-    const root = new THREE.Group();
-    const wallPosition = projectPointToPlane(position, placementPlane);
-    const placementOffset = axes.depthDir.clone().multiplyScalar(-V2_WALL_BACK_OFFSET_METERS);
-    setV2RootTransform(root, wallPosition.clone().add(placementOffset), axes);
-    const model = createV2ObjectModel(dimensions, selectedModel);
-    const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions);
-
-    root.name = `v2-placed-object-${nextV2ObjectIdRef.current}`;
-    root.add(model);
-    root.add(label);
-    measurementScene.scene.add(root);
-
-    const xrAnchor =
-      localSpace && hitResult?.createAnchor
-        ? await createV2XrAnchor(hitResult).catch((error) => {
-            log(`v2 anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
-            return null;
-          })
-        : null;
-
-    const object: V2PlacedObject = {
-      id: nextV2ObjectIdRef.current,
-      type,
-      modelId: selectedModel.id,
-      root,
-      model,
-      label,
-      anchor: wallPosition.clone(),
-      anchorOffset: placementOffset,
-      xrAnchor,
-      widthDir: axes.widthDir,
-      heightDir: axes.heightDir,
-      depthDir: axes.depthDir,
-      dimensions,
-    };
-
-    nextV2ObjectIdRef.current += 1;
-    v2ObjectsRef.current = [...v2ObjectsRef.current, object];
-    setV2Objects(v2ObjectsRef.current);
-    selectedV2ObjectIdRef.current = object.id;
-    setSelectedV2ObjectId(object.id);
-    setV2Mode("edit");
-    setStatus(
-      xrAnchor
-        ? `Item ${object.id} anchored. Adjust it, or tap Do Another.`
-        : `Item ${object.id} placed. Adjust it, or tap Do Another.`,
-    );
-    log(`v2 item ${object.id} placed`);
+    const wallPosition = projectPlacementToReferenceWall(position, lockedWall);
+    const object = await createPlacedObject(wallPosition, axes, hitResult);
+    if (object) log(`v2 item ${object.id} anchored`);
   };
 
   /**
@@ -1522,6 +1491,7 @@ export default function App() {
       depthDir: object.depthDir,
     };
     setV2RootTransform(object.root, object.anchor.clone().add(object.anchorOffset), axes);
+    syncObjectAnchorRelativeMatrix(object);
     const nextModel = createV2ObjectModel(object.dimensions, selectedModel);
     const nextLabel = createV2ObjectLabel(
       object.id,
@@ -1583,6 +1553,9 @@ export default function App() {
     currentObject.xrAnchor?.delete?.();
     v2ObjectsRef.current = nextObjects;
     setV2Objects(nextObjects);
+    if (!nextObjects.some((object) => object.xrAnchor)) {
+      updateAnchorTrackingState("idle");
+    }
     selectedV2ObjectIdRef.current =
       selectedV2ObjectIdRef.current === objectId
         ? nextObjects.at(-1)?.id ?? null
@@ -1642,6 +1615,7 @@ export default function App() {
       id,
       type,
       modelId: selectedModel.id,
+      captureConfidence: confidenceRef.current,
       root,
       points: pointsRef.current,
       segments: segmentsRef.current,
@@ -1741,9 +1715,9 @@ export default function App() {
     v2ObjectsRef.current = [];
     shapePlaneRef.current = null;
     v2LockedWallRef.current = null;
-    v3AutoPlacePendingRef.current = false;
     v3PinchRef.current = null;
     v3DragRef.current = null;
+    anchoredPlacementPendingRef.current = false;
     lastPlacementPositionRef.current = null;
     nextObjectIdRef.current = 1;
     nextV2ObjectIdRef.current = 1;
@@ -1755,6 +1729,8 @@ export default function App() {
     setSelectedV2ObjectId(null);
     setV2WallLocked(false);
     setV2Mode("scanWall");
+    anchorTrackingStateRef.current = "idle";
+    setAnchorTrackingState("idle");
     setReassignCategoryId(DEFAULT_MODEL.category);
     capturePhaseRef.current = "shape";
     setCapturePhase("shape");
@@ -1768,18 +1744,6 @@ export default function App() {
     setExitPromptOpen(false);
     setSummaryOpen(true);
   };
-
-  const getQuoteTransferItems = () =>
-      flowVersionRef.current === "v2" || flowVersionRef.current === "v3"
-        ? [
-            ...manualQuoteItems,
-            ...v2ObjectsRef.current
-              .map((object) => v2ObjectToQuoteTransferItem(object, findModel(object.modelId)))
-              .filter((item): item is ArQuoteTransferItem => Boolean(item)),
-          ]
-        : objectsRef.current
-            .map((object) => objectToQuoteTransferItem(object, findModel(object.modelId)))
-            .filter((item): item is ArQuoteTransferItem => Boolean(item));
 
   const requestExitSession = () => {
     markUiInteraction();
@@ -1797,23 +1761,7 @@ export default function App() {
 
   const saveQuoteForLaterAndExit = () => {
     markUiInteraction();
-
-    const items = getQuoteTransferItems();
-    if (items.length > 0) {
-      try {
-        localStorage.setItem(
-          SAVED_AR_QUOTE_KEY,
-          JSON.stringify({
-            source: "sog-ar",
-            version: 1,
-            createdAt: new Date().toISOString(),
-            items,
-          } satisfies ArQuoteTransferPayload),
-        );
-      } catch {
-        setStatus("Could not save quote items on this device.");
-      }
-    }
+    if (!saveQuoteDraft()) return;
 
     setExitPromptOpen(false);
     void endSession().then(navigateToFrontendHome);
@@ -1821,12 +1769,7 @@ export default function App() {
 
   const discardQuoteAndExit = () => {
     markUiInteraction();
-    try {
-      localStorage.removeItem(SAVED_AR_QUOTE_KEY);
-    } catch {
-      void 0;
-    }
-    setManualQuoteItems([]);
+    clearQuoteDraft();
     setExitPromptOpen(false);
     void endSession().then(navigateToFrontendHome);
   };
@@ -1881,6 +1824,8 @@ export default function App() {
     currentHitNormalRef.current = null;
     currentHitPlaneRef.current = null;
     currentHitResultRef.current = null;
+    currentHitPoseMatrixRef.current = null;
+    anchoredPlacementPendingRef.current = false;
     lastPlacementPositionRef.current = null;
     noSurfaceSinceRef.current = null;
     lastViewerPositionRef.current = null;
@@ -1888,8 +1833,30 @@ export default function App() {
     movementCoachCooldownUntilRef.current = 0;
     showArGuideRef.current = false;
     showMovementCoachRef.current = false;
-    hitStreakRef.current = 0;
+    missedHitFramesRef.current = 0;
+    surfaceSamplesRef.current = [];
+    anchorTrackingStateRef.current = "idle";
+    setAnchorTrackingState("idle");
     if (sceneRef.current) sceneRef.current.reticle.visible = false;
+  };
+
+  const editSummaryItem = (id: number) => {
+    if (id <= 0) return;
+
+    if (isPlacementFlow) {
+      const object = v2ObjectsRef.current.find((candidate) => candidate.id === id);
+      if (object) {
+        selectV2Object(object);
+        setSummaryOpen(false);
+      }
+      return;
+    }
+
+    const object = objectsRef.current.find((candidate) => candidate.id === id);
+    if (object) {
+      selectCompletedObject(object);
+      setSummaryOpen(false);
+    }
   };
 
   return (
@@ -1954,7 +1921,6 @@ export default function App() {
             selectedModel={selectedModel}
             selectedModelId={selectedModelId}
             searchQuery={productSearch}
-            isV2={isV2}
             catalogStatus={catalogStatus}
             activeObjectCount={activeObjectCount}
             relatedModels={relatedShopModels}
@@ -1974,117 +1940,14 @@ export default function App() {
         )}
 
         {isActive && (
-          <>
-            {showArGuide && (
-              <section
-                className="ar-guide-backdrop"
-                data-xr-ui="true"
-                onPointerDown={markUiInteraction}
-              >
-                <Card className="ar-guide-card">
-                  <CardContent className="space-y-4 p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="eyebrow">Quick guide</p>
-                        <h2 className="mt-2 text-2xl font-semibold text-white">
-                          How to measure
-                        </h2>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full text-white hover:bg-white/10"
-                        aria-label="Close guide"
-                        onClick={dismissArGuide}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-
-                    <div className="guide-step-list">
-                      <article>
-                        <Move3D className="size-5" />
-                        <span>
-                          <strong>Scan slowly</strong>
-                          Move the phone side to side until the reticle turns yellow
-                          or green.
-                        </span>
-                      </article>
-                      <article>
-                        <ScanLine className="size-5" />
-                        <span>
-                          <strong>{isV3 ? "Place naturally" : isV2 ? "Lock the wall" : "Tap the outline"}</strong>
-                          {isV3
-                            ? "The model appears in front first. Tap a wall or floor to move and orient it."
-                            : isV2
-                            ? "Aim at the reference wall first, then tap or press Lock Wall."
-                            : "Place points along the shape. Lines will snap straight or 90-degree where possible."}
-                        </span>
-                      </article>
-                      <article>
-                        <Ruler className="size-5" />
-                        <span>
-                          <strong>{isPlacementFlow ? "Adjust size" : "Finish, then height"}</strong>
-                          {isV3
-                            ? "Pinch the screen to resize. Width and height labels update with the model."
-                            : isV2
-                            ? "After the wall is locked, tap to place and use the size controls."
-                            : "Press Finish Shape, then tap the height point for the item."}
-                        </span>
-                      </article>
-                      <article>
-                        <MousePointerClick className="size-5" />
-                        <span>
-                          <strong>Keep controls separate</strong>
-                          Use the bottom buttons for undo, models, objects, and done.
-                        </span>
-                      </article>
-                    </div>
-
-                    <div className="ar-guide-note">
-                      {isV3
-                        ? "Tip: tap any detected wall or floor to move the selected model. Use Do Another for multiple items."
-                        : isV2
-                        ? "Tip: the wall is only the reference. After locking it, tap the floor or wall where the model should sit."
-                        : "Tip: start with the bottom edge, then trace the remaining outline. For best results, keep the phone moving gently until the surface locks."}
-                    </div>
-
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="w-full rounded-2xl"
-                      onClick={dismissArGuide}
-                    >
-                      Start scanning
-                    </Button>
-                  </CardContent>
-                </Card>
-              </section>
-            )}
-
-            {showMovementCoach && !showArGuide && (
-              <section
-                className="movement-coach"
-                data-xr-ui="true"
-                onPointerDown={markUiInteraction}
-              >
-                <div className="movement-phone" aria-hidden="true">
-                  <span className="movement-arrow movement-arrow--left" />
-                  <Smartphone className="movement-phone-icon" />
-                  <span className="movement-arrow movement-arrow--right" />
-                </div>
-                <div>
-                  <p className="eyebrow">Need a surface</p>
-                  <h2>Move your phone slowly</h2>
-                  <p>
-                    Pan side to side and slightly up or down. This disappears as
-                    soon as movement is detected.
-                  </p>
-                </div>
-              </section>
-            )}
-          </>
+          <ArGuidanceOverlays
+            isV2={isV2}
+            showGuide={showArGuide}
+            showMovementCoach={showMovementCoach}
+            anchorTrackingState={anchorTrackingState}
+            onPointerDown={markUiInteraction}
+            onDismissGuide={dismissArGuide}
+          />
         )}
 
         {isActive && isPlacementFlow && v2Mode === "edit" && selectedV2Object && (
@@ -2136,13 +1999,23 @@ export default function App() {
             <button
               type="button"
               className="ar-capture-button"
+              disabled={
+                ((isV2 && v2Mode === "scanWall") ||
+                  (isV3 && v2Mode === "place")) &&
+                confidence !== "high"
+              }
               onClick={() => {
                 if (!isPlacementFlow) {
                   finishShape();
                   return;
                 }
 
-                if (isV3 || v2Mode === "edit") {
+                if (isV3 && v2Mode === "place") {
+                  placePointFromHit();
+                  return;
+                }
+
+                if (v2Mode === "edit") {
                   doAnotherV2Object();
                   return;
                 }
@@ -2178,1893 +2051,89 @@ export default function App() {
           !summaryOpen &&
           !showArGuide &&
           !showMovementCoach && (
-            <section
-              className="v2-size-panel"
-              data-xr-ui="true"
+            <PlacementEditor
+              object={selectedV2Object}
+              modelLabel={findModel(selectedV2Object.modelId).label}
+              onClose={() => setSelectedV2ObjectId(null)}
+              onChangeModel={() => {
+                setShopDetailModel(null);
+                setCatalogOpen(true);
+              }}
+              onAddProduct={doAnotherV2Object}
+              onDimensionsChange={updateV2ObjectDimensions}
+              onTransform={updateV2ObjectTransform}
               onPointerDown={markUiInteraction}
-            >
-              <div className="v2-size-panel-actions">
-                <button type="button" onClick={() => setSelectedV2ObjectId(null)}>
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShopDetailModel(null);
-                    setCatalogOpen(true);
-                  }}
-                >
-                  Change Model
-                </button>
-                <button type="button" onClick={doAnotherV2Object}>
-                  Add New Product
-                </button>
-              </div>
-              <div className="v2-size-panel-header">
-                <div>
-                  <small>Glass</small>
-                  <strong>{findModel(selectedV2Object.modelId).label}</strong>
-                </div>
-                <span>
-                  {selectedV2Object.dimensions.segmentsCm[0]}x{selectedV2Object.dimensions.heightCm}
-                </span>
-              </div>
-            <V2DimensionControl
-              label="Height"
-              value={selectedV2Object.dimensions.heightCm}
-              onChange={(value) =>
-                updateV2ObjectDimensions(selectedV2Object.id, {
-                  heightCm: value,
-                })
-              }
             />
-            <V2DimensionControl
-              label="Width"
-              value={selectedV2Object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM}
-              onChange={(value) =>
-                updateV2ObjectDimensions(selectedV2Object.id, {
-                  segmentsCm: [value],
-                })
-              }
-            />
-            <div className="v2-transform-grid">
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Rotate left"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    rotateV2ObjectAxes(object, V2_ROTATE_RADIANS),
-                  )
-                }
-              >
-                <RotateCcwSquare className="size-4" />
-                Rotate L
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Rotate right"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    rotateV2ObjectAxes(object, -V2_ROTATE_RADIANS),
-                  )
-                }
-              >
-                <RotateCwSquare className="size-4" />
-                Rotate R
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move left"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.widthDir, -V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <ChevronsLeft className="size-4" />
-                Left
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move right"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.widthDir, V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <ChevronsRight className="size-4" />
-                Right
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move up"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.heightDir, V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <ChevronsUp className="size-4" />
-                Up
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move down"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.heightDir, -V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <ChevronsDown className="size-4" />
-                Down
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move inward"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.depthDir, -V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <Minus className="size-4" />
-                In
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Move outward"
-                onClick={() =>
-                  updateV2ObjectTransform(selectedV2Object.id, (object) =>
-                    nudgeV2Object(object, object.depthDir, V2_NUDGE_METERS),
-                  )
-                }
-              >
-                <Plus className="size-4" />
-                Out
-              </Button>
-            </div>
-          </section>
-        )}
+          )}
 
-        <Drawer open={isActive && catalogOpen} onOpenChange={setCatalogOpen}>
-          <DrawerContent
-            className="grid gap-4 ar-product-drawer"
-            data-xr-ui="true"
-            onPointerDown={markUiInteraction}
-          >
-            <DrawerHeader className="ar-drawer-header">
-              <div>
-                <p className="ar-drawer-eyebrow">AR product library</p>
-                <DrawerTitle>
-                  {shopDetailModel ? shopDetailModel.label : "Discover products"}
-                </DrawerTitle>
-                <DrawerDescription>
-                  {shopDetailModel
-                    ? "Review details, variants, then select it for AR."
-                    : "Pick the model before placing it."}
-                </DrawerDescription>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="ar-drawer-close"
-                onClick={() => {
-                  if (shopDetailModel) {
-                    setShopDetailModel(null);
-                    return;
-                  }
-                  setCatalogOpen(false);
-                }}
-              >
-                {shopDetailModel ? (
-                  <ArrowLeft className="size-5" />
-                ) : (
-                  <X className="size-5" />
-                )}
-              </Button>
-            </DrawerHeader>
-            {shopDetailModel ? (
-              <ArProductDrawerDetail
-                model={shopDetailModel}
-                relatedModels={relatedShopModels}
-                onSelect={(model) => {
-                  if (selectedV2Object) {
-                    changeV2ObjectModel(selectedV2Object.id, model);
-                    setCatalogOpen(false);
-                  } else {
-                    selectModel(model, true);
-                  }
-                  setShopDetailModel(null);
-                }}
-                onOpenDetail={(model) => setShopDetailModel(model)}
-              />
-            ) : (
-              <>
-                <label className="ar-drawer-search">
-                  <ScanLine className="size-5" />
-                  <input
-                    value={productSearch}
-                    onChange={(event) => setProductSearch(event.target.value)}
-                    placeholder="Search for product"
-                  />
-                </label>
-                <ModelCatalogPanel
-                  categories={modelCategories}
-                  models={modelCatalog}
-                  activeCategoryId={selectedCategoryId}
-                  selectedModelId={selectedModelId}
-                  onCategoryChange={setSelectedCategoryId}
-                  onSelectModel={(model) => {
-                    if (selectedV2Object) {
-                      changeV2ObjectModel(selectedV2Object.id, model);
-                      setCatalogOpen(false);
-                      setShopDetailModel(null);
-                    } else {
-                      selectModel(model);
-                      setShopDetailModel(model);
-                    }
-                  }}
-                  searchQuery={productSearch}
-                  compact
-                  shop
-                />
-              </>
-            )}
-          </DrawerContent>
-        </Drawer>
+        <ProductCatalogDrawer
+          open={isActive && catalogOpen}
+          detailModel={shopDetailModel}
+          relatedModels={relatedShopModels}
+          selectedObject={selectedV2Object}
+          categories={modelCategories}
+          models={modelCatalog}
+          activeCategoryId={selectedCategoryId}
+          selectedModelId={selectedModelId}
+          searchQuery={productSearch}
+          onOpenChange={setCatalogOpen}
+          onDetailChange={setShopDetailModel}
+          onCategoryChange={setSelectedCategoryId}
+          onSearchChange={setProductSearch}
+          onSelectModel={selectModel}
+          onChangeObjectModel={changeV2ObjectModel}
+          onPointerDown={markUiInteraction}
+        />
 
         {isActive && sessionPanelOpen && (
-          <aside
-            className={`session-panel ${isActive ? "session-panel--compact" : ""}`}
-            data-xr-ui="true"
+          <SessionObjectsPanel
+            objects={objects}
+            placementObjects={v2Objects}
+            isPlacementFlow={isPlacementFlow}
+            selectedObject={selectedObject}
+            selectedPlacementObject={selectedV2Object}
+            selectedObjectId={selectedObjectId}
+            selectedPlacementObjectId={selectedV2ObjectId}
+            categories={modelCategories}
+            models={modelCatalog}
+            reassignCategoryId={reassignCategoryId}
+            findModel={findModel}
+            onClose={() => setSessionPanelOpen(false)}
             onPointerDown={markUiInteraction}
-          >
-            <div className="session-panel-header">
-              <div>
-                <h2>Session objects</h2>
-                <p>{activeObjectCount} captured</p>
-              </div>
-              {isActive && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full text-slate-100"
-                  onClick={() => setSessionPanelOpen(false)}
-                >
-                  <X className="size-4" />
-                  Close
-                </Button>
-              )}
-            </div>
-            <div className="object-list">
-              {activeObjectCount === 0 ? (
-                <div className="empty">Finished objects will appear here.</div>
-              ) : isPlacementFlow ? (
-                v2Objects.map((object) => (
-                  <article
-                    key={object.id}
-                    className={selectedV2ObjectId === object.id ? "selected" : ""}
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="object-select-button"
-                      onClick={() => selectV2Object(object)}
-                    >
-                      <span>
-                        <strong>{`Item ${object.id}`}</strong>
-                        <em>{findModel(object.modelId).label}</em>
-                        <small>{formatV2Dimensions(object.dimensions)}</small>
-                      </span>
-                      <i style={{ background: OBJECT_TYPES[object.type].color }} />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="object-delete-button"
-                      onClick={() => deleteV2Object(object.id)}
-                    >
-                      <Trash2 className="size-4" />
-                      Delete
-                    </Button>
-                  </article>
-                ))
-              ) : (
-                objects.map((object) => (
-                  <article
-                    key={object.id}
-                    className={selectedObjectId === object.id ? "selected" : ""}
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="object-select-button"
-                      onClick={() => selectCompletedObject(object)}
-                    >
-                      <span>
-                        <strong>{`Item ${object.id}`}</strong>
-                        <em>{findModel(object.modelId).label}</em>
-                        <small>{formatDimensions(object.dimensions)}</small>
-                      </span>
-                      <i style={{ background: OBJECT_TYPES[object.type].color }} />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="object-delete-button"
-                      onClick={() => deleteCompletedObject(object.id)}
-                    >
-                      <Trash2 className="size-4" />
-                      Delete
-                    </Button>
-                  </article>
-                ))
-              )}
-            </div>
-
-            {isPlacementFlow && selectedV2Object && (
-              <div className="object-model-editor">
-                <div className="object-model-editor-header">
-                  <div>
-                    <p className="eyebrow">Change Displayed Model</p>
-                    <strong>{`Item ${selectedV2Object.id}`}</strong>
-                  </div>
-                  <span>{findModel(selectedV2Object.modelId).label}</span>
-                </div>
-                <ModelCatalogPanel
-                  categories={modelCategories}
-                  models={modelCatalog}
-                  activeCategoryId={reassignCategoryId}
-                  selectedModelId={selectedV2Object.modelId}
-                  onCategoryChange={setReassignCategoryId}
-                  onSelectModel={(model) =>
-                    changeV2ObjectModel(selectedV2Object.id, model)
-                  }
-                  compact
-                />
-              </div>
-            )}
-
-            {selectedObject && (
-              <div className="object-model-editor">
-                <div className="object-model-editor-header">
-                  <div>
-                    <p className="eyebrow">Change Displayed Model</p>
-                    <strong>{`Item ${selectedObject.id}`}</strong>
-                  </div>
-                  <span>{findModel(selectedObject.modelId).label}</span>
-                </div>
-                <ModelCatalogPanel
-                  categories={modelCategories}
-                  models={modelCatalog}
-                  activeCategoryId={reassignCategoryId}
-                  selectedModelId={selectedObject.modelId}
-                  onCategoryChange={setReassignCategoryId}
-                  onSelectModel={(model) =>
-                    changeCompletedObjectModel(selectedObject.id, model)
-                  }
-                  compact
-                />
-              </div>
-            )}
-          </aside>
+            onSelectObject={selectCompletedObject}
+            onSelectPlacementObject={selectV2Object}
+            onDeleteObject={deleteCompletedObject}
+            onDeletePlacementObject={deleteV2Object}
+            onCategoryChange={setReassignCategoryId}
+            onChangeObjectModel={changeCompletedObjectModel}
+            onChangePlacementObjectModel={changeV2ObjectModel}
+          />
         )}
 
-        <Drawer open={summaryOpen} onOpenChange={setSummaryOpen}>
-          <DrawerContent
-            className="grid gap-4 ar-quote-drawer"
-            data-xr-ui="true"
-            onPointerDown={markUiInteraction}
-          >
-            <DrawerHeader className="ar-drawer-header">
-              <div>
-                <p className="ar-drawer-eyebrow">Project estimate</p>
-                <DrawerTitle>Quote Summary</DrawerTitle>
-                <DrawerDescription>
-                  Tap an AR item to go back and modify it.
-                </DrawerDescription>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="ar-drawer-close"
-                onClick={() => setSummaryOpen(false)}
-              >
-                <X className="size-5" />
-              </Button>
-            </DrawerHeader>
+        <QuoteSummaryDrawer
+          open={summaryOpen}
+          items={summaryQuoteItems}
+          estimatedTotal={summaryEstimatedTotal}
+          draftState={quoteDraftState}
+          onOpenChange={setSummaryOpen}
+          onPointerDown={markUiInteraction}
+          onEditItem={editSummaryItem}
+          onSaveDraft={() => {
+            markUiInteraction();
+            saveQuoteDraft();
+          }}
+          onProceed={proceedToQuoteRequest}
+        />
 
-            <div className="summary-card">
-              <div className="summary-list">
-                {summaryQuoteItems.length === 0 ? (
-                  <div className="summary-empty">No objects captured yet.</div>
-                ) : (
-                  summaryQuoteItems.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      className="summary-item-button"
-                      onClick={() => {
-                        if (item.id > 0 && isPlacementFlow) {
-                          const object = v2ObjectsRef.current.find(
-                            (candidate) => candidate.id === item.id,
-                          );
-                          if (object) {
-                            selectV2Object(object);
-                            setSummaryOpen(false);
-                          }
-                          return;
-                        }
-
-                        if (item.id > 0) {
-                          const object = objectsRef.current.find(
-                            (candidate) => candidate.id === item.id,
-                          );
-                          if (object) {
-                            selectCompletedObject(object);
-                            setSummaryOpen(false);
-                          }
-                        }
-                      }}
-                    >
-                      <span className="summary-item-copy">
-                        <strong>{item.label}</strong>
-                        <small>{item.id > 0 ? "AR measured item" : "Selected product"}</small>
-                        <p>{item.dimensionsText}</p>
-                        <p>1 pc</p>
-                      </span>
-                      <strong className="summary-item-price">
-                        {item.price == null
-                          ? "Price pending"
-                          : formatQuoteCurrency(item.price)}
-                      </strong>
-                    </button>
-                  ))
-                )}
-              </div>
-
-              <div className="summary-total">
-                <strong>Estimated Total</strong>
-                <span>{formatQuoteCurrency(summaryEstimatedTotal)}</span>
-              </div>
-
-              <div className="summary-actions">
-                <Button
-                  type="button"
-                  onClick={proceedToQuoteRequest}
-                  disabled={summaryQuoteItems.length === 0}
-                >
-                  Book an ocular visit
-                </Button>
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
-
-        <Drawer open={exitPromptOpen} onOpenChange={setExitPromptOpen}>
-          <DrawerContent
-            className="grid gap-4 ar-exit-drawer"
-            data-xr-ui="true"
-            onPointerDown={markUiInteraction}
-          >
-            <DrawerHeader className="ar-drawer-header">
-              <div>
-                <p className="ar-drawer-eyebrow">Before you leave</p>
-                <DrawerTitle>Keep your quote items?</DrawerTitle>
-                <DrawerDescription>
-                  You have {summaryQuoteItems.length} item
-                  {summaryQuoteItems.length === 1 ? "" : "s"} in this AR session.
-                </DrawerDescription>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="ar-drawer-close"
-                onClick={() => setExitPromptOpen(false)}
-              >
-                <X className="size-5" />
-              </Button>
-            </DrawerHeader>
-
-            <div className="ar-exit-card">
-              <div className="ar-exit-icon" aria-hidden="true">
-                <BookmarkCheck className="size-5" />
-              </div>
-              <div>
-                <strong>Save for later</strong>
-                <p>
-                  Keep these AR quote items on this device and return to the main site.
-                </p>
-              </div>
-              <div className="ar-exit-actions">
-                <Button type="button" onClick={saveQuoteForLaterAndExit}>
-                  Save for later
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={discardQuoteAndExit}
-                >
-                  Discard and Exit
-                </Button>
-              </div>
-            </div>
-          </DrawerContent>
-        </Drawer>
+        <ExitPromptDrawer
+          open={exitPromptOpen}
+          itemCount={summaryQuoteItems.length}
+          onOpenChange={setExitPromptOpen}
+          onPointerDown={markUiInteraction}
+          onSave={saveQuoteForLaterAndExit}
+          onDiscard={discardQuoteAndExit}
+        />
       </div>
     </main>
   );
-}
-
-function getConfidence(
-  streak: number,
-  planeQuality: MeasurementPlane["quality"] = "stable",
-): ReticleConfidence {
-  if (streak < 8) return "weak";
-  if (planeQuality === "slanted") return "medium";
-  if (streak < 24) return "medium";
-  return "high";
-}
-
-interface V2PlacementAxes {
-  widthDir: THREE.Vector3;
-  heightDir: THREE.Vector3;
-  depthDir: THREE.Vector3;
-}
-
-function createPlacementAxes(
-  plane: MeasurementPlane,
-  camera: THREE.Camera,
-): V2PlacementAxes {
-  const worldUp = new THREE.Vector3(0, 1, 0);
-  const normal = plane.normal
-    .clone()
-    .addScaledVector(worldUp, -plane.normal.dot(worldUp))
-    .normalize();
-
-  if (plane.kind === "wall" && normal.lengthSq() > 0.0001) {
-    const cameraPosition = new THREE.Vector3();
-    camera.getWorldPosition(cameraPosition);
-    const cameraDirection = cameraPosition.sub(plane.anchor);
-    if (normal.dot(cameraDirection) < 0) {
-      normal.multiplyScalar(-1);
-    }
-
-    const heightDir = worldUp.clone();
-    const widthDir = new THREE.Vector3().crossVectors(heightDir, normal).normalize();
-    return {
-      widthDir,
-      heightDir,
-      depthDir: normal,
-    };
-  }
-
-  const cameraForward = new THREE.Vector3();
-  camera.getWorldDirection(cameraForward);
-  const depthDir = cameraForward
-    .clone()
-    .setY(0)
-    .multiplyScalar(-1);
-
-  if (depthDir.lengthSq() < 0.0001) {
-    depthDir.set(0, 0, 1);
-  }
-
-  depthDir.normalize();
-  const widthDir = new THREE.Vector3().crossVectors(worldUp, depthDir).normalize();
-
-  return {
-    widthDir,
-    heightDir: worldUp,
-    depthDir,
-  };
-}
-
-function createCleanV2WallPlane(
-  plane: MeasurementPlane,
-  anchor: THREE.Vector3,
-): MeasurementPlane | null {
-  const horizontalNormal = plane.normal.clone();
-
-  if (Math.abs(horizontalNormal.y) > V2_MAX_WALL_NORMAL_Y) {
-    return null;
-  }
-
-  horizontalNormal.y = 0;
-
-  if (horizontalNormal.lengthSq() < 0.0001) {
-    return null;
-  }
-
-  return {
-    anchor: anchor.clone(),
-    kind: "wall",
-    normal: horizontalNormal.normalize(),
-    quality: "stable",
-  };
-}
-
-function createCleanV2PlacementPlane(
-  plane: MeasurementPlane,
-  anchor: THREE.Vector3,
-): MeasurementPlane | null {
-  if (plane.kind === "floor") {
-    return copyMeasurementPlane(plane, anchor);
-  }
-
-  return createCleanV2WallPlane(plane, anchor);
-}
-
-function setV2RootTransform(
-  root: THREE.Group,
-  anchor: THREE.Vector3,
-  axes: V2PlacementAxes,
-) {
-  root.position.copy(anchor);
-  root.quaternion.setFromRotationMatrix(
-    new THREE.Matrix4().makeBasis(
-      axes.widthDir.clone().normalize(),
-      axes.heightDir.clone().normalize(),
-      axes.depthDir.clone().normalize(),
-    ),
-  );
-}
-
-async function createV2XrAnchor(
-  hitResult: XRHitTestResultWithAnchor,
-) {
-  return hitResult.createAnchor?.() ?? null;
-}
-
-function defaultV2DimensionsForModel(
-  model: ModelDefinition,
-): V2PlacedObject["dimensions"] {
-  const depth =
-    model.type === "cabinet"
-      ? 45
-      : model.type === "door" || model.type === "window"
-        ? 8
-        : V2_DEFAULT_DEPTH_CM;
-
-  return normalizeV2Dimensions({
-    segmentsCm: [model.defaultWidthCm ?? (model.type === "door" ? 80 : V2_DEFAULT_WIDTH_CM)],
-    heightCm:
-      model.defaultHeightCm ??
-      (model.type === "door" ? 200 : model.type === "window" ? 120 : V2_DEFAULT_HEIGHT_CM),
-    depthCm: depth,
-  });
-}
-
-function normalizeV2Dimensions(
-  dimensions: V2PlacedObject["dimensions"],
-): V2PlacedObject["dimensions"] {
-  return {
-    segmentsCm: [clampDimension(dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM, 20, 600)],
-    heightCm: clampDimension(dimensions.heightCm, 20, 400),
-    depthCm: clampDimension(dimensions.depthCm, 2, 180),
-  };
-}
-
-function clampDimension(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, Math.round(value)));
-}
-
-function formatV2Dimensions(dimensions: V2PlacedObject["dimensions"]) {
-  return `${dimensions.segmentsCm[0]} x ${dimensions.heightCm} x ${dimensions.depthCm} cm`;
-}
-
-function formatQuoteDimensions(widthCm: number, heightCm: number) {
-  return `${formatMeters(widthCm)} x ${formatMeters(heightCm)}`;
-}
-
-function transferItemToSummaryQuoteItem(
-  item: ArQuoteTransferItem,
-  index: number,
-): SummaryQuoteItem {
-  return {
-    id: -index - 1,
-    label: item.label,
-    description: item.description,
-    dimensionsText: formatQuoteDimensions(item.widthCm, item.heightCm),
-    price: item.price ?? null,
-  };
-}
-
-function formatMeters(valueCm: number) {
-  const meters = valueCm / 100;
-  const formatted = new Intl.NumberFormat("en-PH", {
-    maximumFractionDigits: 2,
-  }).format(meters);
-
-  return `${formatted}m`;
-}
-
-function estimateQuotePrice(
-  widthCm: number,
-  heightCm: number,
-  model: ModelDefinition,
-) {
-  if (model.price == null) return null;
-
-  const unit = model.unit?.toLowerCase() ?? "";
-  if (unit.includes("sqm") || unit.includes("sq m")) {
-    return Math.round((widthCm / 100) * (heightCm / 100) * model.price);
-  }
-
-  return Math.round(model.price);
-}
-
-function formatQuoteCurrency(value: number) {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function nudgeV2Object(
-  object: V2PlacedObject,
-  axis: THREE.Vector3,
-  distance: number,
-) {
-  const offsetKey = object.xrAnchor ? "anchorOffset" : "anchor";
-
-  return {
-    [offsetKey]: object[offsetKey]
-      .clone()
-      .add(axis.clone().normalize().multiplyScalar(distance)),
-  };
-}
-
-function rotateV2ObjectAxes(object: V2PlacedObject, radians: number) {
-  const rotation = new THREE.Quaternion().setFromAxisAngle(
-    object.heightDir.clone().normalize(),
-    radians,
-  );
-
-  return {
-    widthDir: object.widthDir.clone().applyQuaternion(rotation).normalize(),
-    depthDir: object.depthDir.clone().applyQuaternion(rotation).normalize(),
-  };
-}
-
-function v3DragDistancePerPixel(object: V2PlacedObject) {
-  const widthMeters = (object.dimensions.segmentsCm[0] ?? V2_DEFAULT_WIDTH_CM) / 100;
-  const heightMeters = object.dimensions.heightCm / 100;
-  const sizeFactor = Math.max(widthMeters, heightMeters, 1);
-
-  return THREE.MathUtils.clamp(sizeFactor / 650, 0.0015, 0.006);
-}
-
-function V2DimensionControl({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div className="v2-dimension-control">
-      <span>{label}</span>
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={`Decrease ${label}`}
-          onClick={() => onChange(Math.max(5, value - 5))}
-        >
-          <Minus className="size-4" />
-        </Button>
-        <strong>{value} cm</strong>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={`Increase ${label}`}
-          onClick={() => onChange(value + 5)}
-        >
-          <Plus className="size-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function DirectArEntry({
-  selectedModel,
-  catalogStatus,
-  onStartSession,
-}: {
-  selectedModel: ModelDefinition;
-  catalogStatus: string;
-  onStartSession: () => void;
-}) {
-  return (
-    <section className="direct-ar-entry">
-      <div className="direct-ar-card">
-        <span className="direct-ar-eyebrow">SOG AR preview</span>
-        <h1>Place products in your space.</h1>
-        <p>
-          Start AR now. Products, quote items, and adjustments are available inside
-          the AR toolbar.
-        </p>
-        <div className="direct-ar-selected">
-          <Box className="size-5" />
-          <span>{selectedModel.label}</span>
-        </div>
-        <button type="button" onClick={onStartSession}>
-          <Play className="size-5" />
-          Start AR
-        </button>
-        <small>{catalogStatus}</small>
-      </div>
-    </section>
-  );
-}
-
-function ArProductDrawerDetail({
-  model,
-  relatedModels,
-  onSelect,
-  onOpenDetail,
-}: {
-  model: ModelDefinition;
-  relatedModels: ModelDefinition[];
-  onSelect: (model: ModelDefinition) => void;
-  onOpenDetail: (model: ModelDefinition) => void;
-}) {
-  const images = drawerProductImages(model);
-  const [selectedImage, setSelectedImage] = useState(images[0] ?? null);
-
-  useEffect(() => {
-    setSelectedImage(images[0] ?? null);
-  }, [model.id, images[0]]);
-
-  return (
-    <div className="ar-product-detail">
-      <div className="ar-product-hero">
-        {selectedImage ? (
-          <ArCatalogImage src={selectedImage} />
-        ) : (
-          <Box className="size-14 text-slate-400" />
-        )}
-      </div>
-
-      {images.length > 1 && (
-        <div className="ar-product-thumbs">
-          {images.slice(0, 5).map((image) => (
-            <button
-              type="button"
-              key={normalizeCatalogAssetUrl(image)}
-              className={image === selectedImage ? "selected" : ""}
-              onClick={() => setSelectedImage(image)}
-            >
-              <ArCatalogImage src={image} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="ar-product-copy">
-        <div>
-          <p>{OBJECT_TYPES[model.type].label}</p>
-          <h3>{model.label}</h3>
-        </div>
-        {model.defaultWidthCm && model.defaultHeightCm && (
-          <strong>{model.defaultWidthCm}x{model.defaultHeightCm}</strong>
-        )}
-      </div>
-      <p className="ar-product-description">{model.description}</p>
-
-      {model.variants?.length ? (
-        <div className="ar-product-section">
-          <h4>Variants</h4>
-          <div className="ar-variant-list">
-            {model.variants.slice(0, 6).map((variant) => {
-              const variantModel = variantToModel(model, variant);
-
-              return (
-                <button
-                  type="button"
-                  key={variant.id}
-                  onClick={() => onOpenDetail(variantModel)}
-                >
-                  {variant.thumbnail ? (
-                    <ArCatalogImage src={variant.thumbnail} />
-                  ) : (
-                    <Box className="size-7 text-white" />
-                  )}
-                  <span>
-                    <strong>{variant.label}</strong>
-                    <small>
-                      {[variant.widthCm, variant.heightCm].filter(Boolean).join("x")}
-                    </small>
-                  </span>
-                  <ChevronsRight className="size-5" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      {relatedModels.length > 0 && (
-        <div className="ar-product-section">
-          <h4>Related products</h4>
-          <div className="ar-related-list">
-            {relatedModels.map((relatedModel) => (
-              <button
-                type="button"
-                key={relatedModel.id}
-                onClick={() => onOpenDetail(relatedModel)}
-              >
-                {relatedModel.thumbnail ? (
-                  <ArCatalogImage src={relatedModel.thumbnail} />
-                ) : (
-                  <Box className="size-9 text-slate-400" />
-                )}
-                <strong>{relatedModel.label}</strong>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <Button
-        type="button"
-        size="lg"
-        className="h-12 rounded-xl bg-[#162d4a] text-sm font-semibold text-white hover:bg-[#315b7d]"
-        onClick={() => onSelect(model)}
-      >
-        Select
-      </Button>
-    </div>
-  );
-}
-
-function drawerProductImages(model: ModelDefinition) {
-  const images = [
-    model.thumbnail,
-    ...(model.images ?? []),
-    ...(model.variants?.map((variant) => variant.thumbnail) ?? []),
-  ].filter((image): image is string => Boolean(image));
-
-  return [...new Map(images.map((image) => [normalizeCatalogAssetUrl(image), image])).values()];
-}
-
-function ArCatalogImage({ src, className }: { src: string; className?: string }) {
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-
-  if (failed) {
-    return (
-      <span className={cn("ar-catalog-image-fallback", className)} aria-hidden="true">
-        <Box className="size-8" />
-      </span>
-    );
-  }
-
-  return (
-    <img
-      src={normalizeCatalogAssetUrl(src)}
-      alt=""
-      className={className}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-function variantToModel(
-  parent: ModelDefinition,
-  variant: ModelVariantDefinition,
-): ModelDefinition {
-  return {
-    ...parent,
-    id: `${parent.id}-${variant.id}`,
-    label: variant.label || parent.label,
-    description:
-      variant.widthCm && variant.heightCm
-        ? `${parent.label} variant sized ${variant.widthCm} x ${variant.heightCm} cm.`
-        : parent.description,
-    thumbnail: variant.thumbnail ?? parent.thumbnail ?? null,
-    images: variant.thumbnail ? [variant.thumbnail] : parent.images,
-    variants: [],
-    defaultWidthCm: variant.widthCm ?? parent.defaultWidthCm ?? null,
-    defaultHeightCm: variant.heightCm ?? parent.defaultHeightCm ?? null,
-    price: variant.price ?? parent.price ?? null,
-    unit: variant.price == null ? parent.unit : null,
-  };
-}
-
-function v2ObjectToQuoteTransferItem(
-  object: V2PlacedObject,
-  model: ModelDefinition,
-): ArQuoteTransferItem | null {
-  if (!model.productId) return null;
-
-  return {
-    productId: model.productId,
-    modelId: model.id,
-    label: model.label,
-    description: model.description,
-    segmentsCm: object.dimensions.segmentsCm,
-    widthCm: object.dimensions.segmentsCm[0] ?? 0,
-    heightCm: object.dimensions.heightCm,
-  };
-}
-
-function objectToQuoteTransferItem(
-  object: MeasuredObject,
-  model: ModelDefinition,
-): ArQuoteTransferItem | null {
-  if (!model.productId) return null;
-
-  const widthCm = object.dimensions.segmentsCm.reduce(
-    (sum, segment) => sum + segment,
-    0,
-  );
-
-  return {
-    productId: model.productId,
-    modelId: model.id,
-    label: model.label,
-    description: model.description,
-    segmentsCm: object.dimensions.segmentsCm,
-    widthCm,
-    heightCm: object.dimensions.heightCm,
-  };
-}
-
-function encodeArQuoteTransfer(payload: ArQuoteTransferPayload) {
-  const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  let binary = "";
-
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
-  return window
-    .btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function readSavedArQuoteItems() {
-  try {
-    const raw = localStorage.getItem(SAVED_AR_QUOTE_KEY);
-    if (!raw) return [];
-
-    const payload = JSON.parse(raw) as Partial<ArQuoteTransferPayload>;
-    if (payload.source !== "sog-ar" || !Array.isArray(payload.items)) return [];
-
-    return payload.items.filter(isArQuoteTransferItem);
-  } catch {
-    return [];
-  }
-}
-
-function isArQuoteTransferItem(item: unknown): item is ArQuoteTransferItem {
-  if (!item || typeof item !== "object") return false;
-
-  const value = item as Record<string, unknown>;
-  return (
-    typeof value.productId === "number" &&
-    typeof value.modelId === "string" &&
-    typeof value.label === "string" &&
-    typeof value.description === "string" &&
-    Array.isArray(value.segmentsCm) &&
-    value.segmentsCm.every((segment) => typeof segment === "number") &&
-    typeof value.widthCm === "number" &&
-    typeof value.heightCm === "number"
-  );
-}
-
-function frontendQuoteBaseUrl() {
-  const env = (import.meta as unknown as { env?: { VITE_FRONTEND_URL?: string } }).env;
-  const configured = env?.VITE_FRONTEND_URL?.trim();
-
-  if (configured) return configured.replace(/\/+$/, "");
-
-  const url = new URL(window.location.href);
-  if ((url.hostname === "localhost" || url.hostname === "127.0.0.1") && url.port === "5173") {
-    url.port = "3000";
-    return url.origin;
-  }
-
-  return window.location.origin;
-}
-
-function setReticleColor(reticle: THREE.Mesh, confidence: ReticleConfidence) {
-  const material = reticle.material as THREE.MeshBasicMaterial;
-  const color = {
-    none: 0xff1744,
-    weak: 0xf97316,
-    medium: 0xfacc15,
-    high: 0x34d399,
-  }[confidence];
-  material.color.setHex(color);
-}
-
-function recolorMeasurementGuides(object: MeasuredObject, color: string) {
-  const nextColor = new THREE.Color(color);
-
-  [...object.points.map((point) => point.marker), ...object.segments.map((segment) => segment.line)]
-    .forEach((guide) => {
-      guide.traverse((child) => {
-        const mesh = child as THREE.Mesh;
-        const materials = Array.isArray(mesh.material)
-          ? mesh.material
-          : mesh.material
-            ? [mesh.material]
-            : [];
-
-        materials.forEach((material) => {
-          const colored = material as THREE.Material & {
-            color?: THREE.Color;
-            emissive?: THREE.Color;
-          };
-          colored.color?.copy(nextColor);
-          colored.emissive?.copy(nextColor);
-        });
-      });
-    });
-}
-
-function getPreferredPlaneKind(): MeasurementPlane["kind"] | undefined {
-  return undefined;
-}
-
-function getViewerForward(frame: XRFrame, referenceSpace: XRReferenceSpace) {
-  const viewerPose = frame.getViewerPose(referenceSpace);
-  const viewMatrix = viewerPose?.views[0]?.transform.matrix;
-
-  if (!viewMatrix) {
-    return null;
-  }
-
-  return new THREE.Vector3(0, 0, -1)
-    .transformDirection(new THREE.Matrix4().fromArray(viewMatrix))
-    .normalize();
-}
-
-interface ModelCatalogPanelProps {
-  categories: ModelCategory[];
-  models: ModelDefinition[];
-  activeCategoryId: ModelCategoryId;
-  selectedModelId: string;
-  onCategoryChange: (category: ModelCategoryId) => void;
-  onSelectModel: (model: ModelDefinition) => void;
-  searchQuery?: string;
-  compact?: boolean;
-  shop?: boolean;
-}
-
-function ModelCatalogPanel({
-  categories,
-  models,
-  activeCategoryId,
-  selectedModelId,
-  onCategoryChange,
-  onSelectModel,
-  searchQuery = "",
-  compact = false,
-  shop = false,
-}: ModelCatalogPanelProps) {
-  const normalizedSearch = searchQuery.trim().toLowerCase();
-  const categoryModels =
-    activeCategoryId === "all"
-      ? models
-      : models.filter((model) => model.category === activeCategoryId);
-  const visibleModels = normalizedSearch
-    ? categoryModels.filter((model) =>
-        [model.label, model.description, model.category]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch),
-      )
-    : categoryModels;
-
-  return (
-    <div className={cn("grid gap-3", compact && "gap-2")}>
-      <div
-        className={cn(
-          "flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          shop && "gap-3 py-1",
-        )}
-        aria-label="Model categories"
-      >
-        {categories.map((category) => (
-          <Button
-            type="button"
-            key={category.id}
-            variant="ghost"
-            size={compact ? "sm" : "default"}
-            className={cn(
-              "h-auto shrink-0 rounded-xl border px-4 py-2 text-left transition",
-              shop && "min-h-11 px-4 text-base",
-              category.id !== activeCategoryId &&
-                "border-[#e4ebf0] bg-white text-[#315b7d] hover:bg-[#edf3f7]",
-              category.id === activeCategoryId &&
-                "border-[#162d4a] bg-[#162d4a] text-white hover:bg-[#315b7d]",
-            )}
-            onClick={() => onCategoryChange(category.id)}
-          >
-            <span className="grid gap-0.5">
-              <strong className={cn("text-xs leading-none", shop && "text-base")}>
-                {category.label}
-              </strong>
-              {!compact && (
-                <span className="text-[10px] font-medium text-current/70">
-                  {category.description}
-                </span>
-              )}
-            </span>
-          </Button>
-        ))}
-      </div>
-
-      <div
-        className={cn(
-          shop
-            ? "grid grid-cols-2 gap-3"
-            : "grid grid-flow-col auto-cols-[minmax(10.5rem,12.5rem)] gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [overscroll-behavior-x:contain] [&::-webkit-scrollbar]:hidden",
-          compact && !shop && "auto-cols-[minmax(9.5rem,11rem)]",
-        )}
-      >
-        {visibleModels.length === 0 ? (
-          <Card
-            className={cn(
-              "grid min-h-28 place-items-center border-dashed p-4 text-center text-sm text-muted-foreground",
-              shop ? "col-span-2 bg-white" : "bg-white text-[#6f879b]",
-            )}
-          >
-            No AR-ready models match this selection yet.
-          </Card>
-        ) : (
-          visibleModels.map((model) => {
-            const isSelected = model.id === selectedModelId;
-            const color = OBJECT_TYPES[model.type].color;
-
-            return (
-              <Button
-                type="button"
-                key={model.id}
-                variant="ghost"
-                className="group h-auto min-w-0 justify-start p-0 text-left hover:bg-transparent"
-                onClick={() => onSelectModel(model)}
-              >
-                <Card
-                  className={cn(
-                    "h-full overflow-hidden transition duration-200 group-active:scale-[0.98]",
-                    "border-[#e4ebf0] bg-white text-[#162d4a] shadow-[0_12px_30px_rgba(22,45,74,0.07)]",
-                    isSelected &&
-                      "border-[#608db9] bg-[#f7fafc] ring-2 ring-[#608db9]/20",
-                  )}
-                >
-                  <CardContent className="p-2">
-                    <div
-                      className={cn(
-                        "relative grid overflow-hidden rounded-xl",
-                        shop
-                          ? "h-40 place-items-center bg-[#f4f7f9]"
-                          : "h-24 place-items-center bg-[#f4f7f9]",
-                      )}
-                      style={{ border: `1px solid ${isSelected ? color : "transparent"}` }}
-                    >
-                      {model.thumbnail ? (
-                        <ArCatalogImage
-                          src={model.thumbnail}
-                          className="h-full w-full object-contain p-2"
-                        />
-                      ) : (
-                        <Box className="size-10" style={{ color }} />
-                      )}
-                      {isSelected && (
-                        <Badge
-                          variant="secondary"
-                          className="absolute right-2 top-2 gap-1 px-2"
-                        >
-                          <CheckCircle2 className="size-3" />
-                          Selected
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="mt-3 grid gap-1">
-                      <strong
-                        className={cn(
-                          "truncate text-sm font-semibold text-[#162d4a]",
-                          shop && "text-base",
-                        )}
-                      >
-                        {model.label}
-                      </strong>
-                      <small
-                        className={cn(
-                          "line-clamp-2 min-h-9 text-xs leading-snug",
-                          shop && "text-sm",
-                          "text-[#6f879b]",
-                        )}
-                      >
-                        {model.description}
-                      </small>
-                      {model.price != null && (
-                        <b
-                          className={cn(
-                            "mt-1 text-sm font-semibold text-[#315b7d]",
-                            shop && "text-base",
-                          )}
-                        >
-                          {formatModelPrice(model.price, model.unit)}
-                        </b>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Button>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-
-function formatModelPrice(price: number, unit?: string | null) {
-  const formatted = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    maximumFractionDigits: 0,
-  }).format(price);
-
-  return unit ? `${formatted} / ${unit}` : formatted;
-}
-
-function createMarker(position: THREE.Vector3, index: number, color: string) {
-  const group = new THREE.Group();
-  const marker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.018, 16, 16),
-    new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: new THREE.Color(color),
-      emissiveIntensity: 0.65,
-    }),
-  );
-  marker.position.copy(position);
-  group.add(marker);
-  group.userData.pointIndex = index;
-
-  return group;
-}
-
-function createSegment(
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  color: string,
-  length = start.distanceTo(end),
-): MeasurementSegment {
-  const midpoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-  const line = new THREE.Group();
-
-  if (length >= 0.01) {
-    const direction = new THREE.Vector3().subVectors(end, start).normalize();
-    const cylinder = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.006, 0.006, length, 10),
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(color),
-        emissive: new THREE.Color(color),
-        emissiveIntensity: 0.35,
-      }),
-    );
-    cylinder.position.copy(midpoint);
-    cylinder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-    line.add(cylinder);
-  }
-
-  const centimeters = metersToCentimeters(length);
-  const label = centimeters >= 1 ? createLabel(`${centimeters} cm`, color) : null;
-
-  if (label) {
-    label.position.copy(midpoint);
-    label.position.y += 0.055;
-  }
-
-  return { line, label };
-}
-
-function createObjectLabel(
-  id: number,
-  model: ModelDefinition,
-  points: MeasurementPoint[],
-) {
-  const center = points
-    .reduce((total, point) => total.add(point.position), new THREE.Vector3())
-    .multiplyScalar(1 / points.length);
-
-  const label = createLabel(`${model.label} ${id}`, OBJECT_TYPES[model.type].color);
-  label.position.copy(center);
-  label.position.y += 0.12;
-
-  return label;
-}
-
-function createV2ObjectLabel(
-  id: number,
-  model: ModelDefinition,
-  dimensions: V2PlacedObject["dimensions"],
-) {
-  const label = createLabel(`${model.label} ${id}`, OBJECT_TYPES[model.type].color);
-  label.position.set(0, dimensions.heightCm / 100 + 0.12, 0);
-
-  return label;
-}
-
-function createV2ObjectModel(
-  dimensions: V2PlacedObject["dimensions"],
-  model: ModelDefinition,
-) {
-  const widthMeters = Math.max(0.05, dimensions.segmentsCm[0] / 100);
-  const heightMeters = Math.max(0.05, dimensions.heightCm / 100);
-  const depthMeters = Math.max(0.01, dimensions.depthCm / 100);
-  const color = OBJECT_TYPES[model.type].color;
-  const group = new THREE.Group();
-  const center = new THREE.Vector3(0, heightMeters / 2, depthMeters / 2);
-
-  group.add(
-    createPanelMesh(
-      widthMeters,
-      heightMeters,
-      new THREE.Vector3(1, 0, 0),
-      new THREE.Vector3(0, 1, 0),
-      new THREE.Vector3(0, 0, 1),
-      center,
-      color,
-    ),
-  );
-
-  const frame: ModelFrame = {
-    center,
-    widthDir: new THREE.Vector3(1, 0, 0),
-    heightDir: new THREE.Vector3(0, 1, 0),
-    depthDir: new THREE.Vector3(0, 0, 1),
-    width: widthMeters,
-    height: heightMeters,
-    depth: depthMeters,
-  };
-
-  const modelFile = normalizeCatalogAssetUrl(model.file);
-
-  loadCatalogModel(modelFile)
-    .then((catalogModel) => {
-      const fittedModel = fitCatalogModel(catalogModel, frame, model);
-      group.add(fittedModel);
-    })
-    .catch((error) => {
-      console.warn(`Unable to load model ${modelFile}`, error);
-    });
-
-  return group;
-}
-
-function createGlassModel(points: MeasurementPoint[], model: ModelDefinition) {
-  const dimensions = computeDimensions(points);
-  const shapePoints = points.slice(0, -1);
-  const heightStart = points[points.length - 2].position;
-  const heightEnd = points[points.length - 1].position;
-  const heightDir = new THREE.Vector3().subVectors(heightEnd, heightStart);
-  if (heightDir.lengthSq() < 0.0001) heightDir.set(0, 1, 0);
-  heightDir.normalize();
-  const heightMeters = Math.max(0.05, dimensions.heightCm / 100);
-  const group = new THREE.Group();
-  const color = OBJECT_TYPES[model.type].color;
-
-  shapePoints.slice(0, -1).forEach((point, index) => {
-    const nextPoint = shapePoints[index + 1];
-    const segmentDir = new THREE.Vector3().subVectors(
-      nextPoint.position,
-      point.position,
-    );
-    const segmentLength = segmentDir.length();
-
-    if (segmentLength < MIN_SEGMENT_LENGTH_METERS) {
-      return;
-    }
-
-    segmentDir.normalize();
-
-    const normal = new THREE.Vector3().crossVectors(segmentDir, heightDir);
-    if (normal.lengthSq() < 0.0001) normal.set(0, 0, 1);
-    normal.normalize();
-
-    const center = new THREE.Vector3()
-      .addVectors(point.position, nextPoint.position)
-      .multiplyScalar(0.5)
-      .add(heightDir.clone().multiplyScalar(heightMeters / 2))
-      .add(normal.clone().multiplyScalar(PREVIEW_MODEL_DEPTH_METERS / 2));
-    const panel = createPanelMesh(
-      segmentLength,
-      heightMeters,
-      segmentDir,
-      heightDir,
-      normal,
-      center,
-      color,
-    );
-
-    group.add(panel);
-  });
-
-  const frame = createModelFrame(points, model, heightDir, heightMeters);
-  const modelFile = normalizeCatalogAssetUrl(model.file);
-
-  loadCatalogModel(modelFile)
-    .then((catalogModel) => {
-      const fittedModel = fitCatalogModel(catalogModel, frame, model);
-      group.add(fittedModel);
-    })
-    .catch((error) => {
-      console.warn(`Unable to load model ${modelFile}`, error);
-    });
-
-  return group;
-}
-
-interface ModelFrame {
-  center: THREE.Vector3;
-  widthDir: THREE.Vector3;
-  heightDir: THREE.Vector3;
-  depthDir: THREE.Vector3;
-  width: number;
-  height: number;
-  depth: number;
-}
-
-function loadCatalogModel(file: string) {
-  if (!modelCache.has(file)) {
-    modelCache.set(
-      file,
-      new Promise<THREE.Group>((resolve, reject) => {
-        gltfLoader.load(
-          file,
-          (gltf) => resolve(gltf.scene),
-          undefined,
-          (error) => reject(error),
-        );
-      }).catch((error) => {
-        modelCache.delete(file);
-        throw error;
-      }),
-    );
-  }
-
-  return modelCache.get(file)!;
-}
-
-function createModelFrame(
-  points: MeasurementPoint[],
-  model: ModelDefinition,
-  heightDir: THREE.Vector3,
-  heightMeters: number,
-): ModelFrame {
-  const shapePoints = points.slice(0, -1);
-  const origin = shapePoints[0].position;
-  const widthDir = findWidthDirection(shapePoints, heightDir);
-  const depthDir = findDepthDirection(shapePoints, widthDir, heightDir);
-
-  const projected = shapePoints.map((point) => {
-    const relative = new THREE.Vector3().subVectors(point.position, origin);
-    return {
-      x: relative.dot(widthDir),
-      z: relative.dot(depthDir),
-    };
-  });
-
-  const minX = Math.min(...projected.map((point) => point.x), 0);
-  const maxX = Math.max(...projected.map((point) => point.x), 0);
-  const minZ = Math.min(...projected.map((point) => point.z), 0);
-  const maxZ = Math.max(...projected.map((point) => point.z), 0);
-
-  const width = Math.max(maxX - minX, MIN_SEGMENT_LENGTH_METERS);
-  const measuredDepth = maxZ - minZ;
-  const fallbackDepth =
-    model.type === "cabinet" ? Math.max(width * 0.42, 0.28) : PREVIEW_MODEL_DEPTH_METERS * 4;
-  const depth = Math.max(measuredDepth, fallbackDepth);
-
-  const center = origin
-    .clone()
-    .add(widthDir.clone().multiplyScalar(minX + width / 2))
-    .add(depthDir.clone().multiplyScalar(minZ + depth / 2))
-    .add(heightDir.clone().multiplyScalar(heightMeters / 2));
-
-  return {
-    center,
-    widthDir,
-    heightDir,
-    depthDir,
-    width,
-    height: heightMeters,
-    depth,
-  };
-}
-
-function findWidthDirection(
-  shapePoints: MeasurementPoint[],
-  heightDir: THREE.Vector3,
-) {
-  for (let index = 0; index < shapePoints.length - 1; index += 1) {
-    const direction = new THREE.Vector3().subVectors(
-      shapePoints[index + 1].position,
-      shapePoints[index].position,
-    );
-
-    if (direction.length() >= MIN_SEGMENT_LENGTH_METERS) {
-      const widthDir = direction.normalize();
-      if (Math.abs(widthDir.dot(heightDir)) < 0.94) {
-        return widthDir;
-      }
-    }
-  }
-
-  return new THREE.Vector3(1, 0, 0);
-}
-
-function findDepthDirection(
-  shapePoints: MeasurementPoint[],
-  widthDir: THREE.Vector3,
-  heightDir: THREE.Vector3,
-) {
-  for (let index = 0; index < shapePoints.length - 1; index += 1) {
-    const direction = new THREE.Vector3().subVectors(
-      shapePoints[index + 1].position,
-      shapePoints[index].position,
-    );
-
-    if (direction.length() < MIN_SEGMENT_LENGTH_METERS) continue;
-
-    direction.normalize();
-    const candidate = direction
-      .clone()
-      .addScaledVector(widthDir, -direction.dot(widthDir))
-      .addScaledVector(heightDir, -direction.dot(heightDir));
-
-    if (candidate.lengthSq() > 0.04) {
-      return candidate.normalize();
-    }
-  }
-
-  const fallback = new THREE.Vector3().crossVectors(widthDir, heightDir);
-  if (fallback.lengthSq() < 0.0001) {
-    fallback.set(0, 0, 1);
-  }
-
-  return fallback.normalize();
-}
-
-function flowVersionFromPath(pathname: string): FlowVersion {
-  if (pathname === "/v1" || pathname.endsWith("/v1")) return "v1";
-  if (pathname === "/v3" || pathname.endsWith("/v3")) return "v3";
-  return "v2";
-}
-
-function flowPath(version: FlowVersion) {
-  const prefix = window.location.pathname.startsWith("/ar") ? "/ar" : "";
-
-  return `${prefix}/${version}`;
-}
-
-function getPointInFrontOfCamera(camera: THREE.Camera, distance: number) {
-  const position = new THREE.Vector3();
-  const forward = new THREE.Vector3();
-  camera.getWorldPosition(position);
-  camera.getWorldDirection(forward);
-
-  if (forward.lengthSq() < 0.0001) {
-    forward.set(0, 0, -1);
-  }
-
-  return position.add(forward.normalize().multiplyScalar(distance));
-}
-
-function createCameraFacingPlacementAxes(camera: THREE.Camera): V2PlacementAxes {
-  const worldUp = new THREE.Vector3(0, 1, 0);
-  const cameraForward = new THREE.Vector3();
-  camera.getWorldDirection(cameraForward);
-
-  const depthDir = cameraForward.clone().setY(0).multiplyScalar(-1);
-  if (depthDir.lengthSq() < 0.0001) {
-    depthDir.set(0, 0, 1);
-  }
-
-  depthDir.normalize();
-  const widthDir = new THREE.Vector3().crossVectors(worldUp, depthDir).normalize();
-
-  return {
-    widthDir,
-    heightDir: worldUp,
-    depthDir,
-  };
-}
-
-function fitCatalogModel(
-  source: THREE.Group,
-  frame: ModelFrame,
-  definition: ModelDefinition,
-) {
-  const wrapper = new THREE.Group();
-  const model = cloneModel(source);
-
-  removeCatalogModelArtifacts(model);
-  orientCatalogModelForFrame(model, definition);
-  model.updateMatrixWorld(true);
-  const bounds = new THREE.Box3().setFromObject(model);
-  const modelSize = new THREE.Vector3();
-  const modelCenter = new THREE.Vector3();
-  bounds.getSize(modelSize);
-  bounds.getCenter(modelCenter);
-
-  model.position.sub(modelCenter);
-  wrapper.add(model);
-
-  wrapper.scale.set(
-    frame.width / Math.max(modelSize.x, 0.001),
-    frame.height / Math.max(modelSize.y, 0.001),
-    frame.depth / Math.max(modelSize.z, 0.001),
-  );
-  wrapper.setRotationFromMatrix(
-    new THREE.Matrix4().makeBasis(frame.widthDir, frame.heightDir, frame.depthDir),
-  );
-  wrapper.position.copy(frame.center);
-  wrapper.userData.isCatalogModel = true;
-
-  return wrapper;
-}
-
-function orientCatalogModelForFrame(
-  model: THREE.Group,
-  definition: ModelDefinition,
-) {
-  if (definition.type !== "window") {
-    return;
-  }
-
-  model.updateMatrixWorld(true);
-  const bounds = new THREE.Box3().setFromObject(model);
-  const size = new THREE.Vector3();
-  bounds.getSize(size);
-
-  if (size.z > size.x * 1.2) {
-    model.rotateY(Math.PI / 2);
-    model.updateMatrixWorld(true);
-  }
-}
-
-function removeCatalogModelArtifacts(model: THREE.Group) {
-  model.updateMatrixWorld(true);
-
-  const meshes: THREE.Mesh[] = [];
-  model.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (mesh.isMesh) meshes.push(mesh);
-  });
-
-  if (meshes.length < 2) return;
-
-  const meshSizes = meshes.map((mesh) => {
-    const box = new THREE.Box3().setFromObject(mesh);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-
-    return {
-      mesh,
-      size,
-      maxDimension: Math.max(size.x, size.y, size.z),
-      minDimension: Math.min(size.x, size.y, size.z),
-    };
-  });
-
-  const sortedMaxDimensions = meshSizes
-    .map((entry) => entry.maxDimension)
-    .sort((a, b) => a - b);
-  const medianMaxDimension =
-    sortedMaxDimensions[Math.floor(sortedMaxDimensions.length / 2)] || 0;
-
-  for (const entry of meshSizes) {
-    const geometry = entry.mesh.geometry;
-    const triangleCount = geometry.index
-      ? geometry.index.count / 3
-      : (geometry.attributes.position?.count ?? 0) / 3;
-    const isFlat = entry.minDimension < 0.001;
-    const isOversized =
-      medianMaxDimension > 0 && entry.maxDimension > medianMaxDimension * 4;
-
-    if (isFlat && isOversized && triangleCount <= 12) {
-      entry.mesh.parent?.remove(entry.mesh);
-    }
-  }
-
-  model.updateMatrixWorld(true);
-}
-
-function cloneModel(source: THREE.Group) {
-  const clone = source.clone(true);
-
-  clone.traverse((child) => {
-    const mesh = child as THREE.Mesh;
-    if (!mesh.isMesh) return;
-
-    mesh.frustumCulled = false;
-    if (Array.isArray(mesh.material)) {
-      mesh.material = mesh.material.map((material) => material.clone());
-    } else if (mesh.material) {
-      mesh.material = mesh.material.clone();
-    }
-  });
-
-  return clone;
-}
-
-function createPanelMesh(
-  widthMeters: number,
-  heightMeters: number,
-  widthDir: THREE.Vector3,
-  heightDir: THREE.Vector3,
-  normal: THREE.Vector3,
-  center: THREE.Vector3,
-  color: string,
-) {
-  const group = new THREE.Group();
-  const glassMaterial = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(color),
-    emissive: new THREE.Color(color),
-    emissiveIntensity: 0.08,
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-    roughness: 0.15,
-    metalness: 0.05,
-  });
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(widthMeters, heightMeters, PREVIEW_MODEL_DEPTH_METERS),
-    glassMaterial,
-  );
-  mesh.position.copy(center);
-  mesh.setRotationFromMatrix(new THREE.Matrix4().makeBasis(widthDir, heightDir, normal));
-  group.add(mesh);
-
-  const edges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(mesh.geometry),
-    new THREE.LineBasicMaterial({
-      color: new THREE.Color(color),
-      transparent: true,
-      opacity: 0.9,
-    }),
-  );
-  edges.position.copy(mesh.position);
-  edges.quaternion.copy(mesh.quaternion);
-  group.add(edges);
-
-  return group;
 }

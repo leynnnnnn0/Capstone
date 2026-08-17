@@ -80,6 +80,7 @@ const appointment = {
   status: "confirmed",
   status_label: "Confirmed",
   can_edit: false,
+  can_reschedule: false,
   can_cancel: false,
   created_at: "2026-05-23T02:00:00.000000Z",
   workers: [{ id: 1, full_name: "Admin User" }],
@@ -102,6 +103,97 @@ const appointment = {
       created_at: "2026-05-23T03:00:00.000000Z",
     },
   ],
+};
+
+const arMeasurement = {
+  id: 1,
+  product_id: 1,
+  object_type: "door",
+  model_id: "sliding-door",
+  label: "Living room sliding door",
+  segments_cm: [120.4],
+  width_cm: 120.4,
+  height_cm: 239.8,
+  depth_cm: 8.2,
+  unit: "cm",
+  confidence: "medium",
+  points_count: 18,
+  metadata: {},
+  area_sqm: 2.89,
+};
+
+const arMeasurementSession = {
+  id: 1,
+  reference: "11111111-2222-4333-8444-555555555555",
+  appointment_id: 1,
+  customer_id: 1,
+  created_by: { id: 1, full_name: "Nathaniel Alvarez" },
+  source: "customer",
+  status: "submitted",
+  status_label: "Submitted",
+  capture_version: "v2",
+  capture_mode: "surface",
+  overall_confidence: "medium",
+  device_metadata: {
+    platform: "iPhone",
+    browser: "Mobile Safari",
+    orientation: "portrait",
+  },
+  captured_at: "2026-05-24T06:30:00.000000Z",
+  review_notes: null,
+  reviewed_at: null,
+  reviewed_by: null,
+  measurements_count: 1,
+  measurements: [arMeasurement],
+  created_at: "2026-05-24T06:30:00.000000Z",
+  updated_at: "2026-05-24T06:30:00.000000Z",
+};
+
+const arMeasurementSummary = {
+  reference: arMeasurementSession.reference,
+  status: "submitted",
+  status_label: "Submitted",
+  appointment: {
+    id: 1,
+    appointment_number: appointment.appointment_number,
+    customer_name: appointment.full_name,
+    service_type: appointment.service_type,
+    address: appointment.address,
+  },
+  capture: {
+    capture_version: "v2",
+    capture_mode: "surface",
+    overall_confidence: "medium",
+    device_metadata: arMeasurementSession.device_metadata,
+    captured_at: arMeasurementSession.captured_at,
+    source: "customer",
+    created_by: arMeasurementSession.created_by,
+  },
+  review: {
+    review_notes: null,
+    reviewed_at: null,
+    reviewed_by: null,
+  },
+  object_count: 1,
+  totals: {
+    total_linear_m: 1.2,
+    total_area_sqm: 2.89,
+  },
+  confidence_distribution: {
+    none: 0,
+    weak: 0,
+    medium: 1,
+    high: 0,
+  },
+  by_type: [
+    {
+      object_type: "door",
+      count: 1,
+      total_linear_m: 1.2,
+      total_area_sqm: 2.89,
+    },
+  ],
+  measurements: [arMeasurement],
 };
 
 const paymentSummary = {
@@ -272,6 +364,14 @@ export async function mockApi(page: Page) {
     }
     if (path === "/api/v1/customer/appointments") return json(route, paginated([appointment]));
     if (path === "/api/v1/customer/appointments/1") return json(route, { data: appointment });
+    if (path === "/api/v1/customer/appointments/1/measurement-sessions") {
+      return json(route, { data: [arMeasurementSession] });
+    }
+    if (
+      path === `/api/v1/ar-measurement-sessions/${arMeasurementSession.reference}/summary`
+    ) {
+      return json(route, { data: arMeasurementSummary });
+    }
     if (path === "/api/v1/customer/work-jobs") return json(route, paginated([workJob]));
     if (path === "/api/v1/customer/work-jobs/1") return json(route, { data: workJob });
     if (path === "/api/v1/customer/payments/paypal/config") {

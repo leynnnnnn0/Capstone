@@ -32,6 +32,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFrame,
   TableHead,
   TableHeader,
   TableRow,
@@ -187,7 +188,7 @@ export default function AdminWorkJobsPage() {
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -212,19 +213,21 @@ export default function AdminWorkJobsPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableFrame>
 
       {meta && meta.last_page > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="sm" disabled={meta.current_page <= 1} onClick={() => applyFilter({ page: String(meta.current_page - 1) })}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-3 rounded-[1.25rem] border border-[#dce4ea] bg-white px-4 py-3 shadow-[0_10px_28px_rgba(22,45,74,0.045)]">
+          <span className="rounded-lg bg-[#f4f7f9] px-3 py-1.5 text-xs font-medium text-[#536372]">
             Page {meta.current_page} of {meta.last_page}
           </span>
-          <Button variant="outline" size="sm" disabled={meta.current_page >= meta.last_page} onClick={() => applyFilter({ page: String(meta.current_page + 1) })}>
-            Next
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button className="rounded-xl" variant="outline" size="sm" disabled={meta.current_page <= 1} onClick={() => applyFilter({ page: String(meta.current_page - 1) })}>
+              Previous
+            </Button>
+            <Button className="rounded-xl" variant="outline" size="sm" disabled={meta.current_page >= meta.last_page} onClick={() => applyFilter({ page: String(meta.current_page + 1) })}>
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -277,7 +280,7 @@ function WorkJobCard({ workJob }: { workJob: AdminWorkJob }) {
 function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
   return (
     <TableRow>
-      <TableCell className="font-medium">
+      <TableCell className="font-semibold text-[#162d4a]">
         <div className="flex flex-col gap-1">
           <span>{workJob.work_job_number}</span>
           {workJob.is_back_job && (
@@ -287,10 +290,10 @@ function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
           )}
         </div>
       </TableCell>
-      <TableCell>{workJob.full_name}</TableCell>
-      <TableCell>{workJob.phone_number}</TableCell>
-      <TableCell>{formatWorkJobSchedule(workJob)}</TableCell>
-      <TableCell>{workJob.workers.length > 0 ? workJob.workers.map((worker) => worker.full_name).join(", ") : "-"}</TableCell>
+      <TableCell className="font-medium">{workJob.full_name}</TableCell>
+      <TableCell className="text-muted-foreground">{workJob.phone_number}</TableCell>
+      <TableCell className="whitespace-nowrap tabular-nums">{formatWorkJobSchedule(workJob)}</TableCell>
+      <TableCell className="max-w-[240px] text-muted-foreground">{workJob.workers.length > 0 ? workJob.workers.map((worker) => worker.full_name).join(", ") : "-"}</TableCell>
       <TableCell><AdminWorkJobStatusBadge status={workJob.status} /></TableCell>
       <TableCell className="text-right">
         <Button asChild variant="ghost" size="icon-sm" aria-label={`View ${workJob.work_job_number}`}>

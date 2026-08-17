@@ -156,7 +156,11 @@ export function measurementWidth(
   item: Pick<QuoteCartItem, "measurement_segments" | "width" | "dimension_unit"> | QuoteDraft,
 ) {
   if ("measurement_segments" in item && item.measurement_segments?.length) {
-    return item.measurement_segments.reduce((sum, segment) => sum + parseNumber(segment), 0);
+    const total = item.measurement_segments.reduce(
+      (sum, segment) => sum + parseNumber(segment),
+      0,
+    );
+    return item.dimension_unit === "cm" ? total / 100 : total;
   }
 
   return dimensionValueInMeters(item.width, item.dimension_unit);
@@ -166,11 +170,12 @@ export function arMeasurementNote(item: QuoteCartItem) {
   if (item.source !== "ar") return "";
 
   const segments = item.measurement_segments?.filter((segment) => segment > 0) ?? [];
+  const unit = dimensionUnitLabel(item.dimension_unit);
   const height = parseNumber(item.height);
   const segmentText = segments.length
-    ? `Segments: ${segments.map((segment) => `${segment}m`).join(" + ")}.`
+    ? `Segments: ${segments.map((segment) => `${segment}${unit}`).join(" + ")}.`
     : "";
-  const heightText = height > 0 ? `Height: ${height}m.` : "";
+  const heightText = height > 0 ? `Height: ${height}${unit}.` : "";
 
   return ["AR measurement estimate.", segmentText, heightText].filter(Boolean).join(" ");
 }

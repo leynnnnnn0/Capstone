@@ -1,4 +1,5 @@
 import type { ObjectType } from "./types";
+import { apiBaseUrl } from "../../lib/api-base";
 
 export type ModelCategoryId = string;
 
@@ -139,7 +140,7 @@ export function getModelById(models: ModelDefinition[], id: string) {
 }
 
 export async function fetchProductModelCatalog(): Promise<ProductModelCatalogResult> {
-  const apiBase = getApiBaseUrl();
+  const apiBase = apiBaseUrl();
   const response = await fetch(`${apiBase}/api/v1/products?per_page=100`, {
     headers: {
       Accept: "application/json",
@@ -161,20 +162,6 @@ export async function fetchProductModelCatalog(): Promise<ProductModelCatalogRes
     categories: buildCategories(models),
     models,
   };
-}
-
-function getApiBaseUrl() {
-  const env = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
-  const configured = env?.VITE_API_URL;
-  const fallback =
-    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "http://localhost:8000"
-      : window.location.origin;
-
-  return (configured?.trim() || fallback)
-    .replace(/\/+$/, "")
-    .replace(/\/api\/v1$/, "")
-    .replace(/\/api$/, "");
 }
 
 function normalizeProductResponse(payload: unknown): ProductPayload[] {
@@ -287,7 +274,7 @@ function variantSizeLabel(widthCm: number, heightCm: number) {
   return `${widthCm} x ${heightCm} cm`;
 }
 
-export function normalizeCatalogAssetUrl(url: string, apiBase = getApiBaseUrl()) {
+export function normalizeCatalogAssetUrl(url: string, apiBase = apiBaseUrl()) {
   const parsed = new URL(url, apiBase);
   const api = new URL(apiBase);
 

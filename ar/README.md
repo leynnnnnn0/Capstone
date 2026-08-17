@@ -44,6 +44,25 @@ VITE_FRONTEND_URL=https://your-frontend-url.test npm run dev
 The AR catalogue reads products from `/api/v1/products` and uses each product's
 uploaded `model_3d.file_url`.
 
+## Appointment measurement records
+
+Launch an authenticated AR session with a positive appointment ID:
+
+```txt
+http://localhost:5173/ar/v2?appointment_id=123
+```
+
+The summary can then save the captured objects to
+`POST /api/v1/ar-measurement-sessions` with the user's existing HTTP-only auth
+cookie. The saved confidence belongs to each object at capture time. AR
+measurements remain estimates until a technician verifies them.
+
+Run the focused payload tests with:
+
+```bash
+npm test
+```
+
 ## Current Scope
 
 This is Tier 1 only:

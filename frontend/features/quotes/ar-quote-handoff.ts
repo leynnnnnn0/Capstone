@@ -2,6 +2,8 @@ import type { Product } from "@/features/products/types";
 import type { QuoteCartItem } from "@/features/quotes/types";
 import { createQuoteId } from "./quote-utils";
 
+export const AR_QUOTE_STORAGE_KEY = "sog-ar-saved-quote";
+
 export type ArQuoteHandoffItem = {
   productId: number;
   modelId?: string;
@@ -64,9 +66,9 @@ export function arHandoffToCartItems(
     const product = products.find((candidate) => candidate.id === item.productId);
     if (!product) return [];
 
-    const segments = normalizeSegments(item.segmentsCm, item.widthCm);
+    const segments = normalizeSegmentsCm(item.segmentsCm, item.widthCm);
     const width = segments.reduce((sum, segment) => sum + segment, 0);
-    const height = centimetersToMeters(item.heightCm);
+    const height = roundMeasurement(item.heightCm ?? 0);
 
     return [
       {
@@ -74,7 +76,7 @@ export function arHandoffToCartItems(
         product,
         selected_options: [],
         size_mode: "custom",
-        dimension_unit: "m",
+        dimension_unit: "cm",
         variant: null,
         width: formatMeasurement(width),
         height: formatMeasurement(height),
@@ -113,24 +115,92 @@ function normalizeHandoffItem(item: unknown): ArQuoteHandoffItem | null {
  * Prefer explicit AR segment lengths, but fall back to a single width when older
  * AR payloads do not include the full segment array.
  */
-function normalizeSegments(segmentsCm?: number[], widthCm?: number) {
+function normalizeSegmentsCm(segmentsCm?: number[], widthCm?: number) {
   const segments = (segmentsCm ?? [])
-    .map(centimetersToMeters)
+    .map(roundMeasurement)
     .filter((segment) => segment > 0);
 
   if (segments.length > 0) return segments;
 
-  const width = centimetersToMeters(widthCm);
+  const width = roundMeasurement(widthCm ?? 0);
   return width > 0 ? [width] : [];
-}
-
-function centimetersToMeters(value?: number) {
-  if (!Number.isFinite(value)) return 0;
-  return roundMeasurement(Number(value) / 100);
 }
 
 function roundMeasurement(value: number) {
   return Math.round(value * 1000) / 1000;
+}
+
+export function removeSavedArQuoteItem(item: QuoteCartItem) {
+  if (item.source !== "ar") return;
+
+  try {
+    const raw = localStorage.getItem(AR_QUOTE_STORAGE_KEY);
+    if (!raw) return;
+
+    const payload = JSON.parse(raw) as Partial<ArQuoteHandoffPayload>;
+    if (payload.source !== "sog-ar" || !Array.isArray(payload.items)) return;
+
+    const index = payload.items.findIndex((savedItem) =>
+      savedItemMatchesCartItem(savedItem, item),
+    );
+    if (index < 0) return;
+
+    const items = payload.items.filter((_, itemIndex) => itemIndex !== index);
+    if (items.length === 0) {
+      localStorage.removeItem(AR_QUOTE_STORAGE_KEY);
+      return;
+    }
+
+    localStorage.setItem(
+      AR_QUOTE_STORAGE_KEY,
+      JSON.stringify({ ...payload, items }),
+    );
+  } catch {
+    // The quote cart remains usable when browser storage is unavailable.
+  }
+}
+
+export function clearSavedArQuote() {
+  try {
+    localStorage.removeItem(AR_QUOTE_STORAGE_KEY);
+  } catch {
+    // The in-memory quote can still be cleared.
+  }
+}
+
+function savedItemMatchesCartItem(
+  savedItem: ArQuoteHandoffItem,
+  cartItem: QuoteCartItem,
+) {
+  if (savedItem.productId !== cartItem.product.id) return false;
+
+  const savedSegments = normalizeSegmentsCm(
+    savedItem.segmentsCm,
+    savedItem.widthCm,
+  );
+  const cartSegments = (cartItem.measurement_segments?.length
+    ? cartItem.measurement_segments
+    : [Number(cartItem.width)]
+  )
+    .map((segment) =>
+      cartItem.dimension_unit === "cm" ? segment : segment * 100,
+    )
+    .filter((segment) => Number.isFinite(segment) && segment > 0);
+  const cartHeight =
+    Number(cartItem.height || cartItem.measurement_height || 0) *
+    (cartItem.dimension_unit === "cm" ? 1 : 100);
+
+  return (
+    measurementsMatch(savedSegments, cartSegments) &&
+    Math.abs((savedItem.heightCm ?? 0) - cartHeight) < 0.11
+  );
+}
+
+function measurementsMatch(left: number[], right: number[]) {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => Math.abs(value - right[index]) < 0.11)
+  );
 }
 
 function formatMeasurement(value: number) {

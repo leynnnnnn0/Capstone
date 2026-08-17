@@ -10,7 +10,7 @@ import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admi
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import type { Product } from "@/features/products/types";
 import {
@@ -194,34 +194,34 @@ export default function ProductDetails({ product }: { product: Product }) {
                 <VariantCard key={variant.id} variant={variant} />
               ))}
             </div>
-            <div className="hidden overflow-hidden rounded-lg border md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>Fixed Price</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {variants.map((variant) => (
-                  <TableRow key={variant.id}>
-                    <TableCell className="font-medium">
-                      {variant.width} x {variant.height} cm
-                    </TableCell>
-                    <TableCell>{calcArea(variant.width, variant.height)} sqm</TableCell>
-                    <TableCell>{formatCurrency(variant.price)}</TableCell>
-                    <TableCell>
-                      <Badge variant={variant.is_active ? "default" : "secondary"}>
-                        {variant.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
+            <TableFrame className="hidden shadow-none md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Area</TableHead>
+                    <TableHead>Fixed Price</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
+                </TableHeader>
+                <TableBody>
+                  {variants.map((variant) => (
+                    <TableRow key={variant.id}>
+                      <TableCell className="font-medium">
+                        {variant.width} x {variant.height} cm
+                      </TableCell>
+                      <TableCell className="tabular-nums">{calcArea(variant.width, variant.height)} sqm</TableCell>
+                      <TableCell className="tabular-nums">{formatCurrency(variant.price)}</TableCell>
+                      <TableCell>
+                        <Badge variant={variant.is_active ? "default" : "secondary"}>
+                          {variant.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableFrame>
             </>
           )}
         </CardContent>

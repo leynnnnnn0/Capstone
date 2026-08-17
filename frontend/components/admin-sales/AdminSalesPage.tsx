@@ -53,6 +53,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFrame,
   TableHead,
   TableHeader,
   TableRow,
@@ -556,7 +557,7 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
             </div>
           )}
         </div>
-        <div className="hidden overflow-hidden rounded-xl border border-[#e1e8ed] md:block">
+        <TableFrame className="hidden shadow-none md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -609,7 +610,7 @@ function RecentPaymentsTable({ payments, loading }: { payments: SalesPaymentRow[
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableFrame>
       </CardContent>
     </Card>
   );
@@ -774,7 +775,7 @@ function OutstandingTable({
             </div>
           )}
         </div>
-        <div className="hidden overflow-hidden rounded-xl border border-[#e1e8ed] md:block">
+        <TableFrame className="hidden shadow-none md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -818,7 +819,7 @@ function OutstandingTable({
               )}
             </TableBody>
           </Table>
-        </div>
+        </TableFrame>
       </CardContent>
     </Card>
   );

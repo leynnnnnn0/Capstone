@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Appointment extends Model implements AuditableContract
@@ -73,6 +74,11 @@ class Appointment extends Model implements AuditableContract
     public function workJob()
     {
         return $this->hasOne(WorkJob::class);
+    }
+
+    public function arMeasurementSessions(): HasMany
+    {
+        return $this->hasMany(ArMeasurementSession::class);
     }
 
     protected static function boot(): void

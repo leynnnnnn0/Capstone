@@ -16,6 +16,7 @@ require __DIR__ . '/api/user.php';
 // All business endpoints live under /api/v1. Each file owns one bounded area of
 // the system so controller/service changes stay easy to find.
 Route::prefix('v1')->group(function () {
+    require __DIR__ . '/api/v1/ar_measurements.php';
     require __DIR__ . '/api/v1/appointments.php';
     require __DIR__ . '/api/v1/audits.php';
     require __DIR__ . '/api/v1/categories.php';

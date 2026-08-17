@@ -31,6 +31,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFrame,
   TableHead,
   TableHeader,
   TableRow,
@@ -187,7 +188,7 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border bg-card shadow-sm md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -233,7 +234,7 @@ export default function AdminUsersPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableFrame>
 
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

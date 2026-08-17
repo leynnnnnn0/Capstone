@@ -24,6 +24,7 @@ export interface MeasuredObject {
   id: number;
   type: ObjectType;
   modelId: string;
+  captureConfidence: ReticleConfidence;
   root: THREE.Group;
   points: MeasurementPoint[];
   segments: MeasurementSegment[];

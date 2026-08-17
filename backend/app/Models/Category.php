@@ -17,3 +17,4 @@ class Category extends Model implements AuditableContract
         'remarks'
     ];
 }
+

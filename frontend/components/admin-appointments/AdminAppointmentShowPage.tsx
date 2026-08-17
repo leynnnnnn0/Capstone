@@ -10,6 +10,7 @@ import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotatio
 import AdminProceedToWorkJob from "@/components/admin-appointments/AdminProceedToWorkJob";
 import AdminScheduleForm from "@/components/admin-appointments/AdminScheduleForm";
 import AdminStatusActions from "@/components/admin-appointments/AdminStatusActions";
+import AppointmentMeasurementRecords from "@/components/ar-measurements/AppointmentMeasurementRecords";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAdminAppointment, fetchWorkers } from "@/features/admin-appointments/admin-appointment-api";
@@ -62,6 +63,14 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
             addressLat={appointment.address_lat}
             addressLng={appointment.address_lng}
             compact
+          />
+          <AppointmentMeasurementRecords
+            appointmentId={appointment.id}
+            appointmentNumber={appointment.appointment_number}
+            customerName={appointment.full_name}
+            serviceType={appointment.service_type}
+            address={appointment.address}
+            audience="staff"
           />
         </div>
         <div className="space-y-6">

@@ -5,6 +5,25 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: "/ar/",
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("/three/")) return "three";
+          if (id.includes("/lucide-react/")) return "icons";
+          if (id.includes("/@radix-ui/")) return "ui";
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/scheduler/")
+          ) {
+            return "react";
+          }
+        },
+      },
+    },
+  },
   server: {
     host: "0.0.0.0",
     port: 5173,

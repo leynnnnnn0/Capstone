@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -58,6 +59,16 @@ class User extends Authenticatable implements AuditableContract
     public function workJobs(): BelongsToMany
     {
         return $this->belongsToMany(WorkJob::class, 'work_job_workers');
+    }
+
+    public function arMeasurementSessions(): HasMany
+    {
+        return $this->hasMany(ArMeasurementSession::class, 'customer_id');
+    }
+
+    public function createdArMeasurementSessions(): HasMany
+    {
+        return $this->hasMany(ArMeasurementSession::class, 'created_by_user_id');
     }
 
     // ── Helpers ───────────────────────────────────────────────────

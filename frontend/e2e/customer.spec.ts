@@ -26,6 +26,31 @@ test("customer work-job detail shows linked appointment, payment, quotation, and
   await expect(page.getByText("Installation started.")).toBeVisible();
 });
 
+test("appointment detail shows its AR measurement summary", async ({ page }) => {
+  await page.goto("/account/appointments/1");
+
+  await expect(
+    page.getByRole("heading", { name: "AR measurement records" }),
+  ).toBeVisible();
+  await expect(page.getByText("Living room sliding door")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Start AR measurement" }),
+  ).toHaveAttribute("href", "/ar/v2?appointment_id=1");
+  await expect(page.getByText(/estimates until an assigned technician approves/i)).toBeVisible();
+
+  await page.getByRole("button", { name: "View summary" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Measurement summary" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByText("AR estimate — technician verification required"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Print summary" })).toBeVisible();
+});
+
 test("protected customer pages redirect to login when there is no auth cookie", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();

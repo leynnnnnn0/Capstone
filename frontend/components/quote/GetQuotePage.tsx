@@ -28,7 +28,13 @@ export default function GetQuotePage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { cart, hydrated, setCart, clearCart } = usePublicQuoteCart();
+  const {
+    cart,
+    hydrated,
+    setCart,
+    removeItem: removeCartItem,
+    clearCart,
+  } = usePublicQuoteCart();
 
   const preSelectedProductId = useMemo(() => numberParam(searchParams.get("product")), [searchParams]);
   const preSelectedVariantId = useMemo(() => numberParam(searchParams.get("variant")), [searchParams]);
@@ -61,6 +67,12 @@ export default function GetQuotePage() {
             setCart(arCartItems);
             setEditingIndex(null);
             setShowCheckout(true);
+            const nextParams = new URLSearchParams(searchParams.toString());
+            nextParams.delete("ar_items");
+            router.replace(
+              `/get-quote${nextParams.toString() ? `?${nextParams}` : ""}`,
+              { scroll: false },
+            );
           } else {
             setError("AR measurements were received, but no matching quote products were found.");
           }
@@ -76,7 +88,7 @@ export default function GetQuotePage() {
     return () => {
       mounted = false;
     };
-  }, [arItemsParam, hydrated, setCart]);
+  }, [arItemsParam, hydrated, router, searchParams, setCart]);
 
   useEffect(() => {
     if (!editingItemId) return;
@@ -98,7 +110,9 @@ export default function GetQuotePage() {
 
   const removeItem = (indexToRemove: number) => {
     // Removing the edited item should also close edit mode.
-    setCart((current) => current.filter((_, index) => index !== indexToRemove));
+    const item = cart[indexToRemove];
+    if (!item) return;
+    removeCartItem(item.id);
     if (editingIndex === indexToRemove) {
       setEditingIndex(null);
       clearEditParam();
@@ -150,6 +164,7 @@ export default function GetQuotePage() {
         ) : showCheckout ? (
           <QuoteCheckoutForm
             cart={cart}
+            onRemove={removeCartItem}
             onBack={() => setShowCheckout(false)}
             onSuccess={() => {
               clearCart();

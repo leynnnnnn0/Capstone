@@ -48,6 +48,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFrame,
   TableHead,
   TableHeader,
   TableRow,
@@ -341,7 +342,7 @@ export default function AdminPaymentsPage() {
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -376,7 +377,7 @@ export default function AdminPaymentsPage() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableFrame>
 
       {meta && meta.last_page > 1 && (
         <PaginationControls
@@ -538,7 +539,7 @@ function PaymentRow({ payment, onRefund }: { payment: AdminPayment; onRefund: (p
       <TableCell>
         <PaymentBadge className={paymentStatusStyle[payment.status]}>{payment.status_label}</PaymentBadge>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right tabular-nums">
         <p className="font-medium">{formatPeso(payment.net_amount ?? payment.amount)}</p>
         {(payment.refunded_amount ?? 0) > 0 && (
           <p className="text-xs text-muted-foreground">{formatPeso(payment.refunded_amount)} refunded</p>

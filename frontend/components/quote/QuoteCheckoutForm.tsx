@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import type React from "react";
 
@@ -36,7 +37,6 @@ import {
   computeItemTotal,
   formatCurrency,
   isAreaUnit,
-  measurementWidth,
   quoteDimensionLabel,
   quoteTotal,
   variantLabel,
@@ -62,10 +62,12 @@ function createDefaultForm(): QuoteCheckoutFields {
 
 export default function QuoteCheckoutForm({
   cart,
+  onRemove,
   onBack,
   onSuccess,
 }: {
   cart: QuoteCartItem[];
+  onRemove: (id: string) => void;
   onBack: () => void;
   onSuccess: () => void;
 }) {
@@ -283,7 +285,7 @@ export default function QuoteCheckoutForm({
           </div>
 
           <div className="flex flex-col gap-4">
-            <QuoteSummary cart={cart} total={total} />
+            <QuoteSummary cart={cart} total={total} onRemove={onRemove} />
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -337,7 +339,15 @@ export default function QuoteCheckoutForm({
   );
 }
 
-function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number }) {
+function QuoteSummary({
+  cart,
+  total,
+  onRemove,
+}: {
+  cart: QuoteCartItem[];
+  total: number;
+  onRemove: (id: string) => void;
+}) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
       <p className="mb-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -365,9 +375,20 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
               {item.pieces} pc{item.pieces === 1 ? "" : "s"}
             </p>
           </div>
-          <p className="text-[13px] font-extrabold text-primary">
-            {formatCurrency(Math.round(computeItemTotal(item)))}
-          </p>
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-[13px] font-extrabold text-primary">
+              {formatCurrency(Math.round(computeItemTotal(item)))}
+            </p>
+            <button
+              type="button"
+              onClick={() => onRemove(item.id)}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 hover:underline"
+              aria-label={`Remove ${item.product.name} from order summary`}
+            >
+              <Trash2 className="h-3 w-3" aria-hidden="true" />
+              Remove
+            </button>
+          </div>
         </div>
       ))}
       <div className="mt-2 flex items-baseline justify-between border-t-2 border-slate-100 pt-4">
@@ -386,18 +407,33 @@ function QuoteSummary({ cart, total }: { cart: QuoteCartItem[]; total: number })
 
 function formatMeasurementSummary(item: QuoteCartItem) {
   const segments = item.measurement_segments?.filter((segment) => segment > 0) ?? [];
-  const width = measurementWidth(item);
-  const height = Number(item.height || item.measurement_height || 0);
+  const unitMultiplier = item.dimension_unit === "cm" ? 1 : 100;
+  const widthCm =
+    (segments.length > 0
+      ? segments.reduce((sum, segment) => sum + segment, 0)
+      : Number(item.width || 0)) * unitMultiplier;
+  const heightCm =
+    Number(item.height || item.measurement_height || 0) * unitMultiplier;
+  const formatCm = (value: number) =>
+    `${new Intl.NumberFormat("en-PH", {
+      maximumFractionDigits: 1,
+    }).format(value)} cm`;
 
   if (item.source !== "ar") return quoteDimensionLabel(item);
 
   if (segments.length > 1) {
-    return `${segments.map((segment) => `${segment}m`).join(" + ")} x ${height}m`;
+    return `${segments
+      .map((segment) => formatCm(segment * unitMultiplier))
+      .join(" + ")} × ${formatCm(heightCm)}`;
   }
 
-  if (isAreaUnit(item.product.unit)) return `${width}m x ${height}m`;
-  if (item.product.unit === "meter") return `${width}m`;
-  return height > 0 ? `${width}m x ${height}m` : `${width}m`;
+  if (isAreaUnit(item.product.unit)) {
+    return `${formatCm(widthCm)} × ${formatCm(heightCm)}`;
+  }
+  if (item.product.unit === "meter") return formatCm(widthCm);
+  return heightCm > 0
+    ? `${formatCm(widthCm)} × ${formatCm(heightCm)}`
+    : formatCm(widthCm);
 }
 
 function FormField({

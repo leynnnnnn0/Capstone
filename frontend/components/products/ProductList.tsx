@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { deleteProduct, fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, PaginatedResponse, Product } from "@/features/products/types";
 import {
@@ -199,7 +199,7 @@ export default function ProductList() {
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border bg-card md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -236,8 +236,8 @@ export default function ProductList() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{formatCurrency(product.price_per_unit)}</TableCell>
+                    <TableCell className="font-semibold text-[#162d4a]">{product.name}</TableCell>
+                    <TableCell className="whitespace-nowrap tabular-nums">{formatCurrency(product.price_per_unit)}</TableCell>
                     <TableCell className="uppercase text-muted-foreground">{product.unit}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{productVariants(product).length}</Badge>
@@ -275,7 +275,7 @@ export default function ProductList() {
             )}
           </TableBody>
         </Table>
-      </div>
+      </TableFrame>
 
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

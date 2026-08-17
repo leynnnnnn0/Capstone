@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { useId, useState } from "react";
 import {
   ArrowUpRight,
@@ -33,6 +34,28 @@ type ArDimensions = {
 };
 
 type ArFit = "exact" | "contain";
+
+function arUrl(productId: number) {
+  const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
+  const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
+  const base = configured
+    ? configured.replace(/\/ar(?:\/v[123])?$/, "") + `/ar/${version}`
+    : window.location.port === "3000"
+      ? `${window.location.protocol}//${window.location.hostname}:5173/ar/${version}`
+      : `/ar/${version}`;
+
+  return `${base}?product=${productId}`;
+}
+
+async function supportsWebXrAr() {
+  const xr = (navigator as Navigator & {
+    xr?: { isSessionSupported?: (mode: "immersive-ar") => Promise<boolean> };
+  }).xr;
+
+  if (!window.isSecureContext || !xr?.isSessionSupported) return false;
+
+  return xr.isSessionSupported("immersive-ar").catch(() => false);
+}
 
 export default function ProductArButton({
   productId,
@@ -68,6 +91,17 @@ export default function ProductArButton({
     parsedDraft.depth !== appliedDimensions.depth ||
     fit !== appliedFit;
 
+  async function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+
+    if (await supportsWebXrAr()) {
+      window.location.assign(arUrl(productId));
+      return;
+    }
+
+    setFallbackOpen(true);
+  }
+
   function applyDimensions() {
     if (!parsedDraft) return;
 
@@ -86,7 +120,7 @@ export default function ProductArButton({
     <>
       <button
         type="button"
-        onClick={() => setFallbackOpen(true)}
+        onClick={handleClick}
         className={cn(
           "group absolute bottom-3 right-3 z-10 inline-flex max-w-[calc(100%_-_1.5rem)] items-center gap-3 rounded-[1.15rem] border border-white/20 bg-[#10263f]/95 p-2.5 pr-3 text-white shadow-[0_16px_40px_rgba(15,35,58,0.28)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-[#193a60] hover:shadow-[0_20px_46px_rgba(15,35,58,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#608db9] focus-visible:ring-offset-2",
           className,

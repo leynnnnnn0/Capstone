@@ -321,19 +321,23 @@ export default function EditorialProductShowcase({
                   "absolute bottom-5 left-1/2 origin-bottom",
                   isActive && styles.cardActive,
                 )}
-                onClick={() => setSelectedIndex(index)}
+                onClick={() => {
+                  setSelectedIndex(index);
+                }}
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
-                <Image
-                  src={item.cover}
-                  alt={`${item.name} product preview`}
-                  fill
-                  sizes="(max-width: 639px) 150px, (max-width: 1023px) 190px, 220px"
-                  className={styles.cardMedia}
-                  style={{
-                    objectPosition: item.coverPosition ?? "center",
-                  }}
-                />
+                <Link href={item.href}>
+                  <Image
+                    src={item.cover}
+                    alt={`${item.name} product preview`}
+                    fill
+                    sizes="(max-width: 639px) 150px, (max-width: 1023px) 190px, 220px"
+                    className={styles.cardMedia}
+                    style={{
+                      objectPosition: item.coverPosition ?? "center",
+                    }}
+                  />
+                </Link>
                 <div className={styles.cardScrim} />
                 <span className={styles.cardIndex}>
                   {String(index + 1).padStart(2, "0")}

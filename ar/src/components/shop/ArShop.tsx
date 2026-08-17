@@ -28,7 +28,6 @@ interface ArShopProps {
   selectedModel: ModelDefinition;
   selectedModelId: string;
   searchQuery: string;
-  isV2: boolean;
   catalogStatus: string;
   activeObjectCount: number;
   relatedModels: ModelDefinition[];
@@ -50,7 +49,6 @@ export function ArShop({
   selectedModel,
   selectedModelId,
   searchQuery,
-  isV2,
   catalogStatus,
   activeObjectCount,
   relatedModels,
