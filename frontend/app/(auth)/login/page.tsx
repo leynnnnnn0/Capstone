@@ -84,7 +84,8 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await requestCustomerOtp(customerContact);
+      const result = await requestCustomerOtp(customerContact);
+      console.log(result);
       setCountdown(60);
       setSubmittedContact(customerContact);
       setSubmittedContactLabel(customerContactLabel);

@@ -11,6 +11,7 @@ use App\Models\WorkJob;
 use App\Services\Audit\AuthAuditLogger;
 use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -223,9 +224,13 @@ class CustomerOtpService
             ->latest()
             ->first();
 
+        
+
         if ($latest && $latest->created_at->gt(now()->subSeconds(self::COOLDOWN_SECONDS))) {
+            $availableAt = $latest->created_at->copy()->addSeconds(self::COOLDOWN_SECONDS);
+            $seconds = (int) now()->diffInSeconds($availableAt);
             throw ValidationException::withMessages([
-                'contact' => 'Please wait before requesting another code.',
+                'contact' => "Please wait {$seconds} seconds before requesting another code.",
             ]);
         }
     }

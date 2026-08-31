@@ -22,14 +22,23 @@ class RateLimitServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(3)
                     ->by($request->ip())
-                    ->response(fn() => response()->json([
-                        'message' => 'Too many code requests. Please try again later.',
-                    ], 429)),
+                    ->response(function (Request $request, array $headers) {
+                        return response()->json([
+                        'message' => "Too many code requests. Please try again in {$headers['Retry-After']} seconds.",
+                            'retry_after' => $headers['Retry-After'] ?? null, 
+                            'available_at' => now()->addSeconds($headers['Retry-After'] ?? 0)->toIso8601String(),
+                        ], 429, $headers);
+                    }),
+
                 Limit::perMinutes(10, 5)
                     ->by(strtolower((string) $request->input('contact')))
-                    ->response(fn() => response()->json([
-                        'message' => 'Too many code requests for this contact. Please try again later.',
-                    ], 429)),
+                    ->response(function (Request $request, array $headers) {
+                        return response()->json([
+                            'message' => "Too many code requests. Please try again in {$headers['Retry-After']} seconds.",
+                            'retry_after' => $headers['Retry-After'] ?? null,
+                            'available_at' => now()->addSeconds($headers['Retry-After'] ?? 0)->toIso8601String(),
+                        ], 429, $headers);
+                    }),
             ];
         });
 
