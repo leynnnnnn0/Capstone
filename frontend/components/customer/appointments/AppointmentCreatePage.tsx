@@ -66,10 +66,10 @@ export default function AppointmentCreatePage() {
         title={isRebook ? "Book this visit again." : "Book an inspection."}
         description={
           isRebook
-            ? "We filled in your previous details and quote items. You can adjust anything before submitting."
+            ? "We filled in your previous appointment details. You can adjust them before submitting."
             : latestPrefill
-              ? "We filled in your latest appointment details. Quote items start empty for this new request."
-              : "Create a request with or without quote items. Quote items can still be added through the quote flow."
+              ? "We filled in your latest appointment details for convenience."
+              : "Create an inspection request for the SOG team to review."
         }
       />
 
@@ -78,7 +78,7 @@ export default function AppointmentCreatePage() {
       ) : (
         <AppointmentForm
           prefillAppointment={prefillAppointment}
-          includePrefillQuotation={isRebook}
+          isRebook={isRebook}
         />
       )}
     </>
