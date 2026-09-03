@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { BriefcaseBusiness, CalendarClock, RotateCcw, Pencil, XCircle } from "lucide-react";
 
 import AppointmentInfoCard from "@/components/customer/appointments/AppointmentInfoCard";
-import AppointmentMeasurementRecords from "@/components/ar-measurements/AppointmentMeasurementRecords";
 import CustomerOrderNextStepCard from "@/components/customer/appointments/CustomerOrderNextStepCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
@@ -415,15 +414,6 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           <CustomerOrderNextStepCard appointment={appointment} />
 
           <AppointmentInfoCard appointment={appointment} />
-
-          <AppointmentMeasurementRecords
-            appointmentId={appointment.id}
-            appointmentNumber={appointment.appointment_number}
-            customerName={appointment.full_name}
-            serviceType={appointment.service_type}
-            address={appointment.address}
-            audience="customer"
-          />
 
           {/* <CustomerQuoteImageList quotation={appointment.quotation} /> */}
         </section>
