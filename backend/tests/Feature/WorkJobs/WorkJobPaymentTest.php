@@ -128,9 +128,10 @@ it('does not allow manual payments on cancelled work jobs', function () {
         ->assertJsonValidationErrors(['payment']);
 });
 
-it('does not allow workers to record manual payments', function () {
+it('allows assigned workers to record manual payments', function () {
     $worker = User::factory()->worker()->create();
     $workJob = payableWorkJob();
+    $workJob->workers()->attach($worker);
 
     $this->actingAs($worker)
         ->postJson("/api/v1/work-jobs/{$workJob->id}/payments/manual", [
@@ -138,7 +139,8 @@ it('does not allow workers to record manual payments', function () {
             'method' => PaymentMethod::Cash->value,
             'amount' => 10000,
         ])
-        ->assertForbidden();
+        ->assertOk()
+        ->assertJsonPath('data.payment_summary.paid_amount', 10000);
 });
 
 it('adds approved work job charges to the payable balance', function () {

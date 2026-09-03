@@ -21,7 +21,7 @@ class RecordWorkJobPaymentController extends Controller
 
     public function __invoke(Request $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot record manual payments.');
+        $this->abortIfWorkerNotAssignedToWorkJob($request, $workJob);
 
         $data = $request->validate([
             'type' => ['required', Rule::in(array_column(PaymentType::cases(), 'value'))],
