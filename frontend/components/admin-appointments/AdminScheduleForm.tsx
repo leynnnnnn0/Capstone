@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock, Loader2, Users } from "lucide-react";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -167,6 +168,7 @@ export default function AdminScheduleForm({
       onUpdated(response.data);
       setScheduleOpen(false);
       setConfirmOpen(false);
+      toast.success(canSetSchedule ? "Appointment accepted and scheduled." : "Appointment rescheduled.");
     } catch (error) {
       setErrors(toScheduleErrors(error));
       setConfirmOpen(false);

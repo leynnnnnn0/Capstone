@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { AlertCircle, CreditCard, WalletCards } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -297,6 +298,7 @@ export default function CustomerWorkJobPaymentCard({
                       order_id: data.orderID,
                     });
                     onPaid(response.data);
+                    toast.success("Payment completed successfully.");
                     setSelectedAction(null);
                   } catch (error) {
                     setError(errorMessage(error));
