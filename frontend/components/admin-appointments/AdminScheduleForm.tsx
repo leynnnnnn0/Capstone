@@ -69,7 +69,7 @@ export default function AdminScheduleForm({
   readOnly?: boolean;
 }) {
   const [data, setData] = useState<SchedulePayload>({
-    appointment_date: appointment.appointment_date ?? "",
+    appointment_date: appointment.appointment_date ?? appointment.preferred_date ?? "",
     appointment_time_from: appointment.appointment_time_from ?? "",
     appointment_time_until: appointment.appointment_time_until ?? "",
     worker_ids: appointment.workers.map((worker) => worker.id),
@@ -102,7 +102,7 @@ export default function AdminScheduleForm({
 
   function openScheduleDialog() {
     setData({
-      appointment_date: appointment.appointment_date ?? "",
+      appointment_date: appointment.appointment_date ?? appointment.preferred_date ?? "",
       appointment_time_from: appointment.appointment_time_from ?? "",
       appointment_time_until: appointment.appointment_time_until ?? "",
       worker_ids: appointment.workers.map((worker) => worker.id),
