@@ -3,6 +3,7 @@
 use App\Models\QuotationItem;
 use App\Models\QuotationItemImage;
 use App\Models\User;
+use App\Models\WorkJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -30,6 +31,26 @@ it('uploads before images for a quotation item', function () {
         ->assertJsonPath('data.0.can_delete', true);
 
     Storage::disk('public')->assertExists($quotationItem->images()->first()->image_path);
+});
+
+it('allows a worker assigned to the linked work job to upload before images', function () {
+    Storage::fake('public');
+    $worker = User::factory()->worker()->create();
+    $quotationItem = QuotationItem::factory()->create();
+    $workJob = WorkJob::factory()->create([
+        'quotation_id' => $quotationItem->quotation_id,
+    ]);
+    $workJob->workers()->attach($worker);
+
+    $this->actingAs($worker)
+        ->postJson("/api/v1/quotation-items/{$quotationItem->id}/images", [
+            'type' => 'before',
+            'images' => [UploadedFile::fake()->image('before.jpg', 800, 600)],
+        ])
+        ->assertCreated()
+        ->assertJsonPath('data.0.type', 'before');
+
+    expect($quotationItem->images()->where('type', 'before')->count())->toBe(1);
 });
 
 it('prevents non admins from deleting images uploaded by another user', function () {

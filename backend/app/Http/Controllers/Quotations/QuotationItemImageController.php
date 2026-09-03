@@ -2,24 +2,21 @@
 
 namespace App\Http\Controllers\Quotations;
 
-use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\QuotationItemImageResource;
 use App\Models\QuotationItem;
 use App\Models\QuotationItemImage;
+use App\Models\WorkJob;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 
 class QuotationItemImageController extends Controller
 {
-    use AuthorizesAssignedWork;
-
     public function store(Request $request, QuotationItem $quotationItem): JsonResponse
     {
-        $quotationItem->loadMissing('quotation.appointment');
-        $this->abortIfWorkerNotAssignedToAppointment($request, $quotationItem->quotation->appointment);
+        $this->authorizeWorkerForQuotationItem($request, $quotationItem);
 
         $validated = $request->validate([
             'type' => ['required', 'in:before,after'],
@@ -48,8 +45,7 @@ class QuotationItemImageController extends Controller
 
     public function destroy(QuotationItemImage $quotationItemImage): JsonResponse
     {
-        $quotationItemImage->loadMissing('quotation_item.quotation.appointment');
-        $this->abortIfWorkerNotAssignedToAppointment(request(), $quotationItemImage->quotation_item->quotation->appointment);
+        $this->authorizeWorkerForQuotationItem(request(), $quotationItemImage->quotation_item);
         abort_unless($this->canDeleteImage($quotationItemImage), Response::HTTP_FORBIDDEN, 'You can only delete photos that you uploaded.');
 
         Storage::disk('public')->delete($quotationItemImage->image_path);
@@ -73,5 +69,27 @@ class QuotationItemImageController extends Controller
         }
 
         return $quotationItemImage->uploaded_by_id === $user->id;
+    }
+
+    private function authorizeWorkerForQuotationItem(Request $request, QuotationItem $quotationItem): void
+    {
+        $quotationItem->loadMissing('quotation.appointment.workers');
+        $user = $request->user();
+
+        if (! $user?->isWorker() || $user->isOperationsAdmin()) {
+            return;
+        }
+
+        $assignedToAppointment = $quotationItem->quotation->appointment?->workers->contains('id', $user->id) ?? false;
+        $assignedToWorkJob = WorkJob::query()
+            ->where('quotation_id', $quotationItem->quotation_id)
+            ->whereHas('workers', fn ($query) => $query->whereKey($user->id))
+            ->exists();
+
+        abort_unless(
+            $assignedToAppointment || $assignedToWorkJob,
+            Response::HTTP_FORBIDDEN,
+            'This quotation item is not assigned to you.'
+        );
     }
 }
