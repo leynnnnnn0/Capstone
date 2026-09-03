@@ -1,4 +1,5 @@
 <?php
+
 // app/Services/WorkJobService.php
 
 namespace App\Services;
@@ -8,6 +9,8 @@ use App\Enums\WorkJobBackJobReason;
 use App\Enums\WorkJobStatus;
 use App\Events\WorkJobChanged;
 use App\Events\WorkJobCreated;
+use App\Events\WorkJobFabricationUpdated;
+use App\Events\WorkJobStatusChanged;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Models\Appointment;
 use App\Models\User;
@@ -49,30 +52,30 @@ class WorkJobService
             $workerIds = $data['worker_ids'];
 
             $workJob = WorkJob::create([
-                'appointment_id'       => $data['appointment_id'] ?? null,
-                'quotation_id'         => $data['quotation_id'] ?? null,
-                'user_id'              => $customerId,
-                'first_name'           => $data['first_name'],
-                'last_name'            => $data['last_name'],
-                'phone_number'         => $data['phone_number'],
-                'email'                => $data['email'] ?? null,
-                'address'              => $data['address'] ?? null,
-                'address_pinned'       => $data['address_pinned'] ?? null,
-                'address_lat'          => $data['address_lat'] ?? null,
-                'address_lng'          => $data['address_lng'] ?? null,
-                'service_type'         => $data['service_type'],
-                'service_type_other'   => $data['service_type_other'] ?? null,
-                'scheduled_date'       => $data['scheduled_date'],
-                'scheduled_time_from'  => $data['scheduled_time_from'],
+                'appointment_id' => $data['appointment_id'] ?? null,
+                'quotation_id' => $data['quotation_id'] ?? null,
+                'user_id' => $customerId,
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'phone_number' => $data['phone_number'],
+                'email' => $data['email'] ?? null,
+                'address' => $data['address'] ?? null,
+                'address_pinned' => $data['address_pinned'] ?? null,
+                'address_lat' => $data['address_lat'] ?? null,
+                'address_lng' => $data['address_lng'] ?? null,
+                'service_type' => $data['service_type'],
+                'service_type_other' => $data['service_type_other'] ?? null,
+                'scheduled_date' => $data['scheduled_date'],
+                'scheduled_time_from' => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
-                'status'               => WorkJobStatus::Confirmed,
-                'fabrication_status'   => $fabricationStatus,
+                'status' => WorkJobStatus::Confirmed,
+                'fabrication_status' => $fabricationStatus,
                 'fabrication_expected_completion_date' => $fabricationStatus === FabricationStatus::NotRequired
                     ? null
                     : ($data['fabrication_expected_completion_date'] ?? null),
-                'fabrication_notes'    => $data['fabrication_notes'] ?? null,
+                'fabrication_notes' => $data['fabrication_notes'] ?? null,
                 'fabrication_updated_at' => now(),
-                'notes'                => $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
                 'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
                 'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
             ]);
@@ -114,27 +117,27 @@ class WorkJobService
                 : $workJob->fabrication_status;
 
             $workJob->update([
-                'appointment_id'       => $data['appointment_id'] ?? null,
-                'quotation_id'         => $data['quotation_id'] ?? null,
-                'user_id'              => $customerId,
-                'first_name'           => $data['first_name'],
-                'last_name'            => $data['last_name'],
-                'phone_number'         => $data['phone_number'],
-                'email'                => $data['email'] ?? null,
-                'address'              => $data['address'] ?? null,
-                'address_pinned'       => $data['address_pinned'] ?? null,
-                'address_lat'          => $data['address_lat'] ?? null,
-                'address_lng'          => $data['address_lng'] ?? null,
-                'service_type'         => $data['service_type'],
-                'service_type_other'   => $data['service_type_other'] ?? null,
-                'scheduled_date'       => $data['scheduled_date'],
-                'scheduled_time_from'  => $data['scheduled_time_from'],
+                'appointment_id' => $data['appointment_id'] ?? null,
+                'quotation_id' => $data['quotation_id'] ?? null,
+                'user_id' => $customerId,
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'phone_number' => $data['phone_number'],
+                'email' => $data['email'] ?? null,
+                'address' => $data['address'] ?? null,
+                'address_pinned' => $data['address_pinned'] ?? null,
+                'address_lat' => $data['address_lat'] ?? null,
+                'address_lng' => $data['address_lng'] ?? null,
+                'service_type' => $data['service_type'],
+                'service_type_other' => $data['service_type_other'] ?? null,
+                'scheduled_date' => $data['scheduled_date'],
+                'scheduled_time_from' => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
-                'fabrication_status'   => $fabricationStatus,
+                'fabrication_status' => $fabricationStatus,
                 'fabrication_expected_completion_date' => $fabricationStatus === FabricationStatus::NotRequired
                     ? null
                     : ($data['fabrication_expected_completion_date'] ?? $workJob->fabrication_expected_completion_date),
-                'fabrication_notes'    => $fabricationStatus === FabricationStatus::NotRequired
+                'fabrication_notes' => $fabricationStatus === FabricationStatus::NotRequired
                     ? null
                     : ($data['fabrication_notes'] ?? $workJob->fabrication_notes),
                 'fabrication_started_at' => $fabricationStatus === FabricationStatus::NotRequired
@@ -144,7 +147,7 @@ class WorkJobService
                     ? null
                     : $workJob->fabrication_completed_at,
                 'fabrication_updated_at' => isset($data['fabrication_status']) ? now() : $workJob->fabrication_updated_at,
-                'notes'                => $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
                 'is_down_payment_required' => (bool) ($data['is_down_payment_required'] ?? false),
                 'down_payment_percentage' => $data['down_payment_percentage'] ?? 20,
             ]);
@@ -175,22 +178,22 @@ class WorkJobService
         $appointment->load(['workers', 'quotation']);
 
         return $this->create([
-            'appointment_id'       => $appointment->id,
-            'quotation_id'         => $appointment->quotation?->id,
-            'first_name'           => $appointment->first_name,
-            'last_name'            => $appointment->last_name,
-            'phone_number'         => $appointment->phone_number,
-            'email'                => $appointment->email,
-            'address'              => $appointment->address,
-            'address_pinned'       => $appointment->address_pinned,
-            'address_lat'          => $appointment->address_lat,
-            'address_lng'          => $appointment->address_lng,
-            'service_type'         => $appointment->service_type,
-            'service_type_other'   => $appointment->service_type_other,
-            'scheduled_date'       => $appointment->appointment_date,
-            'scheduled_time_from'  => $appointment->appointment_time_from,
+            'appointment_id' => $appointment->id,
+            'quotation_id' => $appointment->quotation?->id,
+            'first_name' => $appointment->first_name,
+            'last_name' => $appointment->last_name,
+            'phone_number' => $appointment->phone_number,
+            'email' => $appointment->email,
+            'address' => $appointment->address,
+            'address_pinned' => $appointment->address_pinned,
+            'address_lat' => $appointment->address_lat,
+            'address_lng' => $appointment->address_lng,
+            'service_type' => $appointment->service_type,
+            'service_type_other' => $appointment->service_type_other,
+            'scheduled_date' => $appointment->appointment_date,
+            'scheduled_time_from' => $appointment->appointment_time_from,
             'scheduled_time_until' => $appointment->appointment_time_until,
-            'worker_ids'           => $appointment->workers->pluck('id')->toArray(),
+            'worker_ids' => $appointment->workers->pluck('id')->toArray(),
             'is_down_payment_required' => false,
             'down_payment_percentage' => 20,
         ], $actor);
@@ -224,30 +227,30 @@ class WorkJobService
             $reason = WorkJobBackJobReason::from($data['back_job_reason']);
 
             $workJob = WorkJob::create([
-                'appointment_id'       => $source->appointment_id,
-                'quotation_id'         => $source->quotation_id,
-                'parent_work_job_id'   => $source->id,
-                'user_id'              => $customerId,
-                'first_name'           => $source->first_name,
-                'last_name'            => $source->last_name,
-                'phone_number'         => $source->phone_number,
-                'email'                => $source->email,
-                'address'              => $source->address,
-                'address_pinned'       => $source->address_pinned,
-                'address_lat'          => $source->address_lat,
-                'address_lng'          => $source->address_lng,
-                'service_type'         => $source->service_type,
-                'service_type_other'   => $source->service_type_other,
-                'scheduled_date'       => $data['scheduled_date'],
-                'scheduled_time_from'  => $data['scheduled_time_from'],
+                'appointment_id' => $source->appointment_id,
+                'quotation_id' => $source->quotation_id,
+                'parent_work_job_id' => $source->id,
+                'user_id' => $customerId,
+                'first_name' => $source->first_name,
+                'last_name' => $source->last_name,
+                'phone_number' => $source->phone_number,
+                'email' => $source->email,
+                'address' => $source->address,
+                'address_pinned' => $source->address_pinned,
+                'address_lat' => $source->address_lat,
+                'address_lng' => $source->address_lng,
+                'service_type' => $source->service_type,
+                'service_type_other' => $source->service_type_other,
+                'scheduled_date' => $data['scheduled_date'],
+                'scheduled_time_from' => $data['scheduled_time_from'],
                 'scheduled_time_until' => $data['scheduled_time_until'],
-                'status'               => WorkJobStatus::Confirmed,
-                'fabrication_status'   => FabricationStatus::NotRequired,
+                'status' => WorkJobStatus::Confirmed,
+                'fabrication_status' => FabricationStatus::NotRequired,
                 'fabrication_updated_at' => now(),
-                'back_job_reason'      => $reason,
+                'back_job_reason' => $reason,
                 'back_job_reason_other' => $data['back_job_reason_other'] ?? null,
-                'back_job_details'     => $data['back_job_details'],
-                'notes'                => $data['notes'] ?? $source->notes,
+                'back_job_details' => $data['back_job_details'],
+                'notes' => $data['notes'] ?? $source->notes,
                 'is_down_payment_required' => false,
                 'down_payment_percentage' => 20,
             ]);
@@ -324,6 +327,7 @@ class WorkJobService
 
         $workJob = $workJob->fresh()->load($this->relations());
         WorkJobChanged::dispatch($workJob, WorkJobStatus::Rescheduled->value, $message, $actor);
+        WorkJobStatusChanged::dispatch($workJob, WorkJobStatus::Rescheduled, $message, $actor);
 
         return $workJob;
     }
@@ -368,6 +372,7 @@ class WorkJobService
 
         $workJob = $workJob->fresh()->load($this->relations());
         WorkJobChanged::dispatch($workJob, WorkJobStatus::Completed->value, $remarks ?: 'Work job completed.', $actor);
+        WorkJobStatusChanged::dispatch($workJob, WorkJobStatus::Completed, $remarks ?: 'Work job completed.', $actor);
 
         return $workJob;
     }
@@ -461,6 +466,7 @@ class WorkJobService
 
         $workJob = $workJob->fresh()->load($this->relations());
         WorkJobChanged::dispatch($workJob, "fabrication_{$status->value}", $message, $actor);
+        WorkJobFabricationUpdated::dispatch($workJob, $status, $message, $actor);
 
         return $workJob;
     }
@@ -481,6 +487,7 @@ class WorkJobService
 
         $workJob = $workJob->fresh()->load($this->relations());
         WorkJobChanged::dispatch($workJob, $next->value, $message, $actor);
+        WorkJobStatusChanged::dispatch($workJob, $next, $message, $actor);
 
         return $workJob;
     }
@@ -490,7 +497,7 @@ class WorkJobService
      */
     private function ensureCanTransition(WorkJob $workJob, WorkJobStatus $next): void
     {
-        if (!$workJob->status->canTransitionTo($next)) {
+        if (! $workJob->status->canTransitionTo($next)) {
             throw new InvalidStatusTransitionException(
                 "Cannot move from {$workJob->status->label()} to {$next->label()}."
             );
