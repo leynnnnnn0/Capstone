@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -87,8 +87,19 @@ export default function AdminAppointmentCalendar({
   compact = false,
 }: AdminAppointmentCalendarProps) {
   const [mode, setMode] = useState<CalendarMode>(defaultMode);
+  const [isMobile, setIsMobile] = useState(false);
   const activeMode = lockedMode ?? mode;
   const [selectedRecord, setSelectedRecord] = useState<SelectedRecord>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const updateMobileLayout = () => setIsMobile(mediaQuery.matches);
+
+    updateMobileLayout();
+    mediaQuery.addEventListener("change", updateMobileLayout);
+
+    return () => mediaQuery.removeEventListener("change", updateMobileLayout);
+  }, []);
 
   const scheduledAppointments = useMemo(
     () => appointments.filter((appointment) => appointment.appointment_date && appointment.appointment_time_from && appointment.appointment_time_until),
@@ -131,7 +142,7 @@ export default function AdminAppointmentCalendar({
   const selectedWorkJob = selectedRecord?.kind === "work_job"
     ? workJobs.find((workJob) => workJob.id === selectedRecord.id) ?? null
     : null;
-  const calendarMinWidth = fitToContainer
+  const calendarMinWidth = isMobile || fitToContainer
     ? "100%"
     : activeMode === "workers"
       ? Math.max(760, 7 * Math.max(maxConcurrentWorkerEvents(scheduledItems), 1) * 104)
@@ -208,14 +219,14 @@ export default function AdminAppointmentCalendar({
           `}</style>
           <div style={{ minWidth: calendarMinWidth }}>
             <FullCalendar
-              key={activeMode}
+              key={`${activeMode}-${isMobile ? "list" : "calendar"}`}
               plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
-              initialView="timeGridWeek"
+              initialView={isMobile ? "listWeek" : "timeGridWeek"}
               initialDate={initialDate}
               headerToolbar={{
                 left: "prev,next today",
                 center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
+                right: isMobile ? "" : "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
               }}
               buttonText={{ today: "Today", month: "Month", week: "Week", day: "Day", list: "List" }}
               events={activeMode === "appointments" ? appointmentEvents : activeMode === "work_jobs" ? workJobEvents : workerEvents}
