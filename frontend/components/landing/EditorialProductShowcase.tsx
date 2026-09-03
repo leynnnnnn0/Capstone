@@ -37,6 +37,8 @@ type ShowcaseItem = {
   href: string;
 };
 
+const SHOWCASE_ITEM_COUNT = 5;
+
 type CarouselConfig = {
   CARD_WIDTH: number;
   GAP: number;
@@ -226,12 +228,12 @@ export default function EditorialProductShowcase({
 }: EditorialProductShowcaseProps) {
   const items = useMemo(
     () =>
-      products.length > 0
-        ? products.slice(0, 7).map(toShowcaseItem)
-        : fallbackItems,
+      products.length >= SHOWCASE_ITEM_COUNT
+        ? products.slice(0, SHOWCASE_ITEM_COUNT).map(toShowcaseItem)
+        : fallbackItems.slice(0, SHOWCASE_ITEM_COUNT),
     [products],
   );
-  const [selectedIndex, setSelectedIndex] = useState(3);
+  const [selectedIndex, setSelectedIndex] = useState(2);
   const carouselConfig = useCarouselConfig();
   const activeIndex = Math.min(selectedIndex, items.length - 1);
   const activeItem = items[activeIndex];
@@ -307,7 +309,8 @@ export default function EditorialProductShowcase({
 
           {items.map((item, index) => {
             const offset = getCircularOffset(index, activeIndex, items.length);
-            const isVisible = Math.abs(offset) <= 1;
+            const isVisible =
+              Math.abs(offset) <= (carouselConfig.CARD_WIDTH >= 220 ? 2 : 1);
             const isActive = index === activeIndex;
 
             return (

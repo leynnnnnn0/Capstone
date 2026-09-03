@@ -131,7 +131,6 @@ export default function SogSiteHeader({
               href="/login"
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-800 transition-colors hover:border-slate-950 hover:text-slate-950"
             >
-              <LogIn className="h-4 w-4" />
               Login
             </Link>
             <Link
@@ -211,7 +210,6 @@ export default function SogSiteHeader({
                 className="mt-1 inline-flex items-center justify-between rounded-2xl border border-slate-300 bg-white px-4 py-4 text-slate-900 transition-colors hover:border-slate-950"
               >
                 <span className="inline-flex items-center gap-2">
-                  <LogIn className="h-4 w-4" />
                   Login
                 </span>
                 <ArrowRight className="h-4 w-4" />

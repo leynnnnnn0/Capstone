@@ -36,7 +36,7 @@ export default function Welcome() {
   useEffect(() => {
     let mounted = true;
 
-    api<ProductsResponse>("/api/v1/products?is_active=1&per_page=7", {
+    api<ProductsResponse>("/api/v1/products?is_active=1&per_page=5", {
       skipAuth: true,
     })
       .then((response) => {

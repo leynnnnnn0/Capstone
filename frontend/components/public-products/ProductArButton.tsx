@@ -1,11 +1,10 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import {
   ArrowUpRight,
   Check,
-  ChevronDown,
   RotateCcw,
   Ruler,
   ScanLine,
@@ -32,8 +31,6 @@ type ArDimensions = {
   height: string;
   depth: string;
 };
-
-type ArFit = "exact" | "contain";
 
 function arUrl(productId: number) {
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
@@ -67,7 +64,6 @@ export default function ProductArButton({
   defaultDepthCm,
   className,
 }: ProductArButtonProps) {
-  const fitSelectId = useId();
   const [fallbackOpen, setFallbackOpen] = useState(false);
   const defaults = defaultArDimensions(
     productName,
@@ -80,16 +76,13 @@ export default function ProductArButton({
     dimensionsToStrings(defaults),
   );
   const [appliedDimensions, setAppliedDimensions] = useState(defaults);
-  const [fit, setFit] = useState<ArFit>("exact");
-  const [appliedFit, setAppliedFit] = useState<ArFit>("exact");
-  const parsedDraft = parseDimensions(draftDimensions);
+  const parsedDraft = parseDimensions(draftDimensions, defaults.depth);
   const dimensionsValid = parsedDraft !== null;
   const dimensionsDirty =
     !parsedDraft ||
     parsedDraft.width !== appliedDimensions.width ||
     parsedDraft.height !== appliedDimensions.height ||
-    parsedDraft.depth !== appliedDimensions.depth ||
-    fit !== appliedFit;
+    parsedDraft.depth !== appliedDimensions.depth;
 
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -106,14 +99,11 @@ export default function ProductArButton({
     if (!parsedDraft) return;
 
     setAppliedDimensions(parsedDraft);
-    setAppliedFit(fit);
   }
 
   function resetDimensions() {
     setDraftDimensions(dimensionsToStrings(defaults));
     setAppliedDimensions(defaults);
-    setFit("exact");
-    setAppliedFit("exact");
   }
 
   return (
@@ -185,7 +175,7 @@ export default function ProductArButton({
                   <div>
                     <p className="text-sm font-bold text-slate-900">Real-world size</p>
                     <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                      Enter the finished outside dimensions in centimeters.
+                      Enter the finished outside dimensions in meters.
                     </p>
                   </div>
                 </div>
@@ -206,47 +196,13 @@ export default function ProductArButton({
                     }
                   />
                   <DimensionInput
-                    label="Depth"
+                    label="Depth (optional)"
                     value={draftDimensions.depth}
                     onChange={(depth) =>
                       setDraftDimensions((current) => ({ ...current, depth }))
                     }
                   />
                 </div>
-
-                {!dimensionsValid && (
-                  <p className="mt-2 text-xs font-medium text-red-600">
-                    Use values from 1 to 1,000 cm.
-                  </p>
-                )}
-
-                <details className="group mt-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                  <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3 text-xs font-bold text-slate-700">
-                    Advanced sizing
-                    <ChevronDown className="h-4 w-4 text-slate-400 transition group-open:rotate-180" />
-                  </summary>
-                  <div className="border-t border-slate-200 px-3 py-3">
-                    <label
-                      htmlFor={fitSelectId}
-                      className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500"
-                    >
-                      Model fit
-                    </label>
-                    <select
-                      id={fitSelectId}
-                      value={fit}
-                      onChange={(event) => setFit(event.target.value as ArFit)}
-                      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-[#608db9] focus:ring-2 focus:ring-[#608db9]/20"
-                    >
-                      <option value="exact">Exact width, height and depth</option>
-                      <option value="contain">Preserve model proportions</option>
-                    </select>
-                    <p className="mt-2 text-[11px] leading-4 text-slate-500">
-                      Preserve proportions fits the model inside your measurements
-                      without stretching its shape.
-                    </p>
-                  </div>
-                </details>
 
                 <button
                   type="button"
@@ -275,9 +231,9 @@ export default function ProductArButton({
                     AR will render
                   </p>
                   <p className="mt-1 text-sm font-extrabold text-[#10263f]">
-                    {formatDimension(appliedDimensions.width)} ×{" "}
-                    {formatDimension(appliedDimensions.height)} ×{" "}
-                    {formatDimension(appliedDimensions.depth)} cm
+                    {formatDimension(appliedDimensions.width / 100)} ×{" "}
+                    {formatDimension(appliedDimensions.height / 100)} ×{" "}
+                    {formatDimension(appliedDimensions.depth / 100)} m
                   </p>
                 </div>
               </aside>
@@ -289,7 +245,7 @@ export default function ProductArButton({
                 hideHeader
                 ar
                 arDimensionsCm={appliedDimensions}
-                arFit={appliedFit}
+                arFit="exact"
                 className="min-h-[22rem] rounded-none border-0"
                 viewportClassName="h-[min(52dvh,34rem)] lg:h-[min(70dvh,40rem)]"
               />
@@ -318,13 +274,13 @@ function DimensionInput({
       <span className="relative block">
         <NumericInput
           value={value}
-          decimalScale={1}
+          decimalScale={2}
           onValueChange={onChange}
-          aria-label={`${label} in centimeters`}
+          aria-label={`${label} in meters`}
           className="h-11 rounded-xl border-slate-200 bg-white pr-9 text-sm font-bold text-slate-800"
         />
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-bold text-slate-400">
-          cm
+          m
         </span>
       </span>
     </label>
@@ -368,21 +324,24 @@ function dimensionsToStrings(dimensions: {
   depth: number;
 }): ArDimensions {
   return {
-    width: String(dimensions.width),
-    height: String(dimensions.height),
-    depth: String(dimensions.depth),
+    width: String(dimensions.width / 100),
+    height: String(dimensions.height / 100),
+    depth: String(dimensions.depth / 100),
   };
 }
 
-function parseDimensions(dimensions: ArDimensions) {
+function parseDimensions(dimensions: ArDimensions, defaultDepth: number) {
   const parsed = {
-    width: Number(dimensions.width),
-    height: Number(dimensions.height),
-    depth: Number(dimensions.depth),
+    width: Number(dimensions.width) * 100,
+    height: Number(dimensions.height) * 100,
+    depth:
+      dimensions.depth.trim() === ""
+        ? defaultDepth
+        : Number(dimensions.depth) * 100,
   };
 
   return Object.values(parsed).every(
-    (value) => Number.isFinite(value) && value >= 1 && value <= 1000,
+    (value) => Number.isFinite(value) && value > 0,
   )
     ? parsed
     : null;
