@@ -12,7 +12,7 @@
     <p>Your appointment has been booked. Here are the details:</p>
 
     <p style="color: #d97706; font-weight: bold; margin-top: 10px;">
-    Please note: This appointment is still subject to confirmation. One of our representatives will call you to confirm your schedule.
+    Please note: You can update your appointment details, reschedule, or cancel your appointment anytime by <a href="{{ url('/login') }}" style="color: #2563eb;">logging in to your account</a>.
     </p>
 
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
