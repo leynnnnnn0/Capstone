@@ -142,7 +142,7 @@ it('shows fabrication progress to the owning customer', function () {
         ->assertJsonPath('data.fabrication.notes', 'Aluminum profiles are being prepared.');
 });
 
-it('does not let workers manage fabrication progress', function () {
+it('allows assigned workers to manage fabrication progress', function () {
     $worker = User::factory()->worker()->create();
     $workJob = WorkJob::factory()->create();
     $workJob->workers()->attach($worker);
@@ -152,5 +152,6 @@ it('does not let workers manage fabrication progress', function () {
             'status' => FabricationStatus::InProgress->value,
             'expected_completion_date' => now()->addDays(3)->format('Y-m-d'),
         ])
-        ->assertForbidden();
+        ->assertOk()
+        ->assertJsonPath('data.fabrication.status', FabricationStatus::InProgress->value);
 });

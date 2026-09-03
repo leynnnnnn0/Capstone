@@ -18,7 +18,7 @@ class UpdateWorkJobFabricationController extends Controller
 
     public function __invoke(UpdateWorkJobFabricationRequest $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot update fabrication progress.');
+        $this->abortIfWorkerNotAssignedToWorkJob($request, $workJob);
 
         $workJob = $this->workJobService->updateFabrication(
             $workJob,

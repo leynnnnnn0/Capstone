@@ -60,7 +60,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
       <AdminWorkJobHeader workJob={workJob} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage={!isWorker} />
+          <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage />
           <AdminWorkJobDetailsCard workJob={workJob} />
           <CustomerLocationCard address={workJob.address ?? ""} addressLat={workJob.address_lat} addressLng={workJob.address_lng} compact />
         </div>
