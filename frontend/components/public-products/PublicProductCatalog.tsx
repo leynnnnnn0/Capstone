@@ -18,6 +18,7 @@ import {
   productCategories,
   productCover,
 } from "@/features/products/product-utils";
+import { isCatalogMode } from "@/lib/app-mode";
 
 const gradients = [
   "linear-gradient(135deg,#1a2332,#2c5282)",
@@ -247,13 +248,19 @@ export default function PublicProductCatalog() {
                       <p className="mb-5 line-clamp-2 min-h-10 text-xs leading-5 text-[#667584]">
                         {product.description}
                       </p>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-semibold text-[#2c5282]">
-                          from {formatCurrency(product.price_per_unit)}
-                          <span className="font-normal text-slate-400">
-                            /{product.unit}
+                      <div
+                        className={`flex items-center gap-3 ${
+                          isCatalogMode ? "justify-end" : "justify-between"
+                        }`}
+                      >
+                        {!isCatalogMode && (
+                          <span className="text-xs font-semibold text-[#2c5282]">
+                            from {formatCurrency(product.price_per_unit)}
+                            <span className="font-normal text-slate-400">
+                              /{product.unit}
+                            </span>
                           </span>
-                        </span>
+                        )}
                         <Link
                           href={productHref(product.id)}
                           className="inline-flex items-center rounded-full border border-[#dce4ea] px-3 py-2 text-[11px] font-semibold text-[#536372] transition-colors group-hover:border-[#2c5282] group-hover:text-[#2c5282]"

@@ -2,19 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, LogIn, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { isCatalogMode } from "@/lib/app-mode";
 import { trackPublicRoute } from "@/lib/public-route-history";
 
-const navigation = [
+const fullNavigation = [
   { href: "/", label: "Home", exact: true },
-  { href: "/products", label: "Products" },
-  { href: "/get-quote", label: "Quote" },
-  { href: "/track", label: "Track" },
+  { href: "/products", label: "Products", exact: false },
+  { href: "/get-quote", label: "Quote", exact: false },
+  { href: "/track", label: "Track", exact: false },
 ];
+
+const navigation = isCatalogMode ? fullNavigation.slice(0, 2) : fullNavigation;
 
 function isActiveRoute(
   pathname: string,
@@ -126,7 +129,7 @@ export default function SogSiteHeader({
             })}
           </nav>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          {!isCatalogMode && <div className="hidden items-center gap-2 lg:flex">
             <Link
               href="/login"
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-800 transition-colors hover:border-slate-950 hover:text-slate-950"
@@ -139,7 +142,7 @@ export default function SogSiteHeader({
             >
               Get a quote <ArrowRight className="h-4 w-4" />
             </Link>
-          </div>
+          </div>}
 
           <button
             type="button"
@@ -204,7 +207,7 @@ export default function SogSiteHeader({
                   </Link>
                 );
               })}
-              <Link
+              {!isCatalogMode && <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="mt-1 inline-flex items-center justify-between rounded-2xl border border-slate-300 bg-white px-4 py-4 text-slate-900 transition-colors hover:border-slate-950"
@@ -213,14 +216,14 @@ export default function SogSiteHeader({
                   Login
                 </span>
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
+              </Link>}
+              {!isCatalogMode && <Link
                 href={quoteHref}
                 onClick={() => setMobileMenuOpen(false)}
                 className="inline-flex items-center justify-between rounded-2xl bg-slate-950 px-4 py-4 text-white"
               >
                 Get a quote <ArrowRight className="h-4 w-4" />
-              </Link>
+              </Link>}
             </div>
           </nav>
         </div>

@@ -175,6 +175,7 @@ npm install
 Create `frontend/.env.local`:
 
 ```env
+NEXT_PUBLIC_APP_MODE=full
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 
@@ -183,6 +184,10 @@ NEXT_PUBLIC_REVERB_HOST=localhost
 NEXT_PUBLIC_REVERB_PORT=8080
 NEXT_PUBLIC_REVERB_SCHEME=http
 ```
+
+Set `NEXT_PUBLIC_APP_MODE=catalog` for a catalog-only deployment. In that
+mode, only Home and Products are accessible, and product pricing, accounts,
+quotations, tracking, appointments, and AR entry points are hidden.
 
 The `NEXT_PUBLIC_REVERB_APP_KEY` value must match `REVERB_APP_KEY` in `backend/.env`.
 

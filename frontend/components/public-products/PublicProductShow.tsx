@@ -27,6 +27,7 @@ import {
   productVariants,
   variantImages,
 } from "@/features/products/product-utils";
+import { isCatalogMode } from "@/lib/app-mode";
 
 const gradients = [
   "linear-gradient(135deg,#1a2332,#2c5282)",
@@ -138,12 +139,12 @@ export default function PublicProductShow() {
               {product.name}
             </h1>
 
-            <div className="mb-5 flex items-baseline gap-3">
+            {!isCatalogMode && <div className="mb-5 flex items-baseline gap-3">
               <span className="text-2xl font-semibold tracking-[-0.03em] text-[#2c5282] sm:text-3xl">
                 {formatCurrency(product.price_per_unit)}
               </span>
               <span className="text-[13px] text-slate-400">per {product.unit}</span>
-            </div>
+            </div>}
 
             <p className="mb-8 max-w-xl text-sm leading-7 text-[#667584] sm:text-base">
               {product.description}
@@ -164,7 +165,7 @@ export default function PublicProductShow() {
                           className="rounded-full border border-[#cbd6de] bg-white px-3 py-1.5 text-xs font-semibold text-[#536372]"
                         >
                           {option.name}
-                          {Number(option.price_modifier) > 0 && (
+                          {!isCatalogMode && Number(option.price_modifier) > 0 && (
                             <span className="ml-1 font-bold text-primary">
                               +{formatCurrency(option.price_modifier)}
                             </span>
@@ -188,18 +189,18 @@ export default function PublicProductShow() {
               ))}
             </div>
 
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+            {!isCatalogMode && <div className="mb-6 flex flex-col gap-3 sm:flex-row">
               <Link
                 href={`/get-quote?product=${product.id}`}
                 className="flex-1 rounded-full bg-[#162d4a] py-4 text-center text-sm font-semibold text-white no-underline transition-colors hover:bg-[#2c5282]"
               >
                 Get a Quote for This Product
               </Link>
-            </div>
+            </div>}
 
-            <p className="text-center text-[11px] leading-relaxed text-slate-400">
+            {!isCatalogMode && <p className="text-center text-[11px] leading-relaxed text-slate-400">
               Free 3-5 day scheduling · Tool-free consultation · No obligation quote
-            </p>
+            </p>}
           </div>
         </div>
           </div>
@@ -217,7 +218,7 @@ export default function PublicProductShow() {
               <h2 className="text-3xl font-medium tracking-[-0.04em] text-[#101820] sm:text-4xl">
                 Available in {variants.length} standard size{variants.length === 1 ? "" : "s"}
               </h2>
-              <p className="mt-2 text-[13px] text-slate-500">
+              {!isCatalogMode && <p className="mt-2 text-[13px] text-slate-500">
                 Need a custom size?{" "}
                 <Link
                   href={`/get-quote?product=${product.id}&size=custom`}
@@ -225,7 +226,7 @@ export default function PublicProductShow() {
                 >
                   Request a custom quote →
                 </Link>
-              </p>
+              </p>}
             </div>
 
             <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white">
@@ -236,9 +237,9 @@ export default function PublicProductShow() {
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                   Specification
                 </span>
-                <span className="text-right text-[10px] font-black uppercase tracking-widest text-slate-400">
+                {!isCatalogMode && <span className="text-right text-[10px] font-black uppercase tracking-widest text-slate-400">
                   Price & Action
-                </span>
+                </span>}
               </div>
 
               <div className="divide-y divide-slate-50 px-4 sm:px-6">
@@ -252,7 +253,7 @@ export default function PublicProductShow() {
                 ))}
               </div>
 
-              <div className="flex flex-col items-start justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:px-6">
+              {!isCatalogMode && <div className="flex flex-col items-start justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:px-6">
                 <div>
                   <p className="text-[13px] font-bold text-slate-700">Need a different size?</p>
                   <p className="text-[11px] text-slate-400">
@@ -265,7 +266,7 @@ export default function PublicProductShow() {
                 >
                   Custom Size Quote →
                 </Link>
-              </div>
+              </div>}
             </div>
             </div>
           </div>
@@ -408,7 +409,7 @@ function ImageGallery({
           </>
         )}
 
-        <ProductArButton
+        {!isCatalogMode && <ProductArButton
           productId={productId}
           productName={productName}
           categoryName={categoryName}
@@ -416,10 +417,10 @@ function ImageGallery({
           defaultWidthCm={defaultWidthCm}
           defaultHeightCm={defaultHeightCm}
           className="bottom-4 right-4 hidden sm:inline-flex"
-        />
+        />}
       </div>
 
-      <ProductArButton
+      {!isCatalogMode && <ProductArButton
         productId={productId}
         productName={productName}
         categoryName={categoryName}
@@ -427,7 +428,7 @@ function ImageGallery({
         defaultWidthCm={defaultWidthCm}
         defaultHeightCm={defaultHeightCm}
         className="static w-full max-w-none justify-between sm:hidden"
-      />
+      />}
 
       {normalizedImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -528,7 +529,7 @@ function VariantRow({
         </p>
       </div>
 
-      <div className="flex flex-shrink-0 flex-col items-end gap-2">
+      {!isCatalogMode && <div className="flex flex-shrink-0 flex-col items-end gap-2">
         <p className="text-[12px] font-extrabold text-primary sm:text-[18px]">
           {formatCurrency(variant.price)}
         </p>
@@ -538,7 +539,7 @@ function VariantRow({
         >
           Request Quote
         </Link>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -573,10 +574,10 @@ function RelatedProductCard({ product, index }: { product: Product; index: numbe
         <p className="mb-2 line-clamp-1 text-[11px] text-slate-400">
           {product.description}
         </p>
-        <p className="text-[12px] font-bold text-primary">
+        {!isCatalogMode && <p className="text-[12px] font-bold text-primary">
           from {formatCurrency(product.price_per_unit)}
           <span className="font-normal text-slate-400">/{product.unit}</span>
-        </p>
+        </p>}
       </div>
     </Link>
   );

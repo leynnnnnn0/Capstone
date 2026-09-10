@@ -22,6 +22,7 @@ import {
   productCover,
 } from "@/features/products/product-utils";
 import { cn } from "@/lib/utils";
+import { isCatalogMode } from "@/lib/app-mode";
 
 type ProductGridProps = {
   products: Product[];
@@ -149,24 +150,24 @@ const stats = [
 
 const faqs = [
   {
-    question: "What types of glass do you use?",
+    question: "Do you need a down payment before starting?",
     answer:
-      "We use tempered, laminated, frosted, and clear float glass depending on the application. Our team recommends the most suitable type based on safety requirements and the intended finish.",
+      "No down payment is required before work begins. We complete the agreed service first, so you can be confident that you will receive the quality workmanship and service you deserve before making your payment.",
   },
   {
     question: "How long does fabrication and installation take?",
     answer:
-      "Most orders are completed within 7–14 business days from measurement confirmation. Complex or large commercial orders may take 3–4 weeks.",
+      "Most orders can be completed in as little as one day by our skilled workers. Larger or more complex projects may require additional time depending on their specifications.",
   },
   {
-    question: "Is the on-site inspection free?",
+    question: "Is the ocular visit free?",
     answer:
-      "Yes. Our technician can visit, measure, and prepare a detailed itemised quotation at no charge.",
+      "Yes. Our technician can visit your location, assess the site, take measurements, and prepare a detailed itemised quotation at no charge.",
   },
   {
     question: "Which areas do you service?",
     answer:
-      "We currently serve Metro Manila, Cavite, Laguna, Bulacan, and Rizal. Contact us to confirm availability for locations beyond these areas.",
+      "We primarily serve customers within Cavite. For larger orders, we may also accept projects outside Cavite depending on the location and project requirements. Contact us to confirm availability.",
   },
   {
     question: "How does the AR preview work?",
@@ -299,7 +300,7 @@ export function ServicesSection() {
                 transition={{ duration: 0.55, delay: index * 0.06, ease: easeOut }}
               >
                 <Link
-                  href={service.href}
+                  href={isCatalogMode ? "/products" : service.href}
                   className="group grid gap-4 border-b border-[#dce4ea] py-7 outline-none transition-colors hover:bg-white/60 focus-visible:bg-white/70 sm:grid-cols-[3rem_1fr_1fr_3rem] sm:items-center sm:gap-6 sm:px-3 sm:py-9"
                 >
                   <span className="text-xs font-semibold text-[#8996a2]">0{index + 1}</span>
@@ -445,10 +446,6 @@ export function ProcessAndStatsSection() {
   );
 }
 
-function formatPrice(value: number | string) {
-  return Number(value).toLocaleString("en-PH", { maximumFractionDigits: 0 });
-}
-
 export function ProductGridSection({ products, loading, error }: ProductGridProps) {
   const reducedMotion = useReducedMotion();
 
@@ -505,9 +502,9 @@ export function ProductGridSection({ products, loading, error }: ProductGridProp
                       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
                         {category?.name || "Custom system"}
                       </span>
-                      {Number(product.price_per_unit) > 0 && (
+                      {!isCatalogMode && Number(product.price_per_unit) > 0 && (
                         <span className="whitespace-nowrap text-xs font-semibold text-[#667584]">
-                          From PHP {formatPrice(product.price_per_unit)}/{product.unit}
+                          From PHP {Number(product.price_per_unit).toLocaleString("en-PH", { maximumFractionDigits: 0 })}/{product.unit}
                         </span>
                       )}
                     </div>
@@ -517,9 +514,9 @@ export function ProductGridSection({ products, loading, error }: ProductGridProp
                       <Link href={`/products/${product.id}`} className="rounded-full bg-[#162d4a] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#2c5282]">
                         View product
                       </Link>
-                      <Link href={`/get-quote?product=${product.id}`} className="rounded-full border border-[#cbd6de] px-4 py-2.5 text-xs font-semibold text-[#2c5282] transition-colors hover:border-[#2c5282]">
+                      {!isCatalogMode && <Link href={`/get-quote?product=${product.id}`} className="rounded-full border border-[#cbd6de] px-4 py-2.5 text-xs font-semibold text-[#2c5282] transition-colors hover:border-[#2c5282]">
                         Get quote
-                      </Link>
+                      </Link>}
                     </div>
                   </div>
                 </motion.article>
@@ -562,11 +559,13 @@ export function FaqSection() {
             <Eyebrow>Common questions</Eyebrow>
             <SectionHeading>A clearer answer, before you commit.</SectionHeading>
             <p className="mt-7 max-w-md text-sm leading-6 text-[#667584] sm:text-base sm:leading-7">
-              Still deciding? Start a quote or book a free inspection so the team can confirm what your opening needs.
+              {isCatalogMode
+                ? "Browse the collection to compare the systems available for your space."
+                : "Still deciding? Start a quote or book a free inspection so the team can confirm what your opening needs."}
             </p>
-            <Link href="/get-quote" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#2c5282] hover:underline">
+            {!isCatalogMode && <Link href="/get-quote" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#2c5282] hover:underline">
               Start a quote <ArrowRight className="h-4 w-4" />
-            </Link>
+            </Link>}
           </div>
 
           <div className="border-t border-[#dce4ea]">

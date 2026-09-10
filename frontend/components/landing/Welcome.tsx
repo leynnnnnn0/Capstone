@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import type { Product } from "@/features/products/types";
 import { api } from "@/lib/api";
+import { isCatalogMode } from "@/lib/app-mode";
 import Booking from "./Booking";
 import EditorialProductShowcase from "./EditorialProductShowcase";
 import {
@@ -69,7 +70,7 @@ export default function Welcome() {
           error={productsError}
         />
         <FaqSection />
-        <Booking />
+        {!isCatalogMode && <Booking />}
       </main>
       <Footer />
     </div>

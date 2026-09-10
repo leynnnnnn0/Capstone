@@ -20,10 +20,18 @@ function matchesRoute(pathname: string, route: string) {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-export default function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get("auth_token")?.value;
   const role = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
+
+  if (
+    process.env.NEXT_PUBLIC_APP_MODE === "catalog" &&
+    pathname !== "/" &&
+    !matchesRoute(pathname, "/products")
+  ) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   const isPublic =
     PUBLIC_ROUTES.includes(pathname) ||
