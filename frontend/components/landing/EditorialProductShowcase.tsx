@@ -329,7 +329,7 @@ export default function EditorialProductShowcase({
                 }}
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
-                <Link href={item.href}>
+                <Link href={item.href} className="relative block h-full w-full">
                   <Image
                     src={item.cover}
                     alt={`${item.name} product preview`}

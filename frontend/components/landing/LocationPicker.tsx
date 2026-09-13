@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -82,6 +82,11 @@ type GoogleMapsApi = {
 };
 
 const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const noSubscription = () => () => {};
+
+function getMapsAvailability() {
+  return mapsApiKey ? "available" : "missing";
+}
 
 function loadGoogleMapsScript(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -123,6 +128,11 @@ export default function LocationPicker({
   const mapRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const onLocationChangeRef = useRef(onLocationChange);
+  const mapsAvailability = useSyncExternalStore(
+    noSubscription,
+    getMapsAvailability,
+    () => "pending",
+  );
   const [pinned, setPinned] = useState<LocationValue | null>(() =>
     initialValue?.address
       ? {
@@ -133,8 +143,14 @@ export default function LocationPicker({
         }
       : null,
   );
-  const [loading, setLoading] = useState(Boolean(mapsApiKey));
-  const [loadError, setLoadError] = useState(!mapsApiKey);
+  // Keep the initial server and client render identical. The public Maps key can
+  // differ between the server process and the browser bundle on a deployment.
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapLoadError, setMapLoadError] = useState(false);
+  const loadError = mapsAvailability === "missing" || mapLoadError;
+  const loading =
+    mapsAvailability === "pending" ||
+    (mapsAvailability === "available" && !mapLoaded && !loadError);
 
   useEffect(() => {
     onLocationChangeRef.current = onLocationChange;
@@ -154,7 +170,7 @@ export default function LocationPicker({
   };
 
   useEffect(() => {
-    if (!mapsApiKey) return;
+    if (mapsAvailability !== "available") return;
 
     let mounted = true;
 
@@ -249,17 +265,16 @@ export default function LocationPicker({
           onLocationChangeRef.current(location);
         });
 
-        setLoading(false);
+        setMapLoaded(true);
       })
       .catch(() => {
-        setLoadError(true);
-        setLoading(false);
+        setMapLoadError(true);
       });
 
     return () => {
       mounted = false;
     };
-  }, [initialValue?.address, initialValue?.lat, initialValue?.lng]);
+  }, [initialValue?.address, initialValue?.lat, initialValue?.lng, mapsAvailability]);
 
   return (
     <div
