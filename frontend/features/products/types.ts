@@ -99,6 +99,7 @@ export type PaginatedResponse<T> = {
 };
 
 export type ProductListFilters = {
+  page?: string;
   search?: string;
   is_active?: string;
   category_id?: string;

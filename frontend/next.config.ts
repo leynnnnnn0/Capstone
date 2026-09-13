@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.ngrok-free.dev",
       },
+      {
+        // Product image URLs are stored as the public site URL in production.
+        protocol: "https",
+        hostname: "sogglassandaluminum.com",
+      },
     ],
   },
   async rewrites() {

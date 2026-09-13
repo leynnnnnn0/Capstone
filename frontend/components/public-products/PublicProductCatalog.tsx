@@ -5,11 +5,12 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
 import PublicPageHero from "@/components/landing/PublicPageHero";
+import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
@@ -36,7 +37,10 @@ export default function PublicProductCatalog() {
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category_id") ?? "";
   const activeSearch = searchParams.get("q") ?? "";
+  const requestedPage = Number(searchParams.get("page") ?? "1");
+  const activePage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [products, setProducts] = useState<Product[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState(activeSearch);
   const [loading, setLoading] = useState(true);
@@ -46,17 +50,25 @@ export default function PublicProductCatalog() {
   useEffect(() => {
     let mounted = true;
 
-    Promise.all([
-      fetchProducts({
-        is_active: "1",
-        per_page: "100",
-        category_id: activeCategory,
-      }),
-      fetchCategories(),
-    ])
+    void Promise.resolve()
+      .then(() => {
+        if (mounted) setLoading(true);
+
+        return Promise.all([
+          fetchProducts({
+            is_active: "1",
+            per_page: "12",
+            page: String(activePage),
+            category_id: activeCategory,
+            search: activeSearch,
+          }),
+          fetchCategories(),
+        ]);
+      })
       .then(([productsResponse, nextCategories]) => {
         if (!mounted) return;
         setProducts(productsResponse.data);
+        setMeta(productsResponse.meta ?? null);
         setCategories(nextCategories);
         setError("");
       })
@@ -70,7 +82,7 @@ export default function PublicProductCatalog() {
     return () => {
       mounted = false;
     };
-  }, [activeCategory]);
+  }, [activeCategory, activePage, activeSearch]);
 
   useEffect(() => {
     queueMicrotask(() => setSearch(activeSearch));
@@ -96,17 +108,7 @@ export default function PublicProductCatalog() {
     });
   }, [activeCategory, activeSearch, loading]);
 
-  const filteredProducts = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    if (!term) return products;
-
-    return products.filter((product) => {
-      const haystack = `${product.name} ${product.description}`.toLowerCase();
-      return haystack.includes(term);
-    });
-  }, [products, search]);
-
-  const setProductQuery = (next: { categoryId?: number | null; search?: string }) => {
+  const setProductQuery = (next: { categoryId?: number | null; search?: string; page?: number }) => {
     const params = new URLSearchParams(searchParams.toString());
 
     if ("categoryId" in next) {
@@ -120,6 +122,13 @@ export default function PublicProductCatalog() {
       else params.delete("q");
     }
 
+    if ("page" in next) {
+      if (next.page && next.page > 1) params.set("page", String(next.page));
+      else params.delete("page");
+    } else if ("categoryId" in next || "search" in next) {
+      params.delete("page");
+    }
+
     router.replace(`/products${params.toString() ? `?${params.toString()}` : ""}`, {
       scroll: false,
     });
@@ -127,6 +136,10 @@ export default function PublicProductCatalog() {
 
   const setCategory = (categoryId: number | null) => {
     setProductQuery({ categoryId });
+  };
+
+  const setPage = (page: number) => {
+    setProductQuery({ page });
   };
 
   const productHref = (productId: number) =>
@@ -197,17 +210,17 @@ export default function PublicProductCatalog() {
           <CatalogSkeleton />
         ) : error ? (
           <EmptyState title={error} body="Please refresh the page." />
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <EmptyState title="No products found" body="Try a different search or category." />
         ) : (
           <>
             <p className="mb-7 text-xs font-medium uppercase tracking-[0.16em] text-[#8996a2]">
-              {filteredProducts.length} product{filteredProducts.length === 1 ? "" : "s"}
+              {meta?.total ?? products.length} product{(meta?.total ?? products.length) === 1 ? "" : "s"}
               {search ? ` for "${search}"` : ""}
             </p>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product, index) => {
+              {products.map((product, index) => {
                 const cover = productCover(product);
                 const category = productCategories(product)[0];
                 const gradient = gradients[index % gradients.length];
@@ -273,6 +286,15 @@ export default function PublicProductCatalog() {
                 );
               })}
             </div>
+
+            {meta && meta.last_page > 1 && (
+              <PaginationControls
+                meta={meta}
+                loading={loading}
+                onPageChange={setPage}
+                className="mt-8"
+              />
+            )}
           </>
         )}
           </div>
