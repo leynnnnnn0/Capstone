@@ -287,9 +287,10 @@ it('lists products with images, variant images, and option groups', function () 
     $this->actingAs($this->admin)
         ->getJson('/api/v1/products?per_page=1')
         ->assertOk()
-        ->assertJsonPath('0.images.0.id', Product::first()->product_images->first()->id)
-        ->assertJsonPath('0.variants.0.images.0.id', Product::first()->product_variants->first()->product_variant_images->first()->id)
-        ->assertJsonPath('0.option_groups.0.options.0.name', 'Clear Glass');
+        ->assertJsonPath('data.0.images.0.id', Product::first()->product_images->first()->id)
+        ->assertJsonPath('data.0.variants.0.images.0.id', Product::first()->product_variants->first()->product_variant_images->first()->id)
+        ->assertJsonPath('data.0.option_groups.0.options.0.name', 'Clear Glass')
+        ->assertJsonPath('meta.per_page', 1);
 });
 
 // ── Validation ────────────────────────────────────────────────────

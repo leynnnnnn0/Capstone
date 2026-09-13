@@ -78,7 +78,10 @@ class ProductController extends Controller
             )
             ->paginate($request->per_page ?? 15);
 
-        return response()->json(ProductResource::collection($products));
+        // Returning the resource response preserves Laravel's paginator links and
+        // meta fields. Wrapping it in response()->json() converts it to a plain
+        // array and discards that metadata before the public catalog can use it.
+        return ProductResource::collection($products)->response();
     }
 
     /**
