@@ -45,5 +45,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $customer->assignRole('customer');
+
+        $this->call([
+            CategorySeeder::class,
+            ProductSeeder::class,
+        ]);
     }
 }
