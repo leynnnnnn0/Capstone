@@ -139,6 +139,10 @@ export default function PublicProductCatalog() {
   };
 
   const setPage = (page: number) => {
+    document.getElementById("product-results")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
     setProductQuery({ page });
   };
 
@@ -214,7 +218,7 @@ export default function PublicProductCatalog() {
           <EmptyState title="No products found" body="Try a different search or category." />
         ) : (
           <>
-            <p className="mb-7 text-xs font-medium uppercase tracking-[0.16em] text-[#8996a2]">
+            <p id="product-results" className="mb-7 scroll-mt-6 text-xs font-medium uppercase tracking-[0.16em] text-[#8996a2]">
               {meta?.total ?? products.length} product{(meta?.total ?? products.length) === 1 ? "" : "s"}
               {search ? ` for "${search}"` : ""}
             </p>
