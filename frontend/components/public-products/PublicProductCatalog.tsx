@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
@@ -31,6 +31,7 @@ const gradients = [
 ];
 
 const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
+const CATALOG_SCROLL_RETURN_KEY = "sog_products_scroll_return";
 
 export default function PublicProductCatalog() {
   const router = useRouter();
@@ -46,6 +47,8 @@ export default function PublicProductCatalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const catalogQuery = searchParams.toString();
+  const catalogHref = `/products${catalogQuery ? `?${catalogQuery}` : ""}`;
+  const restoredCatalogHref = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -88,25 +91,30 @@ export default function PublicProductCatalog() {
     queueMicrotask(() => setSearch(activeSearch));
   }, [activeSearch]);
 
-  useEffect(() => {
-    const href = `${window.location.pathname}${window.location.search}`;
-
-    return () => {
-      sessionStorage.setItem(`${CATALOG_SCROLL_PREFIX}${href}`, String(window.scrollY));
-    };
-  }, [activeCategory, activeSearch]);
+  const rememberCatalogScroll = useCallback(() => {
+    sessionStorage.setItem(`${CATALOG_SCROLL_PREFIX}${catalogHref}`, String(window.scrollY));
+    sessionStorage.setItem(CATALOG_SCROLL_RETURN_KEY, catalogHref);
+  }, [catalogHref]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || restoredCatalogHref.current === catalogHref) return;
 
-    const href = `${window.location.pathname}${window.location.search}`;
-    const storedScroll = sessionStorage.getItem(`${CATALOG_SCROLL_PREFIX}${href}`);
+    restoredCatalogHref.current = catalogHref;
+
+    if (sessionStorage.getItem(CATALOG_SCROLL_RETURN_KEY) !== catalogHref) return;
+
+    const storedScroll = sessionStorage.getItem(`${CATALOG_SCROLL_PREFIX}${catalogHref}`);
     if (!storedScroll) return;
 
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: Number(storedScroll) || 0 });
+    const firstFrame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: Number(storedScroll) || 0, behavior: "instant" });
+        sessionStorage.removeItem(CATALOG_SCROLL_RETURN_KEY);
+      });
     });
-  }, [activeCategory, activeSearch, loading]);
+
+    return () => cancelAnimationFrame(firstFrame);
+  }, [catalogHref, loading]);
 
   const setProductQuery = (next: { categoryId?: number | null; search?: string; page?: number }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -238,7 +246,11 @@ export default function PublicProductCatalog() {
                       className="relative flex aspect-[4/3] items-center justify-center overflow-hidden"
                       style={{ background: cover ? "#f8fafc" : gradient }}
                     >
-                      <Link href={productHref(product.id)} className="block h-full w-full">
+                      <Link
+                        href={productHref(product.id)}
+                        onClick={rememberCatalogScroll}
+                        className="block h-full w-full"
+                      >
                         {cover ? (
                           <img
                             src={cover}
@@ -280,6 +292,7 @@ export default function PublicProductCatalog() {
                         )}
                         <Link
                           href={productHref(product.id)}
+                          onClick={rememberCatalogScroll}
                           className="inline-flex items-center rounded-full border border-[#dce4ea] px-3 py-2 text-[11px] font-semibold text-[#536372] transition-colors group-hover:border-[#2c5282] group-hover:text-[#2c5282]"
                         >
                           View →

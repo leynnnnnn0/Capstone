@@ -14,6 +14,25 @@ test("landing page renders products and primary quote path", async ({ page }) =>
   await expect(page.getByRole("link", { name: /get a quote/i }).first()).toBeVisible();
 });
 
+test("returning from a product restores the catalog scroll position", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto("/products");
+
+  const productLink = page.getByRole("link", { name: "View →" });
+  await productLink.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollBy(0, 180));
+
+  const catalogScrollY = await page.evaluate(() => window.scrollY);
+  expect(catalogScrollY).toBeGreaterThan(0);
+
+  await productLink.click();
+  await expect(page).toHaveURL(/\/products\/1$/);
+
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page).toHaveURL(/\/products$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThanOrEqual(catalogScrollY - 2);
+});
+
 test("tracking page looks up an appointment reference", async ({ page }) => {
   await page.goto("/track");
   await page.getByLabel(/appointment or work job number/i).fill("APT-000001-20260523");

@@ -358,6 +358,7 @@ export async function mockApi(page: Page) {
       return json(route, { data: user });
     }
     if (path === "/api/v1/products") return json(route, [product]);
+    if (path === "/api/v1/products/1") return json(route, { data: product });
     if (path === "/api/v1/track") return json(route, { data: trackingResult });
     if (path === "/api/v1/notifications" && ["GET", "DELETE"].includes(method)) {
       return json(route, { data: [], unread_count: 0 });
