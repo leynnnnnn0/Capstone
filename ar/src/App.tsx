@@ -1955,13 +1955,19 @@ export default function App() {
         )}
 
         {isActive && (!isV2 || v2Mode !== "edit") && (
-          <div className={`reticle ${confidence}`}>
-            <span className="reticle-center" />
-            <p role="status" aria-live="polite">
+          <>
+            <div className={`reticle ${confidence}`} aria-hidden="true">
+              <span className="reticle-center" />
+            </div>
+            <p
+              className={`ar-surface-status ${confidence}`}
+              role="status"
+              aria-live="polite"
+            >
               <small>{arStageLabel}</small>
               <strong>{confidenceCopy}</strong>
             </p>
-          </div>
+          </>
         )}
 
         {isActive && (

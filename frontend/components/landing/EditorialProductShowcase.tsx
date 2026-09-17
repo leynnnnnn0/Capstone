@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+
 import Link from "next/link";
 import { motion, type PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
@@ -16,6 +17,7 @@ import type { Product } from "@/features/products/types";
 import {
   productCategories,
   productCover,
+  product3DModel,
 } from "@/features/products/product-utils";
 import { cn } from "@/lib/utils";
 
@@ -114,76 +116,25 @@ function getCircularOffset(
   return offset;
 }
 
-const showcaseDefinitions = [
-  {
-    name: "Ultra Clear Frameless Door",
-    category: "Glass Door",
-    material: "Polished Stainless",
-    cover: "/images/landing/showcase/ultra-clear-frameless-door.png",
-  },
-  {
-    name: "Vista Slide Sliding Window",
-    category: "Sliding Window",
-    material: "Black Aluminum",
-    cover: "/images/landing/showcase/vista-slide-window.png",
-  },
-  {
-    name: "Aero Casement Window",
-    category: "Casement Window",
-    material: "White Aluminum",
-    cover: "/images/landing/showcase/aero-casement-window.png",
-  },
-  {
-    name: "Metro Slide Sliding Door",
-    category: "Sliding Door",
-    material: "Black Aluminum",
-    cover: "/images/landing/showcase/metro-slide-door.png",
-  },
-  {
-    name: "ClearView Glass Partition",
-    category: "Glass Partition",
-    material: "Black Aluminum",
-    cover: "/images/landing/showcase/clearview-partition.png",
-  },
-  {
-    name: "Showcase Pro Glass Cabinet",
-    category: "Glass Cabinet",
-    material: "Black Aluminum",
-    cover: "/images/landing/showcase/showcase-pro-cabinet.png",
-  },
-  {
-    name: "Ventus Awning Window",
-    category: "Awning Window",
-    material: "Charcoal Aluminum",
-    cover: "/images/landing/showcase/ventus-awning-window.png",
-  },
+const fallbackCovers = [
+  "/images/landing/showcase/ultra-clear-frameless-door.png",
+  "/images/landing/showcase/vista-slide-window.png",
+  "/images/landing/showcase/aero-casement-window.png",
+  "/images/landing/showcase/metro-slide-door.png",
+  "/images/landing/showcase/clearview-partition.png",
 ];
 
 function toShowcaseItem(product: Product, index: number): ShowcaseItem {
-  const definition = showcaseDefinitions[index] ?? showcaseDefinitions[0];
-
   return {
     key: String(product.id),
-    name: definition.name,
-    category:
-      definition.category ??
-      productCategories(product)[0]?.name ??
-      "Made to measure",
-    material: definition.material,
-    capability: "AR Ready",
-    cover: definition.cover || productCover(product),
+    name: product.name,
+    category: productCategories(product)[0]?.name ?? "Made to measure",
+    material: "Custom Fabrication",
+    capability: product3DModel(product) ? "AR Ready" : "Made to Measure",
+    cover: productCover(product) || fallbackCovers[index % fallbackCovers.length],
     href: `/products/${product.id}`,
   };
 }
-
-const fallbackItems: ShowcaseItem[] = showcaseDefinitions.map(
-  (definition, index) => ({
-    key: `showcase-${index + 1}`,
-    ...definition,
-    capability: "AR Ready",
-    href: "/products",
-  }),
-);
 
 function subscribeToViewport(onStoreChange: () => void) {
   const breakpointQueries = [
@@ -227,16 +178,36 @@ export default function EditorialProductShowcase({
   loading = false,
 }: EditorialProductShowcaseProps) {
   const items = useMemo(
-    () =>
-      products.length >= SHOWCASE_ITEM_COUNT
-        ? products.slice(0, SHOWCASE_ITEM_COUNT).map(toShowcaseItem)
-        : fallbackItems.slice(0, SHOWCASE_ITEM_COUNT),
+    () => products.slice(0, SHOWCASE_ITEM_COUNT).map(toShowcaseItem),
     [products],
   );
   const [selectedIndex, setSelectedIndex] = useState(2);
   const carouselConfig = useCarouselConfig();
   const activeIndex = Math.min(selectedIndex, items.length - 1);
   const activeItem = items[activeIndex];
+
+  if (!activeItem) {
+    return (
+      <section
+        aria-label="SOG product collection"
+        className="flex min-h-[34rem] items-center justify-center bg-white px-6 text-center"
+      >
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
+            The SOG Collection · Vol. 01
+          </p>
+          <h1 className="mt-4 font-poppins text-3xl tracking-[-0.045em] text-slate-950 sm:text-4xl">
+            {loading ? "Loading the live collection…" : "Products are unavailable right now."}
+          </h1>
+          {!loading && (
+            <p className="mt-3 text-sm text-slate-500">
+              Please check that the catalog service is running and try again.
+            </p>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   function selectPrevious() {
     setSelectedIndex((current) =>
@@ -330,12 +301,10 @@ export default function EditorialProductShowcase({
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
                 <Link href={item.href} className="relative block h-full w-full">
-                  <Image
+                  <img
                     src={item.cover}
                     alt={`${item.name} product preview`}
-                    fill
-                    sizes="(max-width: 639px) 150px, (max-width: 1023px) 190px, 220px"
-                    className={styles.cardMedia}
+                    className={cn(styles.cardMedia, "h-full w-full")}
                     style={{
                       objectPosition: item.coverPosition ?? "center",
                     }}

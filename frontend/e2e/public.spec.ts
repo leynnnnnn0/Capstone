@@ -6,12 +6,13 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-test("landing page renders products and primary quote path", async ({ page }) => {
+test("landing page renders live products in the editorial collection", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByText("Clear views")).toBeVisible();
-  await expect(page.getByText("Sliding Door").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: /get a quote/i }).first()).toBeVisible();
+  const collection = page.getByRole("region", { name: "SOG product collection" });
+
+  await expect(collection.getByText("Sliding Door").first()).toBeVisible();
+  await expect(collection.getByText("Vista Slide Sliding Window")).toHaveCount(0);
 });
 
 test("returning from a product restores the catalog scroll position", async ({ page }) => {

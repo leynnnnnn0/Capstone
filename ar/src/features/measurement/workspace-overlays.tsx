@@ -4,13 +4,11 @@ import {
   ChevronsRight,
   ChevronsUp,
   CircleHelp,
+  Lightbulb,
   Minus,
-  MousePointerClick,
-  Move3D,
   Plus,
   RotateCcwSquare,
   RotateCwSquare,
-  ScanLine,
   Smartphone,
   X,
 } from "lucide-react";
@@ -55,13 +53,22 @@ export function ArGuidanceOverlays({
           onPointerDown={onPointerDown}
         >
           <Card className="ar-guide-card">
-            <CardContent className="space-y-4 p-5">
-              <div className="flex items-start justify-between gap-4">
+            <CardContent className="p-0">
+              <div className="ar-guide-handle" aria-hidden="true" />
+
+              <div className="ar-guide-heading">
+                <div className="ar-guide-illustration" aria-hidden="true">
+                  <span className="ar-guide-scan-line" />
+                  <Smartphone />
+                </div>
                 <div>
-                  <p className="eyebrow">Quick guide</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    Scan, wait for green, then tap
-                  </h2>
+                  <p className="ar-guide-kicker">Before you place</p>
+                  <h2>Find the surface</h2>
+                  <p>
+                    {isV2
+                      ? "Point your camera at the wall where the product will go."
+                      : "Point your camera at the wall or floor where the product will go."}
+                  </p>
                 </div>
                 <Button
                   type="button"
@@ -77,51 +84,34 @@ export function ArGuidanceOverlays({
 
               <div className="guide-step-list">
                 <article>
-                  <Smartphone className="size-5" />
-                  <span>
-                    <strong>1. Point at the surface</strong>
-                    {isV2
-                      ? "Point your phone at the wall where the product will be installed."
-                      : "Point your phone at the wall or floor where the product should go."}
-                  </span>
+                  <span className="guide-step-number">1</span>
+                  <strong>Move slowly</strong>
+                  <span>Sweep side to side</span>
                 </article>
                 <article>
-                  <Move3D className="size-5" />
-                  <span>
-                    <strong>2. Move slowly</strong>
-                    Move the phone gently from side to side so Android can
-                    understand the surface.
-                  </span>
+                  <span className="guide-step-number">2</span>
+                  <strong>Watch the target</strong>
+                  <span>Green means ready</span>
                 </article>
                 <article>
-                  <ScanLine className="size-5" />
-                  <span>
-                    <strong>3. Wait for green</strong>
-                    Red means no surface. Yellow means keep moving. Green means
-                    the surface is ready.
-                  </span>
-                </article>
-                <article>
-                  <MousePointerClick className="size-5" />
-                  <span>
-                    <strong>4. Tap to place</strong>
-                    When the circle is green, tap it to place the product.
-                  </span>
+                  <span className="guide-step-number">3</span>
+                  <strong>Place the product</strong>
+                  <span>Tap the center button</span>
                 </article>
               </div>
 
-              <div className="ar-guide-note">
-                Keep the surface well lit and avoid covering the camera. You can
-                adjust the product after placing it.
+              <div className="ar-guide-note" role="note">
+                <Lightbulb className="size-4" aria-hidden="true" />
+                <span>Good lighting helps your phone find the surface faster.</span>
               </div>
 
               <Button
                 type="button"
                 size="lg"
-                className="w-full rounded-2xl"
+                className="ar-guide-action"
                 onClick={onDismissGuide}
               >
-                Start scanning
+                Got it, start scanning
               </Button>
             </CardContent>
           </Card>
@@ -141,13 +131,9 @@ export function ArGuidanceOverlays({
               <Smartphone className="movement-phone-icon" />
               <span className="movement-arrow movement-arrow--right" />
             </div>
-            <div>
-              <p className="eyebrow">Need a surface</p>
-              <h2>Move your phone slowly</h2>
-              <p>
-                Pan side to side and slightly up or down. This disappears as soon
-                as movement is detected.
-              </p>
+            <div className="movement-copy">
+              <h2>Scan the surface</h2>
+              <p>Move slowly from side to side</p>
             </div>
           </section>
         )}
@@ -160,11 +146,8 @@ export function ArGuidanceOverlays({
         >
           <RotateCwSquare className="size-5" aria-hidden="true" />
           <div>
-            <strong>Restoring the anchor</strong>
-            <span>
-              Move slowly and point back toward the placed product. It is frozen
-              until tracking returns.
-            </span>
+            <strong>Finding your product again</strong>
+            <span>Point back to where you placed it and move slowly.</span>
           </div>
         </section>
       )}
@@ -173,11 +156,8 @@ export function ArGuidanceOverlays({
         <section className="anchor-tracking-alert is-unavailable" role="alert">
           <CircleHelp className="size-5" aria-hidden="true" />
           <div>
-            <strong>Stable anchor unavailable</strong>
-            <span>
-              Keep the surface in view, move slowly, and wait for green before
-              trying again.
-            </span>
+            <strong>Surface lost</strong>
+            <span>Keep it in view and move slowly until the target turns green.</span>
           </div>
         </section>
       )}

@@ -58,7 +58,11 @@ class ModularCabinetSeeder extends Seeder
                 'name' => 'White Under-Stair Pull-Out Cabinet',
                 'description' => 'Space-saving white aluminum storage built beneath a staircase, with multiple pull-out drawers for easy access. Starting price per linear meter; final price depends on site measurements, layout, finish, hardware, and accessories.',
                 'price_per_unit' => 18000,
-                'images' => ['white-under-stair-pull-out-cabinet.jpg'],
+                'images' => [
+                    'white-under-stair-pull-out-cabinet.jpg',
+                    'white-under-stair-pull-out-cabinet-open.jpg',
+                    'white-under-stair-pull-out-cabinet-overview.jpg',
+                ],
             ],
             [
                 'name' => 'White L-Shaped Modular Kitchen Cabinet',
