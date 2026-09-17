@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ChevronsDown,
   ChevronsLeft,
@@ -90,13 +91,13 @@ export function ArGuidanceOverlays({
                 </article>
                 <article>
                   <span className="guide-step-number">2</span>
-                  <strong>Watch the target</strong>
-                  <span>Green means ready</span>
+                  <strong>{isV2 ? "Lock the wall" : "Watch the target"}</strong>
+                  <span>{isV2 ? "Tap Lock wall when ready" : "Green means ready"}</span>
                 </article>
                 <article>
                   <span className="guide-step-number">3</span>
                   <strong>Place the product</strong>
-                  <span>Tap the center button</span>
+                  <span>{isV2 ? "Aim, then tap Place product" : "Tap the center button"}</span>
                 </article>
               </div>
 
@@ -166,6 +167,7 @@ export function ArGuidanceOverlays({
 }
 
 interface PlacementEditorProps {
+  guided?: boolean;
   object: V2PlacedObject;
   modelLabel: string;
   onClose: () => void;
@@ -190,6 +192,7 @@ interface PlacementEditorProps {
 }
 
 export function PlacementEditor({
+  guided = false,
   object,
   modelLabel,
   onClose,
@@ -199,6 +202,7 @@ export function PlacementEditor({
   onTransform,
   onPointerDown,
 }: PlacementEditorProps) {
+  const [showPositionControls, setShowPositionControls] = useState(false);
   const transform = (
     change: (
       object: V2PlacedObject,
@@ -219,7 +223,7 @@ export function PlacementEditor({
     >
       <div className="v2-size-panel-actions">
         <button type="button" onClick={onClose}>
-          Close
+          {guided ? "Done" : "Close"}
         </button>
         <button type="button" onClick={onChangeModel}>
           Change Model
@@ -230,13 +234,14 @@ export function PlacementEditor({
       </div>
       <div className="v2-size-panel-header">
         <div>
-          <small>Glass</small>
+          <small>{guided ? "3 · Adjust product" : "Glass"}</small>
           <strong>{modelLabel}</strong>
         </div>
         <span>
           {object.dimensions.segmentsCm[0]}x{object.dimensions.heightCm}
         </span>
       </div>
+      {guided && <p className="v2-editor-help">Drag to move. Adjust the size below, then tap Done or Add New Product.</p>}
       <V2DimensionControl
         label="Height"
         value={object.dimensions.heightCm}
@@ -249,7 +254,10 @@ export function PlacementEditor({
           onDimensionsChange(object.id, { segmentsCm: [widthCm] })
         }
       />
-      <div className="v2-transform-grid">
+      {guided && <button type="button" className="v2-position-toggle" aria-expanded={showPositionControls} onClick={() => setShowPositionControls(!showPositionControls)}>
+        {showPositionControls ? "Hide position controls" : "Rotate or fine-tune position"}
+      </button>}
+      {(!guided || showPositionControls) && <div className="v2-transform-grid">
         <TransformButton
           label="Rotate L"
           icon={<RotateCcwSquare className="size-4" />}
@@ -318,7 +326,7 @@ export function PlacementEditor({
             )
           }
         />
-      </div>
+      </div>}
     </section>
   );
 }

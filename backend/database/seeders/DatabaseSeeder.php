@@ -50,6 +50,9 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProductSeeder::class,
             ModularCabinetSeeder::class,
+            GateSeeder::class,
+            RailSeeder::class,
+            ShowerEnclosureSeeder::class,
             Product3DModelSeeder::class,
         ]);
     }

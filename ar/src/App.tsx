@@ -1,3 +1,4 @@
+import { v2Guidance } from "./features/measurement/v2-guidance";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -160,8 +161,23 @@ export default function App() {
   const [directArEntry] = useState(
     () => new URLSearchParams(window.location.search).get("direct") === "ar",
   );
-  const [, setStatus] = useState("Ready. Tap Start AR.");
+  const [requestedProductId] = useState<number | null>(() => {
+    const value = Number(
+      new URLSearchParams(window.location.search).get("product"),
+    );
+
+    return Number.isSafeInteger(value) && value > 0 ? value : null;
+  });
+  const [feedback, setFeedback] = useState<{ message: string } | null>(null);
+  const setStatus = useCallback((message: string) => setFeedback({ message }), []);
+  const [isStarting, setIsStarting] = useState(false);
+  const startingRef = useRef(false);
+  const [isPlacing, setIsPlacing] = useState(false);
+  const [scanSeconds, setScanSeconds] = useState(0);
+  const [wallEligible, setWallEligible] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [catalogStatus, setCatalogStatus] = useState("Loading products...");
+  const [catalogReady, setCatalogReady] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [confidence, setConfidence] = useState<ReticleConfidence>("none");
   const [anchorTrackingState, setAnchorTrackingState] =
@@ -198,6 +214,9 @@ export default function App() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const clearDialogRef = useRef<HTMLElement | null>(null);
+  const confirmClearRef = useRef(false);
+  confirmClearRef.current = confirmClear;
   const sessionPanelOpenRef = useRef(false);
   const summaryOpenRef = useRef(false);
   const catalogOpenRef = useRef(false);
@@ -250,10 +269,13 @@ export default function App() {
 
         if (models.length === 0) {
           setCatalogStatus("No uploaded product 3D models yet. Showing local samples.");
+          setCatalogReady(true);
           return;
         }
 
-        const firstModel = models[0];
+        const firstModel =
+          models.find((model) => model.productId === requestedProductId) ??
+          models[0];
         setModelCatalog(models);
         setModelCategories(categories);
         setSelectedCategoryId(firstModel.category);
@@ -262,17 +284,19 @@ export default function App() {
         selectedModelIdRef.current = firstModel.id;
         selectedTypeRef.current = firstModel.type;
         setCatalogStatus(`${models.length} product model${models.length === 1 ? "" : "s"} loaded.`);
+        setCatalogReady(true);
         setStatus(`${firstModel.label} selected. Tap Start AR to measure.`);
       })
       .catch((error) => {
         const message = error instanceof Error ? error.message : "Product models unavailable.";
         setCatalogStatus(`${message} Showing local samples.`);
+        setCatalogReady(true);
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [requestedProductId, setStatus]);
 
   const copyContext = {
     capturePhase,
@@ -288,6 +312,54 @@ export default function App() {
     ...copyContext,
     wallLocked: v2WallLocked,
   });
+
+  const guidance = v2Guidance(v2Mode, confidence, wallEligible, scanSeconds, isPlacing);
+  const guidanceVisible = isV2 && isActive && !showArGuide && !catalogOpen &&
+    !sessionPanelOpen && !summaryOpen && !exitPromptOpen && !confirmClear;
+
+  useEffect(() => {
+    if (!confirmClear) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const dialog = clearDialogRef.current;
+    const buttons = dialog?.querySelectorAll<HTMLButtonElement>("button");
+    buttons?.[0]?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setConfirmClear(false); }
+      if (event.key === "Tab" && buttons?.length) {
+        event.preventDefault();
+        const index = Array.from(buttons).indexOf(document.activeElement as HTMLButtonElement);
+        buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length].focus();
+      }
+    };
+    dialog?.addEventListener("keydown", onKeyDown);
+    return () => { dialog?.removeEventListener("keydown", onKeyDown); previousFocus?.focus(); };
+  }, [confirmClear]);
+
+  useEffect(() => {
+    if (!feedback || !isActive) return;
+    const timeout = window.setTimeout(() => setFeedback(null), 6500);
+    return () => window.clearTimeout(timeout);
+  }, [feedback, isActive]);
+
+  useEffect(() => {
+    setScanSeconds(0);
+    setWallEligible(false);
+    if (!guidanceVisible || v2Mode === "edit") return;
+    let waitingSince = performance.now();
+    const timer = window.setInterval(() => {
+      const plane = currentHitPlaneRef.current;
+      const position = currentHitPositionRef.current;
+      const eligible = !!(plane?.kind === "wall" && position && createCleanV2WallPlane(plane, position));
+      setWallEligible(eligible);
+      if (confidenceRef.current === "high" && (v2Mode !== "scanWall" || eligible)) {
+        waitingSince = performance.now();
+        setScanSeconds(0);
+      } else {
+        setScanSeconds(Math.floor((performance.now() - waitingSince) / 1000));
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [guidanceVisible, v2Mode]);
 
   useEffect(() => {
     confidenceRef.current = confidence;
@@ -342,10 +414,12 @@ export default function App() {
     draftState: quoteDraftState,
     saveDraft: saveQuoteDraft,
     clearDraft: clearQuoteDraft,
+    removeManualItem: removeManualQuoteItem,
   } = useQuoteWorkspace({
     flowVersion,
     objects,
     placementObjects: v2Objects,
+    models: modelCatalog,
     findModel,
     onStatus: setStatus,
   });
@@ -401,7 +475,7 @@ export default function App() {
     setArGuideVisible(false);
     noSurfaceSinceRef.current = null;
     movementCoachCooldownUntilRef.current = performance.now() + 1800;
-    setStatus("Move your phone slowly. Wait for the circle to turn green, then tap.");
+    setFeedback(null);
   }, [markUiInteraction, setArGuideVisible]);
 
   const selectModel = useCallback(
@@ -420,7 +494,9 @@ export default function App() {
       }
 
       setStatus(
-        flowVersionRef.current === "v2" || flowVersionRef.current === "v3"
+        flowVersionRef.current === "v2"
+          ? `${model.label} selected. ${v2ModeRef.current === "scanWall" ? "Find and lock a wall to continue." : "Aim at the wall, then tap Place product."}`
+          : flowVersionRef.current === "v3"
           ? `${model.label} selected. Tap once in AR to place it.`
           : `${model.label} selected. Measure the shape, then height.`,
       );
@@ -652,7 +728,9 @@ export default function App() {
    * placement state before the frame loop begins.
    */
   const startSession = async () => {
-    if (!canvasRef.current || sessionRef.current) return;
+    if (!canvasRef.current || sessionRef.current || startingRef.current) return;
+    startingRef.current = true;
+    setIsStarting(true);
 
     try {
       setStatus("Requesting AR camera and hit testing...");
@@ -717,7 +795,11 @@ export default function App() {
       const message = error instanceof Error ? error.message : String(error);
       log(`start failed: ${message}`);
       setStatus(`AR could not start: ${message}`);
+      await sessionRef.current?.end().catch(() => undefined);
       cleanupSession();
+    } finally {
+      startingRef.current = false;
+      setIsStarting(false);
     }
   };
 
@@ -988,7 +1070,10 @@ export default function App() {
     const nextConfidence = stabilizedSurface.confidence;
     confidenceRef.current = nextConfidence;
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
-    setReticleColor(measurementScene.reticle, nextConfidence);
+    // A stable floor must not display a green wall-lock target.
+    const canLockWall = flowVersionRef.current !== "v2" || v2ModeRef.current !== "scanWall" ||
+      (activePlane.kind === "wall" && !!createCleanV2WallPlane(activePlane, cleanPosition));
+    setReticleColor(measurementScene.reticle, nextConfidence === "high" && !canLockWall ? "medium" : nextConfidence);
     noteSurfaceFrame();
     updateV2Anchors(frame, localSpace);
     measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
@@ -997,10 +1082,10 @@ export default function App() {
   /**
    * V1 measurement tap handler. It records outline points and a height point.
    */
-  const placePointFromHit = () => {
+  const placePointFromHit = (source?: XRInputSourceEvent | "button") => {
     const now = performance.now();
 
-    if (now < ignorePlacementUntilRef.current) {
+    if (source !== "button" && now < ignorePlacementUntilRef.current) {
       log("tap ignored: ui control");
       return;
     }
@@ -1008,7 +1093,7 @@ export default function App() {
     if (
       catalogOpenRef.current ||
       sessionPanelOpenRef.current ||
-      summaryOpenRef.current
+      summaryOpenRef.current || showArGuideRef.current || confirmClearRef.current
     ) {
       log("tap ignored: panel open");
       return;
@@ -1056,8 +1141,11 @@ export default function App() {
 
       if (anchoredPlacementPendingRef.current) return;
       anchoredPlacementPendingRef.current = true;
+      setIsPlacing(true);
+      setStatus("Placing your product. Keep the wall in view…");
       void placeV2ObjectFromHit(position).finally(() => {
         anchoredPlacementPendingRef.current = false;
+        setIsPlacing(false);
       });
       return;
     }
@@ -1167,7 +1255,7 @@ export default function App() {
     }
 
     if (activePlane.kind !== "wall") {
-      setStatus("Lock a wall first. After that you can place on the floor or wall.");
+      setStatus("This is not a wall yet. Aim at a vertical wall or its edge, then try again.");
       return;
     }
 
@@ -1814,6 +1902,8 @@ export default function App() {
   };
 
   const cleanupSession = () => {
+    setIsPlacing(false);
+    setConfirmClear(false);
     sceneRef.current?.renderer.setAnimationLoop(null);
     hitTestSourceRef.current?.cancel();
     hitTestSourceRef.current = null;
@@ -1859,8 +1949,24 @@ export default function App() {
     }
   };
 
+  const removeSummaryItem = (id: number) => {
+    markUiInteraction();
+
+    if (id < 0) {
+      removeManualQuoteItem(id);
+      return;
+    }
+
+    if (isPlacementFlow) {
+      deleteV2Object(id);
+      return;
+    }
+
+    deleteCompletedObject(id);
+  };
+
   return (
-    <main className={`ar-app ${isActive ? "is-ar-active" : ""}`}>
+    <main className={`ar-app ${isV2 ? "is-v2" : ""} ${isActive ? "is-ar-active" : ""}`}>
       <canvas ref={canvasRef} className="ar-canvas" />
 
       <div
@@ -1910,7 +2016,7 @@ export default function App() {
         ) : directArEntry ? (
           <DirectArEntry
             selectedModel={selectedModel}
-            catalogStatus={catalogStatus}
+            catalogReady={catalogReady}
             onStartSession={startSession}
           />
         ) : (
@@ -1943,18 +2049,18 @@ export default function App() {
           <ArGuidanceOverlays
             isV2={isV2}
             showGuide={showArGuide}
-            showMovementCoach={showMovementCoach}
-            anchorTrackingState={anchorTrackingState}
+            showMovementCoach={!isV2 && showMovementCoach}
+            anchorTrackingState={isV2 && feedback ? "idle" : anchorTrackingState}
             onPointerDown={markUiInteraction}
             onDismissGuide={dismissArGuide}
           />
         )}
 
-        {isActive && isPlacementFlow && v2Mode === "edit" && selectedV2Object && (
+        {isActive && !isV2 && isPlacementFlow && v2Mode === "edit" && selectedV2Object && (
           <p className="ar-move-hint">Hold and move the item if needed</p>
         )}
 
-        {isActive && (!isV2 || v2Mode !== "edit") && (
+        {isActive && !isV2 && (
           <>
             <div className={`reticle ${confidence}`} aria-hidden="true">
               <span className="reticle-center" />
@@ -1970,6 +2076,29 @@ export default function App() {
           </>
         )}
 
+        {isV2 && feedback && isActive && guidanceVisible && (
+          <div className="ar-feedback" role="status" aria-live="polite" aria-atomic="true">
+            {feedback.message}
+          </div>
+        )}
+        {isV2 && isStarting && <div className="ar-starting" role="status">Opening AR camera…</div>}
+        {guidanceVisible && v2Mode !== "edit" && (
+          <>
+            <div className={`reticle ${guidance.ready ? "high" : "medium"}`} aria-hidden="true"><span className="reticle-center" /></div>
+            <section className={`v2-guidance ${guidance.ready ? "is-ready" : "is-scanning"}`} data-xr-ui="true" onPointerDown={markUiInteraction}>
+              <div role="status" aria-live="polite" aria-atomic="true">
+                <small>{v2Mode === "scanWall" ? "1 · Find wall" : "2 · Place product"} · {activeObjectCount} placed</small>
+                <strong>{guidance.title}</strong>
+                <p>{guidance.detail}</p>
+              </div>
+              {v2Mode === "place" && <button type="button" onClick={rescanV2Wall}>Choose a different wall</button>}
+            </section>
+          </>
+        )}
+        {guidanceVisible && v2Mode === "edit" && !selectedV2Object && (
+          <section className="v2-guidance"><strong>{activeObjectCount} product{activeObjectCount === 1 ? "" : "s"} placed</strong><p>Add another product, or open Quote Items to review and edit your items.</p></section>
+        )}
+
         {isActive && (
           <div
             className="ar-bottom-nav"
@@ -1978,6 +2107,7 @@ export default function App() {
           >
             <button
               type="button"
+              disabled={isV2 && (!selectedV2Object || isPlacing)}
               onClick={() => {
                 if (isPlacementFlow) {
                   if (selectedV2Object) deleteV2Object(selectedV2Object.id);
@@ -1986,8 +2116,8 @@ export default function App() {
                 undoPoint();
               }}
             >
-              <Undo2 className="size-5" />
-              <span>Undo</span>
+              {isV2 ? <Trash2 className="size-5" /> : <Undo2 className="size-5" />}
+              <span>{isV2 ? "Remove item" : "Undo"}</span>
             </button>
             <button
               type="button"
@@ -2006,11 +2136,15 @@ export default function App() {
               type="button"
               className="ar-capture-button"
               disabled={
-                ((isV2 && v2Mode === "scanWall") ||
-                  (isV3 && v2Mode === "place")) &&
-                confidence !== "high"
+                isPlacing || ((isV3 && v2Mode === "place") && confidence !== "high")
               }
               onClick={() => {
+                if (isV2) {
+                  if (v2Mode === "edit") doAnotherV2Object();
+                  else if (v2Mode === "scanWall") lockV2WallFromHit();
+                  else placePointFromHit("button");
+                  return;
+                }
                 if (!isPlacementFlow) {
                   finishShape();
                   return;
@@ -2035,14 +2169,14 @@ export default function App() {
               }}
             >
               <ScanLine className="size-5" />
-              <span>{arPrimaryActionLabel}</span>
+              <span>{isV2 ? isPlacing ? "Placing…" : v2Mode === "edit" ? "Add another" : v2Mode === "place" ? "Place product" : "Lock wall" : arPrimaryActionLabel}</span>
             </button>
             <button type="button" onClick={openSummary}>
               <ClipboardList className="size-5" />
               <span>Quote Items</span>
               {activeObjectCount > 0 && <i>{activeObjectCount}</i>}
             </button>
-            <button type="button" onClick={resetAll}>
+            <button type="button" onClick={() => isV2 ? setConfirmClear(true) : resetAll()}>
               <Trash2 className="size-5" />
               <span>Reset</span>
             </button>
@@ -2058,9 +2192,10 @@ export default function App() {
           !showArGuide &&
           !showMovementCoach && (
             <PlacementEditor
+            guided={isV2}
               object={selectedV2Object}
               modelLabel={findModel(selectedV2Object.modelId).label}
-              onClose={() => setSelectedV2ObjectId(null)}
+              onClose={() => { setSelectedV2ObjectId(null); selectedV2ObjectIdRef.current = null; }}
               onChangeModel={() => {
                 setShopDetailModel(null);
                 setCatalogOpen(true);
@@ -2072,6 +2207,16 @@ export default function App() {
             />
           )}
 
+        {isV2 && confirmClear && (
+          <div className="v2-confirm-backdrop" data-xr-ui="true" onPointerDown={markUiInteraction}>
+            <section ref={clearDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="clear-ar-title" aria-describedby="clear-ar-description" className="v2-confirm">
+              <h2 id="clear-ar-title">Clear all placed products?</h2>
+              <p id="clear-ar-description">This removes your placed products from this AR session. You will need to place them again.</p>
+              <button type="button" onClick={() => setConfirmClear(false)}>Keep products</button>
+              <button type="button" onClick={() => { resetAll(); setConfirmClear(false); }}>Clear products</button>
+            </section>
+          </div>
+        )}
         <ProductCatalogDrawer
           open={isActive && catalogOpen}
           detailModel={shopDetailModel}
@@ -2124,6 +2269,7 @@ export default function App() {
           onOpenChange={setSummaryOpen}
           onPointerDown={markUiInteraction}
           onEditItem={editSummaryItem}
+          onRemoveItem={removeSummaryItem}
           onSaveDraft={() => {
             markUiInteraction();
             saveQuoteDraft();

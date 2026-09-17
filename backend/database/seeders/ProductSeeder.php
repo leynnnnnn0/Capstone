@@ -82,7 +82,12 @@ class ProductSeeder extends Seeder
                 $file->getPathname(),
             );
 
-            $paths[] = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+            $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
+            // Other photo catalogs may also contain PNGs; they are not doors.
+            if (str_starts_with($relativePath, 'products/screen-door/')
+                || str_starts_with($relativePath, 'products/screen-doors/')) {
+                $paths[] = $relativePath;
+            }
         }
 
         sort($paths);

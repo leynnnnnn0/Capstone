@@ -3120,6 +3120,11 @@ h1 {
   box-shadow: none;
 }
 
+.direct-ar-card button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .direct-ar-card small {
   color: rgba(255, 255, 255, 0.42);
 }
@@ -4144,3 +4149,182 @@ h1 {
   border-color: #059669;
   background: rgba(52, 211, 153, 0.14);
 }
+
+.summary-list .summary-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.35rem;
+  overflow: hidden;
+  border: 1px solid #e4ebf0;
+  border-radius: 1rem;
+  padding: 0.3rem;
+  background: #f7fafc;
+}
+
+.summary-item-row .summary-item-button {
+  min-width: 0;
+  border: 0;
+  padding: 0.55rem;
+  background: transparent;
+}
+
+.summary-item-row .summary-item-button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.summary-item-row .summary-item-remove {
+  align-self: stretch;
+  gap: 0.3rem;
+  border-radius: 0.75rem;
+  padding-inline: 0.65rem;
+  color: #a23b4a;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.summary-item-row .summary-item-remove:hover {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+@media (max-width: 370px) {
+  .summary-item-row .summary-item-remove {
+    width: 2.5rem;
+    padding: 0;
+    font-size: 0;
+  }
+}
+
+/* Android product-to-AR launch card -------------------------------------- */
+
+.direct-ar-entry {
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 15% 92%, rgba(198, 211, 238, 0.55), transparent 16rem),
+    radial-gradient(circle at 88% 8%, rgba(229, 220, 243, 0.7), transparent 17rem),
+    #f6f5f8;
+}
+
+.direct-ar-card {
+  justify-items: center;
+  gap: 0;
+  width: min(24rem, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  border-radius: 2rem;
+  padding: 2.4rem 1.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #111827;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(106, 123, 153, 0.16),
+    0 24px 65px rgba(76, 86, 113, 0.14);
+}
+
+.direct-ar-illustration {
+  width: 10rem;
+  height: 9rem;
+  margin-bottom: 1.65rem;
+}
+
+.direct-ar-illustration img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scale(1.45);
+  object-fit: contain;
+}
+
+.direct-ar-card h1 {
+  max-width: none;
+  margin: 0;
+  color: #111827;
+  font-size: clamp(1.7rem, 7vw, 2.1rem);
+  font-weight: 680;
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+}
+
+.direct-ar-card p {
+  max-width: 18rem;
+  margin: 0.75rem 0 1.5rem;
+  color: #6b7280;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.direct-ar-card p strong {
+  color: #374151;
+  font-weight: 650;
+}
+
+.direct-ar-card button {
+  width: 100%;
+  min-height: 3.35rem;
+  border-radius: 0.95rem;
+  background: #162d4a;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 650;
+  box-shadow: 0 12px 26px rgba(22, 45, 74, 0.18);
+}
+
+.direct-ar-card button:hover {
+  background: #315b7d;
+}
+
+.direct-ar-card button:disabled {
+  background: #dce4ea;
+  color: #6f879b;
+  box-shadow: none;
+}
+
+/* V2: readable feedback with separate placement and adjustment controls. */
+.v2-guidance {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 30;
+  bottom: calc(max(0.6rem, env(safe-area-inset-bottom)) + 5.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(28rem, calc(100vw - 1.5rem));
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  background: #f8fafc;
+  color: #162d4a;
+  box-shadow: 0 8px 24px #0d1f3326;
+}
+.v2-guidance small { display: block; font-size: .75rem; color: #475569; margin-bottom: .4rem; }
+.v2-guidance strong { display: block; font-size: 1rem; }
+.v2-guidance p, .v2-editor-help { margin: .4rem 0 0; font-size: .85rem; line-height: 1.45; color: #475569; }
+.v2-guidance.is-ready { border-left: 4px solid #059669; }
+.v2-guidance.is-scanning { border-left: 4px solid #d3a500; }
+.v2-guidance button, .v2-position-toggle { min-height: 44px; margin-top: .4rem; color: #1e5075; text-decoration: underline; font-size: .85rem; }
+.ar-feedback {
+  pointer-events: none;
+  position: absolute;
+  z-index: 45;
+  top: calc(max(.7rem, env(safe-area-inset-top)) + 4.9rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(28rem, calc(100vw - 1.5rem));
+  border-radius: .9rem;
+  padding: .8rem 1rem;
+  background: #162d4a;
+  color: white;
+  font-size: .9rem;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px #0003;
+}
+.ar-starting { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; background: #162d4ae8; color: white; pointer-events: auto; }
+.v2-confirm-backdrop { pointer-events: auto; position: absolute; z-index: 80; inset: 0; display: grid; place-items: center; padding: 1rem; background: #0d1f33b3; }
+.v2-confirm { width: min(26rem, 100%); background: white; color: #162d4a; padding: 1.25rem; border-radius: 1.2rem; }
+.v2-confirm h2 { font-size: 1.2rem; margin: 0 0 .6rem; }
+.v2-confirm p { font-size: .9rem; line-height: 1.5; }
+.v2-confirm button { display: block; width: 100%; min-height: 44px; margin-top: .7rem; border-radius: .6rem; background: #edf3f7; }
+.v2-confirm button:last-child { background: #b91c1c; color: white; }
+.is-v2 .v2-size-panel { max-height: calc(100dvh - 14rem); overflow-y: auto; }
+.v2-position-toggle { display: block; width: 100%; text-align: left; }
+.ar-bottom-nav button:disabled { opacity: .45; }

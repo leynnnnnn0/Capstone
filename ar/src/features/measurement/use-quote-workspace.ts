@@ -24,6 +24,7 @@ interface QuoteWorkspaceOptions {
   flowVersion: FlowVersion;
   objects: MeasuredObject[];
   placementObjects: V2PlacedObject[];
+  models: ModelDefinition[];
   findModel: (modelId: string) => ModelDefinition;
   onStatus: (message: string) => void;
 }
@@ -32,6 +33,7 @@ export function useQuoteWorkspace({
   flowVersion,
   objects,
   placementObjects,
+  models,
   findModel,
   onStatus,
 }: QuoteWorkspaceOptions) {
@@ -83,12 +85,18 @@ export function useQuoteWorkspace({
 
   const summaryItems = useMemo(
     () => [
-      ...manualItems.map((item, index) =>
-        transferItemToSummaryQuoteItem(item, index),
-      ),
+      ...manualItems.map((item, index) => {
+        const model = models.find(
+          (candidate) =>
+            candidate.id === item.modelId ||
+            candidate.productId === item.productId,
+        );
+
+        return transferItemToSummaryQuoteItem(item, index, model);
+      }),
       ...measuredItems,
     ],
-    [manualItems, measuredItems],
+    [manualItems, measuredItems, models],
   );
   const estimatedTotal = useMemo(
     () =>
@@ -190,6 +198,44 @@ export function useQuoteWorkspace({
     setDraftState({ phase: "idle" });
   }, []);
 
+  const removeManualItem = useCallback((summaryItemId: number) => {
+    const index = -summaryItemId - 1;
+    if (index < 0) return;
+
+    setManualItems((items) => {
+      if (index >= items.length) return items;
+
+      const nextItems = items.filter((_, itemIndex) => itemIndex !== index);
+
+      try {
+        if (nextItems.length === 0) {
+          localStorage.removeItem(SAVED_AR_QUOTE_KEY);
+        } else {
+          localStorage.setItem(
+            SAVED_AR_QUOTE_KEY,
+            JSON.stringify({
+              source: "sog-ar",
+              version: 1,
+              createdAt: new Date().toISOString(),
+              items: nextItems,
+            } satisfies ArQuoteTransferPayload),
+          );
+        }
+      } catch {
+        // Keep the current screen usable when browser storage is unavailable.
+      }
+
+      setDraftState(
+        nextItems.length > 0
+          ? { phase: "saved", itemCount: nextItems.length }
+          : { phase: "idle" },
+      );
+      onStatus("Item removed from quote.");
+
+      return nextItems;
+    });
+  }, [onStatus]);
+
   return {
     summaryItems,
     estimatedTotal,
@@ -198,5 +244,6 @@ export function useQuoteWorkspace({
     draftState,
     saveDraft,
     clearDraft,
+    removeManualItem,
   };
 }

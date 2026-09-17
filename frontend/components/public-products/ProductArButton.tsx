@@ -32,7 +32,7 @@ type ArDimensions = {
   depth: string;
 };
 
-function arUrl(productId: number) {
+function arUrl(productId: number, directEntry: boolean) {
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
   const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
   const base = configured
@@ -41,7 +41,10 @@ function arUrl(productId: number) {
       ? `${window.location.protocol}//${window.location.hostname}:5173/ar/${version}`
       : `/ar/${version}`;
 
-  return `${base}?product=${productId}`;
+  const params = new URLSearchParams({ product: String(productId) });
+  if (directEntry) params.set("direct", "ar");
+
+  return `${base}?${params.toString()}`;
 }
 
 async function supportsWebXrAr() {
@@ -52,6 +55,10 @@ async function supportsWebXrAr() {
   if (!window.isSecureContext || !xr?.isSessionSupported) return false;
 
   return xr.isSessionSupported("immersive-ar").catch(() => false);
+}
+
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent);
 }
 
 export default function ProductArButton({
@@ -88,7 +95,7 @@ export default function ProductArButton({
     event.stopPropagation();
 
     if (await supportsWebXrAr()) {
-      window.location.assign(arUrl(productId));
+      window.location.assign(arUrl(productId, isAndroidDevice()));
       return;
     }
 

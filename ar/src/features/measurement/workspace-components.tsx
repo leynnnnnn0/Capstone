@@ -65,31 +65,27 @@ export function V2DimensionControl({
 
 export function DirectArEntry({
   selectedModel,
-  catalogStatus,
+  catalogReady,
   onStartSession,
 }: {
   selectedModel: ModelDefinition;
-  catalogStatus: string;
+  catalogReady: boolean;
   onStartSession: () => void;
 }) {
   return (
     <section className="direct-ar-entry">
       <div className="direct-ar-card">
-        <span className="direct-ar-eyebrow">SOG AR preview</span>
-        <h1>Place products in your space.</h1>
-        <p>
-          Start AR now. Products, quote items, and adjustments are available inside
-          the AR toolbar.
-        </p>
-        <div className="direct-ar-selected">
-          <Box className="size-5" />
-          <span>{selectedModel.label}</span>
+        <div className="direct-ar-illustration" aria-hidden="true">
+          <img src="/ar/images/ar-launch-illustration.png" alt="" />
         </div>
-        <button type="button" onClick={onStartSession}>
+        <h1>Ready to view in AR?</h1>
+        <p>
+          See <strong>{selectedModel.label}</strong> at full scale in your space.
+        </p>
+        <button type="button" onClick={onStartSession} disabled={!catalogReady}>
           <Play className="size-5" />
-          Start AR
+          {catalogReady ? "Start AR" : "Loading product…"}
         </button>
-        <small>{catalogStatus}</small>
       </div>
     </section>
   );

@@ -14,13 +14,16 @@ import {
 export function transferItemToSummaryQuoteItem(
   item: ArQuoteTransferItem,
   index: number,
+  model?: ModelDefinition,
 ): SummaryQuoteItem {
   return {
     id: -index - 1,
     label: item.label,
     description: item.description,
     dimensionsText: formatQuoteDimensions(item.widthCm, item.heightCm),
-    price: item.price ?? null,
+    price:
+      item.price ??
+      (model ? estimateQuotePrice(item.widthCm, item.heightCm, model) : null),
   };
 }
 
@@ -61,6 +64,11 @@ export function v2ObjectToQuoteTransferItem(
     segmentsCm: object.dimensions.segmentsCm,
     widthCm: object.dimensions.segmentsCm[0] ?? 0,
     heightCm: object.dimensions.heightCm,
+    price: estimateQuotePrice(
+      object.dimensions.segmentsCm[0] ?? 0,
+      object.dimensions.heightCm,
+      model,
+    ),
   };
 }
 
@@ -83,6 +91,7 @@ export function objectToQuoteTransferItem(
     segmentsCm: object.dimensions.segmentsCm,
     widthCm,
     heightCm: object.dimensions.heightCm,
+    price: estimateQuotePrice(widthCm, object.dimensions.heightCm, model),
   };
 }
 

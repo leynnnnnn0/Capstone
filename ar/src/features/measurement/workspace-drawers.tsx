@@ -1,4 +1,4 @@
-import { ArrowLeft, BookmarkCheck, ScanLine, X } from "lucide-react";
+import { ArrowLeft, BookmarkCheck, ScanLine, Trash2, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
   Drawer,
@@ -31,6 +31,7 @@ interface QuoteSummaryDrawerProps {
   onOpenChange: (open: boolean) => void;
   onPointerDown: () => void;
   onEditItem: (id: number) => void;
+  onRemoveItem: (id: number) => void;
   onSaveDraft: () => void;
   onProceed: () => void;
 }
@@ -43,6 +44,7 @@ export function QuoteSummaryDrawer({
   onOpenChange,
   onPointerDown,
   onEditItem,
+  onRemoveItem,
   onSaveDraft,
   onProceed,
 }: QuoteSummaryDrawerProps) {
@@ -78,26 +80,44 @@ export function QuoteSummaryDrawer({
               <div className="summary-empty">No objects captured yet.</div>
             ) : (
               items.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className="summary-item-button"
-                  onClick={() => onEditItem(item.id)}
-                >
-                  <span className="summary-item-copy">
-                    <strong>{item.label}</strong>
-                    <small>
-                      {item.id > 0 ? "AR measured item" : "Selected product"}
-                    </small>
-                    <p>{item.dimensionsText}</p>
-                    <p>1 pc</p>
-                  </span>
-                  <strong className="summary-item-price">
-                    {item.price == null
-                      ? "Price pending"
-                      : formatQuoteCurrency(item.price)}
-                  </strong>
-                </button>
+                <article key={item.id} className="summary-item-row">
+                  <button
+                    type="button"
+                    className="summary-item-button"
+                    onClick={() => onEditItem(item.id)}
+                    disabled={item.id < 0}
+                    aria-label={
+                      item.id > 0
+                        ? `Edit ${item.label}`
+                        : `${item.label}, saved quote item`
+                    }
+                  >
+                    <span className="summary-item-copy">
+                      <strong>{item.label}</strong>
+                      <small>
+                        {item.id > 0 ? "AR measured item" : "Saved quote item"}
+                      </small>
+                      <p>{item.dimensionsText}</p>
+                      <p>1 pc</p>
+                    </span>
+                    <strong className="summary-item-price">
+                      {item.price == null
+                        ? "Price pending"
+                        : formatQuoteCurrency(item.price)}
+                    </strong>
+                  </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="summary-item-remove"
+                    onClick={() => onRemoveItem(item.id)}
+                    aria-label={`Remove ${item.label} from quote`}
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                    Remove
+                  </Button>
+                </article>
               ))
             )}
           </div>
