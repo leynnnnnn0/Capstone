@@ -143,6 +143,7 @@ export default function ProductArButton({
                 title={productName}
                 hideHeader
                 ar
+                arDefaultScale={1}
                 arDimensionsCm={defaults}
                 arFit="exact"
                 className="h-full min-h-[22rem] rounded-none border-0"
@@ -177,9 +178,9 @@ function defaultArDimensions(
     height:
       positiveDimension(height) ??
       (isDoor ? 210 : isWindow ? 120 : isCabinet || isShower ? 200 : 100),
-    depth:
-      positiveDimension(depth) ??
-      (isCabinet ? 55 : isShower ? 90 : isDoor || isWindow ? 10 : 50),
+    // GLBs carry their physical depth. A category cannot distinguish a flat
+    // shower screen from a corner enclosure, so never invent a depth here.
+    depth: positiveDimension(depth) ?? undefined,
   };
 }
 

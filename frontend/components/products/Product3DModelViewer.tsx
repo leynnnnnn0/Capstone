@@ -26,7 +26,7 @@ type Product3DModelViewerProps = {
   arDimensionsCm?: {
     width: number;
     height: number;
-    depth: number;
+    depth?: number;
   };
   arFit?: "exact" | "contain";
 };
@@ -46,7 +46,7 @@ type ModelScale = {
 type ArDimensions = {
   width: number;
   height: number;
-  depth: number;
+  depth?: number;
 };
 
 type ArModelSource = {
@@ -235,12 +235,16 @@ export default function Product3DModelViewer({
       const target = {
         x: config.arDimensionsCm.width / 100,
         y: config.arDimensionsCm.height / 100,
-        z: config.arDimensionsCm.depth / 100,
+        z: config.arDimensionsCm.depth == null
+          ? null
+          : config.arDimensionsCm.depth / 100,
       };
       const ratios = {
         x: target.x / Math.max(dimensions.x, 0.0001),
         y: target.y / Math.max(dimensions.y, 0.0001),
-        z: target.z / Math.max(dimensions.z, 0.0001),
+        // An omitted depth preserves the model's native thickness, including
+        // real corner returns; only explicit dimensions may stretch this axis.
+        z: target.z == null ? 1 : target.z / Math.max(dimensions.z, 0.0001),
       };
       const fittedRatios =
         config.arFit === "contain"
