@@ -33,7 +33,7 @@ class Product3DModelSeeder extends Seeder
         }
     }
 
-    private function seedModel(Product $product, string $filename): void
+    protected function seedModel(Product $product, string $filename): void
     {
         $source = database_path('seeders/assets/models/'.$filename);
         $path = 'products/'.$product->id.'/models/'.$filename;

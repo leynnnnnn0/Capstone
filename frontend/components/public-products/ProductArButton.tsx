@@ -2,16 +2,8 @@
 
 import type { MouseEvent } from "react";
 import { useState } from "react";
-import {
-  ArrowUpRight,
-  Check,
-  RotateCcw,
-  Ruler,
-  ScanLine,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, ScanLine, X } from "lucide-react";
 
-import NumericInput from "@/components/form/NumericInput";
 import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import { cn } from "@/lib/utils";
 
@@ -24,12 +16,6 @@ type ProductArButtonProps = {
   defaultHeightCm?: number;
   defaultDepthCm?: number;
   className?: string;
-};
-
-type ArDimensions = {
-  width: string;
-  height: string;
-  depth: string;
 };
 
 function arUrl(productId: number, directEntry: boolean) {
@@ -79,17 +65,6 @@ export default function ProductArButton({
     defaultHeightCm,
     defaultDepthCm,
   );
-  const [draftDimensions, setDraftDimensions] = useState<ArDimensions>(() =>
-    dimensionsToStrings(defaults),
-  );
-  const [appliedDimensions, setAppliedDimensions] = useState(defaults);
-  const parsedDraft = parseDimensions(draftDimensions, defaults.depth);
-  const dimensionsValid = parsedDraft !== null;
-  const dimensionsDirty =
-    !parsedDraft ||
-    parsedDraft.width !== appliedDimensions.width ||
-    parsedDraft.height !== appliedDimensions.height ||
-    parsedDraft.depth !== appliedDimensions.depth;
 
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -100,17 +75,6 @@ export default function ProductArButton({
     }
 
     setFallbackOpen(true);
-  }
-
-  function applyDimensions() {
-    if (!parsedDraft) return;
-
-    setAppliedDimensions(parsedDraft);
-  }
-
-  function resetDimensions() {
-    setDraftDimensions(dimensionsToStrings(defaults));
-    setAppliedDimensions(defaults);
   }
 
   return (
@@ -146,7 +110,7 @@ export default function ProductArButton({
           onClick={() => setFallbackOpen(false)}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={`ar-size-title-${productId}`}
+          aria-labelledby={`ar-preview-title-${productId}`}
         >
           <div
             className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-[1.75rem]"
@@ -155,13 +119,13 @@ export default function ProductArButton({
             <div className="flex shrink-0 items-center justify-between gap-4 border-b px-5 py-4 sm:px-6 sm:py-5">
               <div className="min-w-0">
                 <p
-                  id={`ar-size-title-${productId}`}
+                  id={`ar-preview-title-${productId}`}
                   className="truncate text-base font-bold text-slate-900"
                 >
                   {productName}
                 </p>
                 <p className="mt-1 hidden text-sm text-slate-500 sm:block">
-                  Set the finished size, then place it in your space.
+                  Drag to rotate. Pinch or scroll to zoom.
                 </p>
               </div>
               <button
@@ -173,124 +137,22 @@ export default function ProductArButton({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[19rem_minmax(0,1fr)] lg:overflow-hidden">
-              <aside className="border-b border-slate-200 bg-white p-4 sm:p-5 lg:overflow-y-auto lg:border-b-0 lg:border-r">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf2f8] text-[#2c5282]">
-                    <Ruler className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">Real-world size</p>
-                    <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                      Enter the finished outside dimensions in meters.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-2 lg:grid-cols-1">
-                  <DimensionInput
-                    label="Width"
-                    value={draftDimensions.width}
-                    onChange={(width) =>
-                      setDraftDimensions((current) => ({ ...current, width }))
-                    }
-                  />
-                  <DimensionInput
-                    label="Height"
-                    value={draftDimensions.height}
-                    onChange={(height) =>
-                      setDraftDimensions((current) => ({ ...current, height }))
-                    }
-                  />
-                  <DimensionInput
-                    label="Depth (optional)"
-                    value={draftDimensions.depth}
-                    onChange={(depth) =>
-                      setDraftDimensions((current) => ({ ...current, depth }))
-                    }
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={applyDimensions}
-                  disabled={!dimensionsValid || !dimensionsDirty}
-                  className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#10263f] px-4 text-xs font-bold text-white transition hover:bg-[#193a60] disabled:cursor-default disabled:bg-slate-200 disabled:text-slate-500"
-                >
-                  {dimensionsDirty ? (
-                    <Ruler className="h-4 w-4" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                  {dimensionsDirty ? "Apply dimensions" : "Size applied"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetDimensions}
-                  className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Reset recommended size
-                </button>
-
-                <div className="mt-4 rounded-xl bg-[#eaf2f8] px-3 py-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#608db9]">
-                    AR will render
-                  </p>
-                  <p className="mt-1 text-sm font-extrabold text-[#10263f]">
-                    {formatDimension(appliedDimensions.width / 100)} ×{" "}
-                    {formatDimension(appliedDimensions.height / 100)} ×{" "}
-                    {formatDimension(appliedDimensions.depth / 100)} m
-                  </p>
-                </div>
-              </aside>
-
+            <div className="min-h-0 flex-1">
               <Product3DModelViewer
                 src={modelSrc}
                 title={productName}
-                description="Rotate and zoom the model before opening full AR on a supported device."
                 hideHeader
                 ar
-                arDimensionsCm={appliedDimensions}
+                arDimensionsCm={defaults}
                 arFit="exact"
-                className="min-h-[22rem] rounded-none border-0"
-                viewportClassName="h-[min(52dvh,34rem)] lg:h-[min(70dvh,40rem)]"
+                className="h-full min-h-[22rem] rounded-none border-0"
+                viewportClassName="h-[min(70dvh,44rem)]"
               />
             </div>
           </div>
         </div>
       )}
     </>
-  );
-}
-
-function DimensionInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label>
-      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
-        {label}
-      </span>
-      <span className="relative block">
-        <NumericInput
-          value={value}
-          decimalScale={2}
-          onValueChange={onChange}
-          aria-label={`${label} in meters`}
-          className="h-11 rounded-xl border-slate-200 bg-white pr-9 text-sm font-bold text-slate-800"
-        />
-        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[10px] font-bold text-slate-400">
-          m
-        </span>
-      </span>
-    </label>
   );
 }
 
@@ -323,37 +185,4 @@ function defaultArDimensions(
 
 function positiveDimension(value?: number) {
   return Number.isFinite(value) && Number(value) > 0 ? Number(value) : null;
-}
-
-function dimensionsToStrings(dimensions: {
-  width: number;
-  height: number;
-  depth: number;
-}): ArDimensions {
-  return {
-    width: String(dimensions.width / 100),
-    height: String(dimensions.height / 100),
-    depth: String(dimensions.depth / 100),
-  };
-}
-
-function parseDimensions(dimensions: ArDimensions, defaultDepth: number) {
-  const parsed = {
-    width: Number(dimensions.width) * 100,
-    height: Number(dimensions.height) * 100,
-    depth:
-      dimensions.depth.trim() === ""
-        ? defaultDepth
-        : Number(dimensions.depth) * 100,
-  };
-
-  return Object.values(parsed).every(
-    (value) => Number.isFinite(value) && value > 0,
-  )
-    ? parsed
-    : null;
-}
-
-function formatDimension(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
