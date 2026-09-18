@@ -66,6 +66,8 @@ export default function ProductArButton({
     defaultDepthCm,
   );
 
+  if (!modelSrc) return null;
+
   async function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
 

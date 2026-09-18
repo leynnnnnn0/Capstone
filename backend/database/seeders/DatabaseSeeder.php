@@ -55,6 +55,9 @@ class DatabaseSeeder extends Seeder
             ShowerEnclosureSeeder::class,
             Product3DModelSeeder::class,
             ShowerGate3DModelSeeder::class,
+            Railing3DModelSeeder::class,
+            WindowSeeder::class,
+            Window3DModelSeeder::class,
         ]);
     }
 }

@@ -210,7 +210,7 @@ Retain the real dynamic product integration already used by the landing page.
 
 Only show figures that already exist in approved repository copy or live data. The current approved set may include:
 
-- `500+` completed installations
+- `10000+` completed installations
 - `100%` free on-site inspection
 - `AR Ready` visualisation capability
 - `5 stars` for craftsmanship, speed, and support

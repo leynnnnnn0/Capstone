@@ -142,7 +142,7 @@ const processSteps = [
 ];
 
 const stats = [
-  ["500+", "Completed installations across the metro"],
+  ["10000+", "Completed installations across the metro"],
   ["100%", "Free on-site inspection with no hidden charge"],
   ["AR Ready", "Visualisation for compatible product models"],
   ["5 stars", "For craftsmanship, speed, and support"],
