@@ -202,7 +202,7 @@ export function imageUrl(image?: ProductImage | null) {
 }
 
 export function productCover(product: Product) {
-  return normalizeAssetUrl(product.cover_image ?? imageUrl(productImages(product)[0]));
+  return normalizeAssetUrl(product.cover_image) || imageUrl(productImages(product)[0]);
 }
 
 export function productImageOrderToken(image: ProductImage) {

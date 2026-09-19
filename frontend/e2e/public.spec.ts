@@ -13,6 +13,42 @@ test("landing page renders live products in the editorial collection", async ({ 
 
   await expect(collection.getByText("Sliding Door").first()).toBeVisible();
   await expect(collection.getByText("Vista Slide Sliding Window")).toHaveCount(0);
+  await expect(collection.getByRole("img", { name: "Sliding Door product preview" }))
+    .toHaveAttribute("src", "/images/landing/windows.jpg");
+});
+
+test("editorial collection uses gallery images when the cover is empty", async ({ page }) => {
+  await page.route("**/api/v1/products?**", async (route) => {
+    await route.fulfill({ json: { data: [{
+      id: 42,
+      name: "Database Window",
+      cover_image: "",
+      images: [{ id: 9, image_url: "/images/landing/windows.jpg" }],
+    }] } });
+  });
+  await page.goto("/");
+
+  const collection = page.getByRole("region", { name: "SOG product collection" });
+  await expect(collection.getByRole("img", { name: "Database Window product preview" }))
+    .toHaveAttribute("src", "/images/landing/windows.jpg");
+});
+
+test("editorial collection does not substitute stock photos for missing images", async ({ page }) => {
+  await page.route("**/api/v1/products?**", async (route) => {
+    await route.fulfill({ json: { data: [{
+      id: 42,
+      name: "Database Window",
+      cover_image: null,
+      images: [],
+    }] } });
+  });
+  await page.goto("/");
+
+  const collection = page.getByRole("region", { name: "SOG product collection" });
+  await expect(collection.getByText("Image unavailable")).toBeVisible();
+  await expect(collection.getByRole("img")).toHaveCount(0);
+  await expect(collection.getByRole("link", { name: "Database Window", exact: true }))
+    .toHaveAttribute("href", "/products/42");
 });
 
 test("returning from a product restores the catalog scroll position", async ({ page }) => {

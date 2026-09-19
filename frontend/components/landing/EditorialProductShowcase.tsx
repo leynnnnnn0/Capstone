@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { motion, type PanInfo } from "framer-motion";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -116,22 +116,14 @@ function getCircularOffset(
   return offset;
 }
 
-const fallbackCovers = [
-  "/images/landing/showcase/ultra-clear-frameless-door.png",
-  "/images/landing/showcase/vista-slide-window.png",
-  "/images/landing/showcase/aero-casement-window.png",
-  "/images/landing/showcase/metro-slide-door.png",
-  "/images/landing/showcase/clearview-partition.png",
-];
-
-function toShowcaseItem(product: Product, index: number): ShowcaseItem {
+function toShowcaseItem(product: Product): ShowcaseItem {
   return {
     key: String(product.id),
     name: product.name,
     category: productCategories(product)[0]?.name ?? "Made to measure",
     material: "Custom Fabrication",
     capability: product3DModel(product) ? "AR Ready" : "Made to Measure",
-    cover: productCover(product) || fallbackCovers[index % fallbackCovers.length],
+    cover: productCover(product),
     href: `/products/${product.id}`,
   };
 }
@@ -301,14 +293,19 @@ export default function EditorialProductShowcase({
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
                 <Link href={item.href} className="relative block h-full w-full">
-                  <img
+                  {item.cover ? <img
                     src={item.cover}
                     alt={`${item.name} product preview`}
                     className={cn(styles.cardMedia, "h-full w-full")}
                     style={{
                       objectPosition: item.coverPosition ?? "center",
                     }}
-                  />
+                  /> : (
+                    <div className="flex h-full flex-col items-center justify-center gap-3 bg-slate-100 text-slate-500">
+                      <Box className="h-10 w-10" aria-hidden="true" />
+                      <span className="text-xs">Image unavailable</span>
+                    </div>
+                  )}
                 </Link>
                 <div className={styles.cardScrim} />
                 <span className={styles.cardIndex}>
