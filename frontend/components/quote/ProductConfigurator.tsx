@@ -129,6 +129,7 @@ export default function ProductConfigurator({
   const shouldUseHistoryBack = Boolean(preSelectedProductId || preSelectedVariantId);
 
   const setQuoteProductQuery = (next: { categoryId?: number | null; search?: string }) => {
+    setPagination({ page: 1, filter: "" });
     const params = new URLSearchParams(searchParams.toString());
 
     if ("categoryId" in next) {
