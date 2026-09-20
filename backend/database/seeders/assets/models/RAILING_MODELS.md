@@ -7,14 +7,16 @@ root. This also writes `railing-models.json` for `Railing3DModelSeeder`.
 Dimensions are approximate, in meters, Y-up. The assumed handrail height is
 1.1 m above mounting level. Balcony 01 is a user-requested L-shaped design with
 a 4 m main run (four glass sections) and 2 m return (two glass sections).
-Landing 03 spans 2 m with four glass sections,
+Landing 03 spans 3.2 m with four equal glass sections,
 stair railings 02 and 05 have 2 m and 2.4 m horizontal runs with assumed slopes.
-Stair 02 now uses one uninterrupted pane without a middle post or diagonal
-metal bars, following the corrected photo interpretation. Its original catalog
+Stair 02 has a 1.5 m perpendicular rising return beyond its 2 m main flight,
+with one uninterrupted pane per flight and a shared corner post, without
+diagonal metal bars. Return length and slope are assumed from the cropped photo.
+Its original catalog
 name and filename are retained to update the existing product in place.
-Black balcony 04 includes a 1.2 m perpendicular return (two sections) on a
-2.4 m main run (four sections). Both corner designs use equal post spacing
-on both runs: 1 m for silver 01 and 0.6 m for black 04. The public preview
+Black balcony 04 includes a 2 m perpendicular return (two sections) on a
+4 m main run (four sections). Both corner designs use equal 1 m post spacing
+on both runs. The public preview
 uses native railing dimensions, avoiding independent X/Z stretching.
 Straight assemblies have 0.12 m overall depth at mounting plates, with 0.05 m
 posts; the corner model's greater depth is its return, not thick framing.

@@ -29,3 +29,17 @@ September 19 photo corrections: shower 04 uses cylindrical perimeter and pane
 profiles; shower 16 has a two-leaf sliding section beside a single fixed panel.
 New gate floral motifs and finials are simplified modeled curves, not exact
 fabrication patterns. Surrounding fence runs in the photos remain excluded.
+
+September 20 annotated-photo revisions are implemented in
+`gate_photo_refinements.py`, called by the same builder. Gates 03, 05–15
+(except unchanged 04) were revised: alternating tall/spear bars; mirrored
+geometric grilles; two louvered leaves with horizontal pulls; open side margins;
+aligned solid panel rows and a raised curved header; botanical side grilles,
+wood-edge trim and sculpted finials; a three-leaf privacy gate with a physical
+diagonal slot; interrupted lattice pickets; opposing geometric returns.
+Gate 14 is now nominally 4.8 m wide. Gate 03 is 2.3 m tall.
+
+Uncertain photo details are explicit modeling assumptions: gate 07 is two
+operable leaves with two narrow fixed sidelights; gate 08 is four leaves.
+Gate 11 uses a shallow segmental crown over its central pair. These choices
+are visual interpretations, not confirmed fabrication specifications.

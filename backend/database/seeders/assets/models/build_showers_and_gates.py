@@ -249,6 +249,10 @@ def remaining_gate(i):
     # Keep material index valid until export, then the caller restores it.
 
 def gate(i):
+    import gate_photo_refinements
+    if i in gate_photo_refinements.REVISED:
+        gate_photo_refinements.build(i,sys.modules[__name__])
+        return
     if i in (4,7,8,9,11,12,13):
         remaining_gate(i)
         return

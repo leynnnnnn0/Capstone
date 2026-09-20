@@ -32,7 +32,7 @@ it('seeds all five railing models with thin straight profiles and a real corner 
         $metadata = json_decode(substr($data, 20, $length), true, 512, JSON_THROW_ON_ERROR);
         expect($metadata['extras']['dimensionsAssumed'])->toBeTrue();
         $depth = $metadata['extras']['dimensionsMeters'][2];
-        if (str_ends_with($product->name, '04') || str_ends_with($product->name, '01')) {
+        if (in_array(substr($product->name, -2), ['01', '02', '04'])) {
             expect($depth)->toBeGreaterThan(1);
         } else {
             expect($depth)->toBeLessThan(.15);
@@ -40,7 +40,7 @@ it('seeds all five railing models with thin straight profiles and a real corner 
         $panels = collect($metadata['meshes'])->filter(fn ($mesh) => str_ends_with($mesh['name'], 'Clear glass infill'))
             ->sum(fn ($mesh) => $metadata['accessors'][$mesh['primitives'][0]['indices']]['count'] / 6);
         $number = substr($product->name, -2);
-        expect((int) $panels)->toBe(['01' => 6, '02' => 1, '03' => 4, '04' => 6, '05' => 2][$number]);
+        expect((int) $panels)->toBe(['01' => 6, '02' => 2, '03' => 4, '04' => 6, '05' => 2][$number]);
         if (in_array($number, ['01', '04'])) {
             $widths = [];
             $counts = [];
