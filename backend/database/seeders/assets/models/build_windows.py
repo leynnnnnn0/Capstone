@@ -80,6 +80,7 @@ def awnings(w,h,cols,rows):
 def build(i):
     if i==1:
         perimeter(1.4,1.5,BLACK)
+        box('Fixed center mullion',BLACK,-.025,.025,.045,1.455,-.035,.035)
         for side in (-1,1):
             with place('Casement '+str(side),x=side*.647,angle=side*20):
                 a,b=(0,.637) if side<0 else (-.637,0)
@@ -88,10 +89,6 @@ def build(i):
                 for y in (.25,1.20): m.rod('Hinge barrel',m.SILVER,(0,y,0),(0,y+.07,0),.007)
     elif i==2:
         awnings(1.8,1.4,3,2)
-        for j in range(3):
-            a=-.85+j*.57
-            with place('Screen leaf '+str(j),x=a,z=-.055,angle=12):
-                screen('Insect screen',0,.55,.05,1.35,0,WHITE)
     elif i==3:
         perimeter(.75,1.45,BLACK)
         sash('Upper glass',-.327,.327,.74,1.40,0,BLACK)

@@ -10,11 +10,12 @@ class Product3DModelResource extends JsonResource
     public function toArray(Request $request): array
     {
         $appUrl = rtrim((string) config('app.url'), '/');
+        $version = $this->updated_at?->format('Uu') ?? '0';
 
         return [
             'id'               => $this->id,
             'file_path'        => $this->file_path,
-            'file_url'         => "{$appUrl}/api/v1/product-3d-models/{$this->id}/file",
+            'file_url'         => "{$appUrl}/api/v1/product-3d-models/{$this->id}/file?v={$version}",
             'original_name'    => $this->original_name,
             'file_size'        => $this->file_size,
             'mime_type'        => $this->mime_type,

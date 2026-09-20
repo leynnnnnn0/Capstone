@@ -1,5 +1,9 @@
 # Window catalog
 
+September 19 corrections: window 01 includes a fixed central mullion. Window
+02 no longer has insect-screen geometry, as requested; its existing catalog
+name and filename are retained for safe in-place model updates.
+
 Ten original PNG references are stored under `../products/windows/product-01` through `product-10`. Numbering matches the supplied Glass window folders. No reference photos were altered.
 
 `WindowSeeder` creates the Window category and ten products. Prices (PHP 4,500–7,500 per square meter) are provisional catalog starting estimates, not researched market prices or binding quotations. Confirm pricing before publishing.

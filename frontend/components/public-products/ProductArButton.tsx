@@ -167,6 +167,14 @@ function defaultArDimensions(
   depth?: number,
 ) {
   const searchable = `${productName} ${categoryName ?? ""}`.toLowerCase();
+  // Corner railings must retain equal panel spacing across X and Z. Generic
+  // 100 cm defaults squeeze only the front run and reverse the L proportions.
+  if (searchable.includes("rail")) return undefined;
+  // Catalog GLBs already carry their dimensions. Do not turn a short wall
+  // cabinet into a 2 m wardrobe (or compress wide gates) using category guesses.
+  if (!positiveDimension(width) && !positiveDimension(height) && !positiveDimension(depth)) {
+    return undefined;
+  }
   const isDoor = searchable.includes("door");
   const isWindow = searchable.includes("window");
   const isCabinet =

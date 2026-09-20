@@ -51,12 +51,12 @@ def build(i):
         run(4.0,bays=4)
         with m.place('Silver balcony corner return',x=2.0,z=-1.0,angle=90):
             run(2.0,skip_first=True,bays=2)
-    elif i==2:run(2.0,.58,brace=True)
+    elif i==2:run(2.0,.58,bays=1)
     elif i==3:run(2.0,bays=4)
     elif i==4:
         run(2.4,mat=m.BLACK,bottom=True,bays=4)
         with m.place('Balcony corner return',x=1.2,z=-.6,angle=90):
-            run(1.2,mat=m.BLACK,skip_first=True,bottom=True,bays=3)
+            run(1.2,mat=m.BLACK,skip_first=True,bottom=True,bays=2)
     elif i==5:run(2.4,.62)
 
 if __name__=='__main__':

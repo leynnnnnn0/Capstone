@@ -9,24 +9,18 @@ use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
-it('attaches 18 shower models and exactly eight planar gates without duplicate records', function () {
+it('attaches all 18 shower models and all 15 gates without duplicate records', function () {
     Storage::fake('public');
     $this->seed([GateSeeder::class, ShowerEnclosureSeeder::class]);
     $before = Product::with('product_images')->get()->mapWithKeys(fn ($p) => [$p->id => [$p->description, $p->price_per_unit, $p->product_images->pluck('image_path')->all()]]);
     $this->seed(ShowerGate3DModelSeeder::class);
     $this->seed(ShowerGate3DModelSeeder::class);
     $products = Product::with(['product_3d_model', 'product_images', 'categories'])->get();
-    $selected = [1, 2, 3, 5, 6, 10, 14, 15];
     $count = 0;
     foreach ($products as $product) {
         $gate = $product->categories->contains('name', 'Gate');
         $number = (int) substr($product->name, -2);
         expect([$product->description, $product->price_per_unit, $product->product_images->pluck('image_path')->all()])->toBe($before[$product->id]);
-        if ($gate && ! in_array($number, $selected, true)) {
-            expect($product->product_3d_model)->toBeNull();
-
-            continue;
-        }
         $count++;
         expect($product->product_3d_model()->count())->toBe(1);
         $model = $product->product_3d_model;
@@ -42,5 +36,5 @@ it('attaches 18 shower models and exactly eight planar gates without duplicate r
         }
         $this->get('/api/v1/product-3d-models/'.$model->id.'/file')->assertOk();
     }
-    expect($count)->toBe(26);
+    expect($count)->toBe(33);
 });

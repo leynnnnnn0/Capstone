@@ -1,5 +1,10 @@
 # Cabinet models
 
+September 19 corrections: pantry lower-right bay has no table, countertop,
+or supporting leg. The louvered overhead cabinet retains its native 0.85 m
+height; the public preview no longer imposes a generic 2 m cabinet height
+when the product has no explicit dimensions.
+
 These are photo-referenced visualization assets, not fabrication drawings or
 measured digital twins. Units are meters, Y is up, front is +Z. All dimensions
 are assumed. Hidden geometry is inferred. Products remain priced per meter;

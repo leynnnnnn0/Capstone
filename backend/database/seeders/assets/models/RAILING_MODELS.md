@@ -9,8 +9,13 @@ Dimensions are approximate, in meters, Y-up. The assumed handrail height is
 a 4 m main run (four glass sections) and 2 m return (two glass sections).
 Landing 03 spans 2 m with four glass sections,
 stair railings 02 and 05 have 2 m and 2.4 m horizontal runs with assumed slopes.
-Black balcony 04 includes a 1.2 m perpendicular return (three sections) on a
-2.4 m main run (four sections).
+Stair 02 now uses one uninterrupted pane without a middle post or diagonal
+metal bars, following the corrected photo interpretation. Its original catalog
+name and filename are retained to update the existing product in place.
+Black balcony 04 includes a 1.2 m perpendicular return (two sections) on a
+2.4 m main run (four sections). Both corner designs use equal post spacing
+on both runs: 1 m for silver 01 and 0.6 m for black 04. The public preview
+uses native railing dimensions, avoiding independent X/Z stretching.
 Straight assemblies have 0.12 m overall depth at mounting plates, with 0.05 m
 posts; the corner model's greater depth is its return, not thick framing.
 

@@ -1,6 +1,6 @@
 """Photo-referenced catalog GLBs; assumed dimensions, meters, Y-up.
 
-All 18 shower listings and eight planar gates. No room fixtures or fence returns.
+All 18 shower listings and all 15 gates. No room fixtures or fence returns.
 Run this file to rebuild assets and the explicit seeder manifest.
 """
 import sys
@@ -101,16 +101,28 @@ def hinged(w,style='clear',single=False,corner=False):
             pane('Fixed side',-.45,.45,.03,2.,0,style)
             for x in (-.42,.42): box('Return corner clamps',SILVER,x-.023,x+.023,1.94,1.98,-.012,.014)
 
+def rounded_frame(name,mat,a,b,lo,hi,z,r=.016):
+    for start,end in [((a,lo,z),(a,hi,z)),((b,lo,z),(b,hi,z)),((a,lo,z),(b,lo,z)),((a,hi,z),(b,hi,z))]:
+        rod(name,mat,start,end,r)
+
 def shower(i):
-    if i in (1,2,4,5,16):
-        w=2.1 if i==16 else 1.4
-        mat=BLACK if i==1 else SILVER if i==4 else WHITE
-        style='stripe' if i==4 else 'band' if i==2 else 'frost'
-        sliding(w,style,mat)
-        if i==16:
-            frame('Transom',WHITE,-w/2-.026,w/2+.026,2.035,2.40,0,.030,.05)
-            for a,b in ((-w/2,-.015),(.015,w/2)):
-                pane('Transom glass',a,b,2.065,2.37,0,'frost')
+    if i==4:
+        rounded_frame('Rounded silver perimeter',SILVER,-.70,.70,.03,2.03,0,.025)
+        for name,a,b,z in [('Fixed pane',-.675,.018,-.012),('Sliding pane',-.018,.675,.024)]:
+            pane(name,a,b,.06,2.,z,'stripe')
+            rounded_frame(name+' rounded edging',SILVER,a,b,.06,2.,z,.010)
+        handle('Rounded door pull',.60,1.0,.045,SILVER,length=.24)
+    elif i==16:
+        # Left two-leaf sliding opening, right fixed panel; two transom lights.
+        with place('Two-panel sliding section',x=-.45):
+            sliding(1.2,'frost',WHITE)
+        pane('Single fixed right partition',.18,1.05,.035,2.015,0,'frost',WHITE)
+        frame('Transom perimeter',WHITE,-1.076,1.076,2.035,2.4,0,.03,.05)
+        for a,b in ((-1.046,.15),(.18,1.046)):
+            pane('Transom glass',a,b,2.065,2.37,0,'frost')
+        box('Transom divider',WHITE,.15,.18,2.035,2.4,-.025,.025)
+    elif i in (1,2,5):
+        sliding(1.4,'band' if i==2 else 'frost',BLACK if i==1 else WHITE)
     elif i in (3,10,12): sliding(1.1 if i==10 else 1.4,'frost' if i==12 else 'clear',roller=True)
     elif i in (7,8,11,13):
         hinged(.76 if i==11 else 1.15 if i==13 else 1.4,'frost' if i==8 else 'band' if i==11 else 'clear',i==11,i==13)
@@ -149,8 +161,97 @@ def shower(i):
             rod('Curved door stiles',SILVER,(x,.035,z),(x,2.,z),.012)
         handle('Curved door pull',.17,1.,.22,length=.35)
 
-GATES=[1,2,3,5,6,10,14,15]
+GATES=list(range(1,16))
+
+def floral(x,lo,hi):
+    # Curved stems and paired leaf outlines in the narrow decorative side strips.
+    for j in range(3):
+        y=lo+(hi-lo)*(j+.5)/3
+        for side in (-1,1):
+            pts=[(x+side*.06*math.sin(math.pi*t/16),y-.12+.24*t/16,0) for t in range(17)]
+            for a,b in zip(pts,pts[1:]):rod('Floral leaf outline',SILVER,a,b,.004)
+        rod('Floral stem',SILVER,(x,lo,0),(x,hi,0),.004)
+
+def remaining_gate(i):
+    red=len(MATS)
+    MATS.append(('Terracotta red' if i==8 else 'Deep red finish',[.43,.075,.045,1] if i==8 else [.40,.025,.035,1],.35,.32))
+    mat=SILVER if i in (11,12) else red if i in (8,9,13) else BLACK
+    w=1.5 if i==7 else 3.2
+    leaves=3 if i==7 else 4 if i==11 else 2
+    h=2.05
+    frame('Gate perimeter',mat,-w/2-.035,w/2+.035,.025,h,0,.035,.065)
+    for n in range(leaves):
+        a=-w/2+n*w/leaves+.012;b=-w/2+(n+1)*w/leaves-.012
+        frame('Leaf frame '+str(n),mat,a,b,.06,h-.025,0,.04,.046)
+        lo,hi=a+.045,b-.045
+        if i==4:
+            for k in range(7):
+                y=1.22+k*.108
+                box('Upper horizontal slats',mat,lo,hi,y,y+.062,-.02,.02)
+            for k in range(4):
+                y=.12+k*.115
+                box('Lower horizontal slats',mat,lo,hi,y,y+.063,-.02,.02)
+            for y in (.57,1.16):box('Geometric band rails',mat,lo,hi,y,y+.035,-.02,.02)
+            for k in range(10):
+                x=lo+(hi-lo)*k/10
+                end=lo+(hi-lo)*(k+1)/10
+                core.beam('Angled geometric grille',mat,(x,.605,0),(end,1.16,0),.018,.023,.002)
+                core.beam('Crossed geometric grille',mat,(end,.605,0),(x,1.16,0),.018,.023,.002)
+        elif i==7:
+            for k in range(12):
+                y=.13+k*.153
+                box('Open horizontal bars',mat,lo,hi,y,y+.027,-.015,.015)
+            x=lo+(hi-lo)*.72
+            box('Offset vertical stile',mat,x,x+.018,.10,2.,-.016,.016)
+        elif i in (8,11):
+            split=1.08 if i==8 else 1.35 if n in (1,2) else .83
+            box('Solid lower panel',mat,lo,hi,.11,split,-.012,.012)
+            for y in (.14,split-.035):box('Panel border',mat,lo,hi,y,y+.025,.012,.026)
+            if i==11:
+                for y in (.50,.87):box('Lower panel separators',mat,lo,hi,y,y+.04,.012,.027)
+            count=6 if i==8 else 5 if n in (1,2) else 8
+            for k in range(count):
+                y=split+.065+k*(1.96-split-.07)/count
+                box('Upper grille bars',mat,lo,hi,y,y+.025,-.014,.014)
+        elif i==9:
+            for k in range(5):
+                y=.13+k*.37
+                box('Broad red horizontal panel',mat,lo,hi,y,y+.15,-.017,.017)
+                box('Slim intervening bar',mat,lo,hi,y+.24,y+.26,-.014,.014)
+            for x in (lo+.055,hi-.070):box('Inset vertical accent',mat,x,x+.015,.10,1.99,-.019,.019)
+        elif i==12:
+            inner_a,inner_b=lo+.17,hi-.17
+            for x in (inner_a-.023,inner_b):box('Floral strip stile',mat,x,x+.023,.10,1.98,-.017,.017)
+            for k in range(7):
+                y=.14+k*.26
+                box('Wood-look boards',WOOD,inner_a,inner_b,y,y+.17,-.016,.016)
+                for x in (inner_a+.06,inner_b-.06):
+                    for dy in (.045,.125):rod('Silver board studs',SILVER,(x,y+dy,.016),(x,y+dy,.022),.006)
+            for x in (lo+.075,hi-.075):floral(x,.12,1.96)
+            for k in range(6):
+                x=lo+(hi-lo)*(k+.5)/6
+                rod('Finial stem',mat,(x,h,0),(x,h+.18,0),.008)
+                for side in (-1,1):
+                    pts=[(x+side*.026*math.sin(math.pi*t/12),h+.10+.06*t/12,0) for t in range(13)]
+                    for aa,bb in zip(pts,pts[1:]):rod('Fleur finial',mat,aa,bb,.005)
+        elif i==13:
+            box('Solid red privacy leaf',mat,lo,hi,.10,1.99,-.015,.015)
+            frame('Raised panel molding',mat,lo+.022,hi-.022,.13,1.96,.021,.018,.014)
+            box('Slim silver accent',SILVER,lo+.065,lo+.085,.15,1.93,.017,.022)
+        for y in (.30,1.73):rod('Hinge barrel',mat,(a,y-.05,.026),(a,y+.05,.026),.013)
+        if n==0:handle('Gate pull',b-.075,.98,.033,SILVER,length=.23)
+    if i==13:
+        pts=[(-w/2+w*j/48,h+.08+.25*math.sin(math.pi*j/48),0) for j in range(49)]
+        for a,b in zip(pts,pts[1:]):rod('Arched upper grille rail',mat,a,b,.021)
+        for j in range(1,20):
+            x=-w/2+w*j/20
+            rod('Silver upper grille picket',SILVER,(x,h,0),(x,h+.08+.25*math.sin(math.pi*j/20),0),.012)
+    # Keep material index valid until export, then the caller restores it.
+
 def gate(i):
+    if i in (4,7,8,9,11,12,13):
+        remaining_gate(i)
+        return
     w=1.4 if i==5 else 1.1 if i==10 else 3.2
     h=2.0
     mat=SILVER if i==5 else WHITE if i==15 else BLACK
@@ -261,4 +362,5 @@ if __name__=='__main__':
             builder(i)
             name=f'{names[i-1]} {i:02}'
             manifest[name]=export(name,kind,i)
+            del MATS[9:]
     Path(__file__).with_name('shower-gate-models.json').write_text(json.dumps(manifest,indent=2)+'\n')

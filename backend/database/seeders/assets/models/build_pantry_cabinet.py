@@ -1,8 +1,8 @@
 """Photo-referenced pantry cabinet; assumed 1500 W x 2100 H x 380 D mm.
 
 Y-up, floor origin, front +Z. Cabinet only (no photographed contents/wall).
-The counter and its end support are inferred from the product description;
-the reference photo crops the lower-right area. Run with Python 3 to rebuild.
+The lower-right bay remains open, without a counter or support leg.
+Run with Python 3 to rebuild.
 """
 import sys
 sys.dont_write_bytecode = True
@@ -65,10 +65,7 @@ door('Overhead right door',.250,.740,1.497,2.08,.274)
 for x in (-.280,.222,.272):
     box('Door magnetic catches',3,x-.012,x+.012,2.045,2.06,.157,.180)
 
-# Open counter niche, intentionally no invented lower cupboards.
-box('White niche countertop',0,-.244,.75,.755,.780,-.19,.19,.002)
-box('Counter right support',0,.732,.75,.065,.755,-.19,.17)
-box('Counter support recessed foot',3,.735,.748,0,.065,-.15,.12)
+# Open bay: no table, countertop, or floor-standing support.
 
 materials=[
     {'name':'Satin white powder coat','pbrMetallicRoughness':{'baseColorFactor':[.88,.90,.91,1],'metallicFactor':.18,'roughnessFactor':.3}},
@@ -80,7 +77,7 @@ core.doc={'asset':{'version':'2.0','generator':'SOG photo-referenced pantry cabi
     'nodes':[{'name':'White Glass-Front Pantry Cabinet','children':[]}],'meshes':[],'materials':materials,
     'buffers':[],'bufferViews':[],'accessors':[],'extensionsUsed':['KHR_materials_ior'],
     'extras':{'dimensionsMeters':[1.5,2.1,.438],'carcassDepthMeters':.38,'dimensionsAssumed':True,
-              'reference':'white-glass-front-pantry-cabinet.jpg','inferredFeatures':['countertop','counter end support'],'upAxis':'Y'}}
+              'reference':'white-glass-front-pantry-cabinet.jpg','inferredFeatures':[],'upAxis':'Y'}}
 core.binary=bytearray()
 for (name,material),(positions,normals,indices) in core.groups.items():
     attributes={'POSITION':core.accessor(positions,'f',5126,'VEC3',34962),'NORMAL':core.accessor(normals,'f',5126,'VEC3',34962)}
