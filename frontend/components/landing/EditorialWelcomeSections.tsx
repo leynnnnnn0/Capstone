@@ -152,10 +152,10 @@ const processSteps = [
 ];
 
 const stats = [
-  ["10000+", "Completed installations across the metro"],
-  ["100%", "Free on-site inspection with no hidden charge"],
-  ["AR Ready", "Visualisation for compatible product models"],
-  ["5 stars", "For craftsmanship, speed, and support"],
+  ["Local", "Based in General Trias and serving Cavite"],
+  ["Free", "On-site inspection and detailed quotation"],
+  ["AR", "Preview compatible products in your space"],
+  ["Team", "Measurement, fabrication, and installation by SOG"],
 ];
 
 const faqs = [
@@ -177,7 +177,7 @@ const faqs = [
   {
     question: "Which areas do you service?",
     answer:
-      "We primarily serve customers within Cavite. For larger orders, we may also accept projects outside Cavite depending on the location and project requirements. Contact us to confirm availability.",
+      "SOG is based in General Trias and primarily serves customers throughout Cavite. For larger orders, we may also accept projects outside Cavite depending on the location and project requirements. Contact us to confirm availability.",
   },
   {
     question: "How does the AR preview work?",
@@ -245,9 +245,9 @@ export function ValueSection() {
               </SectionHeading>
             </div>
             <p className="max-w-xl text-base leading-7 text-[#667584] sm:text-lg sm:leading-8">
-              One team measures, quotes, fabricates, and installs—reducing the
-              coordination errors that happen when a project is passed between
-              separate suppliers and contractors.
+              Based in General Trias, Cavite, one SOG team measures, quotes,
+              fabricates, and installs your glass and aluminum project—from
+              sliding doors and windows to cabinets and enclosures.
             </p>
           </motion.div>
 
@@ -307,7 +307,7 @@ export function ServicesSection() {
       <div className="rounded-[2rem] bg-[#f3f6f8] px-5 py-20 sm:px-10 sm:py-28 lg:px-16 lg:py-32">
         <div className="mx-auto max-w-[1440px]">
           <Eyebrow>What we make</Eyebrow>
-          <SectionHeading>Made for every opening.</SectionHeading>
+          <SectionHeading>Glass and aluminum for every opening.</SectionHeading>
 
           <div className="mt-14 border-t border-[#dce4ea] sm:mt-20">
             {services.map((service, index) => (
@@ -354,8 +354,9 @@ export function ProjectShowcase() {
               <SectionHeading>Precision you can see.</SectionHeading>
             </div>
             <p className="max-w-xl text-base leading-7 text-[#667584] lg:justify-self-end lg:text-lg lg:leading-8">
-              From first measurement to final alignment, every detail is checked
-              for fit, finish, and everyday use.
+              Every SOG project is measured, fabricated, and installed for its
+              actual opening, with fit, finish, and everyday use checked before
+              handover.
             </p>
           </div>
 
@@ -437,7 +438,7 @@ export function ProcessAndStatsSection() {
           </div>
 
           <div className="mt-20 border-t border-white/15 pt-16 lg:mt-28 lg:pt-20">
-            <Eyebrow light>By the numbers</Eyebrow>
+            <Eyebrow light>Service at a glance</Eyebrow>
             <dl className="mt-10 grid grid-cols-2 gap-x-5 gap-y-10 lg:grid-cols-4 lg:gap-8">
               {stats.map(([value, label], index) => (
                 <motion.div

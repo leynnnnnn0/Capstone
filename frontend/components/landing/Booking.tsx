@@ -158,9 +158,9 @@ export default function Booking() {
             inspection.
           </h2>
           <p className="mb-9 max-w-md text-base leading-7 text-[#667584]">
-            Our technicians visit your space, measure precisely, and
-            provide a detailed no-obligation quotation completely free of
-            charge.
+            Our General Trias-based technicians visit locations across Cavite,
+            measure your space precisely, and provide a detailed no-obligation
+            quotation free of charge.
           </p>
           <motion.ul
             className="mb-10 space-y-4 text-sm text-[#536372]"

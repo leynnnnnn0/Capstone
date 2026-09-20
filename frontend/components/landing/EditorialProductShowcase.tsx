@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { motion, type PanInfo } from "framer-motion";
-import { Box, ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -40,6 +40,14 @@ type ShowcaseItem = {
 };
 
 const SHOWCASE_ITEM_COUNT = 5;
+const heroEyebrow = "Glass & aluminum services · General Trias, Cavite";
+const heroTitle = (
+  <>
+    Glass &amp; aluminum,
+    <br />
+    measured to fit
+  </>
+);
 
 type CarouselConfig = {
   CARD_WIDTH: number;
@@ -186,16 +194,16 @@ export default function EditorialProductShowcase({
       >
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
-            The SOG Collection · Vol. 01
+            {heroEyebrow}
           </p>
-          <h1 className="mt-4 font-poppins text-3xl tracking-[-0.045em] text-slate-950 sm:text-4xl">
-            {loading ? "Loading the live collection…" : "Products are unavailable right now."}
+          <h1 className="mt-4 font-poppins text-3xl leading-[0.96] tracking-[-0.045em] text-slate-950 sm:text-4xl lg:text-5xl">
+            {heroTitle}
           </h1>
-          {!loading && (
-            <p className="mt-3 text-sm text-slate-500">
-              Please check that the catalog service is running and try again.
-            </p>
-          )}
+          <p className={cn("mt-3 text-xs text-slate-400", loading && "sr-only")}>
+            {loading
+              ? "Loading the product collection…"
+              : "The product collection is unavailable right now. Please try again shortly."}
+          </p>
         </div>
       </section>
     );
@@ -246,13 +254,11 @@ export default function EditorialProductShowcase({
         <div className="relative z-10 mx-auto max-w-4xl px-4 pt-8 text-center sm:px-8 sm:pt-12 lg:px-16 lg:pt-10">
           <div className="mb-3 flex items-center justify-center gap-3 text-[8px] font-bold uppercase tracking-widest text-slate-400 sm:mb-4 sm:gap-4 sm:text-[10px]">
             <span className="h-px w-5 bg-slate-300 sm:w-8 " />
-            The SOG Collection · Vol. 01
+            {heroEyebrow}
             <span className="h-px w-5 bg-slate-300 sm:w-8" />
           </div>
           <h1 className="font-poppins text-3xl leading-[0.96] tracking-[-0.045em] text-slate-950 sm:text-4xl lg:text-5xl">
-            Spaces transformed,
-            <br />
-            framed in light
+            {heroTitle}
           </h1>
         </div>
 
@@ -347,9 +353,6 @@ export default function EditorialProductShowcase({
               <span>·</span>
               <span className="inline-flex items-center gap-1">
                 {activeItem.capability}
-              </span>
-              <span className="hidden items-center gap-1 sm:inline-flex">
-                <Star className="h-3 w-3 fill-[#2563eb] text-[#2563eb]" /> 4.9
               </span>
             </div>
             <div

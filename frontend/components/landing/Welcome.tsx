@@ -12,6 +12,7 @@ import {
   ProcessAndStatsSection,
   ProductGridSection,
   ProjectShowcase,
+  ServicesSection,
   ValueSection,
 } from "./EditorialWelcomeSections";
 import Footer from "./Footer";
@@ -61,7 +62,7 @@ export default function Welcome() {
       <main id="home">
         <EditorialProductShowcase products={products} loading={productsLoading} />
         <ValueSection />
-
+        <ServicesSection />
         <ProjectShowcase />
         <ProcessAndStatsSection />
         <ProductGridSection
