@@ -30,6 +30,45 @@ const gradients = [
   "linear-gradient(135deg,#6a8fa8,#c8dae8)",
 ];
 
+const categorySearchContent: Record<string, { title: string; description: string }> = {
+  Door: {
+    title: "Sliding glass doors, screen doors, and custom aluminum doors",
+    description:
+      "Explore high-quality glass and aluminum door options for homes, storefronts, and commercial spaces in General Trias and nearby Cavite areas.",
+  },
+  Window: {
+    title: "Sliding glass windows, casement windows, and awning windows",
+    description:
+      "Find durable aluminum windows with glass, screen, and custom-size options, measured and fabricated for your opening.",
+  },
+  Gate: {
+    title: "Custom aluminum gates and modern entrance gates",
+    description:
+      "Browse secure, made-to-measure gate designs in modern, wood-finish, privacy, grille, and decorative styles.",
+  },
+  "Shower Enclosure": {
+    title: "Frameless and framed glass shower enclosures",
+    description:
+      "Compare custom glass shower doors and enclosures designed around your bathroom dimensions, layout, and preferred finish.",
+  },
+  Rail: {
+    title: "Glass railings and custom aluminum railings",
+    description:
+      "Browse railing systems for balconies, stairs, terraces, and commercial spaces, with options selected for safety and appearance.",
+  },
+  "Modular Cabinet": {
+    title: "Custom aluminum kitchen cabinets and modular storage",
+    description:
+      "Discover made-to-measure aluminum cabinets for kitchens, wardrobes, entertainment areas, pantries, and under-stair storage.",
+  },
+};
+
+const defaultSearchContent = {
+  title: "High-quality glass and aluminum products in General Trias, Cavite",
+  description:
+    "Browse sliding glass doors and windows, custom aluminum cabinets, shower enclosures, gates, and railings from a local Cavite fabricator and installer.",
+};
+
 const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
 const CATALOG_SCROLL_RETURN_KEY = "sog_products_scroll_return";
 
@@ -46,6 +85,17 @@ export default function PublicProductCatalog() {
   const [search, setSearch] = useState(activeSearch);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const selectedCategory = categories.find(
+    (category) => String(category.id) === activeCategory,
+  );
+  const searchContent = selectedCategory
+    ? categorySearchContent[selectedCategory.name] ?? {
+        title: selectedCategory.name,
+        description:
+          selectedCategory.remarks ??
+          `Browse custom ${selectedCategory.name.toLowerCase()} products by SOG Glass & Aluminum.`,
+      }
+    : defaultSearchContent;
   const catalogQuery = searchParams.toString();
   const catalogHref = `/products${catalogQuery ? `?${catalogQuery}` : ""}`;
   const restoredCatalogHref = useRef<string | null>(null);
@@ -186,6 +236,18 @@ export default function PublicProductCatalog() {
       <main className="py-2 sm:px-3 sm:py-3">
         <div className="mx-auto min-h-[36rem] max-w-none bg-white px-4 py-8 sm:rounded-[2rem] sm:bg-[#f3f6f8] sm:px-10 sm:py-20 lg:px-16">
           <div className="mx-auto max-w-[1440px]">
+            <section className="mb-10 max-w-4xl sm:mb-14" aria-labelledby="catalog-search-heading">
+              <h2
+                id="catalog-search-heading"
+                className="text-2xl font-medium tracking-[-0.035em] text-[#101820] sm:text-4xl"
+              >
+                {searchContent.title}
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-[#667584] sm:text-base">
+                {searchContent.description}
+              </p>
+            </section>
+
             {categories.length > 0 && (
             <div className="mb-10 flex flex-wrap gap-2 border-b border-[#dce4ea] pb-7 sm:mb-14">
               <button

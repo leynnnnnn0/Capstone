@@ -10,6 +10,7 @@ const instrumentSans = Instrument_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sogglassandaluminum.com"),
   title: "SOG Glass & Aluminum Services",
   description:
     "Custom glass and aluminum systems, precise on-site measurement, fabrication, installation, and clear quotations.",

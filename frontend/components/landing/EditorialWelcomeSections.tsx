@@ -75,8 +75,8 @@ const values = [
 
 const services = [
   {
-    name: "Sliding Doors & Windows",
-    text: "Space-saving aluminum systems for homes and commercial interiors.",
+    name: "Sliding Glass Doors & Windows",
+    text: "High-quality, space-saving glass and aluminum systems for homes and commercial interiors.",
     href: "/products",
   },
   {
@@ -90,9 +90,19 @@ const services = [
     href: "/products",
   },
   {
-    name: "Custom Cabinets & Enclosures",
-    text: "Made-to-measure glass and aluminum fabrication for specialised storage.",
+    name: "Custom Aluminum Cabinets",
+    text: "Made-to-measure kitchen cabinets, wardrobes, and specialised storage in glass and aluminum.",
     href: "/get-quote",
+  },
+  {
+    name: "Glass Shower Enclosures",
+    text: "Custom frameless and framed glass shower enclosures measured for your bathroom.",
+    href: "/products",
+  },
+  {
+    name: "Custom Gates & Railings",
+    text: "Durable gates and glass or aluminum railings fabricated for residential and commercial projects.",
+    href: "/products",
   },
   {
     name: "Repair & Replacement",
@@ -173,6 +183,16 @@ const faqs = [
     question: "How does the AR preview work?",
     answer:
       "Open an AR-ready product on a compatible mobile device, point the camera at the intended area, and place the model to preview its scale and appearance before ordering.",
+  },
+  {
+    question: "How can I find a legitimate glass and aluminum contractor?",
+    answer:
+      "Look for real project photos, clear site measurements, an itemised written quotation, confirmed materials and finishes, warranty terms, and contact details you can verify. SOG provides an on-site inspection and a detailed quotation so the scope can be reviewed before fabrication begins.",
+  },
+  {
+    question: "What makes a high-quality sliding glass door or window?",
+    answer:
+      "Quality depends on accurate measurements, the correct glass and aluminum specification, smooth and durable hardware, careful fabrication, proper sealing, and a well-aligned installation. The best configuration also depends on the opening, exposure, security needs, and intended use.",
   },
 ];
 
