@@ -13,7 +13,8 @@ import { trackPublicRoute } from "@/lib/public-route-history";
 const fullNavigation = [
   { href: "/", label: "Home", exact: true },
   { href: "/products", label: "Products", exact: false },
-  { href: "/get-quote", label: "Quote", exact: false },
+  { href: "/about", label: "About", exact: false },
+  { href: "/contact", label: "Contact", exact: false },
   { href: "/track", label: "Track", exact: false },
 ];
 

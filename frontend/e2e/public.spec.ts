@@ -17,6 +17,22 @@ test("landing page renders live products in the editorial collection", async ({ 
     .toHaveAttribute("src", "/images/landing/windows.jpg");
 });
 
+test("about page presents the SOG process and service location", async ({ page }) => {
+  await page.goto("/about");
+
+  await expect(page.getByRole("heading", { name: /one team.*from measure to install/i })).toBeVisible();
+  await expect(page.getByRole("main").getByText("Prinza Street, General Trias, Cavite")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Responsibility stays with the team." })).toBeVisible();
+});
+
+test("contact page exposes verified SOG contact details", async ({ page }) => {
+  await page.goto("/contact");
+
+  await expect(page.getByRole("link", { name: /0936 689 7991/ }).first()).toHaveAttribute("href", "tel:+639366897991");
+  await expect(page.getByText("SOG Glass-Aluminum Steel Fabrication Services.")).toBeVisible();
+  await expect(page.getByText("General Trias, Cavite, Philippines.", { exact: false })).toBeVisible();
+});
+
 test("editorial collection uses gallery images when the cover is empty", async ({ page }) => {
   await page.route("**/api/v1/products?**", async (route) => {
     await route.fulfill({ json: { data: [{

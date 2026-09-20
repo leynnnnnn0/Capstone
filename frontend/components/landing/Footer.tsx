@@ -21,6 +21,8 @@ const footerColumns = [
       { label: "Custom Fabrication", href: "/#services" },
       { label: "Installation", href: "/#process" },
       { label: "AR Preview", href: "/products" },
+      { label: "About SOG", href: "/about" },
+      { label: "Contact", href: "/contact" },
     ],
   },
   ...(!isCatalogMode ? [{
