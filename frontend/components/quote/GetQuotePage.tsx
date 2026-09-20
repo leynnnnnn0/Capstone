@@ -51,7 +51,7 @@ export default function GetQuotePage() {
     // through the ar_items query parameter, those measurements are converted into
     // cart items after the products are available for product lookup/pricing.
     Promise.all([
-      fetchProducts({ is_active: "1", per_page: "100" }),
+      fetchQuoteProducts(),
       fetchCategories().catch(() => []),
     ])
       .then(([response, nextCategories]) => {
@@ -229,4 +229,18 @@ function numberParam(value: string | null) {
   if (!value) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function fetchQuoteProducts() {
+  const response = await fetchProducts({ is_active: "1", per_page: "100" });
+  const products = [...response.data];
+
+  // Keep the full collection available for cart reconciliation, AR handoffs,
+  // and direct product links while the picker paginates the filtered results.
+  for (let page = 2; page <= (response.meta?.last_page ?? 1); page += 1) {
+    const next = await fetchProducts({ is_active: "1", per_page: "100", page: String(page) });
+    products.push(...next.data);
+  }
+
+  return { data: products };
 }

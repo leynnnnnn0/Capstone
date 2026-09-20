@@ -12,6 +12,7 @@ import LivePriceBar from "@/components/quote/LivePriceBar";
 import OptionGroupPicker from "@/components/quote/OptionGroupPicker";
 import QuoteProductCard from "@/components/quote/QuoteProductCard";
 import VariantPicker from "@/components/quote/VariantPicker";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import type { Category, Product, ProductVariant } from "@/features/products/types";
 import { productCategories as categoriesForProduct } from "@/features/products/product-utils";
 import type { QuoteCartItem, QuoteDraft, SizeMode } from "@/features/quotes/types";
@@ -23,6 +24,8 @@ import {
   productVariants,
   quoteProductImage,
 } from "@/features/quotes/quote-utils";
+
+const PRODUCTS_PER_PAGE = 12;
 
 export default function ProductConfigurator({
   products,
@@ -52,6 +55,7 @@ export default function ProductConfigurator({
   const initialProduct = products[0] ?? null;
   const [step, setStep] = useState<1 | 2>(preSelectedProductId || editingItem ? 2 : 1);
   const [search, setSearch] = useState(activeSearch);
+  const [pagination, setPagination] = useState({ page: 1, filter: "" });
   const [draft, setDraft] = useState<QuoteDraft | null>(() =>
     editingItem
       ? itemToDraft(editingItem)
@@ -112,6 +116,14 @@ export default function ProductConfigurator({
       return matchesCategory && matchesSearch;
     });
   }, [activeCategory, products, search]);
+
+  const filterKey = JSON.stringify([activeCategory, search.trim().toLowerCase()]);
+  const lastPage = Math.max(1, Math.ceil(visibleProducts.length / PRODUCTS_PER_PAGE));
+  const currentPage = pagination.filter === filterKey ? Math.min(pagination.page, lastPage) : 1;
+  const pageProducts = visibleProducts.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE,
+  );
 
   const ready = draft ? isQuoteDraftReady(draft) : false;
   const shouldUseHistoryBack = Boolean(preSelectedProductId || preSelectedVariantId);
@@ -246,7 +258,7 @@ export default function ProductConfigurator({
           </div>
         ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          {visibleProducts.map((product, index) => (
+          {pageProducts.map((product, index) => (
             <QuoteProductCard
               key={product.id}
               product={product}
@@ -255,6 +267,19 @@ export default function ProductConfigurator({
             />
           ))}
         </div>
+        )}
+
+        {visibleProducts.length > 0 && (
+          <PaginationControls
+            className="mt-5"
+            meta={{
+              current_page: currentPage,
+              last_page: lastPage,
+              per_page: PRODUCTS_PER_PAGE,
+              total: visibleProducts.length,
+            }}
+            onPageChange={(page) => setPagination({ page, filter: filterKey })}
+          />
         )}
 
         {editingItem && (
