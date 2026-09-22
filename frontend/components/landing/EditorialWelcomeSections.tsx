@@ -167,7 +167,7 @@ const faqs = [
   {
     question: "How long does fabrication and installation take?",
     answer:
-      "Most orders can be completed in as little as one day by our skilled workers. Larger or more complex projects may require additional time depending on their specifications.",
+      "Most orders can be completed in as little as one day by our skilled staff. Larger or more complex projects may require additional time depending on their specifications.",
   },
   {
     question: "Is the ocular visit free?",

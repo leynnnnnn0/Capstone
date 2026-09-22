@@ -22,7 +22,7 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone_number' => ['nullable', 'string', 'max:50'],
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised()],
-            'role' => ['required', Rule::in(['admin', 'sub_admin', 'worker', 'customer'])],
+            'role' => ['required', Rule::in(['admin', 'sub_admin', 'staff', 'customer'])],
             'permissions' => ['array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
         ];

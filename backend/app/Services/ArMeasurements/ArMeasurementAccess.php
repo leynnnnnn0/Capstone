@@ -18,7 +18,7 @@ class ArMeasurementAccess
             return (int) $appointment->user_id === (int) $user->id;
         }
 
-        if ($user->isWorker()) {
+        if ($user->isStaff()) {
             return $appointment->workers()
                 ->whereKey($user->id)
                 ->exists();
@@ -38,7 +38,7 @@ class ArMeasurementAccess
                 && (int) $session->appointment?->user_id === (int) $user->id;
         }
 
-        if ($user->isWorker()) {
+        if ($user->isStaff()) {
             return $session->appointment?->workers()
                 ->whereKey($user->id)
                 ->exists() ?? false;
@@ -79,7 +79,7 @@ class ArMeasurementAccess
     {
         return match (true) {
             $user->isCustomer() => 'customer',
-            $user->isWorker() && ! $user->isOperationsAdmin() => 'worker',
+            $user->isStaff() && ! $user->isOperationsAdmin() => 'staff',
             default => 'staff',
         };
     }

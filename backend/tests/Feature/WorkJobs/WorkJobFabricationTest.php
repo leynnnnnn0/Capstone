@@ -31,7 +31,7 @@ function fabricationWorkJobPayload(User $worker, array $overrides = []): array
 
 it('creates fabrication tracking while keeping down payment optional', function () {
     $admin = User::factory()->create(['role' => 'admin']);
-    $worker = User::factory()->worker()->create();
+    $worker = User::factory()->staff()->create();
 
     $this->actingAs($admin)
         ->postJson('/api/v1/work-jobs', fabricationWorkJobPayload($worker))
@@ -143,7 +143,7 @@ it('shows fabrication progress to the owning customer', function () {
 });
 
 it('allows assigned workers to manage fabrication progress', function () {
-    $worker = User::factory()->worker()->create();
+    $worker = User::factory()->staff()->create();
     $workJob = WorkJob::factory()->create();
     $workJob->workers()->attach($worker);
 

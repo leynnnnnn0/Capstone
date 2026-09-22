@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
-use Carbon\Carbon;
 
 class ConfirmAppointmentRequest extends FormRequest
 {
@@ -16,12 +16,12 @@ class ConfirmAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'appointment_date'       => ['required', 'date', 'after_or_equal:today'],
-            'appointment_time_from'  => ['required', 'date_format:H:i'],
+            'appointment_date' => ['required', 'date', 'after_or_equal:today'],
+            'appointment_time_from' => ['required', 'date_format:H:i'],
             'appointment_time_until' => ['required', 'date_format:H:i', 'after:appointment_time_from'],
-            'remarks'                => ['nullable', 'string', 'max:255'],
-            'worker_ids'             => ['required', 'array', 'min:1'],
-            'worker_ids.*'           => ['integer', 'exists:users,id'],
+            'remarks' => ['nullable', 'string', 'max:255'],
+            'worker_ids' => ['required', 'array', 'min:1'],
+            'worker_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 
@@ -32,7 +32,9 @@ class ConfirmAppointmentRequest extends FormRequest
             $date = $this->input('appointment_date');
             $timeFrom = $this->input('appointment_time_from');
 
-            if (!$date || !$timeFrom) return;
+            if (! $date || ! $timeFrom) {
+                return;
+            }
 
             $selectedDateTime = Carbon::parse("{$date} {$timeFrom}");
 
@@ -48,13 +50,13 @@ class ConfirmAppointmentRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'appointment_date.required'       => 'Please provide the appointment date.',
+            'appointment_date.required' => 'Please provide the appointment date.',
             'appointment_date.after_or_equal' => 'Appointment date must be today or in the future.',
-            'appointment_time_from.required'  => 'Please provide the start time.',
-            'appointment_time_until.after'    => 'End time must be after the start time.',
-            'worker_ids.required'             => 'Please assign at least one worker.',
-            'worker_ids.min'                  => 'Please assign at least one worker.',
-            'worker_ids.*.exists'             => 'One or more selected workers do not exist.',
+            'appointment_time_from.required' => 'Please provide the start time.',
+            'appointment_time_until.after' => 'End time must be after the start time.',
+            'worker_ids.required' => 'Please assign at least one staff member.',
+            'worker_ids.min' => 'Please assign at least one staff member.',
+            'worker_ids.*.exists' => 'One or more selected staff members do not exist.',
         ];
     }
 }

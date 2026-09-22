@@ -29,7 +29,7 @@ export default function RoleDashboardPage() {
 
   if (role === "admin") return <AdminDashboardPage />;
   if (role === "sub_admin") return <SubAdminDashboard user={user} />;
-  if (role === "worker") return <WorkerDashboardPage user={user} />;
+  if (role === "staff") return <WorkerDashboardPage user={user} />;
 
   return <CustomerFallbackDashboard />;
 }
@@ -41,7 +41,7 @@ function SubAdminDashboard({ user }: { user: User | null }) {
       <div className="grid gap-4 md:grid-cols-3">
         <QuickCard title="Appointments" description="Review, schedule, and update customer appointments." href="/dashboard/appointments" icon={CalendarDays} />
         <QuickCard title="Work Jobs" description="Create jobs from approved appointments and track progress." href="/dashboard/work-jobs" icon={BriefcaseBusiness} />
-        <QuickCard title="Calendar" description="See appointments and worker schedules in one place." href="/dashboard/calendar" icon={CalendarDays} />
+        <QuickCard title="Calendar" description="See appointments and staff schedules in one place." href="/dashboard/calendar" icon={CalendarDays} />
       </div>
       <Card>
         <CardHeader>

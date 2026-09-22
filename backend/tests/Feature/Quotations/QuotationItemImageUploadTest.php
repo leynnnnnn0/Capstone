@@ -35,7 +35,7 @@ it('uploads before images for a quotation item', function () {
 
 it('allows a worker assigned to the linked work job to upload before images', function () {
     Storage::fake('public');
-    $worker = User::factory()->worker()->create();
+    $worker = User::factory()->staff()->create();
     $quotationItem = QuotationItem::factory()->create();
     $workJob = WorkJob::factory()->create([
         'quotation_id' => $quotationItem->quotation_id,
@@ -55,8 +55,8 @@ it('allows a worker assigned to the linked work job to upload before images', fu
 
 it('prevents non admins from deleting images uploaded by another user', function () {
     Storage::fake('public');
-    $worker = User::factory()->create(['role' => 'worker']);
-    $uploader = User::factory()->create(['role' => 'worker']);
+    $worker = User::factory()->create(['role' => 'staff']);
+    $uploader = User::factory()->create(['role' => 'staff']);
     $quotationItem = QuotationItem::factory()->create();
     $quotationItem->quotation->appointment->workers()->attach($worker->id);
     $image = createQuotationItemImage($quotationItem, $uploader);
@@ -73,7 +73,7 @@ it('prevents non admins from deleting images uploaded by another user', function
 it('prevents sub admins from deleting images uploaded by another user', function () {
     Storage::fake('public');
     $subAdmin = User::factory()->create(['role' => 'sub_admin']);
-    $uploader = User::factory()->create(['role' => 'worker']);
+    $uploader = User::factory()->create(['role' => 'staff']);
     $quotationItem = QuotationItem::factory()->create();
     $image = createQuotationItemImage($quotationItem, $uploader);
 
@@ -88,7 +88,7 @@ it('prevents sub admins from deleting images uploaded by another user', function
 
 it('allows non admins to delete images they uploaded', function () {
     Storage::fake('public');
-    $worker = User::factory()->create(['role' => 'worker']);
+    $worker = User::factory()->create(['role' => 'staff']);
     $quotationItem = QuotationItem::factory()->create();
     $quotationItem->quotation->appointment->workers()->attach($worker->id);
     $image = createQuotationItemImage($quotationItem, $worker);
@@ -104,7 +104,7 @@ it('allows non admins to delete images they uploaded', function () {
 it('allows admins to delete any quotation item image', function () {
     Storage::fake('public');
     $admin = User::factory()->create(['role' => 'admin']);
-    $uploader = User::factory()->create(['role' => 'worker']);
+    $uploader = User::factory()->create(['role' => 'staff']);
     $quotationItem = QuotationItem::factory()->create();
     $image = createQuotationItemImage($quotationItem, $uploader);
 

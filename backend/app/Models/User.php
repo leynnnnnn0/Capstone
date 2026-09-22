@@ -2,21 +2,21 @@
 
 namespace App\Models;
 
-use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
+use OwenIt\Auditing\Auditable;
 use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements AuditableContract
 {
+    use Auditable;
     use HasApiTokens, HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
-    use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
         'username',
@@ -41,7 +41,7 @@ class User extends Authenticatable implements AuditableContract
     ];
 
     protected $appends = [
-        'full_name'
+        'full_name',
     ];
 
     public function getFullNameAttribute(): string
@@ -78,9 +78,9 @@ class User extends Authenticatable implements AuditableContract
         return $this->hasRole('admin') || $this->role === 'admin';
     }
 
-    public function isWorker(): bool
+    public function isStaff(): bool
     {
-        return $this->hasRole('worker') || $this->role === 'worker';
+        return $this->hasRole('staff') || $this->role === 'staff';
     }
 
     public function isSubAdmin(): bool

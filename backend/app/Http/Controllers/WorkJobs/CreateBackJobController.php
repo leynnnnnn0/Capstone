@@ -20,7 +20,7 @@ class CreateBackJobController extends Controller
 
     public function __invoke(StoreBackJobRequest $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot create back jobs.');
+        $this->abortIfWorker($request, 'Staff cannot create back jobs.');
 
         $backJob = $this->workJobService->createBackJob(
             $workJob,

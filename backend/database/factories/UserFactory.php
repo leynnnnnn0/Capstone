@@ -35,10 +35,10 @@ class UserFactory extends Factory
         ];
     }
 
-    public function worker(): static
+    public function staff(): static
     {
-        return $this->state(fn() => [
-            'role' => 'worker',
+        return $this->state(fn () => [
+            'role' => 'staff',
         ]);
     }
 

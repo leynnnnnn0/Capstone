@@ -17,7 +17,7 @@ export default function AdminCalendarPage() {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [workJobs, setWorkJobs] = useState<AdminWorkJob[]>([]);
   const [loading, setLoading] = useState(true);
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
 
   const reload = useCallback(() => {
     Promise.all([
@@ -46,7 +46,7 @@ export default function AdminCalendarPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Team scheduling</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Calendar</h1>
         <p className="mt-1 text-xs text-white/55 sm:text-sm">
-          {isWorker ? "Your assigned schedule." : "Appointments overview and workers schedule."}
+          {isWorker ? "Your assigned schedule." : "Appointments overview and staff schedule."}
         </p>
       </div>
 

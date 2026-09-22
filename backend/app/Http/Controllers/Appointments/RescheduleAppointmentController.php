@@ -24,7 +24,7 @@ class RescheduleAppointmentController extends Controller
         RescheduleAppointmentRequest $request,
         Appointment $appointment
     ) {
-        $this->abortIfWorker($request, 'Workers cannot reschedule appointments.');
+        $this->abortIfWorker($request, 'Staff cannot reschedule appointments.');
 
         try {
             $appointment = $this->appointmentService->reschedule(
@@ -41,15 +41,15 @@ class RescheduleAppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment rescheduled.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ]);
         } catch (InvalidStatusTransitionException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $e) {
             Log::error('Failed to reschedule appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
-                'trace'          => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

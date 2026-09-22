@@ -20,7 +20,7 @@ it('tracks an appointment by appointment number', function () {
         'email' => 'juan@example.com',
         'service_type' => 'quotation',
     ]);
-    $worker = User::factory()->create(['role' => 'worker']);
+    $worker = User::factory()->create(['role' => 'staff']);
     $appointment->workers()->attach($worker->id);
     $appointment->remarks()->create([
         'user_id' => $worker->id,

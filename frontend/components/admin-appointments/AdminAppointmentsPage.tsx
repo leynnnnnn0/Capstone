@@ -126,7 +126,7 @@ export default function AdminAppointmentsPage() {
   const meta = response?.meta;
   const total = response?.meta?.total ?? appointments.length;
   const activeFilters = Boolean(filters.search || filters.status !== "all" || filters.service_type !== "all" || filters.date_from || filters.date_to);
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
 
   return (
     <div className="space-y-4">

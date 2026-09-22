@@ -8,7 +8,7 @@ export default function WorkerMultiSelect({
   workers,
   value,
   onChange,
-  label = "Assigned Workers",
+  label = "Assigned Staff",
   error,
 }: {
   workers: AdminWorker[];
@@ -29,7 +29,7 @@ export default function WorkerMultiSelect({
         options={options}
         defaultValue={value.map(String)}
         onValueChange={(nextValue) => onChange(nextValue.map(Number))}
-        placeholder={workers.length ? "Select workers" : "No available workers for this slot"}
+        placeholder={workers.length ? "Select staff" : "No available staff for this slot"}
         maxCount={3}
         hideSelectAll
         className="w-full"

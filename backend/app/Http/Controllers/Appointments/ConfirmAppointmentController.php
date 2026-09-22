@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Appointments;
 
-use App\Http\Controllers\Controller;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ConfirmAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
@@ -24,7 +24,7 @@ class ConfirmAppointmentController extends Controller
         ConfirmAppointmentRequest $request,
         Appointment $appointment
     ) {
-        $this->abortIfWorker($request, 'Workers cannot confirm appointment schedules.');
+        $this->abortIfWorker($request, 'Staff cannot confirm appointment schedules.');
 
         try {
             $appointment = $this->appointmentService->confirm(
@@ -41,7 +41,7 @@ class ConfirmAppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment successfully confirmed.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ], 200);
 
         } catch (InvalidStatusTransitionException $e) {
@@ -51,8 +51,8 @@ class ConfirmAppointmentController extends Controller
         } catch (Throwable $e) {
             Log::error('Failed to confirm appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
-                'trace'          => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

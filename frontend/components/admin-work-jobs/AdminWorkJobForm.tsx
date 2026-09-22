@@ -88,7 +88,7 @@ const workJobSchema = z.object({
   scheduled_date: requiredDateSchema("Work job date"),
   scheduled_time_from: requiredTimeSchema("Start time"),
   scheduled_time_until: requiredTimeSchema("End time"),
-  worker_ids: z.array(z.number()).min(1, "Assign at least one worker."),
+  worker_ids: z.array(z.number()).min(1, "Assign at least one staff member."),
   is_down_payment_required: z.boolean(),
   down_payment_percentage: z.coerce
     .number()
@@ -295,7 +295,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
         eyebrow="Operations scheduling"
         title={isEditing ? "Edit work job" : "Create work job"}
         description={isEditing
-          ? "Update the work job details, schedule, workers, and payment terms."
+          ? "Update the work job details, schedule, staff, and payment terms."
           : "Create the work job, set the production slot, and attach the quotation."}
         icon={BriefcaseBusiness}
         recordLabel="Work job record"
@@ -385,7 +385,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
           </section>
 
           <section className="rounded-lg border bg-card p-5 shadow-sm">
-            <SectionTitle title="Schedule Work Job" description="Set the actual production slot and workers." />
+            <SectionTitle title="Schedule Work Job" description="Set the actual production slot and assigned staff." />
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <Field label="Work Job Date" error={errors.scheduled_date}>
                 <Input type="date" min={today} value={data.scheduled_date} onChange={(event) => setField("scheduled_date", event.target.value)} />
@@ -400,13 +400,13 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Users className="size-4 text-primary" />
-                <Label>Assigned Workers</Label>
+                <Label>Assigned Staff</Label>
               </div>
               <WorkerMultiSelect
                 workers={workers}
                 value={data.worker_ids}
                 onChange={(value) => setField("worker_ids", value)}
-                label="Available Workers"
+                label="Available Staff"
                 error={errors.worker_ids}
               />
             </div>
@@ -503,7 +503,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
               <div>
                 <p className="text-sm font-black">{isEditing ? "Update Work Job" : "Create Work Job"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {isEditing ? "Review changes before saving." : "Review schedule, workers, and quotation before saving."}
+                  {isEditing ? "Review changes before saving." : "Review schedule, staff, and quotation before saving."}
                 </p>
               </div>
               <Badge
@@ -518,7 +518,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
             <div className="mt-4 space-y-2 rounded-lg border bg-muted/30 p-3 text-sm">
               <SummaryRow label="Date" value={data.scheduled_date || "-"} />
               <SummaryRow label="Time" value={`${data.scheduled_time_from || "-"} - ${data.scheduled_time_until || "-"}`} />
-              <SummaryRow label="Workers" value={data.worker_ids.length ? `${data.worker_ids.length} assigned` : "None"} />
+              <SummaryRow label="Staff" value={data.worker_ids.length ? `${data.worker_ids.length} assigned` : "None"} />
               <SummaryRow label="Quote Total" value={`₱${Number(quoteTotal).toLocaleString("en-PH")}`} />
               <SummaryRow
                 label="Fabrication"
@@ -545,7 +545,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
         <SheetContent side="left" className="overflow-y-auto p-0 sm:max-w-none" style={{ width: "min(1180px, calc(100vw - 32px))", maxWidth: "none" }}>
           <SheetHeader className="border-b px-6 py-5 text-left">
             <SheetTitle>Calendar</SheetTitle>
-            <SheetDescription>Appointments overview and workers schedule.</SheetDescription>
+            <SheetDescription>Appointments overview and staff schedule.</SheetDescription>
           </SheetHeader>
           <div className="px-6 py-6">
             <AdminAppointmentCalendar appointments={appointments} />
@@ -578,7 +578,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
           <AlertDialogHeader>
             <AlertDialogTitle>{isEditing ? "Update this work job?" : "Create this work job?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              Please confirm the customer details, schedule, assigned workers, quotation, and payment terms before saving.
+              Please confirm the customer details, schedule, assigned staff, quotation, and payment terms before saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -79,7 +79,7 @@ const backJobFormSchema = z
     scheduled_date: requiredDateSchema("Scheduled date"),
     scheduled_time_from: requiredTimeSchema("Start time"),
     scheduled_time_until: requiredTimeSchema("End time"),
-    worker_ids: z.array(z.number()).min(1, "Please assign at least one worker."),
+    worker_ids: z.array(z.number()).min(1, "Please assign at least one staff member."),
     back_job_reason: z.enum([
       "unfinished_work",
       "warranty_claim",
@@ -359,7 +359,7 @@ export default function AdminWorkJobBackJobsCard({
               workers={workers}
               value={form.worker_ids}
               onChange={(value) => setField("worker_ids", value)}
-              label="Assigned Workers"
+              label="Assigned Staff"
               error={errorFor(errors, "worker_ids")}
             />
 
@@ -432,7 +432,7 @@ export default function AdminWorkJobBackJobsCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Schedule this back job?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will create a linked return visit with the selected schedule and assigned workers.
+              This will create a linked return visit with the selected schedule and assigned staff.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

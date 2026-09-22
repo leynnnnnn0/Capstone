@@ -23,7 +23,7 @@ class ConfirmWorkJobController extends Controller
 
     public function __invoke(Request $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot confirm work jobs.');
+        $this->abortIfWorker($request, 'Staff cannot confirm work jobs.');
 
         try {
             $validated = $request->validate([

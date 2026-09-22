@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware([
     'auth:sanctum',
-    'account.role:admin,sub_admin,worker,customer',
+    'account.role:admin,sub_admin,staff,customer',
 ])->group(function () {
     Route::post('/ar-measurement-sessions', [
         ArMeasurementSessionController::class,
@@ -24,7 +24,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
-    'account.role:admin,sub_admin,worker',
+    'account.role:admin,sub_admin,staff',
 ])->group(function () {
     Route::get('/appointments/{appointment}/measurement-sessions', [
         ArMeasurementSessionController::class,

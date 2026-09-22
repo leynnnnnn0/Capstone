@@ -172,7 +172,7 @@ it('lists measurement sessions only for the requested accessible appointment', f
 
 it('allows an assigned worker to save, list, and review measurements', function () {
     $customer = User::factory()->create(['role' => 'customer']);
-    $worker = User::factory()->create(['role' => 'worker']);
+    $worker = User::factory()->create(['role' => 'staff']);
     $appointment = Appointment::factory()->create(['user_id' => $customer->id]);
     $appointment->workers()->attach($worker);
 
@@ -182,7 +182,7 @@ it('allows an assigned worker to save, list, and review measurements', function 
             arMeasurementPayload($appointment)
         )
         ->assertCreated()
-        ->assertJsonPath('data.source', 'worker')
+        ->assertJsonPath('data.source', 'staff')
         ->assertJsonPath('data.customer_id', $customer->id);
 
     $reference = $storeResponse->json('data.reference');
@@ -216,11 +216,11 @@ it('allows an assigned worker to save, list, and review measurements', function 
 
 it('prevents an unassigned worker from accessing or reviewing a measurement session', function () {
     $customer = User::factory()->create(['role' => 'customer']);
-    $creator = User::factory()->create(['role' => 'worker']);
-    $unassignedWorker = User::factory()->create(['role' => 'worker']);
+    $creator = User::factory()->create(['role' => 'staff']);
+    $unassignedWorker = User::factory()->create(['role' => 'staff']);
     $appointment = Appointment::factory()->create(['user_id' => $customer->id]);
     $appointment->workers()->attach($creator);
-    $session = createArSession($appointment, $creator, ['source' => 'worker']);
+    $session = createArSession($appointment, $creator, ['source' => 'staff']);
 
     $this->actingAs($unassignedWorker)
         ->postJson(

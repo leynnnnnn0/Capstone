@@ -1,6 +1,8 @@
 <?php
+
 // tests/Feature/WorkJobs/StoreWorkJobTest.php
 
+use App\Enums\AppointmentStatus;
 use App\Enums\WorkJobStatus;
 use App\Events\WorkJobChanged;
 use App\Events\WorkJobCreated;
@@ -8,29 +10,28 @@ use App\Models\Appointment;
 use App\Models\Quotation;
 use App\Models\User;
 use App\Models\WorkJob;
-use App\Enums\AppointmentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin   = User::factory()->create(['role' => 'admin']);
-    $this->workers = User::factory(2)->create(['role' => 'worker']);
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->workers = User::factory(2)->create(['role' => 'staff']);
 
     Event::fake([WorkJobCreated::class]);
 });
 
-$validPayload = fn() => [
-    'first_name'           => 'Juan',
-    'last_name'            => 'dela Cruz',
-    'phone_number'         => '+63 912 345 6789',
-    'address'              => '123 Rizal Street, Bacoor, Cavite',
-    'service_type'         => 'repair',
-    'scheduled_date'       => now()->addDays(3)->format('Y-m-d'),
-    'scheduled_time_from'  => '09:00',
+$validPayload = fn () => [
+    'first_name' => 'Juan',
+    'last_name' => 'dela Cruz',
+    'phone_number' => '+63 912 345 6789',
+    'address' => '123 Rizal Street, Bacoor, Cavite',
+    'service_type' => 'repair',
+    'scheduled_date' => now()->addDays(3)->format('Y-m-d'),
+    'scheduled_time_from' => '09:00',
     'scheduled_time_until' => '11:00',
-    'worker_ids'           => [],
+    'worker_ids' => [],
 ];
 
 // ── Happy Path ────────────────────────────────────────────────────
@@ -104,13 +105,13 @@ it('does not dispatch the work job created notification event for generic work j
 });
 
 it('creates work job from appointment', function () {
-    $workers     = User::factory(2)->create(['role' => 'worker']);
+    $workers = User::factory(2)->create(['role' => 'staff']);
     $customer = User::factory()->create(['role' => 'customer']);
     $appointment = Appointment::factory()->create([
-        'user_id'                => $customer->id,
-        'status'                 => AppointmentStatus::Confirmed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'user_id' => $customer->id,
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
     $appointment->workers()->sync($workers->pluck('id'));
@@ -128,12 +129,12 @@ it('creates work job from appointment', function () {
 });
 
 it('dispatches a work job created notification event when creating a work job from an appointment', function () {
-    $workers = User::factory(2)->create(['role' => 'worker']);
+    $workers = User::factory(2)->create(['role' => 'staff']);
     $appointment = Appointment::factory()->create([
-        'status'                 => AppointmentStatus::Confirmed,
-        'phone_number'           => '+63 900 111 2222',
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'status' => AppointmentStatus::Confirmed,
+        'phone_number' => '+63 900 111 2222',
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
     $appointment->workers()->sync($workers->pluck('id'));
@@ -149,11 +150,11 @@ it('dispatches a work job created notification event when creating a work job fr
 
 it('creates work job from appointment with quotation', function () {
     $this->withoutExceptionHandling();
-    $workers     = User::factory(2)->create(['role' => 'worker']);
+    $workers = User::factory(2)->create(['role' => 'staff']);
     $appointment = Appointment::factory()->create([
-        'status'                 => AppointmentStatus::Confirmed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
     $quotation = Quotation::factory()->create([
@@ -190,9 +191,9 @@ it('returns 422 when required fields are missing', function () {
 it('returns 422 when end time is before start time', function () use ($validPayload) {
     $this->actingAs($this->admin)
         ->postJson('/api/v1/work-jobs', array_merge($validPayload(), [
-            'scheduled_time_from'  => '14:00',
+            'scheduled_time_from' => '14:00',
             'scheduled_time_until' => '10:00',
-            'worker_ids'           => $this->workers->pluck('id')->toArray(),
+            'worker_ids' => $this->workers->pluck('id')->toArray(),
         ]))
         ->assertStatus(422)
         ->assertJsonValidationErrors(['scheduled_time_until']);

@@ -69,7 +69,7 @@ class RoleAndPermissionSeeder extends Seeder
             'audits.view',
             'reports.view',
         ],
-        'worker' => [
+        'staff' => [
             'dashboard.view',
             'appointments.view',
             'appointments.status',

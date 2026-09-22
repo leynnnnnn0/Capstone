@@ -9,8 +9,8 @@ use App\Models\Payment;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\User;
-use App\Models\WorkJobCharge;
 use App\Models\WorkJob;
+use App\Models\WorkJobCharge;
 use App\Services\Payments\PayPalClient;
 use App\Services\Payments\WorkJobPaymentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -38,7 +38,7 @@ function payableWorkJob(array $workJobAttributes = [], float $total = 10000): Wo
 
 it('stores down payment terms when creating a work job', function () {
     $admin = User::factory()->create(['role' => 'admin']);
-    $worker = User::factory()->worker()->create();
+    $worker = User::factory()->staff()->create();
 
     $payload = [
         'first_name' => 'Juan',
@@ -129,7 +129,7 @@ it('does not allow manual payments on cancelled work jobs', function () {
 });
 
 it('allows assigned workers to record manual payments', function () {
-    $worker = User::factory()->worker()->create();
+    $worker = User::factory()->staff()->create();
     $workJob = payableWorkJob();
     $workJob->workers()->attach($worker);
 

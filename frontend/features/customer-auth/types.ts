@@ -16,7 +16,7 @@ export type CustomerUser = {
   last_name: string;
   email: string | null;
   phone_number: string | null;
-  role: "customer" | "admin" | "worker";
+  role: "customer" | "admin" | "staff";
 };
 
 export type VerifyCustomerOtpResponse = {

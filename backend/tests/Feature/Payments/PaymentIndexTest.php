@@ -96,8 +96,8 @@ it('hides cancelled checkout attempts by default but keeps them filterable', fun
 it('prevents workers from viewing all payments', function () {
     test()->seed(RoleAndPermissionSeeder::class);
 
-    $worker = User::factory()->worker()->create();
-    $worker->assignRole('worker');
+    $worker = User::factory()->staff()->create();
+    $worker->assignRole('staff');
 
     $this->actingAs($worker)
         ->getJson('/api/v1/payments')

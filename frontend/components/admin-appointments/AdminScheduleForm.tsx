@@ -43,7 +43,7 @@ const scheduleSchema = z
     appointment_date: requiredDateSchema("Appointment date"),
     appointment_time_from: requiredTimeSchema("Start time"),
     appointment_time_until: requiredTimeSchema("End time"),
-    worker_ids: z.array(z.number()).min(1, "Please assign at least one worker."),
+    worker_ids: z.array(z.number()).min(1, "Please assign at least one staff member."),
     remarks: z.string().trim().max(1000, "Remarks must be 1000 characters or fewer.").optional(),
   })
   .superRefine((data, context) => {
@@ -203,8 +203,8 @@ export default function AdminScheduleForm({
           </div>
           <DisplayRow
             icon={Users}
-            label="Assigned Workers"
-            value={appointment.workers.length ? appointment.workers.map((worker) => worker.full_name).join(", ") : "No workers assigned yet"}
+            label="Assigned Staff"
+            value={appointment.workers.length ? appointment.workers.map((worker) => worker.full_name).join(", ") : "No staff assigned yet"}
           />
         </div>
 
@@ -215,7 +215,7 @@ export default function AdminScheduleForm({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{canSetSchedule ? "Set appointment schedule" : "Reschedule appointment"}</DialogTitle>
-            <DialogDescription>Set the inspection date, time range, and assigned workers.</DialogDescription>
+            <DialogDescription>Set the inspection date, time range, and assigned staff.</DialogDescription>
           </DialogHeader>
 
           <form
@@ -254,7 +254,7 @@ export default function AdminScheduleForm({
               workers={availableWorkers}
               value={data.worker_ids}
               onChange={(value) => setField("worker_ids", value)}
-              label="Assign Workers"
+              label="Assign Staff"
               error={errors.worker_ids}
             />
 
@@ -279,7 +279,7 @@ export default function AdminScheduleForm({
             <ModalRow label="Customer" value={appointment.full_name} />
             <ModalRow label="Date" value={data.appointment_date || "-"} />
             <ModalRow label="Time" value={`${data.appointment_time_from || "-"} - ${data.appointment_time_until || "-"}`} />
-            <ModalRow label="Workers" value={selectedWorkerNames || "-"} />
+            <ModalRow label="Staff" value={selectedWorkerNames || "-"} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="schedule_remarks">{canSetSchedule ? "Remarks" : "Reason"}</Label>

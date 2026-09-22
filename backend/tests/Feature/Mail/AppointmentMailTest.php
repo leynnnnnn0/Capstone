@@ -2,37 +2,35 @@
 
 // tests/Feature/Mail/AppointmentMailTest.php
 
-use App\Mail\AppointmentConfirmedMail;
-use App\Models\Appointment;
-use App\Models\User;
 use App\Enums\AppointmentStatus;
-use App\Events\AppointmentConfirmed;
+use App\Mail\AppointmentConfirmedMail;
 use App\Mail\Appointments\AppointmentBookedMail;
 use App\Mail\Appointments\AppointmentCancelledMail;
 use App\Mail\Appointments\AppointmentRescheduledMail;
 use App\Mail\Appointments\AppointmentStatusChangedMail;
+use App\Models\Appointment;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
     Mail::fake();
-    $this->admin   = User::factory()->create(['role' => 'admin']);
-    $this->workers = User::factory(2)->create(['role' => 'worker']);
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->workers = User::factory(2)->create(['role' => 'staff']);
 });
 
-$appointmentPayload = fn() => [
-    'first_name'     => 'Juan',
-    'last_name'      => 'dela Cruz',
-    'email'          => 'juan@example.com',
-    'phone_number'   => '+63 912 345 6789',
-    'address'        => '123 Rizal Street, Bacoor, Cavite',
+$appointmentPayload = fn () => [
+    'first_name' => 'Juan',
+    'last_name' => 'dela Cruz',
+    'email' => 'juan@example.com',
+    'phone_number' => '+63 912 345 6789',
+    'address' => '123 Rizal Street, Bacoor, Cavite',
     'preferred_date' => now()->addDays(3)->format('Y-m-d'),
     'preferred_time' => 'morning',
-    'service_type'   => 'repair',
-    'consent'        => true,
+    'service_type' => 'repair',
+    'consent' => true,
 ];
 
 // ── Booked ────────────────────────────────────────────────────────
@@ -40,8 +38,8 @@ $appointmentPayload = fn() => [
 it('queues confirmation email when appointment is booked', function () use ($appointmentPayload) {
     $response = $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
-        'email' => 'juan@gmail.com'
-        ]);
+        'email' => 'juan@gmail.com',
+    ]);
 
     $response->assertStatus(201);
 
@@ -50,7 +48,6 @@ it('queues confirmation email when appointment is booked', function () use ($app
             && $mail->appointment->id === $response->json()['data']['id'];
     });
 });
-
 
 // ── Confirmed ─────────────────────────────────────────────────────
 
@@ -62,12 +59,11 @@ it('queues confirmation email when appointment is confirmed', function () use ($
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
-            'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-            'appointment_time_from'  => '09:00',
+            'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+            'appointment_time_from' => '09:00',
             'appointment_time_until' => '11:00',
-            'worker_ids'             => $this->workers->pluck('id')->toArray(),
+            'worker_ids' => $this->workers->pluck('id')->toArray(),
         ]);
-
 
     Mail::assertQueued(AppointmentConfirmedMail::class, function ($mail) use ($appointment) {
         return $mail->hasTo('juan@example.com')
@@ -80,18 +76,17 @@ it('queues confirmation email when appointment is confirmed', function () use ($
 it('queues email when appointment is rescheduled', function () use ($appointmentPayload) {
     $appointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'email'  => 'juan@example.com',
+        'email' => 'juan@example.com',
         'status' => AppointmentStatus::Confirmed,
     ]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/appointments/{$appointment->id}/reschedule", [
-            'appointment_date'       => now()->addDays(5)->format('Y-m-d'),
-            'appointment_time_from'  => '10:00',
+            'appointment_date' => now()->addDays(5)->format('Y-m-d'),
+            'appointment_time_from' => '10:00',
             'appointment_time_until' => '12:00',
-            'reason'                 => 'Worker unavailable.',
+            'reason' => 'Worker unavailable.',
         ]);
-
 
     Mail::assertQueued(AppointmentRescheduledMail::class, function ($mail) use ($appointment) {
         return $mail->hasTo('juan@example.com')
@@ -128,10 +123,10 @@ it('does not send any mail when appointment has no email', function () use ($app
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/appointments/{$appointment->id}/confirm", [
-            'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-            'appointment_time_from'  => '09:00',
+            'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+            'appointment_time_from' => '09:00',
             'appointment_time_until' => '11:00',
-            'worker_ids'             => $this->workers->pluck('id')->toArray(),
+            'worker_ids' => $this->workers->pluck('id')->toArray(),
         ]);
 
     Mail::assertNothingSent();
@@ -140,7 +135,7 @@ it('does not send any mail when appointment has no email', function () use ($app
 it('queues status email when appointment is marked no show', function () use ($appointmentPayload) {
     $appointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'email'  => 'juan@example.com',
+        'email' => 'juan@example.com',
         'status' => AppointmentStatus::Confirmed,
     ]);
 

@@ -44,21 +44,21 @@ class AppointmentService
 
             $appointment = Appointment::create([
                 ...Arr::except($validated, ['items', 'worker_ids', 'quotation_notes', 'quotation_expires_at']),
-                'status'           => $status,
+                'status' => $status,
                 'consent_given_at' => $validated['consent'] ? now() : null,
             ]);
 
-            if ($status === AppointmentStatus::Confirmed && !empty($validated['worker_ids'])) {
+            if ($status === AppointmentStatus::Confirmed && ! empty($validated['worker_ids'])) {
                 $appointment->workers()->sync($validated['worker_ids']);
             }
 
             // Auto-create quotation if customer included items
-            if (!empty($validated['items'])) {
+            if (! empty($validated['items'])) {
                 $this->quotationService->create([
                     'appointment_id' => $appointment->id,
-                    'items'          => $validated['items'],
-                    'notes'          => $validated['quotation_notes'] ?? null,
-                    'expires_at'     => $validated['quotation_expires_at'] ?? null,
+                    'items' => $validated['items'],
+                    'notes' => $validated['quotation_notes'] ?? null,
+                    'expires_at' => $validated['quotation_expires_at'] ?? null,
                 ], $actor);
             }
 
@@ -71,7 +71,7 @@ class AppointmentService
     }
 
     /**
-     * Update appointment details, workers, and optional quotation items.
+     * Update appointment details, staff assignments, and optional quotation items.
      *
      * Status changes create remarks and dispatch status events; normal edits
      * dispatch a simpler "details updated" event.
@@ -89,7 +89,7 @@ class AppointmentService
                 $appointment->workers()->sync($validated['worker_ids'] ?? []);
             }
 
-            if (!empty($validated['items'])) {
+            if (! empty($validated['items'])) {
                 if ($appointment->quotation) {
                     $this->quotationService->update($appointment->quotation, [
                         'items' => $validated['items'],
@@ -143,9 +143,9 @@ class AppointmentService
         $count = Appointment::where('preferred_date', $date)
             ->where('preferred_time', $time)
             ->whereIn('status', [
-                AppointmentStatus::Pending, 
-                AppointmentStatus::Confirmed
-                ])
+                AppointmentStatus::Pending,
+                AppointmentStatus::Confirmed,
+            ])
             ->count();
 
         if ($count >= self::SLOT_CAPACITY) {
@@ -155,9 +155,8 @@ class AppointmentService
         }
     }
 
-
     /**
-     * Confirm an appointment and assign the workers who will visit the customer.
+     * Confirm an appointment and assign the staff who will visit the customer.
      */
     public function confirm(Appointment $appointment, array $data, User $actor): Appointment
     {
@@ -167,24 +166,22 @@ class AppointmentService
         DB::transaction(function () use ($appointment, $data, $actor) {
 
             $appointment->update([
-                'status'                 => AppointmentStatus::Confirmed,
-                'appointment_date'       => $data['appointment_date'],
-                'appointment_time_from'  => $data['appointment_time_from'],
+                'status' => AppointmentStatus::Confirmed,
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time_from' => $data['appointment_time_from'],
                 'appointment_time_until' => $data['appointment_time_until'],
             ]);
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::Confirmed->value,
+                'action' => AppointmentStatus::Confirmed->value,
                 'message' => $data['remarks'] ?? 'Appointment confirmed.',
             ]);
-            
+
             $appointment->workers()->sync($data['worker_ids']);
         });
 
-
         AppointmentConfirmed::dispatch($appointment->fresh(), $actor);
-
 
         return $appointment->fresh();
     }
@@ -201,7 +198,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::Cancelled->value,
+                'action' => AppointmentStatus::Cancelled->value,
                 'message' => $data['reason'],
             ]);
         });
@@ -225,7 +222,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::Reopened->value,
+                'action' => AppointmentStatus::Reopened->value,
                 'message' => $message,
             ]);
         });
@@ -249,9 +246,9 @@ class AppointmentService
 
         DB::transaction(function () use ($appointment, $data, $actor) {
             $appointment->update([
-                'status'                 => AppointmentStatus::Rescheduled,
-                'appointment_date'       => $data['appointment_date'],
-                'appointment_time_from'  => $data['appointment_time_from'],
+                'status' => AppointmentStatus::Rescheduled,
+                'appointment_date' => $data['appointment_date'],
+                'appointment_time_from' => $data['appointment_time_from'],
                 'appointment_time_until' => $data['appointment_time_until'],
             ]);
 
@@ -261,7 +258,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::Rescheduled->value,
+                'action' => AppointmentStatus::Rescheduled->value,
                 'message' => $data['reason'],
             ]);
         });
@@ -280,15 +277,15 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::OnTheWay->value,
-                'message' => 'Worker is on the way.',
+                'action' => AppointmentStatus::OnTheWay->value,
+                'message' => 'Staff member is on the way.',
             ]);
         });
 
         AppointmentStatusChanged::dispatch(
             $appointment->fresh(),
             AppointmentStatus::OnTheWay,
-            'Worker is on the way.',
+            'Staff member is on the way.',
             $actor
         );
 
@@ -304,7 +301,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::InProgress->value,
+                'action' => AppointmentStatus::InProgress->value,
                 'message' => 'Job is now in progress.',
             ]);
         });
@@ -328,7 +325,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::Completed->value,
+                'action' => AppointmentStatus::Completed->value,
                 'message' => 'Appointment completed.',
             ]);
         });
@@ -354,7 +351,7 @@ class AppointmentService
 
             $appointment->remarks()->create([
                 'user_id' => $actor->id,
-                'action'  => AppointmentStatus::NoShow->value,
+                'action' => AppointmentStatus::NoShow->value,
                 'message' => $message,
             ]);
         });
@@ -368,13 +365,12 @@ class AppointmentService
 
         return $appointment->fresh();
     }
-    
 
     private function ensureCanTransition(
         Appointment $appointment,
         AppointmentStatus $next
     ): void {
-        if (!$appointment->status->canTransitionTo($next)) {
+        if (! $appointment->status->canTransitionTo($next)) {
             throw new InvalidStatusTransitionException(
                 "Cannot move from {$appointment->status->label()} to {$next->label()}."
             );

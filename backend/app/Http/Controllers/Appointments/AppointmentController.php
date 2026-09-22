@@ -13,7 +13,6 @@ use App\Services\AppointmentService;
 use App\Services\Customer\CustomerAccountResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -41,7 +40,7 @@ class AppointmentController extends Controller
     {
         $query = Appointment::query()
             ->with(self::RELATIONS)
-            ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+            ->when($request->user()?->isStaff() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -86,7 +85,7 @@ class AppointmentController extends Controller
 
     public function store(StoreAppointmentRequest $request): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot create appointments.');
+        $this->abortIfWorker($request, 'Staff cannot create appointments.');
 
         try {
             $payload = $request->validated();
@@ -104,7 +103,7 @@ class AppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment successfully created.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ], 201);
         } catch (SlotFullException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -112,9 +111,9 @@ class AppointmentController extends Controller
             throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to create appointment', [
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
                 'user_id' => $request->input('user_id'),
-                'trace'   => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
@@ -125,7 +124,7 @@ class AppointmentController extends Controller
 
     public function update(UpdateAppointmentRequest $request, Appointment $appointment): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot edit appointment details.');
+        $this->abortIfWorker($request, 'Staff cannot edit appointment details.');
 
         try {
             $appointment = $this->appointmentService->update($appointment, $request->validated(), $request->user());
@@ -134,13 +133,13 @@ class AppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment successfully updated.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ]);
         } catch (Throwable $e) {
             Log::error('Failed to update appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
-                'trace'          => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

@@ -24,7 +24,7 @@ class CancelAppointmentController extends Controller
         CancelAppointmentRequest $request,
         Appointment $appointment
     ) {
-        $this->abortIfWorker($request, 'Workers cannot cancel appointments.');
+        $this->abortIfWorker($request, 'Staff cannot cancel appointments.');
 
         try {
             $appointment = $this->appointmentService->cancel(
@@ -41,15 +41,15 @@ class CancelAppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment cancelled.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ]);
         } catch (InvalidStatusTransitionException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $e) {
             Log::error('Failed to cancel appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
-                'trace'          => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

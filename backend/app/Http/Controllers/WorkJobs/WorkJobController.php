@@ -27,7 +27,7 @@ class WorkJobController extends Controller
     public function index(Request $request): JsonResponse
     {
         $allowedSorts = ['work_job_number', 'first_name', 'scheduled_date', 'status'];
-        $sortBy  = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'scheduled_date';
+        $sortBy = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'scheduled_date';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
 
         $workJobs = WorkJob::query()
@@ -43,34 +43,29 @@ class WorkJobController extends Controller
                 'warranty.issuedBy',
                 'rating.customer',
             ])
-            ->when($request->user()?->isWorker() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+            ->when($request->user()?->isStaff() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
             ->when(
                 $request->search,
-                fn($q) =>
-                $q->where(
-                    fn($q) =>
-                    $q->where('first_name',      'like', "%{$request->search}%")
-                        ->orWhere('last_name',      'like', "%{$request->search}%")
-                        ->orWhere('phone_number',   'like', "%{$request->search}%")
+                fn ($q) => $q->where(
+                    fn ($q) => $q->where('first_name', 'like', "%{$request->search}%")
+                        ->orWhere('last_name', 'like', "%{$request->search}%")
+                        ->orWhere('phone_number', 'like', "%{$request->search}%")
                         ->orWhere('work_job_number', 'like', "%{$request->search}%")
                 )
             )
             ->when(
                 $request->status && $request->status !== 'all',
-                fn($q) =>
-                $q->where('status', $request->status)
+                fn ($q) => $q->where('status', $request->status)
             )
             ->when(
                 $request->date_from,
-                fn($q) =>
-                $q->whereDate('scheduled_date', '>=', $request->date_from)
+                fn ($q) => $q->whereDate('scheduled_date', '>=', $request->date_from)
             )
             ->when(
                 $request->date_to,
-                fn($q) =>
-                $q->whereDate('scheduled_date', '<=', $request->date_to)
+                fn ($q) => $q->whereDate('scheduled_date', '<=', $request->date_to)
             )
             ->latest()
             ->paginate($request->per_page ?? 15);
@@ -80,14 +75,14 @@ class WorkJobController extends Controller
 
     public function store(StoreWorkJobRequest $request): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot create work jobs.');
+        $this->abortIfWorker($request, 'Staff cannot create work jobs.');
 
         try {
             $workJob = $this->workJobService->create($request->validated(), $request->user());
 
             return response()->json([
                 'message' => 'Work job created successfully.',
-                'data'    => new WorkJobResource($workJob),
+                'data' => new WorkJobResource($workJob),
             ], 201);
         } catch (ValidationException $e) {
             throw $e;
@@ -105,22 +100,22 @@ class WorkJobController extends Controller
 
     public function update(UpdateWorkJobRequest $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot update work jobs.');
+        $this->abortIfWorker($request, 'Staff cannot update work jobs.');
 
         try {
             $workJob = $this->workJobService->update($workJob, $request->validated(), $request->user());
 
             return response()->json([
                 'message' => 'Work job updated successfully.',
-                'data'    => new WorkJobResource($workJob),
+                'data' => new WorkJobResource($workJob),
             ]);
         } catch (ValidationException $e) {
             throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to update work job', [
                 'work_job_id' => $workJob->id,
-                'error'       => $e->getMessage(),
-                'trace'       => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
@@ -158,22 +153,22 @@ class WorkJobController extends Controller
 
     public function createFromAppointment(Appointment $appointment): JsonResponse
     {
-        $this->abortIfWorker(request(), 'Workers cannot create work jobs.');
+        $this->abortIfWorker(request(), 'Staff cannot create work jobs.');
 
         try {
             $workJob = $this->workJobService->createFromAppointment($appointment, request()->user());
 
             return response()->json([
                 'message' => 'Work job created from appointment successfully.',
-                'data'    => new WorkJobResource($workJob),
+                'data' => new WorkJobResource($workJob),
             ], 201);
         } catch (ValidationException $e) {
             throw $e;
         } catch (Throwable $e) {
             Log::error('Failed to create work job from appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
-                'trace'          => $e->getTraceAsString(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([

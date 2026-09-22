@@ -153,7 +153,7 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
             workJob.scheduled_time_until,
           )}
         />
-        <Info icon={UserRoundCheck} label="Assigned Workers" value={workers} wide />
+        <Info icon={UserRoundCheck} label="Assigned Staff" value={workers} wide />
         {workJob.notes && <Info icon={FileText} label="Notes" value={workJob.notes} wide />}
       </div>
     </div>

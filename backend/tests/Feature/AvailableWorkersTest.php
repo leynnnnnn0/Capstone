@@ -1,31 +1,31 @@
 <?php
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
-use App\Enums\AppointmentStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin   = User::factory()->create(['role' => 'admin']);
-    $this->workers = User::factory(3)->create(['role' => 'worker']);
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->workers = User::factory(3)->create(['role' => 'staff']);
 });
 
-$appointmentPayload = fn() => [
-    'first_name'     => 'Juan',
-    'last_name'      => 'dela Cruz',
-    'phone_number'   => '+63 912 345 6789',
-    'address'        => '123 Rizal Street, Bacoor, Cavite',
+$appointmentPayload = fn () => [
+    'first_name' => 'Juan',
+    'last_name' => 'dela Cruz',
+    'phone_number' => '+63 912 345 6789',
+    'address' => '123 Rizal Street, Bacoor, Cavite',
     'preferred_date' => now()->addDays(3)->format('Y-m-d'),
     'preferred_time' => 'morning',
-    'service_type'   => 'repair',
-    'consent'        => true,
+    'service_type' => 'repair',
+    'consent' => true,
 ];
 
-$queryParams = fn() => [
-    'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-    'appointment_time_from'  => '09:00',
+$queryParams = fn () => [
+    'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+    'appointment_time_from' => '09:00',
     'appointment_time_until' => '11:00',
 ];
 
@@ -44,7 +44,7 @@ it('returns 422 when required fields are missing', function () {
 
 it('returns 422 when time until is before time from', function () use ($queryParams) {
     $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query([
+        ->getJson('/api/v1/workers/available?'.http_build_query([
             ...$queryParams(),
             'appointment_time_until' => '08:00', // before 09:00
         ]))
@@ -52,12 +52,11 @@ it('returns 422 when time until is before time from', function () use ($queryPar
         ->assertJsonValidationErrors(['appointment_time_until']);
 });
 
-
 // ── Happy Path ────────────────────────────────────────────────────
 
 it('returns all workers when none are booked', function () use ($queryParams) {
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     $response->assertStatus(200)
         ->assertJsonCount(4, 'data');
@@ -67,9 +66,9 @@ it('excludes workers already assigned to a conflicting appointment', function ()
     // Arrange — assign 2 workers to a conflicting appointment
     $conflictingAppointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'status'                 => AppointmentStatus::Confirmed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
 
@@ -79,7 +78,7 @@ it('excludes workers already assigned to a conflicting appointment', function ()
 
     // Act
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     // Assert — 1 worker plus the admin are free
     $response->assertStatus(200)
@@ -90,9 +89,9 @@ it('includes workers whose appointments do not overlap', function () use ($appoi
     // Arrange — worker assigned to a non-overlapping time
     $nonConflictingAppointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'status'                 => AppointmentStatus::Confirmed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '13:00', // after our query window 09:00-11:00
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '13:00', // after our query window 09:00-11:00
         'appointment_time_until' => '15:00',
     ]);
 
@@ -102,7 +101,7 @@ it('includes workers whose appointments do not overlap', function () use ($appoi
 
     // Act — query for 09:00-11:00
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     // Assert — all 3 workers plus the admin are still available
     $response->assertStatus(200)
@@ -113,9 +112,9 @@ it('excludes workers only from confirmed on_the_way and in_progress appointments
     // Arrange — worker on a completed appointment (should not block)
     $completedAppointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'status'                 => AppointmentStatus::Completed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'status' => AppointmentStatus::Completed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
 
@@ -125,7 +124,7 @@ it('excludes workers only from confirmed on_the_way and in_progress appointments
 
     // Act
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     // Assert — all 3 workers plus the admin are available since completed doesn't block
     $response->assertStatus(200)
@@ -136,9 +135,9 @@ it('excludes current appointment from conflict check when rescheduling', functio
     // Arrange — create appointment with 2 workers assigned
     $currentAppointment = Appointment::factory()->create([
         ...$appointmentPayload(),
-        'status'                 => AppointmentStatus::Confirmed,
-        'appointment_date'       => now()->addDays(3)->format('Y-m-d'),
-        'appointment_time_from'  => '09:00',
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => now()->addDays(3)->format('Y-m-d'),
+        'appointment_time_from' => '09:00',
         'appointment_time_until' => '11:00',
     ]);
 
@@ -148,7 +147,7 @@ it('excludes current appointment from conflict check when rescheduling', functio
 
     // Act — pass appointment_id to exclude it from conflict check
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query([
+        ->getJson('/api/v1/workers/available?'.http_build_query([
             ...$queryParams(),
             'appointment_id' => $currentAppointment->id,
         ]));
@@ -160,7 +159,7 @@ it('excludes current appointment from conflict check when rescheduling', functio
 
 it('includes admins as assignable workers', function () use ($queryParams) {
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     $response->assertStatus(200)
         ->assertJsonFragment([
@@ -171,12 +170,12 @@ it('includes admins as assignable workers', function () use ($queryParams) {
 
 it('returns correct worker fields', function () use ($queryParams) {
     $response = $this->actingAs($this->admin)
-        ->getJson('/api/v1/workers/available?' . http_build_query($queryParams()));
+        ->getJson('/api/v1/workers/available?'.http_build_query($queryParams()));
 
     $response->assertStatus(200)
         ->assertJsonStructure([
             'data' => [
-                '*' => ['id', 'full_name']
-            ]
+                '*' => ['id', 'full_name'],
+            ],
         ]);
 });

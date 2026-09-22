@@ -31,7 +31,7 @@ class WorkJobService
      * Create an installation/service work job.
      *
      * Work jobs are the operational record after quotation/appointment approval:
-     * assigned workers, schedule, customer location, payment requirements, and
+     * assigned staff, schedule, customer location, payment requirements, and
      * status tracking all live here.
      */
     public function create(array $data, ?User $actor = null): WorkJob
@@ -338,7 +338,7 @@ class WorkJobService
             $workJob,
             WorkJobStatus::OnTheWay,
             $actor,
-            $remarks ?: 'Worker is on the way.'
+            $remarks ?: 'Staff member is on the way.'
         );
     }
 
@@ -541,7 +541,7 @@ class WorkJobService
 
         if ($unavailableIds !== []) {
             throw ValidationException::withMessages([
-                'worker_ids' => 'One or more selected workers already have an appointment, work job, or back job during this schedule.',
+                'worker_ids' => 'One or more selected staff members already have an appointment, work job, or back job during this schedule.',
             ]);
         }
     }

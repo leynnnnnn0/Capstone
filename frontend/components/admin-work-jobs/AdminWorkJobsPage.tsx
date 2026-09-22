@@ -122,7 +122,7 @@ export default function AdminWorkJobsPage() {
   const meta = response?.meta;
   const total = meta?.total ?? workJobs.length;
   const activeFilters = Boolean(filters.search || filters.status !== "all" || filters.date_from || filters.date_to);
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
 
   return (
     <div className="space-y-4">
@@ -196,7 +196,7 @@ export default function AdminWorkJobsPage() {
               <TableHead>Customer</TableHead>
               <TableHead>Phone Number</TableHead>
               <TableHead>Schedule</TableHead>
-              <TableHead>Workers</TableHead>
+              <TableHead>Staff</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -264,7 +264,7 @@ function WorkJobCard({ workJob }: { workJob: AdminWorkJob }) {
           <p className="font-medium">{formatWorkJobSchedule(workJob)}</p>
         </AdminMobileRecordDetail>
         <AdminMobileRecordDetail>
-          <p className="text-muted-foreground">Workers</p>
+          <p className="text-muted-foreground">Staff</p>
           <p className="font-medium">
             {workJob.workers.length > 0 ? workJob.workers.map((worker) => worker.full_name).join(", ") : "-"}
           </p>

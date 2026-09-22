@@ -7,14 +7,14 @@ export const emptyAdminUserForm: AdminUserForm = {
   email: "",
   phone_number: "",
   password: "",
-  role: "worker",
+  role: "staff",
   permissions: [],
 };
 
 export const adminUserRoleLabels: Record<StaffRole, string> = {
   admin: "Admin",
   sub_admin: "Sub Admin",
-  worker: "Worker",
+  staff: "Staff",
   customer: "Customer",
 };
 

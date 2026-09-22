@@ -1,6 +1,6 @@
 import type { PaginatedResponse } from "@/features/products/types";
 
-export type StaffRole = "admin" | "sub_admin" | "worker" | "customer";
+export type StaffRole = "admin" | "sub_admin" | "staff" | "customer";
 
 export type AdminUser = {
   id: number;

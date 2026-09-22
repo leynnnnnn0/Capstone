@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
         <Card className="border-transparent bg-white">
           <DashboardPanelHeading
             eyebrow="Team capacity"
-            title="Worker Load"
+            title="Staff Load"
             description="Assigned appointments and work jobs."
             icon={Wrench}
           />

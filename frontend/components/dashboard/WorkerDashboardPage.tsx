@@ -55,7 +55,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
   return (
     <div className="space-y-4 lg:space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Worker Dashboard</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Staff Dashboard</p>
         <h1 className="mt-1 text-lg font-semibold tracking-tight sm:text-xl">Welcome back, {user?.first_name ?? "there"}</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Your assigned appointments, work jobs, progress, and calendar.</p>
       </div>

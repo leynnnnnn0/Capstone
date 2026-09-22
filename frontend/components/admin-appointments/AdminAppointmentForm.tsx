@@ -119,7 +119,7 @@ const adminAppointmentSchema = z.object({
     context.addIssue({
       code: "custom",
       path: ["worker_ids"],
-      message: "Assign at least one worker when confirming an appointment.",
+      message: "Assign at least one staff member when confirming an appointment.",
     });
   }
 
@@ -316,7 +316,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
           rebookId
             ? "Review the copied details, set the new slot, and save it as a separate appointment."
             : appointmentId
-              ? "Update the appointment details, schedule, workers, and quotation."
+              ? "Update the appointment details, schedule, staff, and quotation."
               : "Create the appointment, set the slot, and attach a quotation when needed."
         }
         icon={CalendarDays}
@@ -486,7 +486,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
           <section className="rounded-lg border bg-card p-5 shadow-sm">
             <SectionTitle
               title="Schedule Appointment"
-              description="Set the actual inspection slot and workers."
+              description="Set the actual inspection slot and assigned staff."
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <TextField
@@ -517,13 +517,13 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             <div className="mt-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Users className="size-4 text-primary" />
-                <Label>Assigned Workers</Label>
+                <Label>Assigned Staff</Label>
               </div>
               <WorkerMultiSelect
                 workers={availableWorkers}
                 value={data.worker_ids}
                 onChange={(value) => setField("worker_ids", value)}
-                label="Available Workers"
+                label="Available Staff"
                 error={errors.worker_ids}
               />
             </div>
@@ -559,7 +559,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                 value={`${data.appointment_time_from || "-"} - ${data.appointment_time_until || "-"}`}
               />
               <SummaryRow
-                label="Workers"
+                label="Staff"
                 value={
                   data.worker_ids.length
                     ? `${data.worker_ids.length} assigned`
@@ -597,7 +597,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
           <SheetHeader className="border-b px-6 py-5 text-left">
             <SheetTitle>Calendar</SheetTitle>
             <SheetDescription>
-              Appointments overview and workers schedule.
+              Appointments overview and staff schedule.
             </SheetDescription>
           </SheetHeader>
           <div className="px-6 py-6">
@@ -750,7 +750,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               {appointmentId ? "Update this appointment?" : rebookId ? "Create this rebooked appointment?" : "Create this appointment?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Please confirm the customer details, schedule, assigned workers, and quotation before saving.
+              Please confirm the customer details, schedule, assigned staff, and quotation before saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -44,7 +44,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
     return <DetailPageSkeleton />;
   }
 
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
   const quotationCanBeDownloaded = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const quotationCanBeSigned = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
 

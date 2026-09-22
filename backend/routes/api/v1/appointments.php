@@ -7,15 +7,15 @@ use App\Http\Controllers\Appointments\MarkCompletedController;
 use App\Http\Controllers\Appointments\MarkInProgressController;
 use App\Http\Controllers\Appointments\MarkNoShowController;
 use App\Http\Controllers\Appointments\MarkOnTheWayController;
-use App\Http\Controllers\Appointments\RescheduleAppointmentController;
 use App\Http\Controllers\Appointments\ReopenAppointmentController;
+use App\Http\Controllers\Appointments\RescheduleAppointmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('appointments')->group(function () {
     Route::post('/', [AppointmentController::class, 'store'])
         ->middleware('throttle:public-booking');
 
-    Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->group(function () {
+    Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,staff'])->group(function () {
         Route::get('/', [AppointmentController::class, 'index']);
         Route::get('{appointment}', [AppointmentController::class, 'show']);
         Route::put('{appointment}', [AppointmentController::class, 'update']);

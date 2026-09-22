@@ -86,8 +86,8 @@ it('returns sales report metrics, charts, tables, and export rows for admins', f
 it('prevents workers from viewing the sales report', function () {
     test()->seed(RoleAndPermissionSeeder::class);
 
-    $worker = User::factory()->worker()->create();
-    $worker->assignRole('worker');
+    $worker = User::factory()->staff()->create();
+    $worker->assignRole('staff');
 
     $this->actingAs($worker)
         ->getJson('/api/v1/sales')

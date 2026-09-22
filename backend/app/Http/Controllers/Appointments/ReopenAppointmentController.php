@@ -22,7 +22,7 @@ class ReopenAppointmentController extends Controller
 
     public function __invoke(Request $request, Appointment $appointment)
     {
-        $this->abortIfWorker($request, 'Workers cannot reopen appointments.');
+        $this->abortIfWorker($request, 'Staff cannot reopen appointments.');
 
         $validated = $request->validate([
             'remarks' => ['nullable', 'string', 'max:1000'],
@@ -43,14 +43,14 @@ class ReopenAppointmentController extends Controller
 
             return response()->json([
                 'message' => 'Appointment reopened.',
-                'data'    => new AppointmentResource($appointment),
+                'data' => new AppointmentResource($appointment),
             ]);
         } catch (InvalidStatusTransitionException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (Throwable $e) {
             Log::error('Failed to reopen appointment', [
                 'appointment_id' => $appointment->id,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([

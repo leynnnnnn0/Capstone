@@ -11,7 +11,6 @@ use App\Models\Quotation;
 use App\Models\User;
 use App\Models\WorkJob;
 use App\Notifications\SystemNotification;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -23,8 +22,7 @@ class RealtimeNotificationService
         string $action,
         string $message,
         ?User $actor = null
-    ): void
-    {
+    ): void {
         $appointment->loadMissing(['workers', 'quotation', 'remarks.user']);
 
         $payload = [
@@ -64,8 +62,7 @@ class RealtimeNotificationService
         string $action,
         string $message,
         ?User $actor = null
-    ): void
-    {
+    ): void {
         $workJob->loadMissing(['workers', 'appointment']);
 
         $payload = [
@@ -106,8 +103,7 @@ class RealtimeNotificationService
         string $action,
         string $message,
         ?User $actor = null
-    ): void
-    {
+    ): void {
         $quotation->loadMissing(['appointment']);
         $appointment = $quotation->appointment;
 
@@ -253,7 +249,7 @@ class RealtimeNotificationService
         return User::query()->whereHas('roles', fn ($query) => $query->whereIn('name', [
             'admin',
             'sub_admin',
-            'worker',
+            'staff',
         ]))->get();
     }
 
@@ -299,7 +295,7 @@ class RealtimeNotificationService
                 if ($appointment->phone_number) {
                     $method = $appointment->email ? 'orWhereRaw' : 'whereRaw';
                     $query->{$method}(
-                        $this->normalizedPhoneSql('phone_number') . ' = ?',
+                        $this->normalizedPhoneSql('phone_number').' = ?',
                         [$this->normalizePhone($appointment->phone_number)]
                     );
                 }
@@ -330,7 +326,7 @@ class RealtimeNotificationService
                 if ($workJob->phone_number) {
                     $method = $workJob->email ? 'orWhereRaw' : 'whereRaw';
                     $query->{$method}(
-                        $this->normalizedPhoneSql('phone_number') . ' = ?',
+                        $this->normalizedPhoneSql('phone_number').' = ?',
                         [$this->normalizePhone($workJob->phone_number)]
                     );
                 }

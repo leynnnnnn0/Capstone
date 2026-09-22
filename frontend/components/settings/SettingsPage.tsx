@@ -280,7 +280,7 @@ function ProfileSettings({ user, onSaved, onPasswordExpired }: { user: User | nu
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Profile Information</CardTitle>
-        <CardDescription>Update the account details used across the admin and worker portals.</CardDescription>
+        <CardDescription>Update the account details used across the admin and staff portals.</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -550,7 +550,7 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
         <div className="rounded-lg border p-4">
           <p className="text-sm font-medium">{enabled ? "Two-factor authentication is enabled." : "Two-factor authentication is off."}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {enabled ? "Users will need their authenticator code after signing in." : "Enable it to protect admin, sub-admin, and worker accounts."}
+            {enabled ? "Users will need their authenticator code after signing in." : "Enable it to protect admin, sub-admin, and staff accounts."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

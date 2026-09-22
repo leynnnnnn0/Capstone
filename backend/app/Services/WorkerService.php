@@ -19,8 +19,8 @@ class WorkerService
         return User::query()
             ->where(function ($query) {
                 $query
-                    ->whereIn('role', ['worker', 'admin'])
-                    ->orWhereHas('roles', fn ($query) => $query->whereIn('name', ['worker', 'admin']));
+                    ->whereIn('role', ['staff', 'admin'])
+                    ->orWhereHas('roles', fn ($query) => $query->whereIn('name', ['staff', 'admin']));
             })
             ->whereDoesntHave('appointments', function ($query) use ($date, $from, $to, $excludeAppointmentId) {
                 $query->where('appointment_date', $date)
@@ -33,8 +33,7 @@ class WorkerService
                     ])
                     ->when(
                         $excludeAppointmentId,
-                        fn($q) =>
-                        $q->where('appointments.id', '!=', $excludeAppointmentId)
+                        fn ($q) => $q->where('appointments.id', '!=', $excludeAppointmentId)
                     );
             })
             ->whereDoesntHave('workJobs', function ($query) use ($date, $from, $to, $excludeWorkJobId) {
@@ -51,8 +50,7 @@ class WorkerService
                     ])
                     ->when(
                         $excludeWorkJobId,
-                        fn($q) =>
-                        $q->where('work_jobs.id', '!=', $excludeWorkJobId)
+                        fn ($q) => $q->where('work_jobs.id', '!=', $excludeWorkJobId)
                     );
             })
             ->get(['id', 'first_name', 'last_name']);

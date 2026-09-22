@@ -37,7 +37,7 @@ export function useRealtimeSubscriptions(user: User | null | undefined) {
     });
 
     const isStaff = user.roles?.some((role) =>
-      ["admin", "sub_admin", "worker"].includes(role),
+      ["admin", "sub_admin", "staff"].includes(role),
     );
 
     const staffChannel = isStaff ? echo.private("staff") : null;

@@ -160,7 +160,7 @@ export default function AdminWorkJobStatusActions({
                   ? "Reason or notes for cancelling..."
                   : action === "no_show"
                     ? "Reason or notes for marking no show..."
-                    : "Progress notes, worker update, or customer-visible details..."
+                    : "Progress notes, staff update, or customer-visible details..."
               }
             />
           </div>

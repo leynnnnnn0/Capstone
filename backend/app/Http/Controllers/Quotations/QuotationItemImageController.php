@@ -76,7 +76,7 @@ class QuotationItemImageController extends Controller
         $quotationItem->loadMissing('quotation.appointment.workers');
         $user = $request->user();
 
-        if (! $user?->isWorker() || $user->isOperationsAdmin()) {
+        if (! $user?->isStaff() || $user->isOperationsAdmin()) {
             return;
         }
 

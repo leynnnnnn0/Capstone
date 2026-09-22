@@ -1,6 +1,5 @@
 <?php
 
-
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\User;
@@ -9,19 +8,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    $this->admin   = User::factory()->create(['role' => 'admin']);
-    $this->workers = User::factory(2)->create(['role' => 'worker']);
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->workers = User::factory(2)->create(['role' => 'staff']);
 });
 
-$appointmentPayload = fn() => [
-    'first_name'     => 'Juan',
-    'last_name'      => 'dela Cruz',
-    'phone_number'   => '+63 912 345 6789',
-    'address'        => '123 Rizal Street, Bacoor, Cavite',
+$appointmentPayload = fn () => [
+    'first_name' => 'Juan',
+    'last_name' => 'dela Cruz',
+    'phone_number' => '+63 912 345 6789',
+    'address' => '123 Rizal Street, Bacoor, Cavite',
     'preferred_date' => now()->addDays(3)->format('Y-m-d'),
     'preferred_time' => 'morning',
-    'service_type'   => 'repair',
-    'consent'        => true,
+    'service_type' => 'repair',
+    'consent' => true,
 ];
 
 // ── on_the_way ────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ trait AuthorizesAssignedWork
     {
         $user = $request->user();
 
-        if (! $user?->isWorker() || $user->isOperationsAdmin()) {
+        if (! $user?->isStaff() || $user->isOperationsAdmin()) {
             return;
         }
 
@@ -27,7 +27,7 @@ trait AuthorizesAssignedWork
     {
         $user = $request->user();
 
-        if (! $user?->isWorker() || $user->isOperationsAdmin()) {
+        if (! $user?->isStaff() || $user->isOperationsAdmin()) {
             return;
         }
 
@@ -38,11 +38,11 @@ trait AuthorizesAssignedWork
         );
     }
 
-    protected function abortIfWorker(Request $request, string $message = 'Workers cannot perform this action.'): void
+    protected function abortIfWorker(Request $request, string $message = 'Staff cannot perform this action.'): void
     {
         $user = $request->user();
 
-        if ($user?->isWorker() && ! $user->isOperationsAdmin()) {
+        if ($user?->isStaff() && ! $user->isOperationsAdmin()) {
             abort(403, $message);
         }
     }

@@ -10,12 +10,12 @@ use App\Http\Controllers\WorkJobs\MarkOnTheWayController;
 use App\Http\Controllers\WorkJobs\RecordWorkJobPaymentController;
 use App\Http\Controllers\WorkJobs\ReopenWorkJobController;
 use App\Http\Controllers\WorkJobs\RescheduleWorkJobController;
+use App\Http\Controllers\WorkJobs\UpdateWorkJobFabricationController;
 use App\Http\Controllers\WorkJobs\WorkJobChargeController;
 use App\Http\Controllers\WorkJobs\WorkJobController;
-use App\Http\Controllers\WorkJobs\UpdateWorkJobFabricationController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,worker'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,staff'])->group(function () {
     Route::get('work-jobs', [WorkJobController::class, 'index']);
     Route::get('work-jobs/{workJob}', [WorkJobController::class, 'show']);
     Route::post('work-jobs', [WorkJobController::class, 'store']);

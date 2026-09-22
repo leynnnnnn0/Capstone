@@ -10,7 +10,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
-    $this->workers = User::factory(2)->create(['role' => 'worker']);
+    $this->workers = User::factory(2)->create(['role' => 'staff']);
 });
 
 function backJobPayload($workers): array

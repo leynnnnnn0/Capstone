@@ -53,7 +53,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
     CustomerStatus.NoShow,
     CustomerStatus.Completed,
   ].includes(workJob.status);
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
 
   return (
     <div className="space-y-6">
@@ -87,7 +87,7 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
 function AssignedWorkers({ workers }: { workers: AdminWorkJob["workers"] }) {
   return (
     <div className="rounded-lg border bg-card p-5 shadow-sm">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Assigned Workers</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Assigned Staff</h2>
       <div className="mt-4 space-y-2">
         {workers.length > 0 ? (
           workers.map((worker) => (
@@ -99,7 +99,7 @@ function AssignedWorkers({ workers }: { workers: AdminWorkJob["workers"] }) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground">No workers assigned.</p>
+          <p className="text-sm text-muted-foreground">No staff assigned.</p>
         )}
       </div>
     </div>

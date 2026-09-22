@@ -43,7 +43,7 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
       </div>
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e8edf1] pt-4 text-xs font-medium text-[#8ca0b2]">
-        <span>{workJob.workers.length > 0 ? `Assigned to ${workJob.workers.map((worker) => worker.full_name).join(", ")}` : "Worker assignment pending"}</span>
+        <span>{workJob.workers.length > 0 ? `Assigned to ${workJob.workers.map((worker) => worker.full_name).join(", ")}` : "Staff assignment pending"}</span>
         <ArrowUpRight className="size-4 shrink-0 text-[#2c5282] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </div>
     </Link>

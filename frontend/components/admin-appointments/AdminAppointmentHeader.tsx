@@ -36,7 +36,7 @@ export default function AdminAppointmentHeader({
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const isLocked = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
-  const isWorker = hasRole(user, "worker");
+  const isWorker = hasRole(user, "staff");
   const backHref = safeReturnTo(searchParams.get("returnTo"), "/dashboard/appointments");
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function AdminAppointmentHeader({
       backLabel="Back to appointments"
       eyebrow="Customer scheduling"
       title={appointment.full_name}
-      description="Review the customer details, service schedule, assigned workers, and quotation."
+      description="Review the customer details, service schedule, assigned staff, and quotation."
       icon={CalendarDays}
       recordLabel="Appointment record"
       recordValue={appointment.appointment_number}
@@ -80,7 +80,7 @@ export default function AdminAppointmentHeader({
             >
               <SheetHeader className="border-b px-6 py-5 text-left">
                 <SheetTitle>Calendar</SheetTitle>
-                <SheetDescription>Appointments overview and workers schedule.</SheetDescription>
+                <SheetDescription>Appointments overview and staff schedule.</SheetDescription>
               </SheetHeader>
               <div className="px-6 py-6">
                 <AdminAppointmentCalendar appointments={appointments} />

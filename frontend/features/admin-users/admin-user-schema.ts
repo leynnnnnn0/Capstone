@@ -19,6 +19,6 @@ export const adminUserSchema = z.object({
   email: requiredEmailSchema(),
   phone_number: optionalPhilippineMobileSchema(),
   password: optionalStrongPasswordSchema(),
-  role: z.enum(["admin", "sub_admin", "worker", "customer"]),
+  role: z.enum(["admin", "sub_admin", "staff", "customer"]),
   permissions: z.array(z.string()),
 });

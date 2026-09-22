@@ -169,7 +169,7 @@ export default function AdminAppointmentCalendar({
                 🧰 Work Jobs
               </ModeButton>
               <ModeButton active={activeMode === "workers"} onClick={() => setMode("workers")}>
-                👷 Workers Schedule
+                Staff Schedule
               </ModeButton>
             </div>
           </div>
@@ -565,7 +565,7 @@ function WorkersPanel({ workers }: { workers: WorkerLike[] }) {
     <div className="space-y-3 rounded-lg border p-4">
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-primary">
         <Users className="size-4" />
-        Assigned Workers
+        Assigned Staff
       </div>
       {workers.length ? (
         <div className="flex flex-wrap gap-2">
@@ -576,7 +576,7 @@ function WorkersPanel({ workers }: { workers: WorkerLike[] }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No workers assigned yet.</p>
+        <p className="text-sm text-muted-foreground">No staff assigned yet.</p>
       )}
     </div>
   );

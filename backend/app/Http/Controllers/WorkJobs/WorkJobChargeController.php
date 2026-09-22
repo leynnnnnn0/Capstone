@@ -22,7 +22,7 @@ class WorkJobChargeController extends Controller
 
     public function store(Request $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot add work job charges.');
+        $this->abortIfWorker($request, 'Staff cannot add work job charges.');
 
         $workJob = $this->charges->create($workJob, $this->validated($request), $request->user());
 
@@ -34,7 +34,7 @@ class WorkJobChargeController extends Controller
 
     public function update(Request $request, WorkJob $workJob, WorkJobCharge $charge): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot update work job charges.');
+        $this->abortIfWorker($request, 'Staff cannot update work job charges.');
         $this->abortIfChargeDoesNotBelongToWorkJob($workJob, $charge);
 
         $workJob = $this->charges->update($charge, $this->validated($request, updating: true), $request->user());
@@ -47,7 +47,7 @@ class WorkJobChargeController extends Controller
 
     public function cancel(Request $request, WorkJob $workJob, WorkJobCharge $charge): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot cancel work job charges.');
+        $this->abortIfWorker($request, 'Staff cannot cancel work job charges.');
         $this->abortIfChargeDoesNotBelongToWorkJob($workJob, $charge);
 
         $data = $request->validate([

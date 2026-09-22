@@ -23,7 +23,7 @@ class RescheduleWorkJobController extends Controller
 
     public function __invoke(Request $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Workers cannot reschedule work jobs.');
+        $this->abortIfWorker($request, 'Staff cannot reschedule work jobs.');
 
         try {
             $validated = $request->validate([
