@@ -18,6 +18,13 @@ export const adminUserRoleLabels: Record<StaffRole, string> = {
   customer: "Customer",
 };
 
+export const adminUserRoleBadgeClasses: Record<StaffRole, string> = {
+  admin: "bg-slate-800 text-white",
+  sub_admin: "bg-violet-600 text-white",
+  staff: "bg-emerald-600 text-white",
+  customer: "bg-blue-600 text-white",
+};
+
 export function adminUserToForm(user: AdminUser): AdminUserForm {
   return {
     username: user.username,

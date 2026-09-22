@@ -42,8 +42,8 @@ import {
   fetchAdminUsers,
   fetchUserOptions,
 } from "@/features/admin-users/admin-user-api";
-import type { AdminUser, UserCollection, UserOptions } from "@/features/admin-users/types";
-import { adminUserRoleLabels } from "@/features/admin-users/admin-user-utils";
+import type { AdminUser, StaffRole, UserCollection, UserOptions } from "@/features/admin-users/types";
+import { adminUserRoleBadgeClasses, adminUserRoleLabels } from "@/features/admin-users/admin-user-utils";
 
 export default function AdminUsersPage() {
   const [response, setResponse] = useState<UserCollection | null>(null);
@@ -208,10 +208,7 @@ export default function AdminUsersPage() {
                   <div className="text-xs text-muted-foreground">{user.email}</div>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
-                    <ShieldCheck className="size-3.5" />
-                    {adminUserRoleLabels[user.role] ?? user.role}
-                  </span>
+                  <UserRoleBadge role={user.role} />
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {user.permissions.length} permission{user.permissions.length === 1 ? "" : "s"}
@@ -316,10 +313,7 @@ function UserCard({
           <p className="truncate text-sm font-semibold">{user.full_name}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
         </div>
-        <span className="inline-flex shrink-0 items-center rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
-          <ShieldCheck className="size-3.5" />
-          {adminUserRoleLabels[user.role] ?? user.role}
-        </span>
+        <UserRoleBadge role={user.role} />
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#e8edf1] pt-3">
         <p className="text-xs text-muted-foreground">
@@ -337,5 +331,14 @@ function UserCard({
         </div>
       </div>
     </AdminMobileRecord>
+  );
+}
+
+function UserRoleBadge({ role }: { role: StaffRole }) {
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold leading-none ${adminUserRoleBadgeClasses[role]}`}>
+      <ShieldCheck className="size-3.5" />
+      {adminUserRoleLabels[role]}
+    </span>
   );
 }
