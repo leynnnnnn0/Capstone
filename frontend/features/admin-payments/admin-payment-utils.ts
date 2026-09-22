@@ -27,26 +27,26 @@ export const defaultPaymentTypeOptions = [
 ];
 
 export const paymentStatusStyle: Record<CustomerPaymentStatus, string> = {
-  pending: "border-amber-200 bg-amber-50 text-amber-700",
-  paid: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  failed: "border-red-200 bg-red-50 text-red-700",
-  cancelled: "border-slate-200 bg-slate-50 text-slate-600",
-  partially_refunded: "border-sky-200 bg-sky-50 text-sky-700",
-  refunded: "border-blue-200 bg-blue-50 text-blue-700",
+  pending: "border-transparent bg-amber-500 text-white",
+  paid: "border-transparent bg-emerald-600 text-white",
+  failed: "border-transparent bg-red-600 text-white",
+  cancelled: "border-transparent bg-slate-600 text-white",
+  partially_refunded: "border-transparent bg-sky-600 text-white",
+  refunded: "border-transparent bg-blue-600 text-white",
 };
 
 export const paymentMethodStyle: Record<CustomerPaymentMethod, string> = {
-  paypal: "border-blue-200 bg-blue-50 text-blue-700",
-  cash: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  bank_transfer: "border-violet-200 bg-violet-50 text-violet-700",
-  other: "border-slate-200 bg-slate-50 text-slate-600",
+  paypal: "border-transparent bg-blue-600 text-white",
+  cash: "border-transparent bg-emerald-600 text-white",
+  bank_transfer: "border-transparent bg-violet-600 text-white",
+  other: "border-transparent bg-slate-600 text-white",
 };
 
 export const paymentTypeStyle: Record<CustomerPaymentType, string> = {
-  down_payment: "border-amber-200 bg-amber-50 text-amber-700",
-  final_payment: "border-sky-200 bg-sky-50 text-sky-700",
-  full_payment: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  additional_charge: "border-violet-200 bg-violet-50 text-violet-700",
+  down_payment: "border-transparent bg-amber-500 text-white",
+  final_payment: "border-transparent bg-sky-600 text-white",
+  full_payment: "border-transparent bg-emerald-600 text-white",
+  additional_charge: "border-transparent bg-violet-600 text-white",
 };
 
 export function formatPeso(value: number | string | null | undefined) {

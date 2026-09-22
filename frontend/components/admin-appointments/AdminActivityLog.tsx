@@ -18,42 +18,42 @@ const actionStyles: Record<
 > = {
   confirmed: {
     dot: "bg-primary",
-    badge: "bg-primary/10 text-primary",
+    badge: "bg-blue-600 text-white",
     label: "Confirmed",
   },
   rescheduled: {
     dot: "bg-amber-400",
-    badge: "bg-amber-100 text-amber-700",
+    badge: "bg-amber-500 text-white",
     label: "Rescheduled",
   },
   on_the_way: {
     dot: "bg-blue-500",
-    badge: "bg-blue-100 text-blue-700",
+    badge: "bg-indigo-600 text-white",
     label: "On The Way",
   },
   in_progress: {
     dot: "bg-purple-500",
-    badge: "bg-purple-100 text-purple-700",
+    badge: "bg-violet-600 text-white",
     label: "On Going",
   },
   on_going: {
     dot: "bg-purple-500",
-    badge: "bg-purple-100 text-purple-700",
+    badge: "bg-violet-600 text-white",
     label: "On Going",
   },
   completed: {
     dot: "bg-green-500",
-    badge: "bg-green-100 text-green-700",
+    badge: "bg-emerald-600 text-white",
     label: "Completed",
   },
   cancelled: {
     dot: "bg-red-400",
-    badge: "bg-red-100 text-red-600",
+    badge: "bg-red-600 text-white",
     label: "Cancelled",
   },
   reopened: {
     dot: "bg-sky-400",
-    badge: "bg-sky-100 text-sky-700",
+    badge: "bg-cyan-600 text-white",
     label: "Reopened",
   },
 };
@@ -89,7 +89,7 @@ export default function AdminActivityLog({
             {visibleRemarks.map((remark) => {
               const style = actionStyles[remark.action] ?? {
                 dot: "bg-slate-400",
-                badge: "bg-slate-100 text-slate-600",
+                badge: "bg-slate-600 text-white",
                 label: toTitleCase(remark.action),
               };
 
@@ -101,8 +101,9 @@ export default function AdminActivityLog({
                   <div className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${style.badge}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize leading-none ${style.badge}`}
                       >
+                        <span aria-hidden="true" className="size-1.5 rounded-full bg-white/85" />
                         {style.label}
                       </span>
                       <span className="text-[11px] text-slate-500">

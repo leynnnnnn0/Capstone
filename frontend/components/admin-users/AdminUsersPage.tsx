@@ -208,7 +208,7 @@ export default function AdminUsersPage() {
                   <div className="text-xs text-muted-foreground">{user.email}</div>
                 </TableCell>
                 <TableCell>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                  <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
                     <ShieldCheck className="size-3.5" />
                     {adminUserRoleLabels[user.role] ?? user.role}
                   </span>
@@ -316,7 +316,7 @@ function UserCard({
           <p className="truncate text-sm font-semibold">{user.full_name}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+        <span className="inline-flex shrink-0 items-center rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
           <ShieldCheck className="size-3.5" />
           {adminUserRoleLabels[user.role] ?? user.role}
         </span>

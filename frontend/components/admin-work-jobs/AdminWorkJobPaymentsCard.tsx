@@ -183,8 +183,9 @@ export default function AdminWorkJobPaymentsCard({
         </div>
         <Badge
           variant="outline"
-          className={summary.is_fully_paid ? "border-emerald-200 bg-emerald-50 text-emerald-700" : ""}
+          className={summary.is_fully_paid ? "border-transparent bg-emerald-600 text-white" : "border-transparent bg-amber-500 text-white"}
         >
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
           {paymentStatusLabel}
         </Badge>
       </div>

@@ -504,8 +504,9 @@ function WorkJobStatusBadge({ status }: { status: AdminWorkJobStatus }) {
   return (
     <Badge
       variant="outline"
-      className={cn("shrink-0", workJobStatusStyle[status] ?? "border-slate-200 bg-slate-50 text-slate-700")}
+      className={cn("shrink-0", workJobStatusStyle[status] ?? "border-transparent bg-slate-600 text-white")}
     >
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
       {workJobStatusLabel(status)}
     </Badge>
   );

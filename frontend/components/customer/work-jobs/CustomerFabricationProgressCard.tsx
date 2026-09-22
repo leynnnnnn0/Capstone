@@ -51,7 +51,10 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-medium tracking-[-0.035em] sm:text-3xl">{fabrication.status_label}</h2>
               {fabrication.status === "on_hold" && (
-                <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Needs attention</Badge>
+                <Badge className="border-transparent bg-amber-500 text-white">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-white/85" />
+                  Needs attention
+                </Badge>
               )}
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">{fabrication.description}</p>

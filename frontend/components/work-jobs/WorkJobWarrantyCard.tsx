@@ -9,9 +9,9 @@ import type { CustomerWorkJob, CustomerWorkJobWarrantyStatus } from "@/features/
 import { cn } from "@/lib/utils";
 
 const warrantyStatusClass: Record<CustomerWorkJobWarrantyStatus, string> = {
-  active: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  expired: "border-slate-200 bg-slate-100 text-slate-700",
-  voided: "border-red-200 bg-red-50 text-red-700",
+  active: "border-transparent bg-emerald-600 text-white",
+  expired: "border-transparent bg-slate-600 text-white",
+  voided: "border-transparent bg-red-600 text-white",
 };
 
 export default function WorkJobWarrantyCard({
@@ -47,6 +47,7 @@ export default function WorkJobWarrantyCard({
               warrantyStatusClass[warranty.status] ?? warrantyStatusClass.active,
             )}
           >
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
             {warranty.status_label}
           </Badge>
         )}

@@ -5,10 +5,10 @@ export default function StatusBadge({ status }: { status: string }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
+      className="inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold leading-none"
       style={{ background: config.bg, color: config.color }}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: config.dot }} />
+      <span className="size-1.5 rounded-full opacity-85" style={{ background: config.dot }} />
       {config.label}
     </span>
   );

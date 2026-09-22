@@ -74,6 +74,8 @@ import type {
   SalesTopProduct,
   SalesTopWorkJob,
 } from "@/features/admin-sales/types";
+import { workJobStatusStyle } from "@/features/admin-work-jobs/admin-work-job-utils";
+import type { AdminWorkJobStatus } from "@/features/admin-work-jobs/types";
 import { cn } from "@/lib/utils";
 
 const trendChartConfig = {
@@ -798,7 +800,10 @@ function OutstandingTable({
                           {row.work_job_number}
                         </Link>
                         <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline">{row.status_label ?? "-"}</Badge>
+                          <Badge variant="outline" className={workJobStatusStyle[row.status as AdminWorkJobStatus]}>
+                            <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
+                            {row.status_label ?? "-"}
+                          </Badge>
                           {row.schedule && <span className="text-xs text-muted-foreground">{row.schedule}</span>}
                         </div>
                       </div>
@@ -838,7 +843,10 @@ function OutstandingCard({ row }: { row: SalesReport["tables"]["outstanding_work
         <p className="shrink-0 text-sm font-semibold">{formatPeso(row.remaining_amount)}</p>
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
-        <Badge variant="outline">{row.status_label ?? "-"}</Badge>
+        <Badge variant="outline" className={workJobStatusStyle[row.status as AdminWorkJobStatus]}>
+          <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
+          {row.status_label ?? "-"}
+        </Badge>
         {row.schedule && <span className="text-xs text-muted-foreground">{row.schedule}</span>}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -858,10 +866,10 @@ function OutstandingCard({ row }: { row: SalesReport["tables"]["outstanding_work
 
 function statusClass(status?: string | null) {
   const classes: Record<string, string> = {
-    paid: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    pending: "border-amber-200 bg-amber-50 text-amber-700",
-    failed: "border-red-200 bg-red-50 text-red-700",
-    refunded: "border-slate-200 bg-slate-50 text-slate-700",
+    paid: "border-transparent bg-emerald-600 text-white",
+    pending: "border-transparent bg-amber-500 text-white",
+    failed: "border-transparent bg-red-600 text-white",
+    refunded: "border-transparent bg-blue-600 text-white",
   };
 
   return status ? classes[status] : undefined;

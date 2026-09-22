@@ -18,15 +18,15 @@ import type {
 } from "./types";
 
 export const customerStatusMeta: Record<CustomerStatus, { label: string; className: string }> = {
-  [CustomerStatus.Pending]: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  [CustomerStatus.Confirmed]: { label: "Confirmed", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  [CustomerStatus.Rescheduled]: { label: "Rescheduled", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  [CustomerStatus.OnTheWay]: { label: "On the Way", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  [CustomerStatus.InProgress]: { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  [CustomerStatus.Completed]: { label: "Completed", className: "bg-green-100 text-green-700 border-green-200" },
-  [CustomerStatus.Cancelled]: { label: "Cancelled", className: "bg-red-50 text-red-700 border-red-200" },
-  [CustomerStatus.Reopened]: { label: "Reopened", className: "bg-sky-50 text-sky-700 border-sky-200" },
-  [CustomerStatus.NoShow]: { label: "No Show", className: "bg-red-50 text-red-700 border-red-200" },
+  [CustomerStatus.Pending]: { label: "Pending", className: "border-transparent bg-amber-500 text-white" },
+  [CustomerStatus.Confirmed]: { label: "Confirmed", className: "border-transparent bg-blue-600 text-white" },
+  [CustomerStatus.Rescheduled]: { label: "Rescheduled", className: "border-transparent bg-sky-600 text-white" },
+  [CustomerStatus.OnTheWay]: { label: "On the Way", className: "border-transparent bg-indigo-600 text-white" },
+  [CustomerStatus.InProgress]: { label: "In Progress", className: "border-transparent bg-violet-600 text-white" },
+  [CustomerStatus.Completed]: { label: "Completed", className: "border-transparent bg-emerald-600 text-white" },
+  [CustomerStatus.Cancelled]: { label: "Cancelled", className: "border-transparent bg-red-600 text-white" },
+  [CustomerStatus.Reopened]: { label: "Reopened", className: "border-transparent bg-cyan-600 text-white" },
+  [CustomerStatus.NoShow]: { label: "No Show", className: "border-transparent bg-rose-600 text-white" },
 };
 
 export const serviceOptions = [

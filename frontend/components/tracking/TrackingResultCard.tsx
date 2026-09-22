@@ -151,9 +151,10 @@ export default function TrackingResultCard({ result }: { result: TrackingResult 
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span className="text-[12px] font-bold text-slate-800">{remark.by}</span>
                       <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold leading-none"
                         style={{ background: remarkStatus.bg, color: remarkStatus.color }}
                       >
+                        <span className="size-1.5 rounded-full opacity-85" style={{ background: remarkStatus.dot }} />
                         {remarkStatus.label}
                       </span>
                       <span className="text-[10px] text-slate-400">

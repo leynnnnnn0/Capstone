@@ -434,6 +434,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                   <Label>Status</Label>
                   <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3">
                     <Badge variant="outline" className={adminStatusMeta[data.status]?.className}>
+                      <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
                       {adminStatusMeta[data.status]?.label ?? data.status}
                     </Badge>
                   </div>
@@ -545,10 +546,9 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                   Review schedule, status, and quotation before saving.
                 </p>
               </div>
-              <Badge
-                variant={data.status === "confirmed" ? "default" : "outline"}
-              >
-                {data.status}
+              <Badge variant="outline" className={adminStatusMeta[data.status]?.className}>
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
+                {adminStatusMeta[data.status]?.label ?? data.status}
               </Badge>
             </div>
 

@@ -41,15 +41,15 @@ export const backJobReasonOptions: { value: AdminBackJobReason; label: string; d
 ];
 
 export const workJobStatusStyle: Record<AdminWorkJobStatus, string> = {
-  [CustomerStatus.Pending]: "bg-amber-50 text-amber-700 border-amber-200",
-  [CustomerStatus.Confirmed]: "bg-blue-50 text-blue-700 border-blue-200",
-  [CustomerStatus.Rescheduled]: "bg-sky-50 text-sky-700 border-sky-200",
-  [CustomerStatus.OnTheWay]: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  [CustomerStatus.InProgress]: "bg-blue-50 text-blue-700 border-blue-200",
-  [CustomerStatus.Completed]: "bg-green-50 text-green-700 border-green-200",
-  [CustomerStatus.Cancelled]: "bg-red-50 text-red-700 border-red-200",
-  [CustomerStatus.Reopened]: "bg-sky-50 text-sky-700 border-sky-200",
-  [CustomerStatus.NoShow]: "bg-red-50 text-red-700 border-red-200",
+  [CustomerStatus.Pending]: "border-transparent bg-amber-500 text-white",
+  [CustomerStatus.Confirmed]: "border-transparent bg-blue-600 text-white",
+  [CustomerStatus.Rescheduled]: "border-transparent bg-sky-600 text-white",
+  [CustomerStatus.OnTheWay]: "border-transparent bg-indigo-600 text-white",
+  [CustomerStatus.InProgress]: "border-transparent bg-violet-600 text-white",
+  [CustomerStatus.Completed]: "border-transparent bg-emerald-600 text-white",
+  [CustomerStatus.Cancelled]: "border-transparent bg-red-600 text-white",
+  [CustomerStatus.Reopened]: "border-transparent bg-cyan-600 text-white",
+  [CustomerStatus.NoShow]: "border-transparent bg-rose-600 text-white",
 };
 
 export function emptyWorkJobForm(): AdminWorkJobForm {

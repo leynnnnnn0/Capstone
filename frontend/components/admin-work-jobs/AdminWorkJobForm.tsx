@@ -60,10 +60,12 @@ import {
 } from "@/features/admin-work-jobs/admin-work-job-api";
 import {
   emptyWorkJobForm,
+  workJobStatusLabel,
+  workJobStatusStyle,
   workJobFormFromAppointment,
   workJobFormFromWorkJob,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
-import type { AdminWorkJob, AdminWorkJobForm as WorkJobFormValues } from "@/features/admin-work-jobs/types";
+import type { AdminWorkJob, AdminWorkJobForm as WorkJobFormValues, AdminWorkJobStatus } from "@/features/admin-work-jobs/types";
 import {
   addScheduleIssues,
   optionalEmailSchema,
@@ -504,7 +506,13 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
                   {isEditing ? "Review changes before saving." : "Review schedule, workers, and quotation before saving."}
                 </p>
               </div>
-              <Badge variant="outline">{isEditing ? workJob?.status ?? "pending" : "pending"}</Badge>
+              <Badge
+                variant="outline"
+                className={workJobStatusStyle[(isEditing ? workJob?.status ?? "pending" : "pending") as AdminWorkJobStatus]}
+              >
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
+                {workJobStatusLabel(isEditing ? workJob?.status ?? "pending" : "pending")}
+              </Badge>
             </div>
 
             <div className="mt-4 space-y-2 rounded-lg border bg-muted/30 p-3 text-sm">

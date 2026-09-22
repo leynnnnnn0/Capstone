@@ -229,6 +229,7 @@ export default function AdminWorkJobChargesCard({
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-foreground">{charge.title}</p>
                     <Badge variant="outline" className={statusClassName(charge.status)}>
+                      <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
                       {charge.status_label}
                     </Badge>
                   </div>
@@ -492,10 +493,10 @@ function AmountTile({
 }
 
 function statusClassName(status: CustomerWorkJobChargeStatus) {
-  if (status === "approved") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (status === "pending_approval") return "border-amber-200 bg-amber-50 text-amber-700";
-  if (status === "waived") return "border-slate-200 bg-slate-50 text-slate-500";
-  return "border-red-200 bg-red-50 text-red-700";
+  if (status === "approved") return "border-transparent bg-emerald-600 text-white";
+  if (status === "pending_approval") return "border-transparent bg-amber-500 text-white";
+  if (status === "waived") return "border-transparent bg-slate-600 text-white";
+  return "border-transparent bg-red-600 text-white";
 }
 
 function errorMessage(error: unknown) {

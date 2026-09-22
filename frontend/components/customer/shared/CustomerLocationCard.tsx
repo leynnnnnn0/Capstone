@@ -169,11 +169,11 @@ export default function CustomerLocationCard({
         {routeError && <p className="mt-3 text-xs font-medium text-red-600">{routeError}</p>}
         {routeInfo && !routeLoading && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
               <Route className="size-3.5" />
               {routeInfo.distance}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
               <Clock className="size-3.5" />
               {routeInfo.duration} (fastest)
             </span>

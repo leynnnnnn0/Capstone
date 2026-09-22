@@ -20,7 +20,7 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
             {workJob.work_job_number}
           </p>
           {workJob.is_back_job && (
-            <Badge variant="outline" className="mt-1 border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+            <Badge variant="outline" className="mt-1 border-transparent bg-blue-600 text-[10px] text-white">
               Back Job
             </Badge>
           )}

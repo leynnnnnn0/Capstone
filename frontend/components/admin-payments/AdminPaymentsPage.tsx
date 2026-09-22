@@ -658,6 +658,7 @@ function PaymentCard({ payment, onRefund }: { payment: AdminPayment; onRefund: (
 function PaymentBadge({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <Badge variant="outline" className={cn("whitespace-nowrap", className)}>
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current opacity-80" />
       {children}
     </Badge>
   );

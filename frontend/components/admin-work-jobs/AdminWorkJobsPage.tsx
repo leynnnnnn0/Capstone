@@ -244,7 +244,7 @@ function WorkJobCard({ workJob }: { workJob: AdminWorkJob }) {
               {workJob.work_job_number}
             </p>
             {workJob.is_back_job && (
-              <Badge variant="outline" className="border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+              <Badge variant="outline" className="border-transparent bg-blue-600 text-[10px] text-white">
                 Back Job
               </Badge>
             )}
@@ -284,7 +284,7 @@ function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
         <div className="flex flex-col gap-1">
           <span>{workJob.work_job_number}</span>
           {workJob.is_back_job && (
-            <Badge variant="outline" className="w-fit border-blue-100 bg-blue-50 text-[10px] font-medium text-primary">
+            <Badge variant="outline" className="w-fit border-transparent bg-blue-600 text-[10px] text-white">
               Back Job
             </Badge>
           )}
