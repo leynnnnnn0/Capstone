@@ -38,6 +38,7 @@ class RoleAndPermissionSeeder extends Seeder
         'work-jobs.status',
         'calendar.view',
         'audits.view',
+        'database.manage',
         'reports.view',
     ];
 

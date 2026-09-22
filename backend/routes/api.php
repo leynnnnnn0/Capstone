@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
     require __DIR__ . '/api/v1/audits.php';
     require __DIR__ . '/api/v1/categories.php';
     require __DIR__ . '/api/v1/customer.php';
+    require __DIR__ . '/api/v1/database.php';
     require __DIR__ . '/api/v1/notifications.php';
     require __DIR__ . '/api/v1/payments.php';
     require __DIR__ . '/api/v1/products.php';

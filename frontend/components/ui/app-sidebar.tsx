@@ -6,6 +6,7 @@ import {
   CalendarDays,
   BriefcaseBusiness,
   ChartNoAxesCombined,
+  Database,
   LayoutGrid,
   Package,
   ShieldCheck,
@@ -82,6 +83,12 @@ const mainNavItems: NavItem[] = [
     href: "/dashboard/audits",
     icon: ShieldCheck,
     permission: "audits.view",
+  },
+  {
+    title: "Database",
+    href: "/dashboard/database",
+    icon: Database,
+    permission: "database.manage",
   },
 ];
 

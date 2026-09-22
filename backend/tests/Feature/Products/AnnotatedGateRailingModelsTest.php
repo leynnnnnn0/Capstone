@@ -27,6 +27,19 @@ it('retains the annotated gate details and revised railing layouts', function ()
         if (! isset($checks[$number])) continue;
         $doc = $metadata(substr($file, 0, -4));
         $names = collect($doc['meshes'])->pluck('name');
+        if ($number === '13') {
+            expect($names->implode(' '))->toContain('Slanted slot trim 1', 'Slanted slot trim 2');
+            $panels = collect($doc['meshes'])->first(fn ($mesh) => str_ends_with($mesh['name'], '/ Slanted split solid panel'));
+            expect($doc['accessors'][$panels['primitives'][0]['indices']]['count'])->toBe(36);
+        }
+        if ($number === '05') {
+            foreach ($doc['meshes'] as $mesh) {
+                if (! str_ends_with($mesh['name'], '/ Motif outer ties')) continue;
+                $position = $doc['accessors'][$mesh['primitives'][0]['attributes']['POSITION']];
+                expect($position['min'][0])->toBeGreaterThan(-.4)
+                    ->and($position['max'][0])->toBeLessThan(.4);
+            }
+        }
         foreach ($checks[$number] as $detail) {
             expect($names->implode(' '))->toContain($detail);
         }

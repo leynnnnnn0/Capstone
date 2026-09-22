@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Sanctum\TransientToken;
 
 class PasswordConfirmationStore
 {
@@ -33,7 +34,8 @@ class PasswordConfirmationStore
     {
         $user = $request->user();
         $token = $user?->currentAccessToken();
-        $tokenKey = $token?->id ? "token:{$token->id}" : 'session';
+        $tokenId = $token instanceof TransientToken ? null : $token?->getKey();
+        $tokenKey = $tokenId ? "token:{$tokenId}" : 'session';
 
         return "settings-password-confirmed:user:{$user?->id}:{$tokenKey}";
     }

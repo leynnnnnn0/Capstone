@@ -97,18 +97,20 @@ def build(i,m):
                 frame('Leaf frame',mat,left,right,.06,h,0,.035,.046)
                 if i==5:
                     box('Lower silver privacy panel',mat,lo,hi,.10,.76,-.012,.012)
-                    # Mirrored narrow rectangles near the meeting stiles,
-                    # with a separate two-bar outer grille and crossed midrails.
+                    # Squares sit INSIDE the inner grille bay, not on its
+                    # divider. Short ties stop at that divider; only the two
+                    # middle crossbars extend through the outer vertical bars.
                     mid=lo+(hi-lo)*(.48 if n==0 else .52)
-                    qa,qb=(mid,hi-.035) if n==0 else (lo+.035,mid)
-                    oa,ob=(lo,mid-.025) if n==0 else (mid+.025,hi)
-                    for t in (.32,.72):stile('Outer vertical grille',oa+(ob-oa)*t,.78,2.01,.020)
+                    inset=(hi-lo)*.13
+                    qa,qb=(mid+inset,hi) if n==0 else (lo,mid-inset)
+                    oa,ob=(lo,mid) if n==0 else (mid,hi)
+                    for t in (.32,.72):stile('Outer vertical grille',oa+(ob-oa)*t,.76,h-.035,.020)
                     for y in (1.24,1.43):bar('Outer crossing grille',oa,ob,y,.02)
                     for y in (.91,1.24,1.57):
                         frame('Meeting-side rectangular motif',mat,qa,qb,y,y+.22,0,.019,.026)
-                        bar('Motif outer ties',oa if n==0 else qb,qa if n==0 else ob,y+.10,.018)
-                    for y in (.82,1.91):bar('Inner grille crossrail',qa,qb,y,.02)
-                    stile('Inner grille divider',mid,.78,2.01,.025)
+                        bar('Motif outer ties',mid if n==0 else qb,qa if n==0 else mid,y+.10,.018)
+                    for y in (.82,1.91):bar('Inner grille crossrail',mid if n==0 else lo,hi if n==0 else mid,y,.02)
+                    stile('Inner grille divider',mid,.76,h-.035,.025)
                 elif i==6:
                     box('Lower solid panel',mat,lo,hi,.10,.69,-.012,.012)
                     for k in range(19):
@@ -148,16 +150,22 @@ def build(i,m):
                 elif i==13:
                     pa,pb=lo+.060,hi-.060
                     if n==0:
-                        # Two real solid polygons separated by a diagonal open slot.
+                        # Three solid polygons separated by TWO parallel open slots.
                         y0,y1=.12,1.99
-                        xa=pa+(pb-pa)*.16;xb=pa+(pb-pa)*.70;gap=.065
-                        polygons=[[(pa,y0),(xa,y0),(xb,y1),(pa,y1)],[(xa+gap,y0),(pb,y0),(pb,y1),(xb+gap,y1)]]
+                        xa=pa+(pb-pa)*.10;xb=pa+(pb-pa)*.52;gap=.065
+                        spacing=(pb-pa)*.27
+                        polygons=[[(pa,y0),(xa,y0),(xb,y1),(pa,y1)],
+                                  [(xa+gap,y0),(xa+spacing,y0),(xb+spacing,y1),(xb+gap,y1)],
+                                  [(xa+spacing+gap,y0),(pb,y0),(pb,y1),(xb+spacing+gap,y1)]]
                         for poly in polygons:
                             for z,points in ((.015,poly),(-.015,list(reversed(poly)))):
                                 m.g.face('Slanted split solid panel',mat,[(x,y,z) for x,y in points])
                             for p,q in zip(poly,poly[1:]+poly[:1]):
                                 m.g.face('Solid panel thickness',mat,[(p[0],p[1],-.015),(q[0],q[1],-.015),(q[0],q[1],.015),(p[0],p[1],.015)])
-                        for shift in (0,gap):rod('Slanted slot trim',silver,(xa+shift,y0,.02),(xb+shift,y1,.02),.008)
+                        for slot in range(2):
+                            for edge in (0,gap):
+                                shift=slot*spacing+edge
+                                rod('Slanted slot trim '+str(slot+1),silver,(xa+shift,y0,.02),(xb+shift,y1,.02),.008)
                     else:
                         box('Inset solid privacy panel',mat,pa,pb,.12,1.99,-.015,.015)
                         frame('Raised panel molding',mat,pa,pb,.12,1.99,.02,.018,.015)
