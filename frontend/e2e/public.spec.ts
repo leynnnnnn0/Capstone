@@ -1,9 +1,26 @@
 import { expect, test } from "@playwright/test";
 
 import { mockApi } from "./mock-api";
+import { getAvailableTimeOptions } from "../features/booking/booking-utils";
 
 test.beforeEach(async ({ page }) => {
   await mockApi(page);
+});
+
+test("tomorrow keeps both booking time periods available after business hours", () => {
+  const lateEvening = new Date(2026, 8, 23, 23, 1);
+
+  expect(
+    getAvailableTimeOptions("2026-09-24", lateEvening).map((option) => option.value),
+  ).toEqual(["morning", "afternoon"]);
+});
+
+test("today only offers afternoon after the morning cutoff", () => {
+  const afterNoon = new Date(2026, 8, 23, 12, 1);
+
+  expect(
+    getAvailableTimeOptions("2026-09-23", afterNoon).map((option) => option.value),
+  ).toEqual(["afternoon"]);
 });
 
 test("landing page renders live products in the editorial collection", async ({ page }) => {

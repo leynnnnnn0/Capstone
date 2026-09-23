@@ -35,7 +35,7 @@ export function minimumBookingDate(now = new Date()) {
 }
 
 export function allowsMorning(date: string, now = new Date()) {
-  return date !== minimumBookingDate(now) || toClockTime(now) < "12:00";
+  return date !== toIsoDate(now) || toClockTime(now) < "12:00";
 }
 
 export function getAvailableTimeOptions(date: string, now = new Date()) {
