@@ -92,7 +92,7 @@ export default function CustomerNavbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <NotificationBell className="hidden sm:inline-flex" />
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

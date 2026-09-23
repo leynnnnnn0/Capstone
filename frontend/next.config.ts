@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
         hostname: "*.ngrok-free.dev",
       },
       {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
+      },
+      {
         // Product image URLs are stored as the public site URL in production.
         protocol: "https",
         hostname: "sogglassandaluminum.com",

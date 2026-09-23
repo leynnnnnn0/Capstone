@@ -11,9 +11,20 @@ test("customer dashboard shows appointment and work-job summaries", async ({ pag
   await page.goto("/account");
 
   await expect(page.getByText("Welcome back")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Notifications" })).toBeVisible();
   await expect(page.getByText("Active Appointments")).toBeVisible();
   await expect(page.getByText("APT-000001-20260523")).toBeVisible();
   await expect(page.getByText("WJ-000001-20260523").first()).toBeVisible();
+});
+
+test("customer can access notifications on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/account");
+
+  const notificationButton = page.getByRole("button", { name: "Notifications" });
+  await expect(notificationButton).toBeVisible();
+  await notificationButton.click();
+  await expect(page.getByText("No notifications yet.")).toBeVisible();
 });
 
 test("customer work-job detail shows linked appointment, payment, quotation, and activity", async ({ page }) => {
