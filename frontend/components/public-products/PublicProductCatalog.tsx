@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,6 +10,7 @@ import Navbar from "@/components/landing/Navbar";
 import PublicPageHero from "@/components/landing/PublicPageHero";
 import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NativeShimmerImage } from "@/components/ui/shimmer-image";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
 import {
@@ -314,7 +313,7 @@ export default function PublicProductCatalog() {
                         className="block h-full w-full"
                       >
                         {cover ? (
-                          <img
+                          <NativeShimmerImage
                             src={cover}
                             alt={product.name}
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"

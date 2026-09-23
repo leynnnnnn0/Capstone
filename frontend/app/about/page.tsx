@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, FileCheck2, Ruler, ScanLine, Wrench } from "lucide-react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
 import PublicPageHero from "@/components/landing/PublicPageHero";
+import { ShimmerImage } from "@/components/ui/shimmer-image";
 
 const title = "About SOG Glass & Aluminum | General Trias, Cavite";
 const description =
@@ -89,7 +89,7 @@ export default function AboutPage() {
         <section className="overflow-hidden rounded-[2rem] bg-white px-5 py-20 sm:px-10 sm:py-28 lg:px-16 lg:py-32">
           <div className="mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-24">
             <div className="relative aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-[#eaf2f8] lg:order-2">
-              <Image
+              <ShimmerImage
                 src="/images/landing/owner-team-v2.png"
                 alt="SOG owner and installation team beside a completed black aluminum glass door"
                 fill
@@ -194,7 +194,7 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative mt-16 aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-[#dfe8ef]">
-                <Image
+                <ShimmerImage
                   src="/images/landing/fabrication-clean-v2.jpg"
                   alt="Custom aluminum frames prepared in the SOG fabrication workshop"
                   fill
@@ -203,7 +203,7 @@ export default function AboutPage() {
                 />
               </div>
               <div className="relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-[#dfe8ef]">
-                <Image
+                <ShimmerImage
                   src="/images/landing/process-installation.png"
                   alt="SOG installers fitting glass and aluminum cabinets on site"
                   fill

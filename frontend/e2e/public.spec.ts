@@ -23,6 +23,38 @@ test("today only offers afternoon after the morning cutoff", () => {
   ).toEqual(["afternoon"]);
 });
 
+test("public content images show a skeleton until they finish loading", async ({ page }) => {
+  let releaseImage!: () => void;
+  const imageReleased = new Promise<void>((resolve) => {
+    releaseImage = resolve;
+  });
+
+  await page.route("**/_next/image?**", async (route) => {
+    const requestUrl = decodeURIComponent(route.request().url());
+
+    if (!requestUrl.includes("owner-team-v2.png")) {
+      await route.continue();
+      return;
+    }
+
+    await imageReleased;
+    await route.continue();
+  });
+
+  await page.goto("/about", { waitUntil: "domcontentloaded" });
+
+  const image = page.getByAltText(
+    "SOG owner and installation team beside a completed black aluminum glass door",
+  );
+  await image.scrollIntoViewIfNeeded();
+  await expect(image.locator("xpath=preceding-sibling::*[@data-slot='skeleton']")).toBeVisible();
+
+  releaseImage();
+
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
+  await expect(image).toHaveClass(/opacity-100/);
+});
+
 test("landing page renders live products in the editorial collection", async ({ page }) => {
   await page.goto("/");
 

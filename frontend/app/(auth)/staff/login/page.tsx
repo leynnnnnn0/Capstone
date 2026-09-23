@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ShimmerImage } from "@/components/ui/shimmer-image";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -120,7 +121,7 @@ function StaffLoginForm() {
 
       <section className="relative grid min-h-[calc(100vh-1.5rem)] w-full max-w-[1180px] overflow-hidden rounded-[1.75rem] border border-white/70 bg-white shadow-[0_28px_90px_rgba(22,45,74,0.16)] sm:min-h-[700px] lg:grid-cols-[1.08fr_0.92fr]">
         <div className="relative hidden overflow-hidden bg-[#162d4a] lg:block">
-          <Image
+          <ShimmerImage
             src="/images/landing/aesthetic.jpg"
             alt="Modern black aluminum window system"
             fill

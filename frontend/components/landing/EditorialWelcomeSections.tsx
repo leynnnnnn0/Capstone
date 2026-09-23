@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -16,6 +15,7 @@ import {
 import { useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShimmerImage } from "@/components/ui/shimmer-image";
 import type { Product } from "@/features/products/types";
 import {
   productCategories,
@@ -266,7 +266,7 @@ export function ValueSection() {
                   className="group overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-[#f3f6f8]"
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-[#dfe8ef] lg:aspect-[4/3]">
-                    <Image
+                    <ShimmerImage
                       src={item.image}
                       alt={item.alt}
                       fill
@@ -374,7 +374,7 @@ export function ProjectShowcase() {
                   index === 0 ? "aspect-[4/5]" : index === 1 ? "aspect-[4/5] md:mb-10" : "aspect-[4/5]",
                 )}
               >
-                <Image
+                <ShimmerImage
                   src={project.image}
                   alt={project.alt}
                   fill
@@ -505,7 +505,7 @@ export function ProductGridSection({ products, loading, error }: ProductGridProp
                 >
                   <Link href={`/products/${product.id}`} className="relative block aspect-[4/3] overflow-hidden bg-[#eaf2f8]">
                     {image ? (
-                      <Image
+                      <ShimmerImage
                         src={image}
                         alt={product.name}
                         fill

@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle2, Mail, Phone } from "lucide-react";
 
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
+import { ShimmerImage } from "@/components/ui/shimmer-image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -152,7 +153,7 @@ export default function LoginPage() {
     <main className="min-h-screen bg-white p-2 sm:p-3">
       <div className="mx-auto grid min-h-[calc(100svh-1rem)] w-full max-w-[1440px] overflow-hidden rounded-[2rem] bg-[#f3f6f8] sm:min-h-[calc(100svh-1.5rem)] lg:grid-cols-[1.15fr_0.85fr]">
         <section className="relative hidden overflow-hidden bg-[#162d4a] p-12 text-white lg:flex lg:flex-col lg:justify-between xl:p-16">
-          <Image
+          <ShimmerImage
             src="/images/landing/aesthetic.jpg"
             alt="Black aluminum window systems on a modern residence"
             fill

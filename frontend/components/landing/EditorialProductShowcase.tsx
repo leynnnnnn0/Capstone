@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import Link from "next/link";
 import { motion, type PanInfo } from "framer-motion";
 import { Box, ChevronLeft, ChevronRight } from "lucide-react";
@@ -14,6 +12,7 @@ import {
 } from "react";
 
 import type { Product } from "@/features/products/types";
+import { NativeShimmerImage } from "@/components/ui/shimmer-image";
 import {
   productCategories,
   productCover,
@@ -299,7 +298,7 @@ export default function EditorialProductShowcase({
                 style={getCardStyle(offset, carouselConfig, isVisible)}
               >
                 <Link href={item.href} className="relative block h-full w-full">
-                  {item.cover ? <img
+                  {item.cover ? <NativeShimmerImage
                     src={item.cover}
                     alt={`${item.name} product preview`}
                     className={cn(styles.cardMedia, "h-full w-full")}

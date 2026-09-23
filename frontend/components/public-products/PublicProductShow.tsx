@@ -13,6 +13,7 @@ import Navbar from "@/components/landing/Navbar";
 import HistoryBackButton from "@/components/navigation/HistoryBackButton";
 import ProductArButton from "@/components/public-products/ProductArButton";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NativeShimmerImage } from "@/components/ui/shimmer-image";
 import { fetchProduct, fetchProducts } from "@/features/products/product-api";
 import type { Product, ProductImage, ProductVariant } from "@/features/products/types";
 import {
@@ -388,7 +389,7 @@ function ImageGallery({
         className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-[1.75rem] border border-[#dce4ea] bg-white"
         onClick={() => setZoomed(true)}
       >
-        <img
+        <NativeShimmerImage
           src={current.src}
           alt={productName}
           className="h-full w-full object-contain p-4 transition-all duration-500 sm:p-8"
@@ -441,7 +442,7 @@ function ImageGallery({
                 active === index ? "border-primary" : "border-slate-200"
               }`}
             >
-              <img
+              <NativeShimmerImage
                 src={image.src}
                 alt={`${productName} view ${index + 1}`}
                 className="h-full w-full object-cover"
@@ -510,7 +511,7 @@ function VariantRow({
     <div className="flex items-center gap-4 border-b border-slate-100 py-4 last:border-0">
       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-20 sm:w-20">
         {src ? (
-          <img src={src} alt={variantLabel(variant)} className="h-full w-full object-cover" />
+          <NativeShimmerImage src={src} alt={variantLabel(variant)} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-primary">
             <span className="text-[10px] font-bold text-white opacity-60">
@@ -558,7 +559,7 @@ function RelatedProductCard({ product, index }: { product: Product; index: numbe
         style={{ background: src ? "#f8fafc" : gradients[index % gradients.length] }}
       >
         {src ? (
-          <img
+          <NativeShimmerImage
             src={src}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
