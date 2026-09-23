@@ -52,7 +52,8 @@ test("public content images show a skeleton until they finish loading", async ({
   releaseImage();
 
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0)).toBe(true);
-  await expect(image).toHaveClass(/opacity-100/);
+  await expect(image.locator("xpath=preceding-sibling::*[@data-slot='skeleton']")).toHaveClass(/opacity-0/);
+  await expect(image).not.toHaveClass(/opacity-0/);
 });
 
 test("landing page renders live products in the editorial collection", async ({ page }) => {

@@ -41,12 +41,7 @@ function ShimmerImage({
         {...props}
         src={src}
         alt={alt}
-        className={cn(
-          "duration-500",
-          className,
-          "transition-[opacity,transform]",
-          loaded ? "opacity-100" : "opacity-0",
-        )}
+        className={className}
         onLoad={(event) => {
           setLoadedSource(sourceKey)
           onLoad?.(event)
@@ -77,7 +72,7 @@ function NativeShimmerImage({
   const loaded = Boolean(sourceKey) && loadedSource === sourceKey
 
   return (
-    <span className={cn("relative block h-full w-full overflow-hidden", containerClassName)}>
+    <span className={cn("relative isolate block h-full w-full overflow-hidden", containerClassName)}>
       <Skeleton
         aria-hidden="true"
         className={cn(
@@ -94,12 +89,7 @@ function NativeShimmerImage({
         alt={alt}
         loading={loading}
         decoding={decoding}
-        className={cn(
-          "duration-500",
-          className,
-          "transition-[opacity,transform]",
-          loaded ? "opacity-100" : "opacity-0",
-        )}
+        className={cn("relative z-[1]", className)}
         onLoad={(event) => {
           if (sourceKey) setLoadedSource(sourceKey)
           onLoad?.(event)
