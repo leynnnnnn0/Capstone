@@ -1,7 +1,5 @@
 'use client';
 
-import type { CSSProperties } from "react";
-
 import {
   CalendarDays,
   BriefcaseBusiness,
@@ -32,7 +30,7 @@ import Image from "next/image";
 
 const mainNavItems: NavItem[] = [
   {
-    title: "Dashboard",
+    title: "Overview",
     href: "/dashboard",
     icon: LayoutGrid,
   },
@@ -78,6 +76,9 @@ const mainNavItems: NavItem[] = [
     icon: CalendarDays,
     permission: "calendar.view",
   },
+];
+
+const systemNavItems: NavItem[] = [
   {
     title: "Audit Log",
     href: "/dashboard/audits",
@@ -95,36 +96,25 @@ const mainNavItems: NavItem[] = [
 export function AppSidebar() {
   const { user } = useCurrentUser();
   const visibleItems = mainNavItems.filter((item) => !item.permission || can(user, item.permission));
+  const visibleSystemItems = systemNavItems.filter((item) => !item.permission || can(user, item.permission));
 
   return (
     <Sidebar
       collapsible="icon"
-      variant="inset"
-      className="admin-sidebar"
-      style={
-        {
-          "--sidebar": "#162d4a",
-          "--sidebar-foreground": "#ffffff",
-          "--sidebar-primary": "#ffffff",
-          "--sidebar-primary-foreground": "#162d4a",
-          "--sidebar-accent": "rgba(255, 255, 255, 0.1)",
-          "--sidebar-accent-foreground": "#ffffff",
-          "--sidebar-border": "rgba(255, 255, 255, 0.12)",
-          "--sidebar-ring": "#8db3cf",
-        } as CSSProperties
-      }
+      variant="sidebar"
+      className="border-r border-[#dfe6ec]"
     >
-      <SidebarHeader className="bg-[#162d4a] px-3 pb-4 pt-3 text-white">
+      <SidebarHeader className="h-[78px] justify-center border-b border-[#dfe6ec] px-5 py-0 group-data-[collapsible=icon]:px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="h-14 px-2 hover:bg-white/10 data-[state=open]:bg-white/10">
+            <SidebarMenuButton size="lg" asChild className="h-auto gap-2 p-0 text-[#2d425b] hover:bg-transparent data-[active=true]:bg-transparent">
               <Link href="/dashboard" prefetch>
-                <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/95 p-0.5 shadow-sm">
-                  <Image src="/images/sog-logo.png" width={40} height={40} alt="SOG logo" />
+                <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#d8e1e8] bg-white p-0.5">
+                  <Image src="/images/sog-logo.png" width={32} height={32} alt="SOG logo" />
                 </span>
                 <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white">SOG Admin</span>
-                  <span className="mt-0.5 block truncate text-[10px] font-medium text-white/45">Glass &amp; Aluminum Services</span>
+                  <span className="block truncate text-[15px] font-semibold">SOG Admin</span>
+                  <span className="mt-0.5 block truncate text-xs text-[#778ba0]">Glass &amp; Aluminum</span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -132,11 +122,12 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="bg-[#162d4a] text-white">
-        <NavMain items={visibleItems} />
+      <SidebarContent className="py-4">
+        <NavMain label="Administration" items={visibleItems} />
+        {visibleSystemItems.length > 0 && <NavMain label="System" items={visibleSystemItems} />}
       </SidebarContent>
 
-      <SidebarFooter className="bg-[#162d4a] text-white">
+      <SidebarFooter className="border-t border-[#dfe6ec] px-5 py-4 group-data-[collapsible=icon]:px-2">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

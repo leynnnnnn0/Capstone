@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Loader2, RotateCcw, UserX, Truck, Undo2, Wrench, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Loader2, RotateCcw, UserX, Truck, Undo2, Wrench, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +44,7 @@ export default function AdminStatusActions({
   const [action, setAction] = useState<"advance" | "cancel" | "reopen" | "no_show" | null>(null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(false);
   const nextStatus = nextAppointmentStatus(appointment.status);
   const canAdvance = Boolean(nextStatus);
   const canCancel = [
@@ -95,18 +96,22 @@ export default function AdminStatusActions({
 
   return (
     <div className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
-      <div>
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Update Status</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse status controls" : "Expand status controls"}>
+          {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+        </Button>
+      </div>
+      {sectionOpen && <>
+        <p className="text-xs text-muted-foreground">
           {canReopen
             ? "Create a new booking from this appointment, or reopen only if cancellation was a correction."
             : canRebook
               ? "Create a new booking from this no-show appointment."
             : "Advance this appointment through the workflow."}
         </p>
-      </div>
-      {!canRebook && <StatusFlowIndicator current={appointment.status} />}
-      <div className="flex flex-col gap-2">
+        {!canRebook && <StatusFlowIndicator current={appointment.status} />}
+        <div className="flex flex-col gap-2">
         {canRebook && (
           <>
             <Button asChild className="w-full gap-2">
@@ -141,7 +146,8 @@ export default function AdminStatusActions({
             Mark No Show
           </Button>
         )}
-      </div>
+        </div>
+      </>}
       <Dialog open={Boolean(action)} onOpenChange={(open) => !open && setAction(null)}>
         <DialogContent>
           <DialogHeader>

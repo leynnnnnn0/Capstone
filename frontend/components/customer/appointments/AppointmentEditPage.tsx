@@ -40,7 +40,7 @@ export default function AppointmentEditPage({ appointmentId }: { appointmentId: 
       {appointment.can_edit ? (
         <AppointmentForm appointment={appointment} />
       ) : (
-        <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-8 text-sm font-medium text-[#667584]">
+        <div className="rounded-xl border bg-card p-8 text-sm font-medium text-muted-foreground">
           You cannot edit this appointment because its status is {appointment.status_label}.
         </div>
       )}

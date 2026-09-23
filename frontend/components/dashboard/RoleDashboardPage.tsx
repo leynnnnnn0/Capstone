@@ -69,11 +69,10 @@ function CustomerFallbackDashboard() {
   );
 }
 
-function DashboardHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+function DashboardHeading({ title, description }: { eyebrow: string; title: string; description: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-primary">{eyebrow}</p>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );

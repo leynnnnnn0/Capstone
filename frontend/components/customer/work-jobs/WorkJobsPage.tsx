@@ -54,7 +54,7 @@ export default function WorkJobsPage() {
       </div>
 
       {!loading && workJobs.length === 0 && (
-        <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-12 text-center">
+        <div className="rounded-xl border border-dashed bg-card p-12 text-center">
           <p className="text-lg font-medium text-[#101820]">No work jobs yet</p>
           <p className="mt-2 text-sm text-[#667584]">
             Your work jobs will appear here when our team schedules installation or service.

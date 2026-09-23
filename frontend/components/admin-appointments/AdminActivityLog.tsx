@@ -65,19 +65,25 @@ export default function AdminActivityLog({
   remarks: CustomerRemark[];
   emptyDescription?: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(false);
+  const [itemsExpanded, setItemsExpanded] = useState(false);
 
   const hasMore = remarks.length > INITIAL_VISIBLE;
-  const visibleRemarks = expanded ? remarks : remarks.slice(0, INITIAL_VISIBLE);
+  const visibleRemarks = itemsExpanded ? remarks : remarks.slice(0, INITIAL_VISIBLE);
   const hiddenCount = remarks.length - INITIAL_VISIBLE;
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
-        Activity Log
-      </h2>
+      <div className={sectionOpen ? "mb-5 flex items-center justify-between gap-3" : "flex items-center justify-between gap-3"}>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">
+          Activity Log
+        </h2>
+        <button type="button" onClick={() => setSectionOpen((open) => !open)} className="flex size-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse activity log" : "Expand activity log"}>
+          {sectionOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+      </div>
 
-      {remarks.length === 0 ? (
+      {sectionOpen && (remarks.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
           <CalendarClock size={28} className="text-slate-400/60" />
           <p className="text-sm text-slate-500">No activity yet.</p>
@@ -135,10 +141,10 @@ export default function AdminActivityLog({
 
           {hasMore && (
             <button
-              onClick={() => setExpanded((prev) => !prev)}
+              onClick={() => setItemsExpanded((prev) => !prev)}
               className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
             >
-              {expanded ? (
+              {itemsExpanded ? (
                 <>
                   <ChevronUp size={13} />
                   Show less
@@ -153,7 +159,7 @@ export default function AdminActivityLog({
             </button>
           )}
         </>
-      )}
+      ))}
     </div>
   );
 }

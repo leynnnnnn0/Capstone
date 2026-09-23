@@ -25,7 +25,7 @@ export function AdminTableSearch({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-11 rounded-xl border-[#d7e1e8] bg-white pl-10 pr-4 text-sm shadow-none placeholder:text-[#8a98a5] focus-visible:border-[#608db9] focus-visible:ring-[#608db9]/15"
+        className="h-11 rounded-lg border-[#d7e1e8] bg-white pl-10 pr-4 text-sm shadow-none placeholder:text-[#8a98a5] focus-visible:border-[#608db9] focus-visible:ring-[#608db9]/15"
       />
     </div>
   );

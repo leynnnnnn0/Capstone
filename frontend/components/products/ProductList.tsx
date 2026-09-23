@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, ImageOff, Package, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
+import { CircleCheck, Eye, ImageOff, Layers3, Package, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,11 +19,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { AdminMobileRecord } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { deleteProduct, fetchCategories, fetchProducts } from "@/features/products/product-api";
@@ -56,6 +57,7 @@ export default function ProductList() {
       has_variants: searchParams.get("has_variants") ?? "all",
       sort: searchParams.get("sort") ?? "newest",
       per_page: searchParams.get("per_page") ?? "15",
+      page: searchParams.get("page") ?? "1",
     }),
     [searchParams],
   );
@@ -119,6 +121,9 @@ export default function ProductList() {
   };
 
   const products = response?.data ?? [];
+  const totalProducts = response?.meta?.total ?? products.length;
+  const activeProducts = products.filter((product) => product.is_active).length;
+  const variants = products.reduce((total, product) => total + productVariants(product).length, 0);
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -133,32 +138,62 @@ export default function ProductList() {
     router.replace("/dashboard/products");
   }
 
+  function setPage(page: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page <= 1) params.delete("page");
+    else params.set("page", String(page));
+    router.replace(`/dashboard/products${params.toString() ? `?${params.toString()}` : ""}`);
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Product catalog</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Products</h1>
-          <p className="mt-1 text-sm text-white/55">
-            {response?.meta?.total ?? products.length} total products
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Administration · Product catalog
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Products</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+            Manage catalog pricing, availability, variants, and customer-facing product assets from one place.
           </p>
         </div>
-        <Button asChild size="sm" className="bg-white text-[#162d4a] hover:bg-[#edf3f7]">
-          <Link href="/dashboard/products/create">
-            <Plus className="h-3.5 w-3.5" />
-            New Product
-          </Link>
-        </Button>
-      </div>
+        <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
+          <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+            <Link href="/dashboard/products/create">
+              <Plus className="size-4" />
+              New product
+            </Link>
+          </Button>
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
+              <Package className="size-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Catalog</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{totalProducts} product{totalProducts === 1 ? "" : "s"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <Card className="border-transparent bg-white">
-        <div className="p-3">
-          <div className="flex min-w-0 items-center gap-2">
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+        <AdminSummaryCard label="Products" value={totalProducts} icon={Package} eyebrow="Live workspace" description="all catalog entries" />
+        <AdminSummaryCard label="Active on this page" value={activeProducts} icon={CircleCheck} eyebrow="Live workspace" description="available to customers" />
+        <AdminSummaryCard label="Variants on this page" value={variants} icon={Layers3} eyebrow="Live workspace" description="configured product variants" />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Catalog</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">Product inventory</h2>
+          </div>
+          <div className="flex min-w-0 items-center gap-2 lg:w-[34rem]">
             <AdminTableSearch value={search} onChange={setSearch} placeholder="Search products..." />
             <div className="flex shrink-0 gap-2">
-              <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
+              <Button type="button" variant="default" size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
                 <SlidersHorizontal className="size-3.5" />
-                <span className="hidden sm:inline">Filters</span>
+                <span className="hidden sm:inline">Filter</span>
               </Button>
               {hasFilters && (
                 <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
@@ -168,8 +203,9 @@ export default function ProductList() {
               )}
             </div>
           </div>
+        </div>
           {filtersOpen && (
-            <div className="mt-3 grid gap-3 border-t border-[#e4ebf0] pt-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
               <ProductFilter label="Status" value={filters.is_active} onChange={(value) => setFilter("is_active", value)} options={[["all", "All products"], ["true", "Active"], ["false", "Inactive"]]} />
               <ProductFilter label="Category" value={filters.category_id} onChange={(value) => setFilter("category_id", value)} options={[["all", "All categories"], ...categories.map((category) => [String(category.id), category.name] as [string, string])]} />
               <ProductFilter label="Unit" value={filters.unit} onChange={(value) => setFilter("unit", value)} options={[["all", "All units"], ["sqm", "Square meter"], ["sqft", "Square foot"], ["meter", "Meter"], ["piece", "Piece"], ["set", "Set"]]} />
@@ -179,8 +215,7 @@ export default function ProductList() {
               <ProductFilter label="Sort by" value={filters.sort} onChange={(value) => setFilter("sort", value)} options={[["newest", "Newest first"], ["oldest", "Oldest first"], ["name_asc", "Name A–Z"], ["price_asc", "Price: low to high"], ["price_desc", "Price: high to low"]]} />
             </div>
           )}
-        </div>
-      </Card>
+      </section>
 
       <div className="space-y-2 md:hidden">
         {!response ? (
@@ -276,6 +311,13 @@ export default function ProductList() {
           </TableBody>
         </Table>
       </TableFrame>
+
+      {response?.meta && response.meta.last_page > 1 && (
+        <PaginationControls
+          meta={response.meta}
+          onPageChange={setPage}
+        />
+      )}
 
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

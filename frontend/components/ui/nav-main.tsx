@@ -11,15 +11,15 @@ import { useCurrentUrl } from "@/hooks/use-current-url";
 import type { NavItem } from "@/types/navigation";
 import Link from "next/link";
 
-export function NavMain({ items = [] }: { items: NavItem[] }) {
+export function NavMain({ label, items = [] }: { label: string; items: NavItem[] }) {
   const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
   return (
-    <SidebarGroup className="px-3 py-0">
-      <SidebarGroupLabel className="mb-2 px-2 text-[9px] font-bold uppercase tracking-[0.22em] text-white/35">
-        Workspace
+    <SidebarGroup className="px-3 py-2">
+      <SidebarGroupLabel className="mb-2 h-7 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7b8fa3]">
+        {label}
       </SidebarGroupLabel>
-      <SidebarMenu className="gap-1.5">
+      <SidebarMenu className="gap-1">
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
@@ -30,7 +30,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                   : isCurrentOrParentUrl(item.href)
               }
               tooltip={{ children: item.title }}
-              className="h-10 rounded-xl px-3 text-white/80 transition-all hover:bg-white/12 hover:text-white focus-visible:bg-white/12 focus-visible:text-white data-[active=true]:bg-white data-[active=true]:font-semibold data-[active=true]:text-[#162d4a] data-[active=true]:shadow-[0_8px_28px_rgba(0,0,0,0.16)]"
+              className="h-10 gap-2 rounded-md border-l-2 border-transparent px-3 text-[15px] font-normal text-[#71869c] hover:bg-[#f2f6f8] hover:text-[#2d425b] data-[active=true]:rounded-l-none data-[active=true]:rounded-r-lg data-[active=true]:border-[#6f95a7] data-[active=true]:bg-[#eef4f7] data-[active=true]:font-semibold data-[active=true]:text-[#2d425b] [&_svg]:size-[18px]"
             >
               <Link href={item.href} prefetch>
                 {item.icon && <item.icon />}

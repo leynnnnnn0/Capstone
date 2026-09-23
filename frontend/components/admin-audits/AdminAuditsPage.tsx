@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { RotateCcw, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { FileClock, LogIn, RotateCcw, ShieldCheck, SlidersHorizontal } from "lucide-react";
 
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admin-mobile-record";
 import { Badge } from "@/components/ui/badge";
@@ -61,16 +62,46 @@ export default function AdminAuditsPage() {
     setPage(1);
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Security &amp; governance</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Audit Log</h1>
-        <p className="mt-1 text-sm text-white/55">Track important database changes and the user who made them.</p>
-      </div>
+  const totalAudits = meta?.total ?? audits.length;
+  const signInEvents = audits.filter((audit) => audit.event.includes("login")).length;
+  const dataChanges = audits.filter((audit) => ["created", "updated", "deleted"].includes(audit.event)).length;
 
-      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex min-w-0 items-center gap-2">
+  return (
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Administration · Security activity
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Audit log</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+            Trace authentication events and important record changes across the system.
+          </p>
+        </div>
+        <div className="hidden items-center gap-3 self-start md:flex lg:self-auto">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
+            <ShieldCheck className="size-4" />
+          </span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Audit trail</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{totalAudits} recorded event{totalAudits === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+        <AdminSummaryCard label="Events" value={totalAudits} icon={ShieldCheck} eyebrow="Live workspace" description="all recorded activity" />
+        <AdminSummaryCard label="Sign-ins on this page" value={signInEvents} icon={LogIn} eyebrow="Live workspace" description="staff and customer access" />
+        <AdminSummaryCard label="Data changes on this page" value={dataChanges} icon={FileClock} eyebrow="Live workspace" description="created, updated, or deleted" />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Activity</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">Audit records</h2>
+          </div>
+          <div className="flex min-w-0 items-center gap-2 lg:w-[40rem]">
           <AdminTableSearch
             value={search}
             onChange={(value) => {
@@ -82,14 +113,14 @@ export default function AdminAuditsPage() {
           <div className="flex shrink-0 gap-2">
             <Button
               type="button"
-              variant={filtersOpen ? "secondary" : "outline"}
+              variant="default"
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4"
+              className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4"
               aria-label="Toggle filters"
             >
               <SlidersHorizontal className="size-3.5" />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="hidden sm:inline">Filter</span>
             </Button>
             {hasFilters && (
               <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
@@ -100,8 +131,9 @@ export default function AdminAuditsPage() {
           </div>
         </div>
 
+        </div>
         {filtersOpen && (
-          <div className="mt-3 grid gap-3 border-t border-[#e4ebf0] pt-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
             <AuditSelect
               label="Event"
               value={event}
@@ -141,7 +173,7 @@ export default function AdminAuditsPage() {
             <AuditDate label="To" value={dateTo} onChange={(value) => { setDateTo(value); setPage(1); }} />
           </div>
         )}
-      </div>
+      </section>
 
       <Card>
         <CardHeader className="pb-2">

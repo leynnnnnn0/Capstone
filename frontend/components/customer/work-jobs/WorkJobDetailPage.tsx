@@ -8,6 +8,7 @@ import { BriefcaseBusiness, CalendarDays, Clock, FileText, UserRoundCheck, Wrenc
 
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
+import CustomerDetailAccordion from "@/components/customer/shared/CustomerDetailAccordion";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/CustomerWorkJobBackJobsCard";
@@ -55,26 +56,24 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
   const quotationCanBeDownloaded =
     !statusIn(workJob.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
     !statusIn(workJob.appointment?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]);
+  const hasBackJobs = Boolean(workJob.parent_work_job || workJob.back_jobs?.length);
 
   return (
     <>
-      <div className="relative mb-6 flex min-w-0 w-full max-w-full flex-col gap-6 overflow-hidden rounded-[1.5rem] bg-[#162d4a] px-4 py-7 text-white sm:rounded-[1.75rem] sm:px-8 sm:py-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
-        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#608db9]/25 blur-3xl" />
+      <div className="mb-6 flex min-w-0 w-full max-w-full flex-col gap-4 py-1 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <button
             onClick={() => router.back()}
-            className="relative mb-4 text-xs font-semibold text-white/55 hover:text-white"
+            className="mb-4 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             Back
           </button>
-          <p className="relative break-all text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8dae8]">
-            {workJob.work_job_number}
-          </p>
-          <h1 className="relative mt-2 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
+          <h1 className="text-2xl font-semibold tracking-tight">
             Work job details
           </h1>
+          <p className="mt-1 break-all text-sm text-muted-foreground">{workJob.work_job_number}</p>
         </div>
-        <div className="relative flex min-w-0 flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <CustomerStatusBadge status={workJob.status} />
           <CustomerContactLocationSheet
             fullName={workJob.full_name}
@@ -90,33 +89,46 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
       <div className="grid min-w-0 w-full max-w-full gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="min-w-0 space-y-5">
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
-          <CustomerWorkJobBackJobsCard workJob={workJob} />
-
-          <CustomerFabricationProgressCard workJob={workJob} />
-
           <WorkJobInfoCard workJob={workJob} />
-
-          {/* <CustomerQuoteImageList quotation={quotation} /> */}
-          <WorkJobWarrantyCard workJob={workJob} customer />
-
-          <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
         </section>
 
         <aside className="min-w-0 space-y-4">
-          <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
+          <CustomerDetailAccordion title="Fabrication progress">
+            <CustomerFabricationProgressCard workJob={workJob} />
+          </CustomerDetailAccordion>
 
-          <CustomerQuoteSummary
-            quotation={quotation}
-            signerName={workJob.full_name}
-            canSign={quotationCanBeSigned}
-            canDownload={quotationCanBeDownloaded}
-            onSigned={reload}
-          />
+          {hasBackJobs && <CustomerDetailAccordion title="Back job updates">
+            <CustomerWorkJobBackJobsCard workJob={workJob} />
+          </CustomerDetailAccordion>}
 
-          <CustomerActivityLog
-            remarks={workJob.remarks}
-            emptyDescription="Updates from this work job will appear here."
-          />
+          <CustomerDetailAccordion title="Warranty record">
+            <WorkJobWarrantyCard workJob={workJob} customer />
+          </CustomerDetailAccordion>
+
+          <CustomerDetailAccordion title="Customer satisfaction">
+            <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
+          </CustomerDetailAccordion>
+
+          <CustomerDetailAccordion title="Payments">
+            <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
+          </CustomerDetailAccordion>
+
+          <CustomerDetailAccordion title="Quotation">
+            <CustomerQuoteSummary
+              quotation={quotation}
+              signerName={workJob.full_name}
+              canSign={quotationCanBeSigned}
+              canDownload={quotationCanBeDownloaded}
+              onSigned={reload}
+            />
+          </CustomerDetailAccordion>
+
+          <CustomerDetailAccordion title="Activity log">
+            <CustomerActivityLog
+              remarks={workJob.remarks}
+              emptyDescription="Updates from this work job will appear here."
+            />
+          </CustomerDetailAccordion>
         </aside>
       </div>
     </>
@@ -133,7 +145,7 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
     : "Pending assignment";
 
   return (
-    <div className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
+    <div className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
       <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
         Schedule &amp; Service Details
       </h2>
@@ -164,7 +176,7 @@ function LinkedAppointmentCard({ workJob }: { workJob: CustomerWorkJob }) {
   if (!workJob.appointment) return null;
 
   return (
-    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
+    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">

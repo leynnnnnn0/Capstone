@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Edit2, Plus, RotateCcw, ShieldCheck, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Edit2, Plus, RotateCcw, ShieldCheck, SlidersHorizontal, Trash2, UserRound, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -44,6 +44,7 @@ import {
 } from "@/features/admin-users/admin-user-api";
 import type { AdminUser, StaffRole, UserCollection, UserOptions } from "@/features/admin-users/types";
 import { adminUserRoleBadgeClasses, adminUserRoleLabels } from "@/features/admin-users/admin-user-utils";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 
 export default function AdminUsersPage() {
   const [response, setResponse] = useState<UserCollection | null>(null);
@@ -80,6 +81,9 @@ export default function AdminUsersPage() {
   );
 
   const users = response?.data ?? [];
+  const totalUsers = response?.meta?.total ?? users.length;
+  const staffUsers = users.filter((user) => user.role !== "customer").length;
+  const customerUsers = users.filter((user) => user.role === "customer").length;
   useEffect(() => {
     fetchUserOptions().then(setOptions);
   }, []);
@@ -117,28 +121,54 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Access control</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Users</h1>
-          <p className="mt-1 text-sm text-white/55">Manage staff, customers, roles, and permission overrides.</p>
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Administration · User accounts
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Users</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+            Manage staff and customer accounts, review assigned roles and permissions, and update access when responsibilities change.
+          </p>
         </div>
-        <Button asChild size="sm" className="bg-white text-[#162d4a] hover:bg-[#edf3f7]">
-          <Link href="/dashboard/users/create">
-            <Plus className="size-4" />
-            New User
-          </Link>
-        </Button>
-      </div>
+        <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
+          <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+            <Link href="/dashboard/users/create">
+              <Plus className="size-4" />
+              New user
+            </Link>
+          </Button>
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
+              <UsersRound className="size-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Directory</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{totalUsers} registered user{totalUsers === 1 ? "" : "s"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex min-w-0 items-center gap-2">
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+        <AdminSummaryCard label="Accounts" value={totalUsers} icon={UsersRound} eyebrow="Live workspace" description="all registered users" />
+        <AdminSummaryCard label="Staff on this page" value={staffUsers} icon={ShieldCheck} eyebrow="Live workspace" description="administrative and field staff" />
+        <AdminSummaryCard label="Customers on this page" value={customerUsers} icon={UserRound} eyebrow="Live workspace" description="customer portal users" />
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Directory</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">User accounts</h2>
+          </div>
+          <div className="flex min-w-0 items-center gap-2 lg:w-[34rem]">
           <AdminTableSearch value={search} onChange={setSearch} placeholder="Search users..." />
           <div className="flex shrink-0 gap-2">
-            <Button type="button" variant={filtersOpen ? "secondary" : "outline"} size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
+            <Button type="button" variant="default" size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
               <SlidersHorizontal className="size-3.5" />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="hidden sm:inline">Filter</span>
             </Button>
             {hasFilters && (
               <Button type="button" variant="ghost" size="sm" onClick={() => {
@@ -156,8 +186,9 @@ export default function AdminUsersPage() {
             )}
           </div>
         </div>
+        </div>
         {filtersOpen && (
-          <div className="mt-3 grid gap-3 border-t border-[#e4ebf0] pt-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
             <UserFilter label="Role" value={role} onChange={setRole} options={[["all", "All roles"], ...options.roles.map((item) => [item, adminUserRoleLabels[item] ?? item] as [string, string])]} />
             <UserFilter label="Email" value={emailStatus} onChange={setEmailStatus} options={[["all", "Any verification status"], ["verified", "Verified"], ["unverified", "Unverified"]]} />
             <UserFilter label="Phone number" value={phoneStatus} onChange={setPhoneStatus} options={[["all", "Any"], ["available", "Has phone number"], ["missing", "Missing phone number"]]} />
@@ -166,7 +197,7 @@ export default function AdminUsersPage() {
             <UserDateFilter label="Created to" value={createdTo} onChange={setCreatedTo} />
           </div>
         )}
-      </div>
+      </section>
 
       <div className="space-y-2 md:hidden">
         {loading ? (

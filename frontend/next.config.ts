@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: [
     "192.168.254.183",
     "thankworthy-chuffily-elizebeth.ngrok-free.dev",
+    "127.0.0.1"
   ],
   images: {
     remotePatterns: [

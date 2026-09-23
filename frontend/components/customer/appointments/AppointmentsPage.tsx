@@ -60,7 +60,7 @@ export default function AppointmentsPage() {
       </div>
 
       {!loading && appointments.length === 0 && (
-        <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-12 text-center">
+        <div className="rounded-xl border border-dashed bg-card p-12 text-center">
           <p className="text-lg font-medium text-[#101820]">No appointments yet</p>
           <p className="mt-2 text-sm text-[#667584]">Start by creating your first inspection request.</p>
         </div>

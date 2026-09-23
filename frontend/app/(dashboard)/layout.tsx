@@ -8,7 +8,7 @@ export default function DashboardLayout({
 }: AppLayoutProps) {
   return (
     <AppSidebarLayout breadcrumbs={breadcrumbs} {...props}>
-      <div className="mx-auto min-w-0 w-full max-w-[1600px] overflow-x-hidden px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8 xl:px-10">
+      <div className="mx-auto min-w-0 w-full max-w-7xl overflow-x-hidden px-5 py-8 md:py-10 2xl:px-0">
         {children}
       </div>
     </AppSidebarLayout>

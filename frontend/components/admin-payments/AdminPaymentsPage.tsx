@@ -267,40 +267,56 @@ export default function AdminPaymentsPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">Payments</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Payment Records</h1>
-          <p className="mt-1 text-sm text-white/55">
-            {total} payment record{total === 1 ? "" : "s"} across customer work jobs.
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Administration · Payment operations
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Payments</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+            Review customer payments, settlement status, refunds, and outstanding transactions across work jobs.
           </p>
         </div>
-      </div>
+        <div className="hidden items-center gap-3 self-start md:flex lg:self-auto">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
+            <WalletCards className="size-4" />
+          </span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Records</p>
+            <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{total} payment record{total === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-6">
-        <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" />
-        <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" />
-        <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" />
-        <AdminSummaryCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} tone="slate" eyebrow="Collections" />
-        <AdminSummaryCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} tone="mist" eyebrow="Adjustments" />
-        <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" eyebrow="Adjustments" />
-      </div>
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 lg:grid-cols-3 xl:grid-cols-6">
+        <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" description="settled customer payments" />
+        <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" description="completed transactions" />
+        <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" description="awaiting settlement" />
+        <AdminSummaryCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} tone="slate" eyebrow="Collections" description="unsuccessful payments" />
+        <AdminSummaryCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} tone="mist" eyebrow="Adjustments" description="returned transactions" />
+        <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" eyebrow="Adjustments" description="total amount returned" />
+      </section>
 
-      <div className="rounded-[1.25rem] border border-[#dce4ea] bg-white p-3 shadow-[0_12px_38px_rgba(22,45,74,0.04)]">
-        <div className="flex min-w-0 items-center gap-2">
+      <section className="space-y-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Transactions</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">Payment history</h2>
+          </div>
+          <div className="flex min-w-0 items-center gap-2 lg:w-[40rem]">
           <AdminTableSearch value={search} onChange={setSearch} placeholder="Search payment #, capture ID, customer, work job..." />
           <div className="flex shrink-0 gap-2">
             <Button
               type="button"
-              variant={filtersOpen ? "secondary" : "outline"}
+              variant="default"
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4"
+              className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4"
               aria-label="Toggle filters"
             >
               <SlidersHorizontal className="size-3.5" />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="hidden sm:inline">Filter</span>
             </Button>
             {activeFilters && (
               <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
@@ -311,8 +327,9 @@ export default function AdminPaymentsPage() {
           </div>
         </div>
 
+        </div>
         {filtersOpen && (
-          <div className="mt-3 grid gap-2 border-t pt-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-5">
             <FilterSelect label="Status" value={filters.status} options={statusOptions} onChange={(value) => applyFilter({ status: value })} />
             <FilterSelect label="Method" value={filters.method} options={methodOptions} onChange={(value) => applyFilter({ method: value })} />
             <FilterSelect label="Type" value={filters.type} options={typeOptions} onChange={(value) => applyFilter({ type: value })} />
@@ -320,7 +337,7 @@ export default function AdminPaymentsPage() {
             <FilterDate label="Date To" value={filters.date_to} onChange={(value) => applyFilter({ date_to: value })} />
           </div>
         )}
-      </div>
+      </section>
 
       <div className="space-y-2 md:hidden">
         {loading ? (

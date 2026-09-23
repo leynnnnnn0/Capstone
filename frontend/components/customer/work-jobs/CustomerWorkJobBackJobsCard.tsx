@@ -15,7 +15,7 @@ export default function CustomerWorkJobBackJobsCard({ workJob }: { workJob: Cust
   if (!hasParent && backJobs.length === 0) return null;
 
   return (
-    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-5">
+    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
       <div className="flex items-center gap-2">
         <GitBranch className="size-4 text-primary" />
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">

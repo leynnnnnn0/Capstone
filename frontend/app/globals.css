@@ -112,7 +112,7 @@
 
     --popover-foreground: oklch(0.145 0 0);
 
-    --primary: #608db9;
+    --primary: #2d425b;
 
     --primary-foreground: oklch(0.985 0 0);
 
@@ -148,7 +148,7 @@
 
     --radius: 0.625rem;
 
-    --sidebar: oklch(0.985 0 0);
+    --sidebar: oklch(1 0 0);
 
     --sidebar-foreground: oklch(0.145 0 0);
 
@@ -276,21 +276,11 @@
     }
 }
 
-/* Scoped styling for the authenticated operations workspace. */
-.admin-sidebar[data-sidebar="sidebar"],
-.admin-sidebar [data-sidebar="sidebar"] {
-  background: #162d4a;
-  color: white;
-  border: 0;
-  border-radius: 1.5rem;
-  overflow: hidden;
-  box-shadow: 0 24px 70px rgba(18, 42, 70, 0.2);
-}
-
+/* Authenticated workspace: quiet surfaces and compact, product-led hierarchy. */
 .admin-workspace [data-slot="card"] {
-  border-color: #dce4ea;
-  border-radius: 1.25rem;
-  box-shadow: 0 18px 55px rgba(22, 45, 74, 0.055);
+  border-color: var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
 }
 
 .admin-workspace table {
@@ -299,15 +289,15 @@
 }
 
 .admin-workspace thead {
-  background: #edf3f7;
+  background: color-mix(in oklab, var(--muted) 45%, transparent);
 }
 
 .admin-workspace th {
-  color: #6f8498;
-  font-size: 0.67rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .admin-workspace tbody tr {
@@ -315,20 +305,20 @@
 }
 
 .admin-workspace tbody tr:hover {
-  background: #f6f9fb;
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
 }
 
 .admin-workspace input,
 .admin-workspace textarea,
 .admin-workspace button[role="combobox"] {
-  border-color: #d7e1e8;
+  border-color: var(--input);
   background-color: white;
 }
 
 .admin-workspace input:focus,
 .admin-workspace textarea:focus,
 .admin-workspace button[role="combobox"]:focus {
-  border-color: #608db9;
+  border-color: var(--ring);
 }
 
 @media (max-width: 767px) {

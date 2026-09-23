@@ -141,26 +141,25 @@ function DatabaseManager({ onPasswordExpired }: { onPasswordExpired: () => void 
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-[1.5rem] border border-white/10 bg-[#162d4a] p-5 text-white shadow-[0_18px_55px_rgba(22,45,74,0.12)] sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#b9cfe0]">System administration</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-white">Database</h1>
-            <p className="mt-1 text-sm text-white/55">Create secure snapshots and restore the system from an earlier backup.</p>
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">System · Data protection</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Database</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">Create secure snapshots and restore the system from an earlier backup.</p>
           </div>
           <Button
             type="button"
+            variant="default"
             size="lg"
+            className="bg-[#2d425b] text-white hover:bg-[#23364b]"
             onClick={createBackup}
             disabled={creating || restoring}
-            className="bg-white text-[#162d4a] hover:bg-white/90"
           >
             {creating ? <Loader2 className="size-4 animate-spin" /> : <DatabaseIcon className="size-4" />}
             {creating ? "Creating backup…" : "Back up now"}
           </Button>
-        </div>
-      </div>
+      </section>
 
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-3">
@@ -302,7 +301,7 @@ function DatabasePasswordGate({ onConfirmed }: { onConfirmed: () => void }) {
 }
 
 function DatabaseLoading() {
-  return <div className="space-y-4"><div className="h-36 animate-pulse rounded-[1.5rem] bg-[#162d4a]/15" /><div className="h-72 animate-pulse rounded-xl bg-muted" /></div>;
+  return <div className="space-y-8"><div className="h-8 w-40 animate-pulse rounded bg-muted" /><div className="h-72 animate-pulse rounded-lg border bg-muted/40" /></div>;
 }
 
 function formatBytes(bytes: number) {

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebarHeader } from "@/components/ui/app-sidebar-header";
 import { AppLayoutProps } from "@/types/ui";
 import { RealtimeBridge } from "@/components/realtime/RealtimeBridge";
+import type { CSSProperties } from "react";
 
 export default function AppSidebarLayout({
   children,
@@ -14,11 +15,11 @@ export default function AppSidebarLayout({
 }: AppLayoutProps) {
   return (
     <TooltipProvider>
-      <SidebarProvider>
+      <SidebarProvider style={{ "--sidebar-width": "15.625rem" } as CSSProperties}>
         <AppSidebar />
         <AppContent
           variant="sidebar"
-          className="admin-workspace overflow-x-hidden bg-[#f3f6f8] text-[#142235]"
+          className="admin-workspace overflow-x-hidden"
         >
           <RealtimeBridge />
           <AppSidebarHeader breadcrumbs={breadcrumbs} />

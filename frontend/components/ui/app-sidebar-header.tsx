@@ -16,6 +16,7 @@ const routeLabels: Record<string, string> = {
   sales: "Sales",
   calendar: "Calendar",
   audits: "Audit Log",
+  database: "Database",
   settings: "Settings",
 };
 
@@ -39,9 +40,9 @@ export function AppSidebarHeader({
     : buildBreadcrumbs(pathname);
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[#dce4ea]/80 bg-white/85 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 sm:px-6 lg:px-8">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
       <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1 rounded-full border border-[#dce4ea] bg-white text-[#162d4a] shadow-sm hover:bg-[#edf3f7]" />
+        <SidebarTrigger className="-ml-1" />
         <div className="min-w-0 overflow-hidden">
           <Breadcrumbs breadcrumbs={resolvedBreadcrumbs} />
         </div>

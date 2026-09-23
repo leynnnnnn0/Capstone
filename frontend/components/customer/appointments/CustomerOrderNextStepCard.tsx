@@ -11,20 +11,19 @@ export default function CustomerOrderNextStepCard({ appointment }: { appointment
   const state = resolveState(appointment);
 
   return (
-    <section className="overflow-hidden rounded-[1.5rem] border border-[#cbdde9] bg-gradient-to-br from-[#edf5fa] to-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-6">
+    <section className="overflow-hidden rounded-xl border bg-card p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#162d4a] text-white">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md border text-muted-foreground">
             <Clock3 className="size-5" />
           </span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">What happens next</p>
-            <h2 className="mt-1 text-xl font-medium tracking-[-0.03em] text-[#101820]">{state.title}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5d6e7c]">{state.description}</p>
+            <h2 className="text-lg font-semibold tracking-tight">{state.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{state.description}</p>
           </div>
         </div>
         {state.action && (
-          <Button asChild className="shrink-0 gap-2 rounded-full">
+          <Button asChild className="shrink-0 gap-2">
             <Link href="#customer-quotation">
               {state.action}
               <ArrowRight className="size-4" />

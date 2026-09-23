@@ -64,7 +64,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
             compact
           />
         </div>
-        <div className="space-y-6">
+        <aside className="space-y-4">
           {!isWorker && <AdminProceedToWorkJob appointment={appointment} />}
           <AdminStatusActions
             appointment={appointment}
@@ -83,7 +83,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
             canSign={quotationCanBeSigned}
           />
           <AdminActivityLog remarks={appointment.remarks} />
-        </div>
+        </aside>
       </div>
       <AdminQuotationEditor
         appointment={appointment}

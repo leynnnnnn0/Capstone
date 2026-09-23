@@ -5,8 +5,9 @@ import {
   Calculator,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Download,
-  FileText,
   ImageIcon,
   Images,
   Layers,
@@ -19,7 +20,7 @@ import AdminQuotationItemImages from "@/components/admin-appointments/AdminQuota
 import CustomerSignatureDialog from "@/components/customer/shared/CustomerSignatureDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ export default function AdminQuotationDetails({
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const [showAllItems, setShowAllItems] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(false);
   const [signatureOverride, setSignatureOverride] = useState<{
     status?: CustomerQuotation["signature_status"];
     signedAt?: CustomerQuotation["customer_signed_at"];
@@ -94,13 +96,15 @@ export default function AdminQuotationDetails({
 
   if (!quotation || items.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-primary" />
-            Quotation
-          </CardTitle>
-          <CardDescription className="text-xs">No quotation yet.</CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Quotation</h2>
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
+              {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </Button>
+          </div>
+          {sectionOpen && <CardDescription className="text-xs">No quotation yet.</CardDescription>}
         </CardHeader>
       </Card>
     );
@@ -132,15 +136,12 @@ export default function AdminQuotationDetails({
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">Quotation</CardTitle>
-            </div>
+      <Card className="shadow-sm">
+        <CardHeader className="p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Quotation</h2>
             <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:justify-end">
-              {canDownload && (
+              {sectionOpen && canDownload && (
                 <Button asChild variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
                   <a href={quotationPdfUrl(quotation.id)} target="_blank" rel="noreferrer">
                     <Download className="h-3 w-3" />
@@ -148,7 +149,7 @@ export default function AdminQuotationDetails({
                   </a>
                 </Button>
               )}
-              {approvedItems.length > 0 && canSign && (
+              {sectionOpen && approvedItems.length > 0 && canSign && (
                 <Button
                   type="button"
                   variant={signature.status === "signed" ? "outline" : "default"}
@@ -160,12 +161,12 @@ export default function AdminQuotationDetails({
                   {signature.status === "signed" ? "Re-sign" : signature.status === "needs_resign" ? "Sign Again" : "Sign"}
                 </Button>
               )}
-              {approvedItems.length > 0 && (
+              {sectionOpen && approvedItems.length > 0 && (
                 <Badge className="h-7 bg-green-600 text-[10px] leading-tight text-white hover:bg-green-700">
                   {approvedItems.length} approved
                 </Badge>
               )}
-              {signatureLabel && (
+              {sectionOpen && signatureLabel && (
                 <Badge
                   variant={signature.status === "signed" ? "secondary" : "outline"}
                   className={signature.status === "needs_resign" ? "h-7 border-amber-300 bg-amber-50 text-[10px] text-amber-700" : "h-7 text-[10px]"}
@@ -173,31 +174,34 @@ export default function AdminQuotationDetails({
                   {signatureLabel}
                 </Badge>
               )}
-              <Badge variant="outline" className="h-7 text-xs leading-tight">
+              {sectionOpen && <Badge variant="outline" className="h-7 text-xs leading-tight">
                 {items.length} item{items.length !== 1 ? "s" : ""}
-              </Badge>
+              </Badge>}
+              <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
+                {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+              </Button>
             </div>
           </div>
-          <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>
-          {quotation.expires_at && (
+          {sectionOpen && <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>}
+          {sectionOpen && quotation.expires_at && (
             <CardDescription className="flex items-center gap-1.5 text-xs">
               <CalendarDays className="h-3 w-3" />
               Valid until {formatQuoteDate(quotation.expires_at, quotation.id)}
             </CardDescription>
           )}
-          {signature.status === "signed" && signature.signedAt && (
+          {sectionOpen && signature.status === "signed" && signature.signedAt && (
             <CardDescription className="text-xs">
               Signed by {signature.name ?? "customer"} on {formatQuoteDate(signature.signedAt, quotation.id)}
             </CardDescription>
           )}
-          {signature.status === "needs_resign" && (
+          {sectionOpen && signature.status === "needs_resign" && (
             <CardDescription className="text-xs text-amber-700">
               Signature is no longer current. Customer needs to sign again.
             </CardDescription>
           )}
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        {sectionOpen && <CardContent className="space-y-4 p-5 pt-0 sm:p-5 sm:pt-0 lg:p-5 lg:pt-0">
           {quotation.notes && (
             <div className="rounded-lg bg-muted/40 p-3">
               <div className="mb-1.5 flex items-center gap-1.5">
@@ -260,7 +264,7 @@ export default function AdminQuotationDetails({
               <p className="text-center text-[11px] text-muted-foreground">No items approved yet - approve items above to calculate the total.</p>
             )}
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {activePhotoItem && (

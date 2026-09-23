@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, MapPinned, Phone, UserRound } from "lucide-react";
+import { Mail, Phone, UserRound } from "lucide-react";
 
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
 import {
@@ -32,31 +32,31 @@ export default function CustomerContactLocationSheet({
       <SheetTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#d7e1e8] bg-white px-4 text-sm font-medium text-[#2d425b] shadow-sm transition-colors hover:bg-[#f3f6f8]"
         >
-          <MapPinned className="size-4" />
-          Contact &amp; location
+          <UserRound className="size-4" />
+          Your details
         </button>
       </SheetTrigger>
-      <SheetContent className="w-[calc(100%_-_0.75rem)] max-w-none overflow-y-auto border-0 bg-[#f3f6f8] p-0 sm:max-w-xl">
-        <SheetHeader className="bg-[#162d4a] px-6 py-8 text-white">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/50">
-            Optional details
+      <SheetContent className="w-[calc(100%_-_0.75rem)] max-w-none overflow-y-auto border-l border-[#dce4ea] bg-white p-0 sm:max-w-xl">
+        <SheetHeader className="border-b border-[#dce4ea] px-6 py-8 pr-14 text-left">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Your information
           </p>
-          <SheetTitle className="mt-2 text-2xl font-medium tracking-[-0.035em] text-white">
-            Contact &amp; location
+          <SheetTitle className="mt-3 text-3xl font-semibold tracking-tight text-[#2d425b]">
+            Contact &amp; service address
           </SheetTitle>
-          <SheetDescription className="mt-2 max-w-md text-sm leading-6 text-white/55">
-            Review the contact information and service address attached to this record.
+          <SheetDescription className="mt-3 max-w-md text-sm leading-6 text-[#71869c]">
+            Review your contact information and the service location attached to this record.
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-4 p-4 sm:p-6">
-          <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
-              Contact information
+        <div className="space-y-8 px-6 py-8">
+          <section className="border-y border-[#dce4ea] py-6">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">
+              Your contact information
             </h2>
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 divide-y divide-[#e5ebef]">
               <ContactRow icon={UserRound} label="Name" value={fullName} />
               <ContactRow icon={Phone} label="Phone" value={phoneNumber} />
               <ContactRow icon={Mail} label="Email" value={email || "Not provided"} />
@@ -68,6 +68,8 @@ export default function CustomerContactLocationSheet({
             addressLat={addressLat}
             addressLng={addressLng}
             compact
+            embedded
+            title="Service location"
           />
         </div>
       </SheetContent>
@@ -85,13 +87,13 @@ function ContactRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#eaf2f8] text-[#2c5282]">
+    <div className="flex items-start gap-3 py-4 first:pt-0 last:pb-0">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
         <Icon className="size-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8ca0b2]">{label}</p>
-        <p className="mt-1 break-words text-sm font-medium text-[#26384a]">{value}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8194a7]">{label}</p>
+        <p className="mt-1 break-words text-sm font-medium text-[#2d425b]">{value}</p>
       </div>
     </div>
   );

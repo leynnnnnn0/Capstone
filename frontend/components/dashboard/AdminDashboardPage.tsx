@@ -14,8 +14,22 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CalendarCheck, CircleDollarSign, ClipboardList, Package, TriangleAlert, Wrench } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarPlus,
+  CircleDollarSign,
+  ClipboardList,
+  Clock3,
+  CreditCard,
+  Package,
+  ReceiptText,
+  ShieldCheck,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
+import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +47,6 @@ import type { AdminPayment } from "@/features/admin-payments/types";
 import { fetchAdminWorkJobs } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import type { CustomerQuotationItem } from "@/features/customer/types";
-import { cn } from "@/lib/utils";
 
 const statusChartConfig = {
   count: { label: "Appointments", color: "#5f87b5" },
@@ -77,58 +90,82 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-5 lg:space-y-6">
-      <div className="relative overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-8 text-white shadow-[0_24px_70px_rgba(22,45,74,0.14)] sm:px-8 sm:py-10 lg:px-10">
-        <div className="absolute -right-16 -top-24 size-72 rounded-full bg-[#608db9]/30 blur-3xl" />
-        <div className="absolute bottom-0 right-[18%] h-28 w-px bg-gradient-to-t from-white/15 to-transparent" />
-        <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#b9cfe0]">SOG Operations · Live overview</p>
-            <h1 className="mt-4 text-3xl font-medium leading-[1.02] tracking-[-0.045em] sm:text-4xl lg:text-5xl">
-              Business at a glance.
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
-              Monitor collections, field schedules, workload, and customer service risks from one focused workspace.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 backdrop-blur-sm">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-white text-[#162d4a]">
-              <Wrench className="size-4" />
+    <div className="space-y-10">
+      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
+            Business operations · Live overview
+          </p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">
+            SOG administration
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+            Monitor customer appointments, field work, collections, and daily operations from one workspace.
+          </p>
+        </div>
+
+        <div className="flex w-full flex-row items-center justify-between gap-4 lg:w-auto lg:flex-col lg:items-end lg:gap-5">
+          <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+            <Link href="/dashboard/appointments/create">
+              <CalendarPlus className="size-4" />
+              Create appointment
+            </Link>
+          </Button>
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
+              <ShieldCheck className="size-4" />
             </span>
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">Workspace</p>
-              <p className="mt-0.5 text-sm font-medium">Admin command center</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Access</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">Administrator only</p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-2 gap-x-4 sm:gap-x-7 xl:grid-cols-4">
         <TooltipProvider>
           <MetricCard
             title="Collected Revenue"
             value={peso(metrics.collectedRevenue)}
-            description={`${metrics.paidPayments} paid payments · ${peso(metrics.additionalChargesPaid)} add-ons`}
+            description="settled customer revenue"
             icon={CircleDollarSign}
             tooltip="Paid records from PayPal, cash, bank transfers, and additional charges."
-            tone="blue"
-            featured
+          />
+          <MetricCard
+            title="Paid Payments"
+            value={metrics.paidPayments.toString()}
+            description="completed collections"
+            icon={CreditCard}
+            tooltip="Payments currently marked as paid."
           />
           <MetricCard
             title="Open Appointments"
             value={metrics.openAppointments.toString()}
-            description={`${metrics.pendingAppointments} pending review`}
+            description="active customer bookings"
             icon={ClipboardList}
             tooltip="Appointments that are not completed, cancelled, or marked no show."
-            tone="mist"
+          />
+          <MetricCard
+            title="Pending Review"
+            value={metrics.pendingAppointments.toString()}
+            description="awaiting admin confirmation"
+            icon={Clock3}
+            tooltip="Appointment requests waiting for review."
           />
           <MetricCard
             title="Today's Schedule"
             value={metrics.todayAppointments.toString()}
-            description={`${metrics.todayWorkJobs} work jobs today`}
+            description="appointments scheduled today"
             icon={CalendarCheck}
             tooltip="Confirmed appointments and scheduled work jobs for today."
-            tone="light"
+          />
+          <MetricCard
+            title="Work Jobs Today"
+            value={metrics.todayWorkJobs.toString()}
+            description="scheduled field work"
+            icon={Wrench}
+            tooltip="Work jobs scheduled for today."
           />
           <MetricCard
             title="No Show / Cancelled"
@@ -136,27 +173,28 @@ export default function AdminDashboardPage() {
             description="Bookings needing follow-up"
             icon={TriangleAlert}
             tooltip="Cancelled and no-show appointments that may need admin review."
-            tone="slate"
+          />
+          <MetricCard
+            title="Additional Charges"
+            value={peso(metrics.additionalChargesPaid)}
+            description="settled add-on charges"
+            icon={ReceiptText}
+            tooltip="Additional charges that have been paid."
           />
         </TooltipProvider>
-      </div>
+      </section>
 
-      <DashboardSectionHeading
-        eyebrow="Performance & capacity"
-        title="See where the business is moving."
-        description="Revenue flow, appointment distribution, and team capacity in one operational view."
-      />
+      <DashboardSectionHeading title="Performance" description="Revenue, appointments, and staff workload." />
 
       <div className="grid gap-4 xl:grid-cols-7">
-        <Card className="border-transparent bg-white xl:col-span-4">
+        <Card className="xl:col-span-4">
           <DashboardPanelHeading
-            eyebrow="Cash flow"
             title="Collections Trend"
             description="Paid collections versus pending payment requests by month."
             icon={CircleDollarSign}
           />
           <CardContent>
-            <div className="rounded-[1.4rem] bg-[#f3f7fa] p-2 sm:p-4">
+            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
               <ChartContainer config={revenueChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
                 <AreaChart data={metrics.collectionsByMonth} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -171,15 +209,14 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-transparent bg-white xl:col-span-3">
+        <Card className="xl:col-span-3">
           <DashboardPanelHeading
-            eyebrow="Pipeline"
             title="Appointment Status"
             description="Current operational distribution."
             icon={ClipboardList}
           />
           <CardContent>
-            <div className="rounded-[1.4rem] bg-[#edf3f7] p-2 sm:p-4">
+            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
               <ChartContainer config={statusChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
                 <PieChart>
                   <Tooltip content={<ChartTooltipContent />} />
@@ -196,15 +233,14 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="border-transparent bg-white">
+        <Card>
           <DashboardPanelHeading
-            eyebrow="Team capacity"
             title="Staff Load"
             description="Assigned appointments and work jobs."
             icon={Wrench}
           />
           <CardContent>
-            <div className="rounded-[1.4rem] bg-[#f3f7fa] p-2 sm:p-4">
+            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
               <ChartContainer config={workloadChartConfig} className="h-[210px] sm:h-[230px]">
                 <BarChart data={metrics.workerLoad} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -218,9 +254,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-transparent bg-white">
+        <Card>
           <DashboardPanelHeading
-            eyebrow="Product demand"
             title="Top Work Job Products"
             description="Products appearing most often in customer work jobs."
             icon={Package}
@@ -228,9 +263,9 @@ export default function AdminDashboardPage() {
           <CardContent>
             <div className="space-y-2.5">
               {metrics.topProducts.length ? metrics.topProducts.map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between rounded-xl border border-[#e3eaf0] bg-[#f6f9fb] px-3 py-3 transition-colors hover:bg-[#edf3f7]">
+                <div key={item.name} className="flex items-center justify-between border-b px-1 py-3 last:border-0">
                   <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:size-7">{index + 1}</span>
+                    <span className="w-5 shrink-0 text-xs tabular-nums text-muted-foreground">{index + 1}.</span>
                     <div>
                       <p className="truncate text-xs font-medium sm:text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">{item.count} work job item{item.count === 1 ? "" : "s"}</p>
@@ -246,15 +281,11 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      <DashboardSectionHeading
-        eyebrow="Today & next"
-        title="Keep the operation moving."
-        description="The next customer commitments, active installations, and service demand at a glance."
-      />
+      <DashboardSectionHeading title="Current operations" description="Upcoming appointments, active work jobs, and service demand." />
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="border-transparent bg-white">
-          <DashboardPanelHeading eyebrow="Schedule" title="Upcoming Appointments" description="Next confirmed schedules." icon={CalendarCheck} />
+        <Card>
+          <DashboardPanelHeading title="Upcoming Appointments" description="Next confirmed schedules." icon={CalendarCheck} />
           <CardContent className="space-y-2.5">
             {metrics.upcomingAppointments.map((appointment) => (
               <CompactSchedule key={appointment.id} title={appointment.full_name} code={appointment.appointment_number} date={formatAdminDate(appointment.appointment_date)} />
@@ -262,8 +293,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-transparent bg-white">
-          <DashboardPanelHeading eyebrow="In the field" title="Active Work Jobs" description="Installations and field work in motion." icon={Wrench} />
+        <Card>
+          <DashboardPanelHeading title="Active Work Jobs" description="Installations and field work in motion." icon={Wrench} />
           <CardContent className="space-y-2.5">
             {metrics.activeWorkJobs.map((job) => (
               <CompactSchedule key={job.id} title={job.full_name} code={job.work_job_number} date={formatAdminDate(job.scheduled_date)} />
@@ -271,8 +302,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-transparent bg-white">
-          <DashboardPanelHeading eyebrow="Demand" title="Service Mix" description="Demand by requested service type." icon={Package} />
+        <Card>
+          <DashboardPanelHeading title="Service Mix" description="Demand by requested service type." icon={Package} />
           <CardContent className="space-y-2">
             {metrics.serviceMix.map((item) => (
               <div key={item.service} className="rounded-xl bg-[#f6f9fb] px-3 py-2.5">
@@ -296,46 +327,36 @@ export default function AdminDashboardPage() {
 }
 
 function DashboardSectionHeading({
-  eyebrow,
   title,
   description,
 }: {
-  eyebrow: string;
   title: string;
   description: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 px-1 pt-2 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-[#608db9]">{eyebrow}</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-[-0.035em] text-[#162d4a] sm:text-2xl">{title}</h2>
-      </div>
-      <p className="max-w-xl text-xs leading-5 text-[#728596] sm:text-right sm:text-sm">{description}</p>
+    <div>
+      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
 
 function DashboardPanelHeading({
-  eyebrow,
   title,
   description,
   icon: Icon,
 }: {
-  eyebrow: string;
   title: string;
   description: string;
   icon: typeof Wrench;
 }) {
   return (
-    <CardHeader className="flex-row items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">{eyebrow}</p>
-        <h3 className="mt-2 text-base font-semibold tracking-[-0.025em] text-[#162d4a] sm:text-lg">{title}</h3>
-        <p className="mt-1 text-xs leading-5 text-[#7b8d9c] sm:text-sm">{description}</p>
+    <CardHeader>
+      <div className="flex items-center gap-2">
+        <Icon className="size-4 text-muted-foreground" />
+        <h3 className="text-base font-semibold">{title}</h3>
       </div>
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#edf3f7] text-[#315b7d]">
-        <Icon className="size-4" />
-      </span>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </CardHeader>
   );
 }
@@ -349,18 +370,14 @@ export function AdminDashboardSkeleton() {
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="size-4 rounded-full" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="mt-2 h-3 w-40 max-w-full" />
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-2 gap-x-4 sm:gap-x-7 xl:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="border-t py-6">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-3 h-4 w-28" />
+            <Skeleton className="mt-2 h-8 w-20" />
+            <Skeleton className="mt-2 h-3 w-32 max-w-full" />
+          </div>
         ))}
       </div>
 
@@ -443,74 +460,26 @@ function MetricCard({
   description,
   icon: Icon,
   tooltip,
-  tone = "blue",
-  featured = false,
 }: {
   title: string;
   value: string;
   description: string;
   icon: typeof Wrench;
   tooltip: string;
-  tone?: "blue" | "mist" | "light" | "slate";
-  featured?: boolean;
 }) {
-  const toneClasses = {
-    blue: {
-      surface: "bg-[#dcecf8] text-[#17324d]",
-      icon: "bg-[#162d4a] text-white",
-      muted: "text-[#5d7890]",
-      glow: "bg-[#8db3cf]/35",
-    },
-    mist: {
-      surface: "bg-[#e8f0f6] text-[#1e354b]",
-      icon: "bg-[#315b7d] text-white",
-      muted: "text-[#657b8f]",
-      glow: "bg-[#8db3cf]/25",
-    },
-    light: {
-      surface: "bg-[#f1f5f8] text-[#203448]",
-      icon: "bg-[#608db9] text-white",
-      muted: "text-[#708394]",
-      glow: "bg-[#a8c5da]/25",
-    },
-    slate: {
-      surface: "bg-[#e4eaf0] text-[#1f3142]",
-      icon: "bg-[#405a70] text-white",
-      muted: "text-[#687b8b]",
-      glow: "bg-[#839caf]/20",
-    },
-  } as const;
-  const palette = toneClasses[tone];
-
   return (
     <UiTooltip>
       <TooltipTrigger asChild>
-        <article
-          className={cn(
-            "group relative min-h-[112px] overflow-hidden rounded-xl p-3 text-left shadow-[0_16px_44px_rgba(22,45,74,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(22,45,74,0.12)] sm:min-h-48 sm:rounded-[1.75rem] sm:p-6",
-            palette.surface,
-            featured && "md:col-span-2 xl:col-span-2",
-          )}
-        >
-          <span className={cn("absolute -bottom-16 -right-12 size-48 rounded-full blur-2xl", palette.glow)} />
-          <div className="relative flex h-full min-h-[88px] flex-col justify-between gap-2 sm:min-h-36 sm:gap-7">
-            <div className="flex items-start justify-between gap-2 sm:gap-4">
-              <div>
-                <p className="text-[7px] font-bold uppercase tracking-[0.12em] opacity-55 sm:text-[9px] sm:tracking-[0.2em]">
-                  {featured ? "Financial performance" : "Live operations"}
-                </p>
-                <h2 className="mt-1 text-[11px] font-semibold leading-tight sm:mt-2 sm:text-sm">{title}</h2>
-              </div>
-              <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg shadow-sm sm:size-11 sm:rounded-2xl", palette.icon)}>
-                <Icon className="size-3.5 sm:size-5" />
-              </span>
+        <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
+          <div className="flex items-start justify-between gap-2 sm:gap-4">
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">Operations</p>
+              <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{title}</h2>
             </div>
-            <div className="relative">
-              <div className={cn("truncate text-xl font-semibold tracking-[-0.05em]", featured ? "sm:text-5xl" : "sm:text-4xl")}>{value}</div>
-              <p className={cn("mt-1 line-clamp-2 text-[8px] leading-3 sm:mt-2 sm:text-xs sm:leading-5", palette.muted)}>{description}</p>
-            </div>
-            <Icon className="pointer-events-none absolute -bottom-3 -right-2 size-14 opacity-[0.055] sm:-bottom-5 sm:-right-3 sm:size-24" strokeWidth={1.2} />
+            <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
           </div>
+          <div className="mt-1 truncate text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{value}</div>
+          <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{description}</p>
         </article>
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
@@ -520,8 +489,8 @@ function MetricCard({
 
 function CompactSchedule({ title, code, date }: { title: string; code: string; date: string }) {
   return (
-    <div className="rounded-xl border border-[#e1e8ed] bg-[#f8fafb] px-3 py-2.5 transition-colors hover:bg-[#edf3f7]">
-      <p className="truncate text-xs font-semibold text-[#26384a] sm:text-sm">{title}</p>
+    <div className="border-b px-1 py-3 last:border-0">
+      <p className="truncate text-xs font-medium sm:text-sm">{title}</p>
       <div className="mt-1 flex items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-xs">
         <span>{code}</span>
         <span>{date}</span>

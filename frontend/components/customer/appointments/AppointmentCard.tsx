@@ -15,7 +15,7 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
   return (
     <Link
       href={`/account/appointments/${appointment.id}`}
-      className="group block rounded-[1.25rem] border border-[#dce4ea] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#b9cbd9] hover:shadow-[0_18px_50px_rgba(22,45,74,0.09)]"
+      className="group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30"
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>

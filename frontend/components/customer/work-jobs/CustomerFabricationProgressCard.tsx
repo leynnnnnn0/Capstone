@@ -19,15 +19,15 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
 
   if (fabrication.status === "not_required") {
     return (
-      <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-6">
-        <div className="flex items-start gap-4">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-            <Check className="size-5" />
+      <section className="rounded-lg border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <Check className="size-4" />
           </span>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">Order Progress</p>
-            <h2 className="mt-1 text-xl font-medium tracking-[-0.03em] text-[#101820]">No fabrication required</h2>
-            <p className="mt-2 text-sm leading-6 text-[#667584]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Fabrication progress</p>
+            <h2 className="mt-2 text-base font-semibold text-[#2d425b]">No fabrication required</h2>
+            <p className="mt-2 text-sm leading-6 text-[#71869c]">
               This service can proceed directly through scheduling and field work. Follow the work-job status for the next visit.
             </p>
           </div>
@@ -39,17 +39,16 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
   const currentIndex = fabricationStageIndex(fabrication.status);
 
   return (
-    <section className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
-      <div className="relative overflow-hidden bg-[#162d4a] px-5 py-6 text-white sm:px-7 sm:py-7">
-        <div className="absolute -right-14 -top-20 size-52 rounded-full bg-[#608db9]/25 blur-3xl" />
-        <div className="relative grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
+    <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <div>
+        <div className="space-y-4">
           <div>
-            <div className="flex items-center gap-2 text-[#c8dae8]">
+            <div className="flex items-center gap-2 text-[#64879a]">
               <Factory className="size-4" />
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Fabrication Progress</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em]">Fabrication progress</p>
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-medium tracking-[-0.035em] sm:text-3xl">{fabrication.status_label}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-[#2d425b]">{fabrication.status_label}</h2>
               {fabrication.status === "on_hold" && (
                 <Badge className="border-transparent bg-amber-500 text-white">
                   <span aria-hidden="true" className="size-1.5 rounded-full bg-white/85" />
@@ -57,30 +56,30 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
                 </Badge>
               )}
             </div>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/65">{fabrication.description}</p>
+            <p className="mt-2 text-sm leading-6 text-[#71869c]">{fabrication.description}</p>
           </div>
           <div className={cn(
-            "rounded-2xl border px-4 py-3 sm:min-w-52",
+            "rounded-lg border px-3 py-3",
             fabrication.is_overdue
-              ? "border-amber-300/30 bg-amber-300/10"
-              : "border-white/10 bg-white/8",
+              ? "border-amber-200 bg-amber-50"
+              : "border-[#dce4ea] bg-[#f7f9fa]",
           )}>
-            <div className="flex items-center gap-2 text-white/55">
+            <div className="flex items-center gap-2 text-[#8194a7]">
               {fabrication.is_overdue ? <AlertTriangle className="size-3.5" /> : <Clock3 className="size-3.5" />}
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em]">Estimated completion</p>
+              <p className="text-xs text-muted-foreground">Estimated completion</p>
             </div>
-            <p className="mt-1 text-sm font-semibold text-white">{eta}</p>
+            <p className="mt-1 text-sm font-semibold text-[#2d425b]">{eta}</p>
             {fabrication.expected_completion_date && (
-              <p className="mt-1 text-xs text-white/55">{formatCustomerDate(fabrication.expected_completion_date)}</p>
+              <p className="mt-1 text-xs text-[#71869c]">{formatCustomerDate(fabrication.expected_completion_date)}</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="p-5 sm:p-7">
+      <div className="mt-5 border-t border-[#e5ebef] pt-5">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#608db9]">Overall fabrication</p>
-          <p className="text-sm font-semibold text-[#2c5282]">{fabrication.progress_percentage}%</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Overall fabrication</p>
+          <p className="text-sm font-semibold text-[#2d425b]">{fabrication.progress_percentage}%</p>
         </div>
         <div
           className="mt-2 h-2.5 overflow-hidden rounded-full bg-[#e5edf3]"
@@ -91,12 +90,12 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
           aria-valuenow={fabrication.progress_percentage}
         >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#608db9] to-[#2c5282] transition-[width] duration-500"
+            className="h-full rounded-full bg-[#2d425b] transition-[width] duration-500"
             style={{ width: `${fabrication.progress_percentage}%` }}
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="mt-5 space-y-1.5">
           {fabricationStages.map((stage, index) => {
             const done = currentIndex > index || fabrication.status === "ready_for_installation";
             const current = currentIndex === index && fabrication.status !== "on_hold";
@@ -106,23 +105,23 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
               <div
                 key={stage}
                 className={cn(
-                  "rounded-xl border px-3 py-3 transition-colors",
-                  current && "border-[#608db9] bg-[#eaf2f8]",
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                  current && "border-[#9db2c0] bg-[#eef4f7]",
                   done && !current && "border-emerald-100 bg-emerald-50/70",
                   !done && !current && "border-[#e3e9ee] bg-[#f8fafb]",
                 )}
               >
                 <span className={cn(
-                  "flex size-6 items-center justify-center rounded-full text-[10px] font-bold",
-                  current && "bg-[#2c5282] text-white",
+                  "flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  current && "bg-[#2d425b] text-white",
                   done && !current && "bg-emerald-600 text-white",
                   !done && !current && "bg-[#e5edf3] text-[#7a8997]",
                 )}>
                   {done ? <Check className="size-3.5" /> : index + 1}
                 </span>
                 <p className={cn(
-                  "mt-2 text-[10px] font-semibold leading-4",
-                  current ? "text-[#2c5282]" : done ? "text-emerald-800" : "text-[#71808d]",
+                  "text-xs font-medium leading-4",
+                  current ? "text-[#2d425b]" : done ? "text-emerald-800" : "text-[#71808d]",
                 )}>
                   {shortStageLabel(label)}
                 </p>
@@ -132,19 +131,19 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
         </div>
 
         {fabrication.status === "on_hold" && (
-          <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
+          <div className="mt-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p className="text-sm leading-6">Fabrication is temporarily on hold. SOG will update the estimate when work can continue.</p>
           </div>
         )}
 
         {fabrication.notes && (
-          <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-4">
-            <div className="flex items-center gap-2 text-[#2c5282]">
+          <div className="mt-5 rounded-lg border border-[#dce4ea] bg-[#f7f9fa] px-4 py-4">
+            <div className="flex items-center gap-2 text-[#64879a]">
               <Sparkles className="size-4" />
               <p className="text-[10px] font-bold uppercase tracking-[0.18em]">Latest update from SOG</p>
             </div>
-            <p className="mt-2 text-sm leading-6 text-[#445463]">{fabrication.notes}</p>
+            <p className="mt-2 text-sm leading-6 text-[#496078]">{fabrication.notes}</p>
           </div>
         )}
 

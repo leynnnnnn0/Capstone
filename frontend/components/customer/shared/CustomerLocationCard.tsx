@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Clock, Loader2, MapPin, Navigation, Route } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim();
 const ORIGIN = "SOG Glass and Aluminum, Prinza St, General Trias, Cavite";
@@ -11,6 +12,8 @@ type CustomerLocationCardProps = {
   addressLat?: string | null;
   addressLng?: string | null;
   compact?: boolean;
+  embedded?: boolean;
+  title?: string;
 };
 
 type RouteInfo = {
@@ -81,6 +84,8 @@ export default function CustomerLocationCard({
   addressLat,
   addressLng,
   compact = false,
+  embedded = false,
+  title = "Customer location",
 }: CustomerLocationCardProps) {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
@@ -150,10 +155,10 @@ export default function CustomerLocationCard({
   }, [addressLat, addressLng, hasPinnedLocation]);
 
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border border-[#dce4ea] bg-white shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <div className={cn("overflow-hidden border bg-card", embedded ? "rounded-none border-x-0 shadow-none" : "rounded-xl shadow-sm")}>
       <div className={compact ? "px-4 pb-3 pt-4" : "px-5 pb-4 pt-5"}>
-        <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
-          Customer Location
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">
+          {title}
         </h2>
         <div className="flex items-start gap-3">
           <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -169,11 +174,11 @@ export default function CustomerLocationCard({
         {routeError && <p className="mt-3 text-xs font-medium text-red-600">{routeError}</p>}
         {routeInfo && !routeLoading && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
+            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold leading-none", embedded ? "rounded-md border border-[#d7e1e8] bg-white text-[#2d425b]" : "rounded-full bg-primary text-white")}>
               <Route className="size-3.5" />
               {routeInfo.distance}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-600 px-3 py-1.5 text-xs font-semibold leading-none text-white">
+            <span className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold leading-none", embedded ? "rounded-md border border-[#d7e1e8] bg-white text-[#2d425b]" : "rounded-full bg-slate-600 text-white")}>
               <Clock className="size-3.5" />
               {routeInfo.duration} (fastest)
             </span>

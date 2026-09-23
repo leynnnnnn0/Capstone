@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, Loader2, Users } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Clock, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -81,6 +81,7 @@ export default function AdminScheduleForm({
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sectionOpen, setSectionOpen] = useState(false);
 
   const canReschedule = [
     CustomerStatus.Confirmed,
@@ -186,16 +187,21 @@ export default function AdminScheduleForm({
             <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">
               Appointment Slot
             </h2>
-            <p className="mt-1 text-xs text-muted-foreground">Inspection schedule and assigned team.</p>
+            {sectionOpen && <p className="mt-1 text-xs text-muted-foreground">Inspection schedule and assigned team.</p>}
           </div>
-          {canSchedule && (
-            <Button type="button" variant="ghost" size="sm" onClick={openScheduleDialog}>
-              {scheduleButtonLabel}
+          <div className="flex items-center gap-1">
+            {sectionOpen && canSchedule && (
+              <Button type="button" variant="ghost" size="sm" onClick={openScheduleDialog}>
+                {scheduleButtonLabel}
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse appointment slot" : "Expand appointment slot"}>
+              {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
             </Button>
-          )}
+          </div>
         </div>
 
-        <div className="space-y-3">
+        {sectionOpen && <div className="space-y-3">
           <DisplayRow icon={CalendarDays} label="Appointment Date" value={formatAdminDate(appointment.appointment_date)} />
           <div className="grid grid-cols-2 gap-3">
             <DisplayRow icon={Clock} label="From" value={formatAdminTime(appointment.appointment_time_from) || "-"} />
@@ -206,9 +212,9 @@ export default function AdminScheduleForm({
             label="Assigned Staff"
             value={appointment.workers.length ? appointment.workers.map((worker) => worker.full_name).join(", ") : "No staff assigned yet"}
           />
-        </div>
+        </div>}
 
-        {errors.form && <p className="rounded-md bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
+        {sectionOpen && errors.form && <p className="rounded-md bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
       </div>
 
       <Dialog open={scheduleOpen} onOpenChange={setScheduleOpen}>

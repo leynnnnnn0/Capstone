@@ -9,6 +9,7 @@ import AppointmentInfoCard from "@/components/customer/appointments/AppointmentI
 import CustomerOrderNextStepCard from "@/components/customer/appointments/CustomerOrderNextStepCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
+import CustomerDetailAccordion from "@/components/customer/shared/CustomerDetailAccordion";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { CustomerStatus, statusIn } from "@/features/customer/status";
@@ -196,23 +197,20 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
 
   return (
     <>
-      <div className="relative mb-6 flex flex-col gap-6 overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-8 text-white sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:px-10">
-        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[#608db9]/25 blur-3xl" />
+      <div className="mb-6 flex flex-col gap-4 py-1 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <button
             onClick={() => router.back()}
-            className="relative mb-4 text-xs font-semibold text-white/55 hover:text-white"
+            className="mb-4 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
             Back
           </button>
-          <p className="relative text-[10px] font-bold uppercase tracking-[0.2em] text-[#c8dae8]">
-            {appointment.appointment_number}
-          </p>
-          <h1 className="relative mt-2 text-3xl font-medium tracking-[-0.04em] text-white sm:text-4xl">
+          <h1 className="text-2xl font-semibold tracking-tight">
             Appointment details
           </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{appointment.appointment_number}</p>
         </div>
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           <CustomerStatusBadge status={appointment.status} />
           <CustomerContactLocationSheet
             fullName={appointment.full_name}
@@ -419,18 +417,22 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         </section>
 
         <aside className="space-y-4">
-          <CustomerActivityLog
-            remarks={appointment.remarks}
-            emptyDescription="Updates from your inspection request will appear here."
-          />
-          <CustomerQuoteSummary
-            quotation={appointment.quotation}
-            signerName={appointment.full_name}
-            canSign={quotationCanBeSigned}
-            canDownload={quotationCanBeDownloaded}
-            onSigned={reload}
-            appointment={appointment}
-          />
+          <CustomerDetailAccordion title="Activity log">
+            <CustomerActivityLog
+              remarks={appointment.remarks}
+              emptyDescription="Updates from your inspection request will appear here."
+            />
+          </CustomerDetailAccordion>
+          <CustomerDetailAccordion title="Quotation">
+            <CustomerQuoteSummary
+              quotation={appointment.quotation}
+              signerName={appointment.full_name}
+              canSign={quotationCanBeSigned}
+              canDownload={quotationCanBeDownloaded}
+              onSigned={reload}
+              appointment={appointment}
+            />
+          </CustomerDetailAccordion>
         </aside>
       </div>
     </>
@@ -443,7 +445,7 @@ function LinkedWorkJobCard({
   workJob: NonNullable<CustomerAppointment["work_job"]>;
 }) {
   return (
-    <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <section className="rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">

@@ -28,7 +28,7 @@ export function PaginationControls({ meta, loading = false, className, onPageCha
   const canGoNext = meta.current_page < meta.last_page && !loading;
 
   return (
-    <div className={cn("flex flex-col gap-3 rounded-[1.25rem] border border-[#dce4ea] bg-white px-4 py-3 shadow-[0_10px_28px_rgba(22,45,74,0.045)] sm:flex-row sm:items-center sm:justify-between", className)}>
+    <div className={cn("flex flex-col gap-3 rounded-lg border bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between", className)}>
       <p className="text-xs text-muted-foreground sm:text-sm">
         Showing <span className="font-medium text-foreground">{from}</span> to{" "}
         <span className="font-medium text-foreground">{to}</span> of{" "}
@@ -40,21 +40,21 @@ export function PaginationControls({ meta, loading = false, className, onPageCha
           type="button"
           variant="outline"
           size="sm"
-          className="rounded-xl"
+          className="rounded-md"
           disabled={!canGoBack}
           onClick={() => onPageChange(Math.max(1, meta.current_page - 1))}
         >
           <ChevronLeft className="size-3.5" />
           Previous
         </Button>
-        <span className="whitespace-nowrap rounded-lg bg-[#f4f7f9] px-3 py-1.5 text-xs font-medium text-[#536372]">
+        <span className="whitespace-nowrap rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
           Page {meta.current_page} of {meta.last_page}
         </span>
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="rounded-xl"
+          className="rounded-md"
           disabled={!canGoNext}
           onClick={() => onPageChange(Math.min(meta.last_page, meta.current_page + 1))}
         >

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
@@ -54,33 +56,90 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
     CustomerStatus.Completed,
   ].includes(workJob.status);
   const isWorker = hasRole(user, "staff");
+  const canUpdateStatus = [
+    CustomerStatus.Pending,
+    CustomerStatus.Confirmed,
+    CustomerStatus.Rescheduled,
+    CustomerStatus.OnTheWay,
+    CustomerStatus.InProgress,
+    CustomerStatus.Cancelled,
+  ].includes(workJob.status);
 
   return (
     <div className="space-y-6">
       <AdminWorkJobHeader workJob={workJob} />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage />
           <AdminWorkJobDetailsCard workJob={workJob} />
           <CustomerLocationCard address={workJob.address ?? ""} addressLat={workJob.address_lat} addressLng={workJob.address_lng} compact />
         </div>
-        <div className="space-y-6">
-          <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
-          <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />
-          <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
-          <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
-          <WorkJobWarrantyCard workJob={workJob} />
-          <AdminWorkJobRatingCard workJob={workJob} />
-          <AssignedWorkers workers={workJob.workers} />
+        <aside className="space-y-4">
+          <WorkJobDetailAccordion title="Fabrication progress">
+            <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage />
+          </WorkJobDetailAccordion>
+          {canUpdateStatus && <WorkJobDetailAccordion title="Update status">
+            <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
+          </WorkJobDetailAccordion>}
+          <WorkJobDetailAccordion title="Back jobs">
+            <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />
+          </WorkJobDetailAccordion>
+          <WorkJobDetailAccordion title="Charges">
+            <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
+          </WorkJobDetailAccordion>
+          <WorkJobDetailAccordion title="Payments">
+            <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
+          </WorkJobDetailAccordion>
+          <WorkJobDetailAccordion title="Warranty record">
+            <WorkJobWarrantyCard workJob={workJob} />
+          </WorkJobDetailAccordion>
+          <WorkJobDetailAccordion title="Customer satisfaction">
+            <AdminWorkJobRatingCard workJob={workJob} />
+          </WorkJobDetailAccordion>
+          <WorkJobDetailAccordion title="Assigned staff">
+            <AssignedWorkers workers={workJob.workers} />
+          </WorkJobDetailAccordion>
           <AdminQuotationDetails
             quotation={workJob.quotation ?? null}
             canDownload={quotationCanBeDownloaded}
             canSign={quotationCanBeSigned}
           />
           <AdminActivityLog remarks={workJob.remarks} />
-        </div>
+        </aside>
       </div>
     </div>
+  );
+}
+
+function WorkJobDetailAccordion({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-between gap-3 rounded-lg border bg-card p-5 text-left shadow-sm transition-colors hover:bg-muted/30"
+        aria-expanded="false"
+      >
+        <span className="text-xs font-semibold uppercase tracking-widest text-primary">{title}</span>
+        <ChevronDown className="size-4 shrink-0" />
+      </button>
+    );
+  }
+
+  return (
+    <section className="relative">
+      {children}
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="absolute -right-2 -top-2 z-20 flex size-7 items-center justify-center rounded-full border bg-white text-foreground shadow-sm transition-colors hover:bg-muted"
+        aria-expanded="true"
+        aria-label={`Collapse ${title}`}
+      >
+        <ChevronUp className="size-4" />
+      </button>
+    </section>
   );
 }
 

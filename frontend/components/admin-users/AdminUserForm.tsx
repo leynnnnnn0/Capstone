@@ -122,7 +122,7 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
 
   if (loadError) {
     return (
-      <div className="rounded-[1.5rem] border border-destructive/20 bg-white p-6 text-center shadow-sm">
+      <div className="rounded-xl border border-destructive/20 bg-card p-6 text-center shadow-sm">
         <p className="text-sm text-destructive">{loadError}</p>
         <Button asChild variant="outline" className="mt-4">
           <Link href="/dashboard/users">Back to users</Link>
@@ -133,41 +133,26 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
 
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-5 rounded-[1.75rem] bg-[#162d4a] p-5 text-white shadow-[0_22px_65px_rgba(22,45,74,0.14)] sm:p-7 md:flex-row md:items-end md:justify-between">
+      <section className="flex flex-col gap-5 py-1 md:flex-row md:items-end md:justify-between">
         <div>
-          <Link href="/dashboard/users" className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/60 transition-colors hover:text-white">
+          <Link href="/dashboard/users" className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="size-3.5" />
             Back to users
           </Link>
-          <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.22em] text-[#b9cfe0]">Access control</p>
-          <h1 className="mt-2 text-3xl font-medium tracking-[-0.04em] sm:text-4xl">
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
             {editing ? "Edit user" : "Create user"}
           </h1>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-white/55">
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             {editing ? "Update account details, role, and direct permission overrides." : "Create an account and define its role and access in one place."}
           </p>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-white text-[#162d4a]">
-            <UserRound className="size-4" />
-          </span>
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">User record</p>
-            <p className="mt-0.5 text-sm font-medium">{editing ? "Existing account" : "New account"}</p>
-          </div>
         </div>
       </section>
 
       <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.7fr)]">
-        <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_14px_42px_rgba(22,45,74,0.055)] sm:p-6">
-          <div className="mb-5 flex items-center gap-3 border-b border-[#e7edf1] pb-4">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#edf3f7] text-[#315b7d]">
-              <UserRound className="size-4" />
-            </span>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">Account information</p>
-              <h2 className="mt-1 text-base font-semibold text-[#162d4a]">Identity and contact</h2>
-            </div>
+        <section className="rounded-lg border bg-white p-4 sm:p-6">
+          <div className="mb-5 flex items-center gap-2 border-b pb-4">
+            <UserRound className="size-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Identity and contact</h2>
           </div>
 
           {errors.form && <p className="mb-4 rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">{errors.form}</p>}
@@ -201,15 +186,10 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-4 shadow-[0_14px_42px_rgba(22,45,74,0.055)] sm:p-6">
-          <div className="mb-5 flex items-center gap-3 border-b border-[#e7edf1] pb-4">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[#edf3f7] text-[#315b7d]">
-              <ShieldCheck className="size-4" />
-            </span>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7e94a7]">Authorization</p>
-              <h2 className="mt-1 text-base font-semibold text-[#162d4a]">Role and permissions</h2>
-            </div>
+        <section className="rounded-lg border bg-white p-4 sm:p-6">
+          <div className="mb-5 flex items-center gap-2 border-b pb-4">
+            <ShieldCheck className="size-4 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Role and permissions</h2>
           </div>
 
           <div className="space-y-5">

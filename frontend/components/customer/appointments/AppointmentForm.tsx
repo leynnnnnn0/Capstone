@@ -170,7 +170,7 @@ export default function AppointmentForm({
 
   return (
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]">
-      <div className="rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)] sm:p-7">
+      <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-7">
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField kind="name" label="First Name" value={data.first_name} error={errors.first_name} onChange={(value) => setField("first_name", value)} />
           <TextField kind="name" label="Last Name" value={data.last_name} error={errors.last_name} onChange={(value) => setField("last_name", value)} />
@@ -250,16 +250,16 @@ export default function AppointmentForm({
 
       </div>
 
-      <aside className="h-fit rounded-[1.5rem] bg-[#162d4a] p-5 text-white shadow-[0_20px_65px_rgba(22,45,74,0.16)] sm:p-6 lg:sticky lg:top-28">
-        <p className="text-lg font-medium tracking-[-0.025em] text-white">
+      <aside className="h-fit rounded-xl border bg-card p-5 shadow-sm sm:p-6 lg:sticky lg:top-28">
+        <p className="text-lg font-semibold tracking-tight">
           {appointment ? "Update Appointment" : isRebook ? "Rebook Appointment" : "Create Appointment"}
         </p>
-        <p className="mt-2 text-sm leading-6 text-white/60">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           You can edit this appointment while it is still pending. Once confirmed,
           our team will manage schedule changes with you directly.
         </p>
         {errors.form && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{errors.form}</p>}
-        <Button type="submit" className="mt-5 h-11 w-full rounded-full bg-white text-[#162d4a] hover:bg-[#c8dae8]" disabled={saving}>
+        <Button type="submit" className="mt-5 h-10 w-full" disabled={saving}>
           {saving
             ? "Saving..."
             : appointment

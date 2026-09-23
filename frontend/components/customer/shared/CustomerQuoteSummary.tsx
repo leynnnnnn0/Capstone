@@ -46,7 +46,7 @@ export default function CustomerQuoteSummary({
 
   if (!quotation || items.length === 0) {
     return (
-      <div className="rounded-[1.5rem] border border-dashed border-[#cbd6de] bg-white p-6">
+      <div className="rounded-xl border border-dashed bg-card p-6">
         <p className="text-sm font-medium text-[#101820]">No quote items yet</p>
         <p className="mt-1 text-sm text-[#667584]">
           Quote details will appear once your selected items are prepared.
@@ -63,7 +63,7 @@ export default function CustomerQuoteSummary({
   canDownload = isSigned;
 
   return (
-    <section id="customer-quotation" className="scroll-mt-24 rounded-[1.5rem] border border-[#dce4ea] bg-white p-5 shadow-[0_18px_60px_rgba(22,45,74,0.06)]">
+    <section id="customer-quotation" className="scroll-mt-24 rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">

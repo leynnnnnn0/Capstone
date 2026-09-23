@@ -53,24 +53,21 @@ export default function CustomerDashboard() {
         label: "Active Appointments",
         value: appointments.filter(isActiveAppointment).length,
         icon: Clock,
-        surface: "bg-[#dcecf8]",
-        iconSurface: "bg-[#162d4a]",
+        description: "appointments in progress",
         tooltip: "Appointments still moving through inspection, quotation, or scheduling.",
       },
       {
         label: "Active Work Jobs",
         value: workJobs.filter(isActiveWorkJob).length,
         icon: Wrench,
-        surface: "bg-[#e8f0f6]",
-        iconSurface: "bg-[#315b7d]",
+        description: "scheduled or active jobs",
         tooltip: "Installation or service jobs that are scheduled or in progress.",
       },
       {
         label: "Pending Appointments",
         value: appointments.filter((item) => item.status === "pending").length,
         icon: CalendarPlus,
-        surface: "bg-[#e4eaf0]",
-        iconSurface: "bg-[#405a70]",
+        description: "awaiting schedule confirmation",
         tooltip: "Requests waiting for the SOG team to confirm the schedule.",
       },
     ],
@@ -79,19 +76,17 @@ export default function CustomerDashboard() {
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-[1.75rem] bg-[#162d4a] px-5 py-9 text-white sm:px-9 sm:py-11 lg:px-12">
-        <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#608db9]/25 blur-3xl" />
-        <div className="relative flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
+      <section className="py-1">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/55 sm:text-xs">Customer Dashboard</p>
-          <h1 className="mt-3 text-[clamp(2.5rem,6vw,5.5rem)] font-medium leading-[0.9] tracking-[-0.055em]">Welcome back.</h1>
-          <p className="mt-4 max-w-xl text-sm leading-6 text-white/60 sm:text-base">
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             Manage your inspections and installation progress from one place.
           </p>
         </div>
         <Link
           href="/account/appointments/new"
-          className="group inline-flex w-fit items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#162d4a] transition-colors hover:bg-[#c8dae8]"
+          className="group inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           New appointment
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
@@ -100,37 +95,23 @@ export default function CustomerDashboard() {
       </section>
 
       <TooltipProvider>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+        <div className="mt-8 grid grid-cols-2 gap-x-4 sm:grid-cols-3 sm:gap-x-7 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
             return (
               <Tooltip key={stat.label}>
                 <TooltipTrigger asChild>
-                  <article className={`group relative overflow-hidden rounded-xl p-3 text-left text-[#17324d] shadow-[0_14px_38px_rgba(22,45,74,0.055)] transition-all last:col-span-2 hover:-translate-y-0.5 hover:shadow-[0_20px_55px_rgba(22,45,74,0.12)] sm:rounded-[1.5rem] sm:p-5 sm:last:col-span-1 ${stat.surface}`}>
-                    <div className="relative flex min-h-[88px] flex-col justify-between gap-2 sm:min-h-32 sm:gap-5">
-                      <div className="flex items-start justify-between gap-2 sm:gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-[#6f879b] sm:text-[9px] sm:tracking-[0.2em]">
-                            Customer overview
-                          </p>
-                          <h2 className="mt-1 text-[11px] font-semibold leading-tight sm:mt-2 sm:text-sm">
-                            {stat.label}
-                          </h2>
-                        </div>
-                        <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-white shadow-sm sm:size-10 sm:rounded-2xl ${stat.iconSurface}`}>
-                          <Icon className="size-3.5 sm:size-4" />
-                        </span>
-                      </div>
+                  <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
+                    <div className="flex items-start justify-between gap-2 sm:gap-4">
                       <div>
-                        {loading ? (
-                          <Skeleton className="h-7 w-9 bg-white/55 sm:h-9 sm:w-12" />
-                        ) : (
-                          <p className="text-xl font-semibold tracking-[-0.05em] sm:text-3xl">{stat.value}</p>
-                        )}
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">My activity</p>
+                        <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{stat.label}</h2>
                       </div>
-                      <Icon className="pointer-events-none absolute -bottom-3 -right-2 size-14 text-[#315b7d] opacity-[0.055] sm:-bottom-5 sm:-right-3 sm:size-24" strokeWidth={1.2} />
+                      <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
                     </div>
+                    {loading ? <Skeleton className="mt-2 h-7 w-10 sm:h-8 sm:w-12" /> : <p className="mt-1 text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{stat.value}</p>}
+                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{stat.description}</p>
                   </article>
                 </TooltipTrigger>
                 <TooltipContent>{stat.tooltip}</TooltipContent>
@@ -141,11 +122,10 @@ export default function CustomerDashboard() {
       </TooltipProvider>
 
       <div className="mt-8 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-[1.75rem] bg-white p-4 sm:p-6">
+        <section className="rounded-lg border bg-white p-4 sm:p-5">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">Schedule</p>
-              <h2 className="mt-1 text-xl font-medium tracking-[-0.03em] text-[#101820]">Recent appointments</h2>
+              <h2 className="text-base font-semibold">Recent appointments</h2>
             </div>
             <Link href="/account/appointments" className="text-xs font-semibold text-[#2c5282] hover:underline">
               View all
@@ -165,11 +145,11 @@ export default function CustomerDashboard() {
           </div>
         </section>
 
-        <section className="rounded-[1.75rem] bg-white p-4 sm:p-6">
+        <section className="rounded-lg border bg-white p-4 sm:p-5">
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">Installation</p>
-              <h2 className="mt-1 text-xl font-medium tracking-[-0.03em] text-[#101820]">Active work jobs</h2>
+              <p className="text-xs text-muted-foreground">Installation</p>
+              <h2 className="mt-1 text-base font-semibold">Active work jobs</h2>
             </div>
             <Link href="/account/work-jobs" className="text-xs font-semibold text-[#2c5282] hover:underline">
               View all
@@ -195,7 +175,7 @@ export default function CustomerDashboard() {
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-[1.25rem] border border-dashed border-[#cbd6de] bg-[#f8fafb] p-8 text-center text-sm font-medium text-[#667584]">
+    <div className="rounded-md border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
       {label}
     </div>
   );
