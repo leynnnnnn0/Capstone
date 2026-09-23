@@ -14,6 +14,7 @@ import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSumm
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { CustomerStatus, statusIn } from "@/features/customer/status";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
@@ -277,12 +278,11 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-1.5 sm:col-span-3">
                       <Label htmlFor="reschedule-date">New date</Label>
-                      <Input
+                      <DateField
                         id="reschedule-date"
-                        type="date"
                         min={todayIsoDate()}
                         value={rescheduleForm.appointment_date}
-                        onChange={(event) => updateRescheduleField("appointment_date", event.target.value)}
+                        onChange={(value) => updateRescheduleField("appointment_date", value)}
                       />
                     </div>
                     <div className="space-y-1.5">

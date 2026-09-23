@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -172,12 +172,11 @@ export default function AdminWorkJobFabricationCard({
             {form.status !== "not_required" && form.status !== "ready_for_installation" && (
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="fabrication_expected_date">Expected completion date</Label>
-                <Input
+                <DateField
                   id="fabrication_expected_date"
-                  type="date"
                   min={todayIsoDate()}
                   value={form.expected_completion_date}
-                  onChange={(event) => setField("expected_completion_date", event.target.value)}
+                  onChange={(value) => setField("expected_completion_date", value)}
                 />
                 <p className="text-xs text-muted-foreground">The portal automatically turns this into “expected in 3 days,” “2 days,” and “1 day.”</p>
               </div>

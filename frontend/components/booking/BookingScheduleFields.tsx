@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import FormSelect from "@/components/form/FormSelect";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import {
   getAvailableTimeOptions,
@@ -39,13 +39,11 @@ export default function BookingScheduleFields({
     <div className={className}>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="preferred_date">Preferred Date</Label>
-        <Input
+        <DateField
           id="preferred_date"
-          type="date"
           min={minimumBookingDate()}
           value={preferredDate}
-          onChange={(event) => {
-            const nextDate = event.target.value;
+          onChange={(nextDate) => {
             onPreferredDateChange(
               nextDate,
               resolvePreferredTimeForDate(nextDate, preferredTime),

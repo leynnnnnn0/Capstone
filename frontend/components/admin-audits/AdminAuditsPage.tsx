@@ -10,7 +10,7 @@ import { AdminMobileRecord, AdminMobileRecordDetail } from "@/components/ui/admi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -279,7 +279,7 @@ function AuditDate({ label, value, onChange }: { label: string; value: string; o
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Input type="date" value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-xl" />
+      <DateField value={value} onChange={onChange} className="h-10 rounded-xl" />
     </div>
   );
 }

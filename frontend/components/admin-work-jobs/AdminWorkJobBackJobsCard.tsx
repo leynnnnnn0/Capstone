@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import {
   Dialog,
   DialogContent,
@@ -333,10 +334,9 @@ export default function AdminWorkJobBackJobsCard({
 
             <div className="grid gap-3 sm:grid-cols-3">
               <FieldError label="Scheduled Date" error={errorFor(errors, "scheduled_date")}>
-                <Input
-                  type="date"
+                <DateField
                   value={form.scheduled_date}
-                  onChange={(event) => setField("scheduled_date", event.target.value)}
+                  onChange={(value) => setField("scheduled_date", value)}
                 />
               </FieldError>
               <FieldError label="From" error={errorFor(errors, "scheduled_time_from")}>

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import {
@@ -705,7 +705,7 @@ function FilterDate({ label, value, onChange }: { label: string; value: string; 
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Input type="date" className="h-9" value={value} onChange={(event) => onChange(event.target.value)} />
+      <DateField className="h-9" value={value} onChange={onChange} />
     </div>
   );
 }

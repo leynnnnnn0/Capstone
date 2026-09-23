@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { AdminMobileRecord } from "@/components/ui/admin-mobile-record";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import {
   Select,
@@ -325,7 +325,7 @@ function UserDateFilter({ label, value, onChange }: { label: string; value: stri
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Input type="date" value={value} onChange={(event) => onChange(event.target.value)} className="h-10 rounded-xl" />
+      <DateField value={value} onChange={onChange} className="h-10 rounded-xl" />
     </div>
   );
 }

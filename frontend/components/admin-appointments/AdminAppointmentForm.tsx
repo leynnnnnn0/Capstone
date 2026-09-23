@@ -27,6 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -489,14 +490,17 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               description="Set the actual inspection slot and assigned staff."
             />
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <TextField
-                label="Appointment Date"
-                type="date"
-                min={today}
-                value={data.appointment_date}
-                error={errors.appointment_date}
-                onChange={(value) => setField("appointment_date", value)}
-              />
+              <div className="space-y-1.5">
+                <Label htmlFor="appointment_date">Appointment Date</Label>
+                <DateField
+                  id="appointment_date"
+                  min={today}
+                  value={data.appointment_date}
+                  aria-invalid={Boolean(errors.appointment_date)}
+                  onChange={(value) => setField("appointment_date", value)}
+                />
+                {errors.appointment_date && <p className="text-xs text-red-500">{errors.appointment_date}</p>}
+              </div>
               <TextField
                 label="Time From"
                 type="time"
@@ -655,11 +659,10 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                   <CalendarDays className="size-3.5" />
                   Expiration Date <span className="font-normal text-muted-foreground">(optional)</span>
                 </label>
-                <Input
+                <DateField
                   id="appointment-quotation-expires-at"
-                  type="date"
                   value={data.quotation_expires_at ?? ""}
-                  onChange={(event) => setField("quotation_expires_at", event.target.value)}
+                  onChange={(value) => setField("quotation_expires_at", value)}
                 />
                 <p className="text-[11px] text-muted-foreground">Leave blank if this quotation does not expire.</p>
               </div>

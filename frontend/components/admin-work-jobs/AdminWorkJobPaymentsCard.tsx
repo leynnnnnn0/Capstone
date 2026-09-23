@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -367,10 +367,9 @@ export default function AdminWorkJobPaymentsCard({
 
             <div className="grid gap-1.5">
               <Label>Paid Date</Label>
-              <Input
-                type="date"
+              <DateField
                 value={form.paid_at}
-                onChange={(event) => setField("paid_at", event.target.value)}
+                onChange={(value) => setField("paid_at", value)}
               />
               {fieldErrors.paid_at && <p className="text-xs text-red-500">{fieldErrors.paid_at}</p>}
             </div>

@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -461,10 +461,7 @@ function FilterDate({ label, value, onChange }: { label: string; value: string; 
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <div className="relative">
-        <CalendarRange className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input type="date" className="h-9 pl-8" value={value} onChange={(event) => onChange(event.target.value)} />
-      </div>
+      <DateField className="h-9" value={value} onChange={onChange} />
     </div>
   );
 }

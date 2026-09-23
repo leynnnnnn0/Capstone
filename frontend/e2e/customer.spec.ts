@@ -27,6 +27,24 @@ test("customer can access notifications on mobile", async ({ page }) => {
   await expect(page.getByText("No notifications yet.")).toBeVisible();
 });
 
+test("customer appointment date uses the shared calendar field", async ({ page }) => {
+  await page.goto("/account/appointments/new");
+
+  const dateField = page.getByLabel("Preferred Date");
+  await expect(dateField).toBeVisible();
+  await expect(dateField).toHaveAttribute("type", "button");
+  await expect(page.locator('input[type="date"]')).toHaveCount(0);
+
+  await dateField.click();
+  const calendar = page.locator('[data-slot="calendar"]');
+  await expect(calendar).toBeVisible();
+  await calendar.locator('button[data-day]:not([disabled])').nth(1).click();
+  await expect(dateField).not.toContainText("Pick a date");
+
+  await page.getByRole("button", { name: "Clear date" }).click();
+  await expect(dateField).toContainText("Pick a date");
+});
+
 test("customer work-job detail shows linked appointment, payment, quotation, and activity", async ({ page }) => {
   await page.goto("/account/work-jobs/1");
 

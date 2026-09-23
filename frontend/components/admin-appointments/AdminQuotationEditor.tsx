@@ -6,7 +6,7 @@ import { CalendarDays, Calculator, FileText, Package, Plus, RotateCcw, StickyNot
 import AdminQuotationLineItemRow from "@/components/admin-appointments/AdminQuotationLineItemRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -158,11 +158,10 @@ export default function AdminQuotationEditor({
                   <CalendarDays className="size-3.5" />
                   Expiration Date <span className="font-normal text-muted-foreground">(optional)</span>
                 </label>
-                <Input
+                <DateField
                   id="quotation-expires-at"
-                  type="date"
                   value={expiresAt}
-                  onChange={(event) => setExpiresAt(event.target.value)}
+                  onChange={setExpiresAt}
                 />
                 <p className="text-[11px] text-muted-foreground">Leave blank if this quotation does not expire.</p>
               </div>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import WorkerMultiSelect from "@/components/admin-appointments/WorkerMultiSelect";
 import {
   Dialog,
@@ -233,12 +234,11 @@ export default function AdminScheduleForm({
           >
             <div className="space-y-1.5">
               <Label htmlFor="appointment_date">Appointment Date</Label>
-              <Input
+              <DateField
                 id="appointment_date"
-                type="date"
                 min={today}
                 value={data.appointment_date}
-                onChange={(event) => setField("appointment_date", event.target.value)}
+                onChange={(value) => setField("appointment_date", value)}
               />
               {errors.appointment_date && <p className="text-xs text-red-500">{errors.appointment_date}</p>}
             </div>

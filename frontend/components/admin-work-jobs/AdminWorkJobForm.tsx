@@ -27,6 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -388,7 +389,7 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
             <SectionTitle title="Schedule Work Job" description="Set the actual production slot and assigned staff." />
             <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <Field label="Work Job Date" error={errors.scheduled_date}>
-                <Input type="date" min={today} value={data.scheduled_date} onChange={(event) => setField("scheduled_date", event.target.value)} />
+                <DateField min={today} value={data.scheduled_date} onChange={(value) => setField("scheduled_date", value)} />
               </Field>
                 <Field label="Time From" error={errors.scheduled_time_from}>
                   <Input type="time" min={startTimeMin} value={data.scheduled_time_from} onChange={(event) => setField("scheduled_time_from", event.target.value)} />
@@ -436,11 +437,10 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
               {data.fabrication_status !== "not_required" && (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <Field label="Expected Completion" error={errors.fabrication_expected_completion_date}>
-                    <Input
-                      type="date"
+                    <DateField
                       min={today}
                       value={data.fabrication_expected_completion_date}
-                      onChange={(event) => setField("fabrication_expected_completion_date", event.target.value)}
+                      onChange={(value) => setField("fabrication_expected_completion_date", value)}
                     />
                   </Field>
                   <div className="space-y-1.5 sm:col-span-2">
