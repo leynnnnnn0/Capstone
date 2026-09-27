@@ -13,10 +13,7 @@ class Product3DModelSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ([
-            'Premium Black Hanaloque Screen Door 01' => 'premium-black-hanaloque-screen-door-01.glb',
-            'White Side Panel Screen Door 03' => 'white-side-panel-screen-door-03.glb',
-            'Wood Finish Side Panel Screen Door 01' => 'wood-finish-side-panel-screen-door-01.glb',
+        $cabinetModels = [
             'White Glass-Front Pantry Cabinet' => 'white-glass-front-pantry-cabinet.glb',
             'White Under-Stair Pull-Out Cabinet' => 'white-under-stair-pull-out-cabinet.glb',
             'White L-Shaped Modular Kitchen Cabinet' => 'white-l-shaped-modular-kitchen-cabinet.glb',
@@ -28,8 +25,27 @@ class Product3DModelSeeder extends Seeder
             'White Modular Entertainment Cabinet' => 'white-modular-entertainment-cabinet.glb',
             'White Sliding Glass Storage Cabinet' => 'white-sliding-glass-storage-cabinet.glb',
             'Customized Modular Cabinet' => 'customized-modular-cabinet.glb',
-        ] as $name => $filename) {
+        ];
+
+        foreach ($cabinetModels as $name => $filename) {
             $this->seedModel(Product::where('name', $name)->firstOrFail(), $filename);
+        }
+
+        $doorModels = json_decode(
+            file_get_contents(database_path('seeders/assets/models/door-models.json')),
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        );
+
+        foreach ($doorModels as $name => $filename) {
+            // Metal Style Door is a legacy catalog item and may not exist in a
+            // freshly seeded database. All ProductSeeder doors are required by
+            // the coverage test below.
+            $product = Product::where('name', $name)->first();
+
+            if ($product) {
+                $this->seedModel($product, $filename);
+            }
         }
     }
 

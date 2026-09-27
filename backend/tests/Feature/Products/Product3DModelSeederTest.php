@@ -3,6 +3,7 @@
 use App\Models\Product;
 use Database\Seeders\ModularCabinetSeeder;
 use Database\Seeders\Product3DModelSeeder;
+use Database\Seeders\ProductSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 
@@ -60,5 +61,29 @@ it('covers every seeded modular cabinet without changing its catalog data', func
                 $product->price_per_unit,
                 $product->product_images()->pluck('image_path')->all(),
             ])->toBe($before[$product->id]);
+    }
+});
+
+it('covers every seeded door with a valid GLB', function () {
+    Storage::fake('public');
+
+    $this->seed(ProductSeeder::class);
+
+    // Product3DModelSeeder also expects the cabinet catalog to be present.
+    $this->seed(ModularCabinetSeeder::class);
+    $this->seed(Product3DModelSeeder::class);
+
+    $doors = Product::whereHas(
+        'categories',
+        fn ($query) => $query->where('name', 'Door'),
+    )->with('product_3d_model')->get();
+
+    expect($doors)->toHaveCount(45);
+
+    foreach ($doors as $door) {
+        expect($door->product_3d_model)->not->toBeNull();
+
+        $contents = Storage::disk('public')->get($door->product_3d_model->file_path);
+        expect(substr($contents, 0, 4))->toBe('glTF');
     }
 });
