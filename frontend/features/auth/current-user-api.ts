@@ -3,8 +3,10 @@ import type { User } from "@/types/user";
 
 type ResourceResponse<T> = { data: T };
 
-export function fetchCurrentUser() {
-  return api<ResourceResponse<User>>("/api/user");
+export function fetchCurrentUser({ redirectOnUnauthorized = true }: { redirectOnUnauthorized?: boolean } = {}) {
+  return api<ResourceResponse<User>>("/api/user", {
+    skipAuth: !redirectOnUnauthorized,
+  });
 }
 
 export function primaryRole(user?: User | null) {

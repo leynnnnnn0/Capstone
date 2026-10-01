@@ -7,6 +7,19 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
+test("public pages remain accessible without an authenticated session", async ({ page }) => {
+  await page.route("**/api/user", (route) => route.fulfill({
+    status: 401,
+    json: { message: "Unauthenticated." },
+  }));
+
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: /glass & aluminum, measured to fit/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Login", exact: true })).toBeVisible();
+});
+
 test("tomorrow keeps both booking time periods available after business hours", () => {
   const lateEvening = new Date(2026, 8, 23, 23, 1);
 
@@ -65,6 +78,62 @@ test("landing page renders live products in the editorial collection", async ({ 
   await expect(collection.getByText("Vista Slide Sliding Window")).toHaveCount(0);
   await expect(collection.getByRole("img", { name: "Sliding Door product preview" }))
     .toHaveAttribute("src", "/images/landing/windows.jpg");
+});
+
+test("landing product grid requests and displays six products", async ({ page }) => {
+  const products = Array.from({ length: 6 }, (_, index) => ({
+    id: index + 1,
+    name: `Landing Product ${index + 1}`,
+    description: "Made to measure",
+    unit: "piece",
+    price_per_unit: 7500,
+    is_active: true,
+    categories: [{ id: 1, name: "Door" }],
+    images: [],
+    variants: [],
+    option_groups: [],
+  }));
+
+  await page.route("**/api/v1/products?**", async (route) => {
+    expect(new URL(route.request().url()).searchParams.get("per_page")).toBe("6");
+    await route.fulfill({ json: { data: products } });
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator("#products article")).toHaveCount(6);
+  await expect(page.getByRole("heading", { name: "Landing Product 6" })).toBeVisible();
+});
+
+test("footer product links open their intended catalog filters", async ({ page }) => {
+  await page.goto("/");
+
+  const footer = page.locator("footer");
+
+  await expect(footer.getByRole("link", { name: "Doors" }))
+    .toHaveAttribute("href", "/products?category=door");
+  await expect(footer.getByRole("link", { name: "Windows" }))
+    .toHaveAttribute("href", "/products?category=window");
+  await expect(footer.getByRole("link", { name: "Glass Partitions" }))
+    .toHaveAttribute("href", "/products?q=glass%20partition");
+  await expect(footer.getByRole("link", { name: "Cabinets & Enclosures" }))
+    .toHaveAttribute("href", "/products?category=modular-cabinet");
+  await expect(footer.getByRole("link", { name: "AR Preview" }))
+    .toHaveAttribute("href", "/products?has_3d_model=1");
+});
+
+test("footer category links resolve names to the catalog category id", async ({ page }) => {
+  const requestedCategories: string[] = [];
+
+  await page.route("**/api/v1/products?**", async (route) => {
+    requestedCategories.push(new URL(route.request().url()).searchParams.get("category_id") ?? "");
+    await route.fulfill({ json: { data: [] } });
+  });
+
+  await page.goto("/products?category=door");
+
+  await expect.poll(() => requestedCategories).toContain("1");
+  await expect(page.getByRole("button", { name: "Doors", exact: true })).toHaveClass(/bg-\[#162d4a\]/);
 });
 
 test("about page presents the SOG process and service location", async ({ page }) => {

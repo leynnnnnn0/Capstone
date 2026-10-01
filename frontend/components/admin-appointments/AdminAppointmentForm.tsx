@@ -65,7 +65,7 @@ import {
 import type { AdminAppointment, AdminAppointmentForm as AdminAppointmentFormState, AdminWorker } from "@/features/admin-appointments/types";
 import { CustomerStatus, customerStatusOptions, customerStatusValues } from "@/features/customer/status";
 import { toClockTime } from "@/features/booking/booking-utils";
-import { fetchProducts } from "@/features/products/product-api";
+import { fetchAllProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 import { ApiError } from "@/lib/api";
 import {
@@ -159,13 +159,13 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
 
   useEffect(() => {
     Promise.all([
-      fetchProducts({ is_active: "1", per_page: "100" }),
+      fetchAllProducts({ is_active: "1" }),
       fetchWorkers(),
       fetchAdminAppointments({ per_page: "100" }),
       appointmentId ? fetchAdminAppointment(appointmentId) : rebookId ? fetchAdminAppointment(rebookId) : Promise.resolve(null),
     ])
-      .then(([productResponse, workerResponse, appointmentResponse, rebookResponse]) => {
-        setProducts(productResponse.data);
+      .then(([availableProducts, workerResponse, appointmentResponse, rebookResponse]) => {
+        setProducts(availableProducts);
         setAvailableWorkers(workerResponse.data);
         setAppointments(appointmentResponse.data);
         if (rebookResponse) {
@@ -194,7 +194,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
             quotation_expires_at: source.quotation?.expires_at ?? "",
           });
           if (source.quotation?.items.length) {
-            setItems(customerItemsToLineItems(source.quotation.items, productResponse.data));
+            setItems(customerItemsToLineItems(source.quotation.items, availableProducts));
             setHasQuotation(true);
           }
         }
@@ -329,7 +329,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+              className="gap-1.5"
               onClick={() => setCalendarOpen(true)}
             >
               <CalendarDays className="size-3.5" />
@@ -339,7 +339,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               type="button"
               variant="outline"
               size="sm"
-              className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white"
+              className="gap-1.5"
               onClick={
                 hasQuotation ? () => setQuotationOpen(true) : startQuotation
               }

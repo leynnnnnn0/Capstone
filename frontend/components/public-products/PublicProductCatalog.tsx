@@ -69,6 +69,22 @@ const defaultSearchContent = {
     "Browse sliding glass doors and windows, custom aluminum cabinets, shower enclosures, gates, and railings from a local Cavite fabricator and installer.",
 };
 
+const arSearchContent = {
+  title: "Products available for AR preview",
+  description:
+    "Explore products with interactive 3D models so you can preview their proportions and appearance before requesting a quote.",
+};
+
+function categorySlug(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .replace(/s$/, "");
+}
+
 const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
 const CATALOG_SCROLL_RETURN_KEY = "sog_products_scroll_return";
 const MOBILE_PRODUCTS_PER_PAGE = 4;
@@ -79,7 +95,9 @@ export default function PublicProductCatalog() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const productsPerPage = isMobile ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE;
-  const activeCategory = searchParams.get("category_id") ?? "";
+  const requestedCategoryId = searchParams.get("category_id") ?? "";
+  const requestedCategorySlug = searchParams.get("category") ?? "";
+  const activeHas3dModel = searchParams.get("has_3d_model") === "1" ? "1" : "";
   const activeSearch = searchParams.get("q") ?? "";
   const requestedPage = Number(searchParams.get("page") ?? "1");
   const activePage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
@@ -89,9 +107,12 @@ export default function PublicProductCatalog() {
   const [search, setSearch] = useState(activeSearch);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const selectedCategory = categories.find(
-    (category) => String(category.id) === activeCategory,
+  const selectedCategory = categories.find((category) =>
+    requestedCategoryId
+      ? String(category.id) === requestedCategoryId
+      : categorySlug(category.name) === categorySlug(requestedCategorySlug),
   );
+  const activeCategory = selectedCategory ? String(selectedCategory.id) : requestedCategoryId;
   const searchContent = selectedCategory
     ? categorySearchContent[selectedCategory.name] ?? {
         title: selectedCategory.name,
@@ -99,7 +120,9 @@ export default function PublicProductCatalog() {
           selectedCategory.remarks ??
           `Browse custom ${selectedCategory.name.toLowerCase()} products by SOG Glass & Aluminum.`,
       }
-    : defaultSearchContent;
+    : activeHas3dModel
+      ? arSearchContent
+      : defaultSearchContent;
   const catalogQuery = searchParams.toString();
   const catalogHref = `/products${catalogQuery ? `?${catalogQuery}` : ""}`;
   const restoredCatalogHref = useRef<string | null>(null);
@@ -111,16 +134,25 @@ export default function PublicProductCatalog() {
       .then(() => {
         if (mounted) setLoading(true);
 
-        return Promise.all([
-          fetchProducts({
-            is_active: "1",
-            per_page: String(productsPerPage),
-            page: String(activePage),
-            category_id: activeCategory,
-            search: activeSearch,
-          }),
-          fetchCategories(),
-        ]);
+        return fetchCategories().then((nextCategories) => {
+          const resolvedCategoryId = requestedCategoryId || String(
+            nextCategories.find(
+              (category) => categorySlug(category.name) === categorySlug(requestedCategorySlug),
+            )?.id ?? "",
+          );
+
+          return Promise.all([
+            fetchProducts({
+              is_active: "1",
+              per_page: String(productsPerPage),
+              page: String(activePage),
+              category_id: resolvedCategoryId,
+              search: activeSearch,
+              has_3d_model: activeHas3dModel,
+            }),
+            Promise.resolve(nextCategories),
+          ]);
+        });
       })
       .then(([productsResponse, nextCategories]) => {
         if (!mounted) return;
@@ -139,7 +171,7 @@ export default function PublicProductCatalog() {
     return () => {
       mounted = false;
     };
-  }, [activeCategory, activePage, activeSearch, productsPerPage]);
+  }, [activeHas3dModel, activePage, activeSearch, productsPerPage, requestedCategoryId, requestedCategorySlug]);
 
   useEffect(() => {
     queueMicrotask(() => setSearch(activeSearch));
@@ -176,6 +208,7 @@ export default function PublicProductCatalog() {
     if ("categoryId" in next) {
       if (next.categoryId) params.set("category_id", String(next.categoryId));
       else params.delete("category_id");
+      params.delete("category");
     }
 
     if ("search" in next) {

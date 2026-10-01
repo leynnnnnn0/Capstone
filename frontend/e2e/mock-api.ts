@@ -357,6 +357,7 @@ export async function mockApi(page: Page) {
     if (path === "/api/customer/verify-otp" && method === "POST") {
       return json(route, { data: user });
     }
+    if (path === "/api/v1/categories") return json(route, product.categories);
     if (path === "/api/v1/products") return json(route, [product]);
     if (path === "/api/v1/products/1") return json(route, { data: product });
     if (path === "/api/v1/track") return json(route, { data: trackingResult });

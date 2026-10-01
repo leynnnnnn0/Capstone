@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { isCatalogMode } from "@/lib/app-mode";
 import { trackPublicRoute } from "@/lib/public-route-history";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { primaryRole } from "@/features/auth/current-user-api";
 
 const fullNavigation = [
   { href: "/", label: "Home", exact: true },
@@ -65,6 +67,10 @@ export default function SogSiteHeader({
 }: SogSiteHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useCurrentUser({ redirectOnUnauthorized: false });
+  const accountHref = primaryRole(user) === "customer" ? "/account" : "/dashboard";
+  const accountLabel = user ? "Dashboard" : "Login";
+  const accountLink = user ? accountHref : "/login";
 
   useEffect(() => {
     trackPublicRoute();
@@ -132,10 +138,10 @@ export default function SogSiteHeader({
 
           {!isCatalogMode && <div className="hidden items-center gap-2 lg:flex">
             <Link
-              href="/login"
+              href={accountLink}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-800 transition-colors hover:border-slate-950 hover:text-slate-950"
             >
-              Login
+              {accountLabel}
             </Link>
             <Link
               href={quoteHref}
@@ -209,12 +215,12 @@ export default function SogSiteHeader({
                 );
               })}
               {!isCatalogMode && <Link
-                href="/login"
+                href={accountLink}
                 onClick={() => setMobileMenuOpen(false)}
                 className="mt-1 inline-flex items-center justify-between rounded-2xl border border-slate-300 bg-white px-4 py-4 text-slate-900 transition-colors hover:border-slate-950"
               >
                 <span className="inline-flex items-center gap-2">
-                  Login
+                  {accountLabel}
                 </span>
                 <ArrowRight className="h-4 w-4" />
               </Link>}

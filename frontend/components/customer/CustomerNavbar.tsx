@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   LogOut,
+  PackageSearch,
   UserRound,
 } from "lucide-react";
 
@@ -27,6 +28,7 @@ import {
 
 const navItems = [
   { href: "/account", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/products", label: "Products", icon: PackageSearch, exact: true },
   { href: "/account/appointments", label: "Appointments", icon: CalendarDays },
   { href: "/account/work-jobs", label: "Work Jobs", icon: BriefcaseBusiness },
 ];
@@ -133,7 +135,7 @@ export default function CustomerNavbar() {
       </header>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-white/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden" aria-label="Customer navigation">
-        <div className="mx-auto grid max-w-lg grid-cols-3">
+        <div className="mx-auto grid max-w-lg grid-cols-4">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.exact

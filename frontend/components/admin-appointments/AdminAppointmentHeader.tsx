@@ -59,7 +59,7 @@ export default function AdminAppointmentHeader({
         <>
           <AdminAppointmentStatusBadge status={appointment.status} />
           {!isLocked && !isWorker && (
-            <Button asChild variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
               <Link href={withReturnTo(`/dashboard/appointments/${appointment.id}/edit`, backHref)}>
                 <FilePenLine className="size-3.5" />
                 Edit Appointment
@@ -68,7 +68,7 @@ export default function AdminAppointmentHeader({
           )}
           <Sheet open={calendarOpen} onOpenChange={setCalendarOpen}>
             <SheetTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+              <Button type="button" variant="outline" size="sm" className="gap-1.5">
                 <CalendarDays className="size-3.5" />
                 Open Calendar
               </Button>
@@ -88,7 +88,7 @@ export default function AdminAppointmentHeader({
             </SheetContent>
           </Sheet>
           {!isLocked && (
-            <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white" onClick={onOpenQuotation}>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onOpenQuotation}>
               {appointment.quotation ? <FileText className="size-3.5" /> : <PlusCircle className="size-3.5" />}
               {appointment.quotation ? "Edit Quotation" : "Create Quotation"}
             </Button>

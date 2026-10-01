@@ -303,11 +303,11 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
         recordValue={sourceLabel ?? (isEditing ? "Existing work job" : "New work job")}
         actions={(
           <>
-            <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white" onClick={() => setCalendarOpen(true)}>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setCalendarOpen(true)}>
               <CalendarDays className="size-3.5" />
               Open Calendar
             </Button>
-            <Button type="button" variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white" onClick={() => setQuotationOpen(true)}>
+            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setQuotationOpen(true)}>
               <FileText className="size-3.5" />
               {attachedQuotation ? "View Quotation" : "Create Quotation"}
             </Button>

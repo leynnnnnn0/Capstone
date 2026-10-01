@@ -25,7 +25,7 @@ export default function AdminWorkJobHeader({ workJob }: { workJob: AdminWorkJob 
         <>
           <AdminWorkJobStatusBadge status={workJob.status} />
           {workJob.appointment_id && (
-            <Button asChild variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
               <Link href={`/dashboard/appointments/${workJob.appointment_id}`}>
                 From appointment
                 <ExternalLink className="size-3" />
@@ -33,7 +33,7 @@ export default function AdminWorkJobHeader({ workJob }: { workJob: AdminWorkJob 
             </Button>
           )}
           {canEdit && (
-            <Button asChild variant="outline" size="sm" className="gap-1.5 border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
               <Link href={`/dashboard/work-jobs/${workJob.id}/edit`}>
                 <Pencil className="size-3.5" />
                 Edit

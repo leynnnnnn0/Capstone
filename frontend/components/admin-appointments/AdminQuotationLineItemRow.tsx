@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { ChevronDown, ChevronUp, Layers, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronsUpDown, ChevronUp, Layers, Trash2 } from "lucide-react";
 
 import NumericInput from "@/components/form/NumericInput";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -18,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  convertDimensionUnitValue,
   fmtPeso,
   recalculateLineItem,
   selectProductDefaults,
@@ -50,6 +60,7 @@ export default function AdminQuotationLineItemRow({
   onRemove: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [productOpen, setProductOpen] = useState(false);
   const selectedProduct = products.find((product) => String(product.id) === item.product_id) ?? null;
   const variants = selectedProduct ? productVariants(selectedProduct) : [];
   const groups = selectedProduct ? productOptionGroups(selectedProduct) : [];
@@ -57,7 +68,7 @@ export default function AdminQuotationLineItemRow({
     ? variants.find((variant) => String(variant.id) === item.selected_variant_id)
     : variants.find((variant) => String(variant.width) === item.width && String(variant.height) === item.height);
   const errorPrefix = `items.${index}`;
-  const usesMeasurements = selectedProduct ? !isQuantityOnlyUnit(selectedProduct.unit) : true;
+  const measurementsOptional = selectedProduct ? isQuantityOnlyUnit(selectedProduct.unit) : false;
   const dimensionUnit = item.dimension_unit ?? "cm";
   const dimensionLabel = dimensionUnit === "cm" ? "cm" : "m";
 
@@ -83,7 +94,9 @@ export default function AdminQuotationLineItemRow({
         item,
         {
           dimension_unit: value,
-          selected_variant_id: undefined,
+          width: convertDimensionUnitValue(item.width, dimensionUnit, value),
+          height: convertDimensionUnitValue(item.height, dimensionUnit, value),
+          thickness: convertDimensionUnitValue(item.thickness, dimensionUnit, value),
         },
         selectedProduct,
       ),
@@ -138,20 +151,44 @@ export default function AdminQuotationLineItemRow({
         <div className="space-y-4 border-t px-4 py-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <FieldError label="Product" message={errors[`${errorPrefix}.product_id`]}>
-              <Select
-                value={item.product_id}
-                onValueChange={(productId) => {
-                  const product = products.find((candidate) => String(candidate.id) === productId);
-                  if (product) onUpdate(item.id, selectProductDefaults(product));
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select product..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((product) => <SelectItem key={product.id} value={String(product.id)}>{product.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Popover open={productOpen} onOpenChange={setProductOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={productOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    <span className="truncate">{selectedProduct?.name ?? "Search and select a product..."}</span>
+                    <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search products..." />
+                    <CommandList>
+                      <CommandEmpty>No products found.</CommandEmpty>
+                      <CommandGroup>
+                        {products.map((product) => (
+                          <CommandItem
+                            key={product.id}
+                            value={`${product.name} ${product.id}`}
+                            data-checked={selectedProduct?.id === product.id}
+                            onSelect={() => {
+                              onUpdate(item.id, selectProductDefaults(product));
+                              setProductOpen(false);
+                            }}
+                          >
+                            <span className="min-w-0 flex-1 truncate">{product.name}</span>
+                            {!product.is_active && <Badge variant="outline">Inactive</Badge>}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </FieldError>
             {selectedProduct && variants.length > 0 && (
               <FieldError label="Standard Size (optional)">
@@ -172,16 +209,7 @@ export default function AdminQuotationLineItemRow({
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FieldError label="Item Name" message={errors[`${errorPrefix}.name`]}>
-              <Input value={item.name} onChange={(event) => onUpdate(item.id, { name: event.target.value })} />
-            </FieldError>
-            <FieldError label="Description">
-              <Input value={item.description} placeholder="Short description (optional)" onChange={(event) => onUpdate(item.id, { description: event.target.value })} />
-            </FieldError>
-          </div>
-
-          {selectedProduct && usesMeasurements && (
+          {selectedProduct && (
             <FieldError label="Measurement Unit">
               <Select value={dimensionUnit} onValueChange={(value) => updateDimensionUnit(value as DimensionUnit)}>
                 <SelectTrigger className="w-full">
@@ -196,14 +224,18 @@ export default function AdminQuotationLineItemRow({
           )}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <FieldError label={`${selectedProduct?.unit === "meter" ? "Length" : "Width"} (${dimensionLabel})`} message={errors[`${errorPrefix}.width`]}>
+            <FieldError label={`${selectedProduct?.unit === "meter" ? "Length" : "Width"} (${dimensionLabel})${measurementsOptional ? " optional" : ""}`} message={errors[`${errorPrefix}.width`]}>
               <NumericInput maxValue={displayedDimensionLimit("width", dimensionUnit, selectedProduct?.unit)} value={item.width} onValueChange={(value) => updateField("width", value)} />
             </FieldError>
-            <FieldError label={`Height (${dimensionLabel})`} message={errors[`${errorPrefix}.height`]}>
+            <FieldError label={`Height (${dimensionLabel})${measurementsOptional ? " optional" : ""}`} message={errors[`${errorPrefix}.height`]}>
               <NumericInput maxValue={displayedDimensionLimit("height", dimensionUnit)} value={item.height} onValueChange={(value) => updateField("height", value)} />
             </FieldError>
-            <FieldError label="Depth (mm)" message={errors[`${errorPrefix}.thickness`]}>
-              <NumericInput maxValue={QUOTE_LIMITS.thicknessMillimeters} value={item.thickness} onValueChange={(value) => onUpdate(item.id, { thickness: value })} />
+            <FieldError label={`Depth (${dimensionLabel}) optional`} message={errors[`${errorPrefix}.thickness`]}>
+              <NumericInput
+                maxValue={dimensionUnit === "cm" ? QUOTE_LIMITS.thicknessMillimeters / 10 : QUOTE_LIMITS.thicknessMillimeters / 1000}
+                value={item.thickness}
+                onValueChange={(value) => onUpdate(item.id, { thickness: value })}
+              />
             </FieldError>
             <FieldError label="Pieces" message={errors[`${errorPrefix}.pieces`]}>
               <NumericInput allowDecimal={false} maxValue={QUOTE_LIMITS.pieces} value={item.pieces} onValueChange={(value) => updateField("pieces", value)} />
@@ -274,7 +306,7 @@ function FieldError({ label, message, children }: { label: string; message?: str
     <div className="space-y-1.5">
       <Label className="text-xs">
         {label}
-        {["Product", "Item Name", "Pieces"].includes(label) && <span className="text-destructive"> *</span>}
+        {["Product", "Pieces"].includes(label) && <span className="text-destructive"> *</span>}
       </Label>
       {children}
       {message && <p className="text-xs text-destructive">{message}</p>}

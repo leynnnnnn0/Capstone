@@ -40,6 +40,26 @@ export async function fetchProducts(filters: ProductListFilters = {}) {
 }
 
 /**
+ * Fetch every product page for controls that need a complete local picker.
+ */
+export async function fetchAllProducts(filters: ProductListFilters = {}) {
+  const perPage = filters.per_page ?? "100";
+  const first = await fetchProducts({ ...filters, page: "1", per_page: perPage });
+  const products = [...first.data];
+
+  for (let page = 2; page <= (first.meta?.last_page ?? 1); page += 1) {
+    const response = await fetchProducts({
+      ...filters,
+      page: String(page),
+      per_page: perPage,
+    });
+    products.push(...response.data);
+  }
+
+  return products;
+}
+
+/**
  * Fetch the complete product record used by the public product details page.
  */
 export async function fetchProduct(productId: string | number) {

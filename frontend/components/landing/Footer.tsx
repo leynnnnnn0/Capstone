@@ -8,10 +8,10 @@ const footerColumns = [
   {
     heading: "Products",
     links: [
-      { label: "Doors", href: "/products" },
-      { label: "Windows", href: "/products" },
-      { label: "Glass Partitions", href: "/products" },
-      { label: "Cabinets & Enclosures", href: "/products" },
+      { label: "Doors", href: "/products?category=door" },
+      { label: "Windows", href: "/products?category=window" },
+      { label: "Glass Partitions", href: "/products?q=glass%20partition" },
+      { label: "Cabinets & Enclosures", href: "/products?category=modular-cabinet" },
     ],
   },
   {
@@ -20,7 +20,7 @@ const footerColumns = [
       { label: "On-site Inspection", href: "/#booking" },
       { label: "Custom Fabrication", href: "/#services" },
       { label: "Installation", href: "/#process" },
-      { label: "AR Preview", href: "/products" },
+      { label: "AR Preview", href: "/products?has_3d_model=1" },
       { label: "About SOG", href: "/about" },
       { label: "Contact", href: "/contact" },
     ],

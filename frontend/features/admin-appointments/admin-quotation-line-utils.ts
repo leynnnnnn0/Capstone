@@ -49,6 +49,7 @@ export function makeAdminLineItem(): AdminLineItem {
 }
 
 export function customerItemToLineItem(item: CustomerQuotationItem, product?: Product | null): AdminLineItem {
+  const dimensionUnit: DimensionUnit = "cm";
   const matchingVariant = product
     ? productVariants(product).find((variant) =>
         dimensionsMatchVariant(item.width, variant.width) &&
@@ -60,13 +61,13 @@ export function customerItemToLineItem(item: CustomerQuotationItem, product?: Pr
   return {
     id: crypto.randomUUID(),
     server_id: item.id,
-    product_id: item.product_id ? String(item.product_id) : "",
-    name: item.name,
-    description: item.description ?? "",
-    width: item.width ? String(item.width) : "",
-    height: item.height ? String(item.height) : "",
-    thickness: item.thickness ? String(item.thickness) : "",
-    dimension_unit: matchingVariant ? "cm" : "m",
+    product_id: product ? String(product.id) : item.product_id ? String(item.product_id) : "",
+    name: product?.name ?? item.name,
+    description: "",
+    width: storedMetersToDisplay(item.width, dimensionUnit),
+    height: storedMetersToDisplay(item.height, dimensionUnit),
+    thickness: storedMillimetersToDisplay(item.thickness, dimensionUnit),
+    dimension_unit: dimensionUnit,
     selected_variant_id: matchingVariant ? String(matchingVariant.id) : undefined,
     pieces: String(item.pieces),
     amount_per_piece: String(item.amount_per_piece),
@@ -87,7 +88,9 @@ export function customerItemsToLineItems(items: CustomerQuotationItem[], product
   return items.map((item) =>
     customerItemToLineItem(
       item,
-      products.find((product) => product.id === item.product_id) ?? null,
+      products.find((product) => product.id === item.product_id) ??
+        products.find((product) => normalizeName(product.name) === normalizeName(item.name)) ??
+        null,
     ),
   );
 }
@@ -99,7 +102,7 @@ export function lineItemToPayload(item: AdminLineItem): QuoteItemPayload {
     description: item.description,
     width: dimensionValueOrNull(item.width, item.dimension_unit),
     height: dimensionValueOrNull(item.height, item.dimension_unit),
-    thickness: toNumberOrNull(item.thickness),
+    thickness: dimensionValueInMillimetersOrNull(item.thickness, item.dimension_unit),
     pieces: Number(item.pieces || 1),
     amount_per_piece: Number(item.amount_per_piece || 0),
     options_amount: Number(item.options_amount || 0),
@@ -160,6 +163,13 @@ export function selectProductDefaults(product: Product): Partial<AdminLineItem> 
   };
 }
 
+export function convertDimensionUnitValue(value: string, from: DimensionUnit, to: DimensionUnit) {
+  if (!value || from === to) return value;
+
+  const converted = dimensionValueInMeters(value, from) * (to === "cm" ? 100 : 1);
+  return formatDimension(converted);
+}
+
 export function selectVariantDefaults(item: AdminLineItem, product: Product, variantId: string) {
   const variant = productVariants(product).find((candidate) => String(candidate.id) === variantId);
   if (!variant) return {};
@@ -215,15 +225,12 @@ export function validateLineItems(items: AdminLineItem[]) {
     if (Number(item.pieces) > QUOTE_LIMITS.pieces) errors[`items.${index}.pieces`] = `Pieces cannot exceed ${QUOTE_LIMITS.pieces}.`;
     if (dimensionValueInMeters(item.width, item.dimension_unit) > QUOTE_LIMITS.widthMeters) errors[`items.${index}.width`] = `Width cannot exceed ${QUOTE_LIMITS.widthMeters} meters.`;
     if (dimensionValueInMeters(item.height, item.dimension_unit) > QUOTE_LIMITS.heightMeters) errors[`items.${index}.height`] = `Height cannot exceed ${QUOTE_LIMITS.heightMeters} meters.`;
-    if (Number(item.thickness) > QUOTE_LIMITS.thicknessMillimeters) errors[`items.${index}.thickness`] = `Depth cannot exceed ${QUOTE_LIMITS.thicknessMillimeters} mm.`;
+    if (dimensionValueInMillimeters(item.thickness, item.dimension_unit) > QUOTE_LIMITS.thicknessMillimeters) {
+      errors[`items.${index}.thickness`] = `Depth cannot exceed ${QUOTE_LIMITS.thicknessMillimeters / 10} cm.`;
+    }
   });
 
   return errors;
-}
-
-function toNumberOrNull(value: string) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && value !== "" ? parsed : null;
 }
 
 function dimensionValueOrNull(value: string, unit: DimensionUnit) {
@@ -231,6 +238,35 @@ function dimensionValueOrNull(value: string, unit: DimensionUnit) {
 
   const parsed = dimensionValueInMeters(value, unit);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function dimensionValueInMillimeters(value: string, unit: DimensionUnit) {
+  return dimensionValueInMeters(value, unit) * 1000;
+}
+
+function dimensionValueInMillimetersOrNull(value: string, unit: DimensionUnit) {
+  if (value === "") return null;
+
+  const parsed = dimensionValueInMillimeters(value, unit);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function storedMetersToDisplay(value: string | number | null | undefined, unit: DimensionUnit) {
+  if (value === null || value === undefined || value === "") return "";
+  return formatDimension(Number(value) * (unit === "cm" ? 100 : 1));
+}
+
+function storedMillimetersToDisplay(value: string | number | null | undefined, unit: DimensionUnit) {
+  if (value === null || value === undefined || value === "") return "";
+  return formatDimension(Number(value) / (unit === "cm" ? 10 : 1000));
+}
+
+function formatDimension(value: number) {
+  return Number.isFinite(value) ? String(Number(value.toFixed(4))) : "";
+}
+
+function normalizeName(value: string) {
+  return value.trim().toLocaleLowerCase();
 }
 
 function dimensionsMatchVariant(savedValue: string | number | null | undefined, variantValue: string | number) {

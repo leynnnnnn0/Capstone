@@ -31,7 +31,7 @@ import {
   type AdminLineItem,
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
-import { fetchProducts } from "@/features/products/product-api";
+import { fetchAllProducts } from "@/features/products/product-api";
 import type { Product } from "@/features/products/types";
 
 export default function AdminQuotationEditor({
@@ -57,12 +57,23 @@ export default function AdminQuotationEditor({
   useEffect(() => {
     if (!open) return;
 
-    fetchProducts({ is_active: "1", per_page: "100" })
-      .then((response) => {
-        setProducts(response.data);
+    fetchAllProducts({ is_active: "1" })
+      .then((activeProducts) => {
+        const quotedProducts = appointment.quotation?.items
+          .map((item) => item.product)
+          .filter((product): product is Product => Boolean(product)) ?? [];
+        const availableProducts = [...activeProducts];
+
+        quotedProducts.forEach((product) => {
+          if (!availableProducts.some((candidate) => candidate.id === product.id)) {
+            availableProducts.push(product);
+          }
+        });
+
+        setProducts(availableProducts);
         setItems(
           appointment.quotation?.items.length
-            ? customerItemsToLineItems(appointment.quotation.items, response.data)
+            ? customerItemsToLineItems(appointment.quotation.items, availableProducts)
             : [makeAdminLineItem()],
         );
         setNotes(appointment.quotation?.notes ?? "");

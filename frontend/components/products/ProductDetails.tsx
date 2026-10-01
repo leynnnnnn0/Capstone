@@ -48,7 +48,7 @@ export default function ProductDetails({ product }: { product: Product }) {
         recordLabel="Product record"
         recordValue={`${product.is_active ? "Active" : "Inactive"} · ${formatCurrency(product.price_per_unit)} / ${product.unit}`}
         actions={(
-          <Button asChild variant="outline" size="sm" className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10 hover:text-white">
+          <Button asChild variant="outline" size="sm">
             <Link href={`/dashboard/products/${product.id}/edit`}>
               <Pencil className="size-3.5" />
               Edit product
