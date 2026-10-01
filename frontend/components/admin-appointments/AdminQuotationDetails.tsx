@@ -325,7 +325,7 @@ function QuotationItemCard({
             {item.description && <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>}
             <div className="mt-1 flex flex-wrap gap-1.5">
               {(item.width || item.height) && <Badge variant="outline" className="text-[10px]">{item.width} x {item.height} cm</Badge>}
-              {item.thickness && <Badge variant="outline" className="text-[10px]">{item.thickness} mm</Badge>}
+              {item.thickness && <Badge variant="outline" className="text-[10px]">Depth {item.thickness} mm</Badge>}
               <Badge variant="outline" className="text-[10px]">{item.pieces} pc{item.pieces !== 1 ? "s" : ""}</Badge>
             </div>
           </div>

@@ -5,6 +5,7 @@ import {
   computeMeasuredQuantity,
   dimensionValueInMeters,
   isQuantityOnlyUnit,
+  QUOTE_LIMITS,
 } from "@/features/quotes/quote-utils";
 import type { DimensionUnit, QuoteItemPayload, SelectedQuoteOption } from "@/features/quotes/types";
 
@@ -36,7 +37,7 @@ export function makeAdminLineItem(): AdminLineItem {
     width: "",
     height: "",
     thickness: "",
-    dimension_unit: "m",
+    dimension_unit: "cm",
     selected_variant_id: undefined,
     pieces: "1",
     amount_per_piece: "",
@@ -150,7 +151,7 @@ export function selectProductDefaults(product: Product): Partial<AdminLineItem> 
     width: "",
     height: "",
     thickness: "",
-    dimension_unit: "m",
+    dimension_unit: "cm",
     selected_variant_id: undefined,
     amount_per_piece: "",
     options_amount: "0",
@@ -211,6 +212,10 @@ export function validateLineItems(items: AdminLineItem[]) {
     if (!item.product_id) errors[`items.${index}.product_id`] = "Product is required.";
     if (!item.name.trim()) errors[`items.${index}.name`] = "Item name is required.";
     if (!item.pieces || Number(item.pieces) < 1) errors[`items.${index}.pieces`] = "At least 1 piece required.";
+    if (Number(item.pieces) > QUOTE_LIMITS.pieces) errors[`items.${index}.pieces`] = `Pieces cannot exceed ${QUOTE_LIMITS.pieces}.`;
+    if (dimensionValueInMeters(item.width, item.dimension_unit) > QUOTE_LIMITS.widthMeters) errors[`items.${index}.width`] = `Width cannot exceed ${QUOTE_LIMITS.widthMeters} meters.`;
+    if (dimensionValueInMeters(item.height, item.dimension_unit) > QUOTE_LIMITS.heightMeters) errors[`items.${index}.height`] = `Height cannot exceed ${QUOTE_LIMITS.heightMeters} meters.`;
+    if (Number(item.thickness) > QUOTE_LIMITS.thicknessMillimeters) errors[`items.${index}.thickness`] = `Depth cannot exceed ${QUOTE_LIMITS.thicknessMillimeters} mm.`;
   });
 
   return errors;

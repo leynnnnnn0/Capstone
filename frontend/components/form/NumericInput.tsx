@@ -9,6 +9,7 @@ type NumericInputProps = Omit<ComponentProps<typeof Input>, "onChange" | "value"
   value: string | number;
   allowDecimal?: boolean;
   decimalScale?: number;
+  maxValue?: number;
   onValueChange: (value: string) => void;
 };
 
@@ -16,6 +17,7 @@ export default function NumericInput({
   value,
   allowDecimal = true,
   decimalScale,
+  maxValue,
   inputMode,
   onValueChange,
   onKeyDown,
@@ -48,9 +50,16 @@ export default function NumericInput({
 
         onPaste?.(event);
       }}
-      onChange={(event) =>
-        onValueChange(sanitizeNumericInput(event.target.value, { allowDecimal, decimalScale }))
-      }
+      onChange={(event) => {
+        const sanitized = sanitizeNumericInput(event.target.value, { allowDecimal, decimalScale });
+        const numericValue = Number(sanitized);
+
+        onValueChange(
+          maxValue !== undefined && sanitized !== "" && numericValue > maxValue
+            ? String(maxValue)
+            : sanitized,
+        );
+      }}
     />
   );
 }

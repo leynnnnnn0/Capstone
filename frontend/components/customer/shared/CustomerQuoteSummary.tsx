@@ -253,7 +253,7 @@ function ReadonlyQuoteItem({
               )}
               {item.thickness && (
                 <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] text-slate-700">
-                  {item.thickness} mm
+                  Depth {item.thickness} mm
                 </span>
               )}
               <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] text-slate-700">

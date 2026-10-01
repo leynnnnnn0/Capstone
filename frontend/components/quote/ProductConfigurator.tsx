@@ -16,16 +16,19 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import type { Category, Product, ProductVariant } from "@/features/products/types";
 import { productCategories as categoriesForProduct } from "@/features/products/product-utils";
 import type { QuoteCartItem, QuoteDraft, SizeMode } from "@/features/quotes/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   createQuoteDraft,
   createQuoteId,
   isQuoteDraftReady,
   productOptionGroups,
   productVariants,
+  QUOTE_LIMITS,
   quoteProductImage,
 } from "@/features/quotes/quote-utils";
 
-const PRODUCTS_PER_PAGE = 12;
+const MOBILE_PRODUCTS_PER_PAGE = 4;
+const DESKTOP_PRODUCTS_PER_PAGE = 12;
 
 export default function ProductConfigurator({
   products,
@@ -50,6 +53,8 @@ export default function ProductConfigurator({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
+  const productsPerPage = isMobile ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE;
   const activeCategory = searchParams.get("category_id") ?? "";
   const activeSearch = searchParams.get("q") ?? "";
   const initialProduct = products[0] ?? null;
@@ -117,12 +122,12 @@ export default function ProductConfigurator({
     });
   }, [activeCategory, products, search]);
 
-  const filterKey = JSON.stringify([activeCategory, search.trim().toLowerCase()]);
-  const lastPage = Math.max(1, Math.ceil(visibleProducts.length / PRODUCTS_PER_PAGE));
+  const filterKey = JSON.stringify([activeCategory, search.trim().toLowerCase(), productsPerPage]);
+  const lastPage = Math.max(1, Math.ceil(visibleProducts.length / productsPerPage));
   const currentPage = pagination.filter === filterKey ? Math.min(pagination.page, lastPage) : 1;
   const pageProducts = visibleProducts.slice(
-    (currentPage - 1) * PRODUCTS_PER_PAGE,
-    currentPage * PRODUCTS_PER_PAGE,
+    (currentPage - 1) * productsPerPage,
+    currentPage * productsPerPage,
   );
 
   const ready = draft ? isQuoteDraftReady(draft) : false;
@@ -276,7 +281,7 @@ export default function ProductConfigurator({
             meta={{
               current_page: currentPage,
               last_page: lastPage,
-              per_page: PRODUCTS_PER_PAGE,
+              per_page: productsPerPage,
               total: visibleProducts.length,
             }}
             onPageChange={(page) => setPagination({ page, filter: filterKey })}
@@ -388,7 +393,7 @@ export default function ProductConfigurator({
               thickness: draft.thickness,
             }}
             onChange={(dims) => setDraft((current) => current && { ...current, ...dims })}
-            unit={draft.dimension_unit ?? "m"}
+            unit={draft.dimension_unit ?? "cm"}
             onUnitChange={(dimensionUnit) =>
               setDraft((current) =>
                 current && { ...current, dimension_unit: dimensionUnit },
@@ -401,7 +406,10 @@ export default function ProductConfigurator({
       <section className="mb-5">
         <LivePriceBar
           item={draft}
-          onPiecesChange={(pieces) => setDraft((current) => current && { ...current, pieces })}
+          onPiecesChange={(pieces) => setDraft((current) => current && {
+            ...current,
+            pieces: Math.min(pieces, QUOTE_LIMITS.pieces),
+          })}
         />
       </section>
 
@@ -448,7 +456,7 @@ function itemToDraft(item: QuoteCartItem): QuoteDraft {
     width: item.width,
     height: item.height,
     thickness: item.thickness,
-    pieces: item.pieces,
+    pieces: Math.min(Math.max(1, item.pieces), QUOTE_LIMITS.pieces),
   };
 }
 

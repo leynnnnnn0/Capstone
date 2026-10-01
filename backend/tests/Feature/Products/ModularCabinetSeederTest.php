@@ -18,8 +18,8 @@ it('seeds the modular cabinet catalog with its category and images', function ()
 
     expect(Product::whereHas('categories', fn ($query) => $query->whereKey($category->id))->count())->toBe(11)
         ->and(Product::where('name', 'Customized Modular Cabinet')->count())->toBe(1)
-        ->and(Product::where('name', 'Customized Modular Cabinet')->value('unit'))->toBe('meter')
-        ->and(Product::where('name', 'Customized Modular Cabinet')->value('price_per_unit'))->toBe('18000.00');
+        ->and(Product::where('name', 'Customized Modular Cabinet')->value('unit'))->toBe('sqft')
+        ->and(Product::where('name', 'Customized Modular Cabinet')->value('price_per_unit'))->toBe('1100.00');
 
     $underStairCabinet = Product::where('name', 'White Under-Stair Pull-Out Cabinet')->firstOrFail();
     $wardrobe = Product::where('name', 'Analoque Brown Walk-In Wardrobe Cabinet')->firstOrFail();

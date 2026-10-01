@@ -127,10 +127,10 @@ Most frontend validation is implemented with Zod and shared helpers in `frontend
 | Quotation items list | At least one line item required when quotation is attached | `At least one item is required.` |
 | Product | Required on each line item | `Product is required.` |
 | Item name | Required trimmed text | `Item name is required.` |
-| Width | Numeric decimal, blocks `e`, `E`, `+`, and `-` | Shared numeric errors if schema validation is added; recalculation uses sanitized value |
-| Height | Numeric decimal, blocks `e`, `E`, `+`, and `-` | Shared numeric errors if schema validation is added; recalculation uses sanitized value |
-| Thickness | Numeric decimal, blocks `e`, `E`, `+`, and `-` | Shared numeric errors if schema validation is added; recalculation uses sanitized value |
-| Pieces | Integer, at least 1 | `At least 1 piece required.` |
+| Width / linear length | Area-priced products: maximum 20 m (2,000 cm); linear products: maximum 100 m (10,000 cm) | Centimeters are the default; input is capped at the selected unit's equivalent maximum |
+| Height | Numeric decimal, maximum 10 m (1,000 cm) | Centimeters are the default; input is capped at the selected unit's equivalent maximum |
+| Depth | Optional numeric decimal, maximum 100 mm | Stored in the legacy `thickness` field; input is capped at 100 and the API rejects larger values |
+| Pieces | Integer, 1 to 50 per quotation item | `At least 1 piece required.` `Piece count cannot exceed 50 per quotation item.` |
 | Amount per piece | Numeric decimal, blocks `e`, `E`, `+`, and `-` | Shared numeric errors if schema validation is added; recalculation uses sanitized value |
 | Material options | Selectable product options | Backend validates option IDs and pricing |
 | Quotation item photos | JPG, PNG, or WebP; up to 5 MB each; up to 10 pending files per panel | `Upload JPG, PNG, or WebP images up to 5 MB each.` |

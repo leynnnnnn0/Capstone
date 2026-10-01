@@ -552,17 +552,17 @@ function RelatedProductCard({ product, index }: { product: Product; index: numbe
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group block overflow-hidden rounded-2xl border border-slate-100 bg-white no-underline shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white no-underline shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
     >
       <div
-        className="flex h-40 items-center justify-center overflow-hidden"
+        className="flex aspect-[4/3] items-center justify-center overflow-hidden"
         style={{ background: src ? "#f8fafc" : gradients[index % gradients.length] }}
       >
         {src ? (
           <NativeShimmerImage
             src={src}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
           />
         ) : (
           <span className="text-[28px] font-black text-white opacity-20">
@@ -570,12 +570,12 @@ function RelatedProductCard({ product, index }: { product: Product; index: numbe
           </span>
         )}
       </div>
-      <div className="p-4">
-        <h3 className="mb-1 font-bold text-slate-900">{product.name}</h3>
-        <p className="mb-2 line-clamp-1 text-[11px] text-slate-400">
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="mb-1 line-clamp-2 font-bold text-slate-900">{product.name}</h3>
+        <p className="mb-2 line-clamp-2 text-[11px] leading-5 text-slate-400">
           {product.description}
         </p>
-        {!isCatalogMode && <p className="text-[12px] font-bold text-primary">
+        {!isCatalogMode && <p className="mt-auto text-[12px] font-bold text-primary">
           from {formatCurrency(product.price_per_unit)}
           <span className="font-normal text-slate-400">/{product.unit}</span>
         </p>}

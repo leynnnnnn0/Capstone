@@ -1,7 +1,7 @@
 "use client";
 
 import type { QuoteDraft } from "@/features/quotes/types";
-import { computeItemTotal, formatCurrency } from "@/features/quotes/quote-utils";
+import { computeItemTotal, formatCurrency, QUOTE_LIMITS } from "@/features/quotes/quote-utils";
 
 export default function LivePriceBar({
   item,
@@ -15,12 +15,20 @@ export default function LivePriceBar({
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
       <div className="flex items-center gap-2 sm:gap-3">
-        <span className="hidden text-[12px] font-bold text-slate-500 sm:inline">Pieces</span>
+        <span className="hidden text-[12px] font-bold text-slate-500 sm:inline">
+          Pieces <span className="font-normal text-slate-400">(max {QUOTE_LIMITS.pieces})</span>
+        </span>
         <button type="button" onClick={() => onPiecesChange(Math.max(1, item.pieces - 1))} className="h-8 w-8 rounded-lg border border-slate-200 text-primary">
           -
         </button>
         <span className="min-w-6 text-center text-[16px] font-bold text-slate-900">{item.pieces}</span>
-        <button type="button" onClick={() => onPiecesChange(item.pieces + 1)} className="h-8 w-8 rounded-lg border border-slate-200 text-primary">
+        <button
+          type="button"
+          disabled={item.pieces >= QUOTE_LIMITS.pieces}
+          onClick={() => onPiecesChange(Math.min(QUOTE_LIMITS.pieces, item.pieces + 1))}
+          className="h-8 w-8 rounded-lg border border-slate-200 text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label={`Add piece; maximum ${QUOTE_LIMITS.pieces}`}
+        >
           +
         </button>
       </div>

@@ -41,7 +41,7 @@ it('seeds each photo catalog with stable products, categories, and original imag
 })->with([
     [GateSeeder::class, 'Gate', 'gates', 15, 'sqm'],
     [RailSeeder::class, 'Rail', 'rails', 5, 'meter'],
-    [ShowerEnclosureSeeder::class, 'Shower Enclosure', 'shower-enclosures', 18, 'sqm'],
+    [ShowerEnclosureSeeder::class, 'Shower Enclosure', 'shower-enclosures', 18, 'set'],
 ]);
 
 it('preserves manually added photos and category assignments when reseeding', function () {
@@ -63,4 +63,15 @@ it('does not accidentally seed the gate PNG as a screen door', function () {
         ->and(ProductImage::where('image_path', 'like', 'products/gates/%')->count())->toBe(0)
         ->and(ProductImage::where('image_path', 'like', 'products/rails/%')->count())->toBe(0)
         ->and(ProductImage::where('image_path', 'like', 'products/shower-enclosures/%')->count())->toBe(0);
+});
+
+it('uses the budgetary per-piece price for screen doors', function () {
+    Storage::fake('public');
+    $this->seed(ProductSeeder::class);
+
+    expect(Product::all())->not->toBeEmpty();
+    foreach (Product::all() as $product) {
+        expect($product->unit)->toBe('piece')
+            ->and($product->price_per_unit)->toBe('7500.00');
+    }
 });

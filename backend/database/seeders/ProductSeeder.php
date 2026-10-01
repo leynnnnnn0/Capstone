@@ -51,7 +51,9 @@ class ProductSeeder extends Seeder
                 [
                     'description' => $this->productDescription($imagePath),
                     'unit' => 'piece',
-                    'price_per_unit' => 6000,
+                    // Budgetary installed rate for a standard custom screen door.
+                    // Final fabrication pricing is still confirmed after measurement.
+                    'price_per_unit' => 7500,
                     'is_active' => true,
                 ],
             );

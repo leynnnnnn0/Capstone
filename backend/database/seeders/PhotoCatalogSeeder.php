@@ -47,7 +47,14 @@ abstract class PhotoCatalogSeeder extends Seeder
                 ['remarks' => 'Made-to-measure '.$this->category.' designs. Final specifications and prices are confirmed by quotation.'],
             );
             foreach ($items as [$name, $description, $price, $folder, $sources]) {
-                $basis = $this->unit === 'meter' ? 'linear meter' : 'square meter';
+                $basis = match ($this->unit) {
+                    'meter' => 'linear meter',
+                    'sqm' => 'square meter',
+                    'sqft' => 'square foot',
+                    'piece' => 'piece',
+                    'set' => 'set',
+                    default => $this->unit,
+                };
                 $product = Product::updateOrCreate(['name' => $name], [
                     'description' => $description.' Estimated starting price per '.$basis.'; final quotation depends on site measurements, materials, finish, hardware, and installation requirements. Surrounding structures, fixtures, and accessories in the photo are not included unless specified in the quotation.',
                     'unit' => $this->unit,

@@ -390,4 +390,29 @@ it('returns 422 when product does not exist', function () {
         ->assertJsonValidationErrors(['items.0.product_id']);
 });
 
+it('rejects unrealistic quotation dimensions and quantities', function () {
+    $this->actingAs($this->admin)
+        ->postJson('/api/v1/quotations', [
+            'appointment_id' => $this->appointment->id,
+            'items' => [[
+                'product_id' => $this->product->id,
+                'name' => 'Oversized Glass Door',
+                'width' => 20_000_000,
+                'height' => 20_000,
+                'thickness' => 500,
+                'pieces' => 1000,
+                'amount_per_piece' => 100,
+                'total_amount' => 100_000,
+                'selected_options' => [],
+            ]],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'items.0.width',
+            'items.0.height',
+            'items.0.thickness',
+            'items.0.pieces',
+        ]);
+});
+
 // ── Auth ──────────────────────────────────────────────────────────

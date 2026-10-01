@@ -5,8 +5,11 @@ import { Label } from "@/components/ui/label";
 import type { Product } from "@/features/products/types";
 import {
   computeMeasuredQuantity,
+  displayedDimensionLimit,
   dimensionValueInMeters,
+  isAreaUnit,
   isQuantityOnlyUnit,
+  QUOTE_LIMITS,
 } from "@/features/quotes/quote-utils";
 import type { DimensionUnit } from "@/features/quotes/types";
 
@@ -29,14 +32,6 @@ export default function DimensionFields({
   unit: DimensionUnit;
   onUnitChange: (unit: DimensionUnit) => void;
 }) {
-  if (isQuantityOnlyUnit(product.unit)) {
-    return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] text-slate-500">
-        Priced per <strong>{product.unit}</strong>. Adjust pieces below.
-      </div>
-    );
-  }
-
   const measuredQuantity = computeMeasuredQuantity(
     product.unit,
     dimensionValueInMeters(value.width, unit),
@@ -71,41 +66,41 @@ export default function DimensionFields({
           ))}
         </div>
       </div>
-      <div className="flex items-end gap-3">
+      <div className={`grid gap-3 ${usesHeight ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
         <NumberField
           label={`${product.unit === "meter" ? "Length" : "Width"} (${unitLabel})`}
           value={value.width}
+          maxValue={displayedDimensionLimit("width", unit, product.unit)}
           onChange={(width) => onChange({ ...value, width })}
+          optional={isQuantityOnlyUnit(product.unit)}
         />
         {usesHeight && (
-          <>
-            <span className="pb-2 font-bold text-slate-400">x</span>
-            <NumberField
-              label={`Height (${unitLabel})`}
-              value={value.height}
-              onChange={(height) => onChange({ ...value, height })}
-            />
-            {measuredQuantity > 0 && (
-              <div className="rounded-xl bg-blue-50 px-4 py-2.5 text-center">
-                <p className="text-[10px] text-slate-500">
-                  {product.unit === "sqft" ? "Square feet" : "Area"}
-                </p>
-                <p className="text-[13px] font-extrabold text-primary">
-                  {measuredQuantity.toFixed(2)} {product.unit}
-                </p>
-              </div>
-            )}
-          </>
+          <NumberField
+            label={`Height (${unitLabel})`}
+            value={value.height}
+            maxValue={displayedDimensionLimit("height", unit, product.unit)}
+            onChange={(height) => onChange({ ...value, height })}
+            optional={isQuantityOnlyUnit(product.unit)}
+          />
         )}
-      </div>
-      <div className="max-w-[220px]">
         <NumberField
-          label="Thickness (mm)"
+          label="Depth (mm)"
           value={value.thickness}
+          maxValue={QUOTE_LIMITS.thicknessMillimeters}
           onChange={(thickness) => onChange({ ...value, thickness })}
           optional
         />
       </div>
+      {isAreaUnit(product.unit) && measuredQuantity > 0 && (
+        <div className="flex items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
+          <span className="text-[11px] font-semibold text-slate-500">
+            {product.unit === "sqft" ? "Calculated square feet" : "Calculated area"}
+          </span>
+          <span className="text-[14px] font-extrabold text-primary">
+            {measuredQuantity.toFixed(2)} {product.unit}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -115,11 +110,13 @@ function NumberField({
   value,
   onChange,
   optional,
+  maxValue,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   optional?: boolean;
+  maxValue: number;
 }) {
   return (
     <div className="flex-1">
@@ -130,8 +127,10 @@ function NumberField({
         value={value}
         placeholder="0.00"
         decimalScale={2}
+        maxValue={maxValue}
         onValueChange={onChange}
       />
+      <p className="mt-1 text-[10px] text-slate-400">Maximum {maxValue.toLocaleString("en-PH")}</p>
     </div>
   );
 }

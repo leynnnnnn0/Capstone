@@ -22,6 +22,7 @@ import {
   clearSavedArQuote,
   removeSavedArQuoteItem,
 } from "@/features/quotes/ar-quote-handoff";
+import { QUOTE_LIMITS } from "@/features/quotes/quote-utils";
 
 const STORAGE_KEY = "sog_public_quote_cart";
 
@@ -146,7 +147,9 @@ function readStoredCart() {
 }
 
 function normalizeStoredQuoteCartItem(item: QuoteCartItem): QuoteCartItem {
-  if (item.source !== "ar" || item.dimension_unit === "cm") return item;
+  const pieces = Math.min(Math.max(1, item.pieces), QUOTE_LIMITS.pieces);
+
+  if (item.source !== "ar" || item.dimension_unit === "cm") return { ...item, pieces };
 
   const toCentimeters = (value: string | number) =>
     String(Math.round(Number(value || 0) * 1000) / 10);
@@ -156,6 +159,7 @@ function normalizeStoredQuoteCartItem(item: QuoteCartItem): QuoteCartItem {
 
   return {
     ...item,
+    pieces,
     dimension_unit: "cm",
     width: toCentimeters(item.width),
     height: toCentimeters(item.height),

@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NativeShimmerImage } from "@/components/ui/shimmer-image";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   formatCurrency,
   productCategories,
@@ -70,10 +71,14 @@ const defaultSearchContent = {
 
 const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
 const CATALOG_SCROLL_RETURN_KEY = "sog_products_scroll_return";
+const MOBILE_PRODUCTS_PER_PAGE = 4;
+const DESKTOP_PRODUCTS_PER_PAGE = 12;
 
 export default function PublicProductCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
+  const productsPerPage = isMobile ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE;
   const activeCategory = searchParams.get("category_id") ?? "";
   const activeSearch = searchParams.get("q") ?? "";
   const requestedPage = Number(searchParams.get("page") ?? "1");
@@ -109,7 +114,7 @@ export default function PublicProductCatalog() {
         return Promise.all([
           fetchProducts({
             is_active: "1",
-            per_page: "12",
+            per_page: String(productsPerPage),
             page: String(activePage),
             category_id: activeCategory,
             search: activeSearch,
@@ -134,7 +139,7 @@ export default function PublicProductCatalog() {
     return () => {
       mounted = false;
     };
-  }, [activeCategory, activePage, activeSearch]);
+  }, [activeCategory, activePage, activeSearch, productsPerPage]);
 
   useEffect(() => {
     queueMicrotask(() => setSearch(activeSearch));

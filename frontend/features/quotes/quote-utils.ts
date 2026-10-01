@@ -31,6 +31,25 @@ export function parseNumber(value: string | number | null | undefined) {
 
 const SQM_TO_SQFT = 10.7639104167;
 
+export const QUOTE_LIMITS = {
+  widthMeters: 100,
+  areaWidthMeters: 20,
+  heightMeters: 10,
+  thicknessMillimeters: 100,
+  pieces: 50,
+} as const;
+
+export function displayedDimensionLimit(
+  dimension: "width" | "height",
+  unit?: DimensionUnit,
+  productUnit?: Product["unit"],
+) {
+  const meters = dimension === "width"
+    ? productUnit === "meter" ? QUOTE_LIMITS.widthMeters : QUOTE_LIMITS.areaWidthMeters
+    : QUOTE_LIMITS.heightMeters;
+  return unit === "cm" ? meters * 100 : meters;
+}
+
 export function isAreaUnit(unit: Product["unit"]) {
   return unit === "sqm" || unit === "sqft";
 }
@@ -64,7 +83,7 @@ export function quoteDimensionLabel(item: QuoteDraft | QuoteCartItem) {
 
   if (!item.width) return "Custom measurement";
 
-  return isAreaUnit(item.product.unit)
+  return item.product.unit !== "meter" && item.height
     ? `${item.width}${unit} x ${item.height}${unit}`
     : `${item.width}${unit}`;
 }
@@ -79,7 +98,7 @@ export function createQuoteDraft(product: Product, variantId?: number | null): Q
     product,
     selected_options: [],
     size_mode: sizeMode,
-    dimension_unit: "m",
+    dimension_unit: "cm",
     variant: initialVariant,
     width: initialVariant ? String(initialVariant.width) : "",
     height: initialVariant ? String(initialVariant.height) : "",
@@ -95,6 +114,14 @@ export function isQuoteDraftReady(draft: QuoteDraft) {
   );
 
   if (!allRequiredSelected) return false;
+
+  if (
+    dimensionValueInMeters(draft.width, draft.dimension_unit) >
+      (draft.product.unit === "meter" ? QUOTE_LIMITS.widthMeters : QUOTE_LIMITS.areaWidthMeters) ||
+    dimensionValueInMeters(draft.height, draft.dimension_unit) > QUOTE_LIMITS.heightMeters ||
+    parseNumber(draft.thickness) > QUOTE_LIMITS.thicknessMillimeters ||
+    draft.pieces > QUOTE_LIMITS.pieces
+  ) return false;
 
   if (draft.size_mode === "standard" && productVariants(draft.product).length > 0) {
     return Boolean(draft.variant);

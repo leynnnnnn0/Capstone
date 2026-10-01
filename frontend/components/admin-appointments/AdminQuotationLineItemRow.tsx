@@ -27,7 +27,11 @@ import {
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { Product } from "@/features/products/types";
 import { optionGroupOptions, productOptionGroups, productVariants } from "@/features/products/product-utils";
-import { isQuantityOnlyUnit } from "@/features/quotes/quote-utils";
+import {
+  displayedDimensionLimit,
+  isQuantityOnlyUnit,
+  QUOTE_LIMITS,
+} from "@/features/quotes/quote-utils";
 import type { DimensionUnit } from "@/features/quotes/types";
 
 export default function AdminQuotationLineItemRow({
@@ -54,7 +58,7 @@ export default function AdminQuotationLineItemRow({
     : variants.find((variant) => String(variant.width) === item.width && String(variant.height) === item.height);
   const errorPrefix = `items.${index}`;
   const usesMeasurements = selectedProduct ? !isQuantityOnlyUnit(selectedProduct.unit) : true;
-  const dimensionUnit = item.dimension_unit ?? "m";
+  const dimensionUnit = item.dimension_unit ?? "cm";
   const dimensionLabel = dimensionUnit === "cm" ? "cm" : "m";
 
   function updateField(field: keyof AdminLineItem, value: string) {
@@ -192,17 +196,17 @@ export default function AdminQuotationLineItemRow({
           )}
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <FieldError label={`${selectedProduct?.unit === "meter" ? "Length" : "Width"} (${dimensionLabel})`}>
-              <NumericInput value={item.width} onValueChange={(value) => updateField("width", value)} />
+            <FieldError label={`${selectedProduct?.unit === "meter" ? "Length" : "Width"} (${dimensionLabel})`} message={errors[`${errorPrefix}.width`]}>
+              <NumericInput maxValue={displayedDimensionLimit("width", dimensionUnit, selectedProduct?.unit)} value={item.width} onValueChange={(value) => updateField("width", value)} />
             </FieldError>
-            <FieldError label={`Height (${dimensionLabel})`}>
-              <NumericInput value={item.height} onValueChange={(value) => updateField("height", value)} />
+            <FieldError label={`Height (${dimensionLabel})`} message={errors[`${errorPrefix}.height`]}>
+              <NumericInput maxValue={displayedDimensionLimit("height", dimensionUnit)} value={item.height} onValueChange={(value) => updateField("height", value)} />
             </FieldError>
-            <FieldError label="Thickness (mm)">
-              <NumericInput value={item.thickness} onValueChange={(value) => onUpdate(item.id, { thickness: value })} />
+            <FieldError label="Depth (mm)" message={errors[`${errorPrefix}.thickness`]}>
+              <NumericInput maxValue={QUOTE_LIMITS.thicknessMillimeters} value={item.thickness} onValueChange={(value) => onUpdate(item.id, { thickness: value })} />
             </FieldError>
             <FieldError label="Pieces" message={errors[`${errorPrefix}.pieces`]}>
-              <NumericInput allowDecimal={false} value={item.pieces} onValueChange={(value) => updateField("pieces", value)} />
+              <NumericInput allowDecimal={false} maxValue={QUOTE_LIMITS.pieces} value={item.pieces} onValueChange={(value) => updateField("pieces", value)} />
             </FieldError>
           </div>
 

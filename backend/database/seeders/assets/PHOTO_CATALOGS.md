@@ -16,16 +16,25 @@ does not establish payment, installation, or warranty terms in the catalog.
 
 Prices are editable provisional PHP starting estimates, not supplier quotes:
 gates PHP 4,500–8,500/sqm; rails PHP 7,000–8,500/linear meter; shower enclosures
-PHP 5,500–9,500/sqm. Each description explicitly qualifies the price and excludes
+PHP 12,000–34,000/set. Each description explicitly qualifies the price and excludes
 surrounding structures and fixtures. Final pricing requires business review and
-a site-specific quotation. Square-meter rates refer to fabricated panel area,
-not bathroom floor area. No glass type or thickness is implied by the rate.
+a site-specific quotation. No glass type or thickness is implied by the rate.
 
 General pricing context consulted (not an exact rate source for these designs):
 https://www.glassinstallerph.com/glass-pricing/shower-enclosures/
 https://www.glassinstallerph.com/blog/glass-railing-cost-philippines/
-Search previews were available; full pages could not be fetched. Gate rates are
-internal estimates, not externally verified market prices.
+The published guides put common shower enclosures around PHP 18,000–34,000/set
+and post-mounted glass railings around PHP 6,000–9,000/linear meter. Gate rates
+remain internal estimates because configurations and materials vary substantially.
+
+Other seeded pricing was reviewed at the same time. Screen doors use PHP
+7,500/piece, consistent with current Philippine retail listings around PHP
+5,886–7,913 for standard aluminum screen doors. Modular cabinets use PHP
+850–1,350/sqft of cabinet face. That range is derived from published Philippine
+budget rates of PHP 8,000–35,000/linear meter, converted to a practical cabinet-face
+area allowance and kept toward the economy/mid-market end:
+https://finestglassworks.com/product/door-screen-model-2/
+https://luminous.ph/blog/modular-cabinet-price-in-the-philippines
 
 Repeat seeding updates the seeded catalog fields and images without duplicates.
 Manually attached images and categories are retained. Additional images shipped

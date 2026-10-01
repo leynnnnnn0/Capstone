@@ -895,7 +895,7 @@ function DraftQuotationItem({ item, index }: { item: AdminLineItem; index: numbe
             {item.description && <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>}
             <div className="mt-1 flex flex-wrap gap-1.5">
               {(item.width || item.height) && <Badge variant="outline" className="text-[10px]">{item.width || 0} x {item.height || 0} cm</Badge>}
-              {item.thickness && <Badge variant="outline" className="text-[10px]">{item.thickness} mm</Badge>}
+              {item.thickness && <Badge variant="outline" className="text-[10px]">Depth {item.thickness} mm</Badge>}
               <Badge variant="outline" className="text-[10px]">{item.pieces || 1} pc{Number(item.pieces || 1) !== 1 ? "s" : ""}</Badge>
             </div>
           </div>
