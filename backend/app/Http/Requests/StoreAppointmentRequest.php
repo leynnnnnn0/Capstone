@@ -158,8 +158,8 @@ class StoreAppointmentRequest extends FormRequest
             'items.*.selected_options' => ['nullable', 'array'],
             'items.*.selected_options.*.product_option_group_id' => ['required', 'integer', 'exists:product_option_groups,id'],
             'items.*.selected_options.*.product_option_id' => ['required', 'integer', 'exists:product_options,id'],
-            'items.*.selected_options.*.group_name' => ['required', 'string'],
-            'items.*.selected_options.*.option_name' => ['required', 'string'],
+            'items.*.selected_options.*.group_name' => ['required', 'string', 'max:255'],
+            'items.*.selected_options.*.option_name' => ['required', 'string', 'max:255'],
             'items.*.selected_options.*.price_modifier' => ['required', 'numeric'],
         ];
     }

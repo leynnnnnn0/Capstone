@@ -139,6 +139,29 @@ it('stores quotation item descriptions longer than 255 characters', function () 
         ->and($item->description)->toBe($description);
 });
 
+it('creates quotation items without optional dimensions', function () use ($appointmentPayload) {
+    $this->postJson('/api/v1/appointments', [
+        ...$appointmentPayload(),
+        'items' => [
+            [
+                'product_id'       => $this->product->id,
+                'name'             => 'Black Louver Panel Screen Door 03',
+                'pieces'           => 1,
+                'amount_per_piece' => 7500.00,
+                'options_amount'   => 0,
+                'total_amount'     => 7500.00,
+                'selected_options' => [],
+            ],
+        ],
+    ])->assertStatus(201);
+
+    $item = Appointment::first()->quotation->quotation_items->first();
+
+    expect($item->width)->toBeNull()
+        ->and($item->height)->toBeNull()
+        ->and($item->thickness)->toBeNull();
+});
+
 it('creates appointment with items and selected options snapshots them', function () use ($appointmentPayload) {
     $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),

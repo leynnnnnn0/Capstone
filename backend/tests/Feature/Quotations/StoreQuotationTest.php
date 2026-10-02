@@ -113,6 +113,31 @@ it('creates a quotation successfully', function () {
     expect(Quotation::first()->quotation_items)->toHaveCount(1);
 });
 
+it('creates a quotation without optional item dimensions', function () {
+    $this->actingAs($this->admin)
+        ->postJson('/api/v1/quotations', [
+            'appointment_id' => $this->appointment->id,
+            'items'          => [
+                [
+                    'product_id'       => $this->product->id,
+                    'name'             => 'Glass Door',
+                    'pieces'           => 1,
+                    'amount_per_piece' => 1500.00,
+                    'total_amount'     => 1500.00,
+                    'selected_options' => [],
+                ],
+            ],
+        ])
+        ->assertStatus(201);
+
+    $item = Quotation::first()->quotation_items->first();
+
+    expect($item->width)->toBeNull()
+        ->and($item->height)->toBeNull()
+        ->and($item->thickness)->toBeNull()
+        ->and((float) $item->options_amount)->toBe(0.0);
+});
+
 it('creates a quotation with multiple items', function () {
     $product2 = Product::factory()->create([
         'name' => 'Window Glass',
@@ -388,6 +413,36 @@ it('returns 422 when product does not exist', function () {
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['items.0.product_id']);
+});
+
+it('rejects option snapshot names that exceed their database columns', function () {
+    $this->actingAs($this->admin)
+        ->postJson('/api/v1/quotations', [
+            'appointment_id' => $this->appointment->id,
+            'items' => [
+                [
+                    'product_id' => $this->product->id,
+                    'name' => 'Glass Door',
+                    'pieces' => 1,
+                    'amount_per_piece' => 1500,
+                    'total_amount' => 1500,
+                    'selected_options' => [
+                        [
+                            'product_option_group_id' => $this->optionGroup->id,
+                            'product_option_id' => $this->option->id,
+                            'group_name' => str_repeat('G', 256),
+                            'option_name' => str_repeat('O', 256),
+                            'price_modifier' => 500,
+                        ],
+                    ],
+                ],
+            ],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'items.0.selected_options.0.group_name',
+            'items.0.selected_options.0.option_name',
+        ]);
 });
 
 it('rejects unrealistic quotation dimensions and quantities', function () {
