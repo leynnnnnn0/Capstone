@@ -36,6 +36,10 @@ jobs:
           npm run build
           sudo -n systemctl restart capstone-frontend
 
+          cd "$APP_DIR/ar"
+          npm ci
+          npm run build
+
           cd "$APP_DIR/backend"
           composer install --no-dev --prefer-dist --optimize-autoloader
           php artisan optimize:clear
@@ -45,4 +49,6 @@ jobs:
 
           sudo -n systemctl is-active --quiet capstone-frontend
           sudo -n systemctl is-active --quiet capstone-backend
+          sudo -n systemctl is-active --quiet capstone-queue
+          sudo -n systemctl is-active --quiet capstone-reverb
           echo "Deployment completed successfully."
