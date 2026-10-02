@@ -112,6 +112,33 @@ it('creates appointment with quotation items', function () use ($appointmentPayl
     expect(Appointment::first()->quotation->quotation_items)->toHaveCount(1);
 });
 
+it('stores quotation item descriptions longer than 255 characters', function () use ($appointmentPayload) {
+    $description = rtrim(str_repeat('Durable glass and aluminum framing. ', 10));
+
+    $this->postJson('/api/v1/appointments', [
+        ...$appointmentPayload(),
+        'items' => [
+            [
+                'product_id'       => $this->product->id,
+                'name'             => 'Black Louver Panel Screen Door 03',
+                'description'      => $description,
+                'width'            => 0.8,
+                'height'           => 2,
+                'pieces'           => 1,
+                'amount_per_piece' => 7500.00,
+                'options_amount'   => 0,
+                'total_amount'     => 7500.00,
+                'selected_options' => [],
+            ],
+        ],
+    ])->assertStatus(201);
+
+    $item = Appointment::first()->quotation->quotation_items->first();
+
+    expect(strlen($description))->toBeGreaterThan(255)
+        ->and($item->description)->toBe($description);
+});
+
 it('creates appointment with items and selected options snapshots them', function () use ($appointmentPayload) {
     $this->postJson('/api/v1/appointments', [
         ...$appointmentPayload(),
