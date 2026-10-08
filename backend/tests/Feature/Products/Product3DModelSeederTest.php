@@ -78,7 +78,7 @@ it('covers every seeded door with a valid GLB', function () {
         fn ($query) => $query->where('name', 'Door'),
     )->with('product_3d_model')->get();
 
-    expect($doors)->toHaveCount(45);
+    expect($doors)->toHaveCount(21);
 
     foreach ($doors as $door) {
         expect($door->product_3d_model)->not->toBeNull();

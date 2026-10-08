@@ -75,3 +75,17 @@ it('uses the budgetary per-piece price for screen doors', function () {
             ->and($product->price_per_unit)->toBe('7500.00');
     }
 });
+
+it('seeds five doors per color plus a customized door', function () {
+    Storage::fake('public');
+    $this->seed(ProductSeeder::class);
+
+    $names = Product::pluck('name');
+
+    expect($names)->toHaveCount(21)
+        ->and($names->filter(fn (string $name) => str_starts_with($name, 'Premium Black ')))->toHaveCount(5)
+        ->and($names->filter(fn (string $name) => str_starts_with($name, 'Black ')))->toHaveCount(5)
+        ->and($names->filter(fn (string $name) => str_starts_with($name, 'White ')))->toHaveCount(5)
+        ->and($names->filter(fn (string $name) => str_starts_with($name, 'Wood Finish ')))->toHaveCount(5)
+        ->and($names)->toContain('Customized Door');
+});

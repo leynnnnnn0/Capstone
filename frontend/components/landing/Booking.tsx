@@ -6,6 +6,7 @@ import { FormEvent, useCallback, useState } from "react";
 
 import { ApiError, api } from "@/lib/api";
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
+import DisabledSubmitTooltip from "@/components/form/DisabledSubmitTooltip";
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,11 @@ export default function Booking() {
   const [pendingBooking, setPendingBooking] = useState<BookingForm | null>(null);
   const prefersReducedMotion = useReducedMotion();
   const revealInitial = prefersReducedMotion ? false : "hidden";
+  const submitDisabledReason = processing
+    ? "Your appointment request is being submitted."
+    : !data.consent
+      ? "Please agree to be contacted before booking your inspection."
+      : null;
 
   const setField = <K extends keyof BookingForm>(
     field: K,
@@ -392,13 +398,15 @@ export default function Booking() {
               )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={processing || !data.consent}
-              className="mt-2 w-full rounded-full bg-[#162d4a] py-3.5 text-sm font-bold hover:bg-[#2c5282] disabled:opacity-60"
-            >
-              {processing ? "Booking..." : "Book Free Inspection"}
-            </Button>
+            <DisabledSubmitTooltip reason={submitDisabledReason}>
+              <Button
+                type="submit"
+                disabled={submitDisabledReason !== null}
+                className="mt-2 w-full rounded-full bg-[#162d4a] py-3.5 text-sm font-bold hover:bg-[#2c5282] disabled:opacity-60"
+              >
+                {processing ? "Booking..." : "Book Free Inspection"}
+              </Button>
+            </DisabledSubmitTooltip>
 
             <p className="text-center text-xs text-slate-400">
               No payment required · Cancel anytime

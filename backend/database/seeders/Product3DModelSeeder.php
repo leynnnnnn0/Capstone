@@ -37,6 +37,10 @@ class Product3DModelSeeder extends Seeder
             flags: JSON_THROW_ON_ERROR,
         );
 
+        $doorModels['Premium Black Hanaloque Screen Door 03'] = $doorModels['Black Hanaloque Screen Door 01'];
+        $doorModels['Premium Black Horizontal Rail Screen Door 01'] = $doorModels['Black Horizontal Rail Screen Door 01'];
+        $doorModels['Customized Door'] = $doorModels['Premium Black Hanaloque Screen Door 01'];
+
         foreach ($doorModels as $name => $filename) {
             // Metal Style Door is a legacy catalog item and may not exist in a
             // freshly seeded database. All ProductSeeder doors are required by

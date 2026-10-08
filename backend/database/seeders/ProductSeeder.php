@@ -6,12 +6,48 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 class ProductSeeder extends Seeder
 {
-    private const SCREEN_DOOR_ASSET_ROOT = 'products';
+    private const SCREEN_DOOR_IMAGES_BY_COLOR = [
+        'premium-black' => [
+            'products/screen-door/screen-door-01.png',
+            'products/screen-door/screen-door-02.png',
+            'products/screen-door/screen-door-03.png',
+            'products/screen-doors/black-hanaloque-screen-door/black-hanaloque-screen-door-01.png',
+            'products/screen-doors/black-hanaloque-screen-door/black-horizontal-rail-screen-door-01.png',
+        ],
+        'black' => [
+            'products/screen-doors/black-hanaloque-screen-door/black-louver-panel-screen-door-02.png',
+            'products/screen-doors/black-louver-panel-screen-door/black-diagonal-louver-screen-door-01.png',
+            'products/screen-doors/black-louver-panel-screen-door/black-double-louver-screen-door-01.png',
+            'products/screen-doors/black-louver-panel-screen-door/black-multi-panel-louver-screen-door-01.png',
+            'products/screen-doors/black-louver-panel-screen-door/black-side-panel-screen-door-03.png',
+        ],
+        'white' => [
+            'products/screen-doors/white-hanaloque-screen-door/white-hanaloque-screen-door-01.png',
+            'products/screen-doors/white-hanaloque-screen-door/white-sliding-panel-screen-door-01.png',
+            'products/screen-doors/white-louver-panel-screen-door/white-diagonal-louver-screen-door-01.png',
+            'products/screen-doors/white-louver-panel-screen-door/white-multi-panel-louver-screen-door-01.png',
+            'products/screen-doors/white-side-panel-screen-door/white-side-panel-screen-door-03.png',
+        ],
+        'wood-finish' => [
+            'products/screen-doors/wood-finish-louver-panel-screen-door/wood-finish-louver-panel-screen-door-01.png',
+            'products/screen-doors/wood-finish-louver-panel-screen-door/wood-finish-sliding-panel-screen-door-01.png',
+            'products/screen-doors/wood-finish-screen-door/wood-finish-hanaloque-screen-door-01.png',
+            'products/screen-doors/wood-finish-screen-door/wood-finish-multi-panel-screen-door-01.png',
+            'products/screen-doors/wood-finish-screen-door/wood-finish-side-panel-screen-door-01.png',
+        ],
+    ];
+
+    private const PRODUCT_NAME_OVERRIDES = [
+        'black-hanaloque-screen-door-01' => 'Premium Black Hanaloque Screen Door 03',
+        'black-horizontal-rail-screen-door-01' => 'Premium Black Horizontal Rail Screen Door 01',
+    ];
+
+    private const CUSTOMIZED_DOOR_NAME = 'Customized Door';
+
+    private const CUSTOMIZED_DOOR_IMAGE = 'products/screen-door/screen-door-01.png';
 
     private const LEGACY_GROUPED_PRODUCT_NAMES = [
         'Screen Door',
@@ -44,8 +80,17 @@ class ProductSeeder extends Seeder
         Product::whereIn('name', self::LEGACY_GROUPED_PRODUCT_NAMES)->delete();
 
         $disk = Storage::disk('public');
+        $imagePaths = $this->productImages();
+        $seededNames = array_map($this->productName(...), $imagePaths);
+        $seededNames[] = self::CUSTOMIZED_DOOR_NAME;
 
-        foreach ($this->productImages() as $imagePath) {
+        // Remove screen-door products that were seeded by older catalog versions.
+        Product::whereHas('product_images', function ($query) {
+            $query->where('image_path', 'like', 'products/screen-door/%')
+                ->orWhere('image_path', 'like', 'products/screen-doors/%');
+        })->whereNotIn('name', $seededNames)->delete();
+
+        foreach ($imagePaths as $imagePath) {
             $product = Product::updateOrCreate(
                 ['name' => $this->productName($imagePath)],
                 [
@@ -61,6 +106,19 @@ class ProductSeeder extends Seeder
             $product->categories()->syncWithoutDetaching([$doorCategory->id]);
             $this->syncSingleProductImage($product, $imagePath, $disk);
         }
+
+        $customizedDoor = Product::updateOrCreate(
+            ['name' => self::CUSTOMIZED_DOOR_NAME],
+            [
+                'description' => 'A made-to-measure door service for customers who need a custom size, color, finish, panel layout, or hardware configuration. The final design and quotation are confirmed after consultation and site measurement.',
+                'unit' => 'piece',
+                'price_per_unit' => 7500,
+                'is_active' => true,
+            ],
+        );
+
+        $customizedDoor->categories()->syncWithoutDetaching([$doorCategory->id]);
+        $this->syncSingleProductImage($customizedDoor, self::CUSTOMIZED_DOOR_IMAGE, $disk);
     }
 
     /**
@@ -68,38 +126,16 @@ class ProductSeeder extends Seeder
      */
     private function productImages(): array
     {
-        $root = database_path('seeders/assets/'.self::SCREEN_DOOR_ASSET_ROOT);
-        $paths = [];
-
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
-
-        foreach ($files as $file) {
-            if (! $file->isFile() || $file->getExtension() !== 'png') {
-                continue;
-            }
-
-            $relativePath = str_replace(
-                database_path('seeders/assets').DIRECTORY_SEPARATOR,
-                '',
-                $file->getPathname(),
-            );
-
-            $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', $relativePath);
-            // Other photo catalogs may also contain PNGs; they are not doors.
-            if (str_starts_with($relativePath, 'products/screen-door/')
-                || str_starts_with($relativePath, 'products/screen-doors/')) {
-                $paths[] = $relativePath;
-            }
-        }
-
-        sort($paths);
-
-        return $paths;
+        return array_merge(...array_values(self::SCREEN_DOOR_IMAGES_BY_COLOR));
     }
 
     private function productName(string $imagePath): string
     {
         $filename = pathinfo($imagePath, PATHINFO_FILENAME);
+
+        if (isset(self::PRODUCT_NAME_OVERRIDES[$filename])) {
+            return self::PRODUCT_NAME_OVERRIDES[$filename];
+        }
 
         if (preg_match('/^screen-door-(\d+)$/', $filename, $matches)) {
             return match ($matches[1]) {

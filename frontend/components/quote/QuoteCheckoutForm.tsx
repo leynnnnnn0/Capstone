@@ -5,6 +5,7 @@ import { useState } from "react";
 import type React from "react";
 
 import BookingScheduleFields from "@/components/booking/BookingScheduleFields";
+import DisabledSubmitTooltip from "@/components/form/DisabledSubmitTooltip";
 import NameInput from "@/components/form/NameInput";
 import PhoneNumberInput from "@/components/form/PhoneNumberInput";
 import LocationPicker from "@/components/landing/LocationPicker";
@@ -78,6 +79,11 @@ export default function QuoteCheckoutForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingCheckout, setPendingCheckout] = useState<QuoteCheckoutFields | null>(null);
   const total = quoteTotal(cart);
+  const submitDisabledReason = submitting
+    ? "Your quote request is being submitted."
+    : !data.consent
+      ? "Please agree to be contacted before submitting your quote request."
+      : null;
 
   const setField = <K extends keyof QuoteCheckoutFields>(
     field: K,
@@ -301,13 +307,15 @@ export default function QuoteCheckoutForm({
             {errors.items && <FieldError message={errors.items} />}
             {errors.form && <FieldError message={errors.form} />}
 
-            <button
-              type="submit"
-              disabled={submitting || !data.consent}
-              className="w-full rounded-xl bg-primary py-4 text-[14px] font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Submitting..." : "Submit Quote Request"}
-            </button>
+            <DisabledSubmitTooltip reason={submitDisabledReason}>
+              <button
+                type="submit"
+                disabled={submitDisabledReason !== null}
+                className="w-full rounded-xl bg-primary py-4 text-[14px] font-bold text-white transition-opacity disabled:pointer-events-none disabled:opacity-60"
+              >
+                {submitting ? "Submitting..." : "Submit Quote Request"}
+              </button>
+            </DisabledSubmitTooltip>
           </div>
         </div>
       </form>
