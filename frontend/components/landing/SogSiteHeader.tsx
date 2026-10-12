@@ -145,7 +145,7 @@ export default function SogSiteHeader({
             </Link>
             <Link
               href={quoteHref}
-              className="inline-flex min-h-11 items-center gap-3 rounded-full bg-slate-950 px-6 text-sm font-extralight text-white shadow-lg shadow-slate-950/10 transition-transform hover:-translate-y-0.5"
+              className="inline-flex min-h-11 items-center gap-3 rounded-full bg-[#162d4a] px-6 text-sm font-extralight text-white shadow-lg shadow-[#162d4a]/10 transition hover:-translate-y-0.5 hover:bg-[#2c5282]"
             >
               Get a quote <ArrowRight className="h-4 w-4" />
             </Link>
@@ -227,7 +227,7 @@ export default function SogSiteHeader({
               {!isCatalogMode && <Link
                 href={quoteHref}
                 onClick={() => setMobileMenuOpen(false)}
-                className="inline-flex items-center justify-between rounded-2xl bg-slate-950 px-4 py-4 text-white"
+                className="inline-flex items-center justify-between rounded-2xl bg-[#162d4a] px-4 py-4 text-white transition-colors hover:bg-[#2c5282]"
               >
                 Get a quote <ArrowRight className="h-4 w-4" />
               </Link>}

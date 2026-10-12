@@ -85,25 +85,25 @@ export default function ProductArButton({
         type="button"
         onClick={handleClick}
         className={cn(
-          "group absolute bottom-3 right-3 z-10 inline-flex max-w-[calc(100%_-_1.5rem)] items-center gap-3 rounded-[1.15rem] border border-white/20 bg-[#10263f]/95 p-2.5 pr-3 text-white shadow-[0_16px_40px_rgba(15,35,58,0.28)] backdrop-blur-md transition duration-300 hover:-translate-y-1 hover:bg-[#193a60] hover:shadow-[0_20px_46px_rgba(15,35,58,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#608db9] focus-visible:ring-offset-2",
+          "group absolute bottom-3 right-3 z-10 inline-flex max-w-[calc(100%_-_1.5rem)] items-center gap-2.5 rounded-full border border-white/30 bg-[#162d4a] p-2 pr-3.5 text-white shadow-[0_6px_16px_rgba(22,45,74,0.22),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl transition duration-300 motion-safe:hover:-translate-y-0.5 hover:bg-[#2c5282] hover:shadow-[0_8px_20px_rgba(22,45,74,0.28),inset_0_1px_0_rgba(255,255,255,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 motion-reduce:transition-none",
           className,
         )}
         aria-label={`View ${productName} in AR`}
         title="View in AR"
       >
-        <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[0.8rem] bg-white/10 ring-1 ring-inset ring-white/15">
-          <span className="absolute inset-x-1.5 top-1/2 h-px -translate-y-1/2 bg-[#8fc4ef]/45 transition-transform duration-300 group-hover:translate-y-1.5" />
-          <ScanLine className="relative h-5 w-5 text-[#b9ddfa]" />
+        <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <ScanLine className="h-5 w-5 text-white" strokeWidth={1.8} />
         </span>
-        <span className="min-w-0 text-left leading-none">
-          <span className="block text-[9px] font-bold uppercase tracking-[0.16em] text-white/55">
+        <span aria-hidden="true" className="h-7 w-px shrink-0 bg-white/30" />
+        <span className="min-w-0 flex-1 text-left leading-none">
+          <span className="block whitespace-nowrap text-[8px] font-semibold uppercase tracking-[0.12em] text-white/70">
             Preview in your space
           </span>
-          <span className="mt-1.5 block text-sm font-semibold tracking-[-0.01em] text-white">
+          <span className="mt-1 block whitespace-nowrap text-sm font-semibold tracking-[-0.01em] text-white">
             View in AR
           </span>
         </span>
-        <ArrowUpRight className="h-4 w-4 shrink-0 text-white/55 transition duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white" />
+        <ArrowUpRight aria-hidden="true" className="ml-1 h-4 w-4 shrink-0 text-white transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5 motion-reduce:transition-none" strokeWidth={1.8} />
       </button>
 
       {fallbackOpen && (

@@ -417,19 +417,9 @@ function ImageGallery({
           modelSrc={modelSrc}
           defaultWidthCm={defaultWidthCm}
           defaultHeightCm={defaultHeightCm}
-          className="bottom-4 right-4 hidden sm:inline-flex"
+          className="bottom-3 right-3 sm:bottom-4 sm:right-4"
         />}
       </div>
-
-      {!isCatalogMode && <ProductArButton
-        productId={productId}
-        productName={productName}
-        categoryName={categoryName}
-        modelSrc={modelSrc}
-        defaultWidthCm={defaultWidthCm}
-        defaultHeightCm={defaultHeightCm}
-        className="static w-full max-w-none justify-between sm:hidden"
-      />}
 
       {normalizedImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">

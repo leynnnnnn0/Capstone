@@ -224,6 +224,13 @@ test("customer OTP login moves from contact entry to verification", async ({ pag
   await expect(page.getByRole("heading", { name: /enter verification code/i })).toBeVisible();
 });
 
+test("password reset links remain accessible without authentication", async ({ page }) => {
+  await page.goto("/reset-password?token=reset-token&email=admin%40example.com");
+
+  await expect(page).toHaveURL(/\/reset-password\?token=reset-token&email=admin%40example\.com$/);
+  await expect(page.getByRole("heading", { name: /reset your password/i })).toBeVisible();
+});
+
 test("staff login opens the two-factor challenge when required", async ({ page }) => {
   await page.goto("/staff/login");
 

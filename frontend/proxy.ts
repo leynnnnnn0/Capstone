@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   "/staff/login",
   "/register",
   "/forgot-password",
+  "/reset-password",
   "/about",
   "/contact",
   "/products",
