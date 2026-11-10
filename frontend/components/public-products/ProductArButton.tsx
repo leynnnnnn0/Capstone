@@ -1,8 +1,8 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useState } from "react";
-import { ArrowUpRight, ScanLine, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, Box, ScanLine, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import Product3DModelViewer from "@/components/products/Product3DModelViewer";
@@ -18,6 +18,8 @@ type ProductArButtonProps = {
   defaultDepthCm?: number;
   className?: string;
 };
+
+type PreviewMode = "webxr" | "quick-look" | "3d";
 
 function arUrl(productId: number, directEntry: boolean) {
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
@@ -38,10 +40,30 @@ async function supportsWebXrAr() {
   const xr = (navigator as Navigator & {
     xr?: { isSessionSupported?: (mode: "immersive-ar") => Promise<boolean> };
   }).xr;
+  const xrSession = (window as Window & {
+    XRSession?: { prototype: { requestHitTestSource?: unknown } };
+  }).XRSession;
 
-  if (!window.isSecureContext || !xr?.isSessionSupported) return false;
+  if (!window.isSecureContext || !xr?.isSessionSupported ||
+    typeof xrSession?.prototype.requestHitTestSource !== "function") return false;
 
-  return xr.isSessionSupported("immersive-ar").catch(() => false);
+  try {
+    return await xr.isSessionSupported("immersive-ar");
+  } catch {
+    return false;
+  }
+}
+
+function supportsQuickLook() {
+  const { userAgent, platform, maxTouchPoints } = navigator;
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) ||
+    (platform === "MacIntel" && maxTouchPoints > 1);
+  if (!isIOS) return false;
+
+  const webkit = (window as Window & { webkit?: { messageHandlers?: object } }).webkit;
+  return webkit?.messageHandlers
+    ? /(?:CriOS|EdgiOS|FxiOS|GSA|DuckDuckGo)\//.test(userAgent)
+    : document.createElement("a").relList.supports?.("ar") === true;
 }
 
 function isAndroidDevice() {
@@ -60,7 +82,10 @@ export default function ProductArButton({
 }: ProductArButtonProps) {
   const searchParams = useSearchParams();
   const [fallbackOpen, setFallbackOpen] = useState<boolean | null>(null);
-  const showFallback = fallbackOpen ?? searchParams.get("viewer") === "3d";
+  const [previewMode, setPreviewMode] = useState<PreviewMode | null>(null);
+  const showFallback = fallbackOpen ?? (searchParams.get("viewer") === "3d");
+  const canViewInAr = previewMode === "webxr" || previewMode === "quick-look";
+  const PreviewIcon = canViewInAr ? ScanLine : Box;
   const defaults = defaultArDimensions(
     productName,
     categoryName,
@@ -69,12 +94,26 @@ export default function ProductArButton({
     defaultDepthCm,
   );
 
-  if (!modelSrc) return null;
+  useEffect(() => {
+    if (!modelSrc) return;
+    let cancelled = false;
 
-  async function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    void supportsWebXrAr().then((webXr) => {
+      if (cancelled) return;
+      // Scene Viewer treats Android as a candidate even without working ARCore.
+      // A native AR launch should only be offered when the browser confirms a mode.
+      setPreviewMode(webXr ? "webxr" : supportsQuickLook() ? "quick-look" : "3d");
+    });
+
+    return () => { cancelled = true; };
+  }, [modelSrc]);
+
+  if (!modelSrc || !previewMode) return null;
+
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
 
-    if (await supportsWebXrAr()) {
+    if (previewMode === "webxr") {
       window.location.assign(arUrl(productId, isAndroidDevice()));
       return;
     }
@@ -91,19 +130,19 @@ export default function ProductArButton({
           "group absolute bottom-3 right-3 z-10 inline-flex max-w-[calc(100%_-_1.5rem)] items-center gap-2.5 rounded-full border border-white/30 bg-[#162d4a] p-2 pr-3.5 text-white shadow-[0_6px_16px_rgba(22,45,74,0.22),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-xl transition duration-300 motion-safe:hover:-translate-y-0.5 hover:bg-[#2c5282] hover:shadow-[0_8px_20px_rgba(22,45,74,0.28),inset_0_1px_0_rgba(255,255,255,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 motion-reduce:transition-none",
           className,
         )}
-        aria-label={`View ${productName} in AR`}
-        title="View in AR"
+        aria-label={`View ${productName} in ${canViewInAr ? "AR" : "3D"}`}
+        title={canViewInAr ? "View in AR" : "View 3D model"}
       >
         <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <ScanLine className="h-5 w-5 text-white" strokeWidth={1.8} />
+          <PreviewIcon className="h-5 w-5 text-white" strokeWidth={1.8} />
         </span>
         <span aria-hidden="true" className="h-7 w-px shrink-0 bg-white/30" />
         <span className="min-w-0 flex-1 text-left leading-none">
           <span className="block whitespace-nowrap text-[8px] font-semibold uppercase tracking-[0.12em] text-white/70">
-            Preview in your space
+            {canViewInAr ? "Preview in your space" : "Interactive preview"}
           </span>
           <span className="mt-1 block whitespace-nowrap text-sm font-semibold tracking-[-0.01em] text-white">
-            View in AR
+            {canViewInAr ? "View in AR" : "View 3D model"}
           </span>
         </span>
         <ArrowUpRight aria-hidden="true" className="ml-1 h-4 w-4 shrink-0 text-white transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5 motion-reduce:transition-none" strokeWidth={1.8} />
@@ -147,7 +186,7 @@ export default function ProductArButton({
                 src={modelSrc}
                 title={productName}
                 hideHeader
-                ar
+                ar={canViewInAr}
                 arDefaultScale={1}
                 arDimensionsCm={defaults}
                 arFit="exact"

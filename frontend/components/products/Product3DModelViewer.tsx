@@ -21,8 +21,6 @@ type Product3DModelViewerProps = {
   hideHeader?: boolean;
   ar?: boolean;
   arDefaultScale?: number;
-  maxWidthMeters?: number;
-  maxHeightMeters?: number;
   arDimensionsCm?: {
     width: number;
     height: number;
@@ -33,8 +31,6 @@ type Product3DModelViewerProps = {
 
 type ModelViewerElement = HTMLElement & {
   getDimensions?: () => { x: number; y: number; z: number };
-  updateFraming?: () => void;
-  jumpCameraToGoal?: () => void;
 };
 
 type ModelScale = {
@@ -102,8 +98,6 @@ export default function Product3DModelViewer({
   hideHeader = false,
   ar = false,
   arDefaultScale = 0.01,
-  maxWidthMeters = 0.8,
-  maxHeightMeters = 1.2,
   arDimensionsCm,
   arFit = "exact",
 }: Product3DModelViewerProps) {
@@ -165,8 +159,6 @@ export default function Product3DModelViewer({
     arFit: "exact" | "contain";
     arDefaultScale: number;
     arModel: ArModelSource | null;
-    maxWidthMeters: number;
-    maxHeightMeters: number;
   }>({
     key: sizeRequestKey,
     src,
@@ -175,8 +167,6 @@ export default function Product3DModelViewer({
     arFit,
     arDefaultScale,
     arModel,
-    maxWidthMeters,
-    maxHeightMeters,
   });
   useEffect(() => {
     let mounted = true;
@@ -215,9 +205,11 @@ export default function Product3DModelViewer({
   }, [arSizing.key, arSizing.ready, arSizing.src, sizeRequestKey]);
 
   function fitModelToRealWorldSize() {
+    const config = sizingConfigRef.current;
+    if (!config.ar) return;
+
     const viewer = viewerRef.current;
     const dimensions = viewer?.getDimensions?.();
-    const config = sizingConfigRef.current;
     const currentSizedSrc =
       sizedSourceRef.current.key === config.key
         ? sizedSourceRef.current.src
@@ -227,7 +219,6 @@ export default function Product3DModelViewer({
 
     if (
       config.src &&
-      config.ar &&
       config.arDimensionsCm &&
       config.arModel?.supportsBakedScale &&
       !currentSizedSrc
@@ -271,34 +262,11 @@ export default function Product3DModelViewer({
       }
     }
 
-    if (config.ar) {
-      viewer.setAttribute(
-        "scale",
-        scaleAttribute(config.arModel?.scale ?? uniformScale(config.arDefaultScale)),
-      );
-      viewer.updateFraming?.();
-      viewer.jumpCameraToGoal?.();
-      setArSizing({
-        key: config.key,
-        src: currentSizedSrc,
-        ready: true,
-      });
-      return;
-    }
-
-    const width = Math.max(dimensions.x, dimensions.z);
-    const height = dimensions.y;
-    const widthScale =
-      width > 0 ? config.maxWidthMeters / width : Number.POSITIVE_INFINITY;
-    const heightScale =
-      height > 0 ? config.maxHeightMeters / height : Number.POSITIVE_INFINITY;
-    const scale = Math.min(widthScale, heightScale, 1);
-
-    if (!Number.isFinite(scale) || scale <= 0) return;
-
-    viewer.setAttribute("scale", `${scale} ${scale} ${scale}`);
-    viewer.updateFraming?.();
-    viewer.jumpCameraToGoal?.();
+    setArSizing({
+      key: config.key,
+      src: currentSizedSrc,
+      ready: true,
+    });
   }
 
   useLayoutEffect(() => {
@@ -310,8 +278,6 @@ export default function Product3DModelViewer({
       arFit,
       arDefaultScale,
       arModel,
-      maxWidthMeters,
-      maxHeightMeters,
     };
     modelLoadHandlerRef.current = fitModelToRealWorldSize;
   });
