@@ -795,7 +795,7 @@ export default function App() {
       localSpaceRef.current = await session.requestReferenceSpace("local");
 
       if (!session.requestHitTestSource) {
-        throw new Error("Hit testing is not available in this browser session.");
+        throw new DOMException("Hit testing is not available in this browser session.", "NotSupportedError");
       }
 
       const hitTestSource = await session.requestHitTestSource({
@@ -803,7 +803,7 @@ export default function App() {
       });
 
       if (!hitTestSource) {
-        throw new Error("Unable to create a hit-test source.");
+        throw new DOMException("Unable to create a hit-test source.", "NotSupportedError");
       }
 
       hitTestSourceRef.current = hitTestSource;
@@ -839,6 +839,11 @@ export default function App() {
       setStatus(`AR could not start: ${message}`);
       await sessionRef.current?.end().catch(() => undefined);
       cleanupSession();
+      const productId = requestedProductId ?? findModel(selectedModelIdRef.current).productId;
+      if (productId && error instanceof DOMException && error.name === "NotSupportedError") {
+        const fallback = new URL(`/products/${productId}?viewer=3d&ar=unavailable`, frontendQuoteBaseUrl());
+        window.location.replace(fallback.toString());
+      }
     } finally {
       startingRef.current = false;
       setIsStarting(false);
@@ -1594,7 +1599,12 @@ export default function App() {
       ...nextTransform,
     };
 
-    rebuildV2ObjectVisuals(updatedObject);
+    setV2RootTransform(
+      updatedObject.root,
+      updatedObject.anchor.clone().add(updatedObject.anchorOffset),
+      updatedObject,
+    );
+    syncObjectAnchorRelativeMatrix(updatedObject);
 
     v2ObjectsRef.current = v2ObjectsRef.current.map((object) =>
       object.id === objectId ? updatedObject : object,

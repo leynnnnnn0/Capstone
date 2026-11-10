@@ -215,6 +215,21 @@ export function PlacementEditor({
   ) =>
     onTransform(object.id, change);
 
+  const depthControls = (
+    <>
+      <TransformButton
+        label="In"
+        icon={<Minus className="size-4" />}
+        onClick={() => transform((item) => nudgeV2Object(item, item.depthDir, -V2_NUDGE_METERS))}
+      />
+      <TransformButton
+        label="Out"
+        icon={<Plus className="size-4" />}
+        onClick={() => transform((item) => nudgeV2Object(item, item.depthDir, V2_NUDGE_METERS))}
+      />
+    </>
+  );
+
   return (
     <section
       className="v2-size-panel"
@@ -241,7 +256,16 @@ export function PlacementEditor({
           {object.dimensions.segmentsCm[0]}x{object.dimensions.heightCm}
         </span>
       </div>
-      {guided && <p className="v2-editor-help">Drag to move. Adjust the size below, then tap Done or Add New Product.</p>}
+      {guided && (
+        <>
+          <p className="v2-editor-help">
+            In and Out move the model {V2_NUDGE_METERS * 100} cm per tap.
+          </p>
+          <div className="v2-transform-grid v2-depth-controls" role="group" aria-label="Move model in or out">
+            {depthControls}
+          </div>
+        </>
+      )}
       <V2DimensionControl
         label="Height"
         value={object.dimensions.heightCm}
@@ -308,24 +332,7 @@ export function PlacementEditor({
             )
           }
         />
-        <TransformButton
-          label="In"
-          icon={<Minus className="size-4" />}
-          onClick={() =>
-            transform((item) =>
-              nudgeV2Object(item, item.depthDir, -V2_NUDGE_METERS),
-            )
-          }
-        />
-        <TransformButton
-          label="Out"
-          icon={<Plus className="size-4" />}
-          onClick={() =>
-            transform((item) =>
-              nudgeV2Object(item, item.depthDir, V2_NUDGE_METERS),
-            )
-          }
-        />
+        {!guided && depthControls}
       </div>}
     </section>
   );

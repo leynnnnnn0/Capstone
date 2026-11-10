@@ -21,6 +21,8 @@ type ProductArButtonProps = {
 
 type PreviewMode = "webxr" | "quick-look" | "3d";
 
+const WEBXR_UNAVAILABLE_KEY = "sog-webxr-unavailable";
+
 function arUrl(productId: number, directEntry: boolean) {
   const version = process.env.NEXT_PUBLIC_AR_VERSION || "v2";
   const configured = process.env.NEXT_PUBLIC_AR_URL?.replace(/\/+$/, "");
@@ -38,19 +40,32 @@ function arUrl(productId: number, directEntry: boolean) {
 
 async function supportsWebXrAr() {
   const xr = (navigator as Navigator & {
-    xr?: { isSessionSupported?: (mode: "immersive-ar") => Promise<boolean> };
+    xr?: {
+      isSessionSupported?: (mode: "immersive-ar") => Promise<boolean>;
+      requestSession?: unknown;
+    };
   }).xr;
   const xrSession = (window as Window & {
     XRSession?: { prototype: { requestHitTestSource?: unknown } };
   }).XRSession;
 
   if (!window.isSecureContext || !xr?.isSessionSupported ||
+    typeof xr.requestSession !== "function" ||
     typeof xrSession?.prototype.requestHitTestSource !== "function") return false;
 
   try {
     return await xr.isSessionSupported("immersive-ar");
   } catch {
     return false;
+  }
+}
+
+function rememberWebXrUnavailable(rejectedSession: boolean) {
+  try {
+    if (rejectedSession) sessionStorage.setItem(WEBXR_UNAVAILABLE_KEY, "1");
+    return rejectedSession || sessionStorage.getItem(WEBXR_UNAVAILABLE_KEY) === "1";
+  } catch {
+    return rejectedSession;
   }
 }
 
@@ -83,6 +98,7 @@ export default function ProductArButton({
   const searchParams = useSearchParams();
   const [fallbackOpen, setFallbackOpen] = useState<boolean | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode | null>(null);
+  const rejectedSession = searchParams.get("ar") === "unavailable";
   const showFallback = fallbackOpen ?? (searchParams.get("viewer") === "3d");
   const canViewInAr = previewMode === "webxr" || previewMode === "quick-look";
   const PreviewIcon = canViewInAr ? ScanLine : Box;
@@ -98,15 +114,26 @@ export default function ProductArButton({
     if (!modelSrc) return;
     let cancelled = false;
 
-    void supportsWebXrAr().then((webXr) => {
+    const updatePreviewMode = async () => {
+      const webXr = !rememberWebXrUnavailable(rejectedSession) && await supportsWebXrAr();
       if (cancelled) return;
-      // Scene Viewer treats Android as a candidate even without working ARCore.
-      // A native AR launch should only be offered when the browser confirms a mode.
-      setPreviewMode(webXr ? "webxr" : supportsQuickLook() ? "quick-look" : "3d");
-    });
+      if (webXr && !rememberWebXrUnavailable(false)) {
+        setPreviewMode("webxr");
+        return;
+      }
+      setPreviewMode(supportsQuickLook() ? "quick-look" : "3d");
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) void updatePreviewMode();
+    };
+    void updatePreviewMode();
+    window.addEventListener("pageshow", onPageShow);
 
-    return () => { cancelled = true; };
-  }, [modelSrc]);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [modelSrc, rejectedSession]);
 
   if (!modelSrc || !previewMode) return null;
 

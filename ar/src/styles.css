@@ -4339,4 +4339,6 @@ h1 {
 .v2-confirm button:last-child { background: #b91c1c; color: white; }
 .is-v2 .v2-size-panel { max-height: calc(100dvh - 14rem); overflow-y: auto; }
 .v2-position-toggle { display: block; width: 100%; text-align: left; }
+.v2-depth-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.v2-depth-controls button { min-height: 44px; font-size: 0.85rem; }
 .ar-bottom-nav button:disabled { opacity: .45; }
