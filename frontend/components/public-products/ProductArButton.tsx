@@ -3,6 +3,7 @@
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { ArrowUpRight, ScanLine, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import Product3DModelViewer from "@/components/products/Product3DModelViewer";
 import { cn } from "@/lib/utils";
@@ -57,7 +58,9 @@ export default function ProductArButton({
   defaultDepthCm,
   className,
 }: ProductArButtonProps) {
-  const [fallbackOpen, setFallbackOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const [fallbackOpen, setFallbackOpen] = useState<boolean | null>(null);
+  const showFallback = fallbackOpen ?? searchParams.get("viewer") === "3d";
   const defaults = defaultArDimensions(
     productName,
     categoryName,
@@ -106,7 +109,7 @@ export default function ProductArButton({
         <ArrowUpRight aria-hidden="true" className="ml-1 h-4 w-4 shrink-0 text-white transition-transform duration-300 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5 motion-reduce:transition-none" strokeWidth={1.8} />
       </button>
 
-      {fallbackOpen && (
+      {showFallback && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-3 sm:p-6"
           onClick={() => setFallbackOpen(false)}

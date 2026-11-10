@@ -91,8 +91,8 @@ export function ArGuidanceOverlays({
                 </article>
                 <article>
                   <span className="guide-step-number">2</span>
-                  <strong>{isV2 ? "Lock the wall" : "Watch the target"}</strong>
-                  <span>{isV2 ? "Tap Lock wall when ready" : "Green means ready"}</span>
+                  <strong>{isV2 ? "Watch the preview" : "Watch the target"}</strong>
+                  <span>{isV2 ? "It snaps to the wall when ready" : "Green means ready"}</span>
                 </article>
                 <article>
                   <span className="guide-step-number">3</span>
@@ -234,7 +234,7 @@ export function PlacementEditor({
       </div>
       <div className="v2-size-panel-header">
         <div>
-          <small>{guided ? "3 · Adjust product" : "Glass"}</small>
+          <small>{guided ? object.captureConfidence === "none" ? "Estimated placement" : "Adjust product" : "Glass"}</small>
           <strong>{modelLabel}</strong>
         </div>
         <span>

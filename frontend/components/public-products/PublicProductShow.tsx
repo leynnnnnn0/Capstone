@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type React from "react";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
@@ -371,29 +371,25 @@ function ImageGallery({
     [images],
   );
 
-  if (normalizedImages.length === 0) {
-    return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-3xl bg-primary">
-        <span className="text-[48px] font-black text-white opacity-20">
-          {productName.slice(0, 2).toUpperCase()}
-        </span>
-      </div>
-    );
-  }
-
   const current = normalizedImages[active] ?? normalizedImages[0];
 
   return (
     <div className="flex flex-col gap-4">
       <div
-        className="relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-[1.75rem] border border-[#dce4ea] bg-white"
-        onClick={() => setZoomed(true)}
+        className={`relative aspect-square w-full overflow-hidden rounded-[1.75rem] border border-[#dce4ea] ${current ? "cursor-zoom-in bg-white" : "grid place-items-center bg-primary"}`}
+        onClick={current ? () => setZoomed(true) : undefined}
       >
-        <NativeShimmerImage
-          src={current.src}
-          alt={productName}
-          className="h-full w-full object-contain p-4 transition-all duration-500 sm:p-8"
-        />
+        {current ? (
+          <NativeShimmerImage
+            src={current.src}
+            alt={productName}
+            className="h-full w-full object-contain p-4 transition-all duration-500 sm:p-8"
+          />
+        ) : (
+          <span className="text-[48px] font-black text-white opacity-20">
+            {productName.slice(0, 2).toUpperCase()}
+          </span>
+        )}
 
         {normalizedImages.length > 1 && (
           <>
@@ -410,15 +406,19 @@ function ImageGallery({
           </>
         )}
 
-        {!isCatalogMode && <ProductArButton
-          productId={productId}
-          productName={productName}
-          categoryName={categoryName}
-          modelSrc={modelSrc}
-          defaultWidthCm={defaultWidthCm}
-          defaultHeightCm={defaultHeightCm}
-          className="bottom-3 right-3 sm:bottom-4 sm:right-4"
-        />}
+        {!isCatalogMode && (
+          <Suspense fallback={null}>
+            <ProductArButton
+              productId={productId}
+              productName={productName}
+              categoryName={categoryName}
+              modelSrc={modelSrc}
+              defaultWidthCm={defaultWidthCm}
+              defaultHeightCm={defaultHeightCm}
+              className="bottom-3 right-3 sm:bottom-4 sm:right-4"
+            />
+          </Suspense>
+        )}
       </div>
 
       {normalizedImages.length > 1 && (
@@ -442,7 +442,7 @@ function ImageGallery({
         </div>
       )}
 
-      {zoomed && (
+      {zoomed && current && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setZoomed(false)}

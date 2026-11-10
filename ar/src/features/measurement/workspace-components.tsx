@@ -23,6 +23,7 @@ import {
 import { cn } from "../../lib/utils";
 import { formatDimensions } from "./dimensions";
 import { formatV2Dimensions } from "./placement-helpers";
+import { frontendQuoteBaseUrl } from "./quote-handoff";
 import type { MeasuredObject } from "./types";
 import type { V2PlacedObject } from "./workspace-types";
 
@@ -65,10 +66,12 @@ export function V2DimensionControl({
 
 export function DirectArEntry({
   selectedModel,
+  productId,
   catalogReady,
   onStartSession,
 }: {
   selectedModel: ModelDefinition;
+  productId?: number;
   catalogReady: boolean;
   onStartSession: () => void;
 }) {
@@ -86,6 +89,17 @@ export function DirectArEntry({
           <Play className="size-5" />
           {catalogReady ? "Start AR" : "Loading product…"}
         </button>
+        {productId && (
+          <p className="direct-ar-fallback">
+            Button not working?{" "}
+            <a
+              href={new URL(`/products/${productId}?viewer=3d`, frontendQuoteBaseUrl()).toString()}
+              aria-label="Open this product in Model Viewer"
+            >
+              Click here
+            </a>
+          </p>
+        )}
       </div>
     </section>
   );

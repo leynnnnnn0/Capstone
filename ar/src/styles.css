@@ -4280,6 +4280,18 @@ h1 {
   box-shadow: none;
 }
 
+.direct-ar-card .direct-ar-fallback {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+}
+
+.direct-ar-fallback a {
+  color: #162d4a;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 /* V2: readable feedback with separate placement and adjustment controls. */
 .v2-guidance {
   pointer-events: auto;

@@ -57,6 +57,7 @@ interface ProductVariantPayload {
   width?: number | string | null;
   height?: number | string | null;
   price?: number | string | null;
+  is_active?: boolean;
   images?: ProductImagePayload[];
 }
 
@@ -198,6 +199,10 @@ function productToModel(
   const productName = cleanText(product.name) || `Product ${product.id}`;
   const description = cleanText(product.description) || "AR-ready 3D product model.";
   const images = productImageUrls(product, apiBase);
+  const variants = productVariants(product, apiBase);
+  const defaultVariant = variants.find(({ widthCm, heightCm }) =>
+    widthCm != null && heightCm != null,
+  );
 
   return {
     id: `product-${product.id}`,
@@ -208,7 +213,9 @@ function productToModel(
     file: normalizeCatalogAssetUrl(fileUrl, apiBase),
     thumbnail: images[0] ?? null,
     images,
-    variants: productVariants(product, apiBase),
+    variants,
+    defaultWidthCm: defaultVariant?.widthCm,
+    defaultHeightCm: defaultVariant?.heightCm,
     price: product.price_per_unit == null ? null : Number(product.price_per_unit),
     unit: product.unit ?? null,
     productId: product.id,
@@ -251,7 +258,7 @@ function productImageUrls(product: ProductPayload, apiBase: string) {
 }
 
 function productVariants(product: ProductPayload, apiBase: string) {
-  return (product.variants ?? []).map((variant, index) => {
+  return (product.variants ?? []).filter((variant) => variant.is_active !== false).map((variant, index) => {
     const widthCm = Number(variant.width);
     const heightCm = Number(variant.height);
     const price = Number(variant.price);
@@ -260,8 +267,8 @@ function productVariants(product: ProductPayload, apiBase: string) {
     return {
       id: `variant-${product.id}-${variant.id ?? index}`,
       label: cleanText(variant.name) || variantSizeLabel(widthCm, heightCm) || `Variant ${index + 1}`,
-      widthCm: Number.isFinite(widthCm) ? widthCm : null,
-      heightCm: Number.isFinite(heightCm) ? heightCm : null,
+      widthCm: Number.isFinite(widthCm) && widthCm > 0 ? widthCm : null,
+      heightCm: Number.isFinite(heightCm) && heightCm > 0 ? heightCm : null,
       price: Number.isFinite(price) ? price : null,
       thumbnail: thumbnail ? normalizeCatalogAssetUrl(thumbnail, apiBase) : null,
     };
@@ -269,7 +276,7 @@ function productVariants(product: ProductPayload, apiBase: string) {
 }
 
 function variantSizeLabel(widthCm: number, heightCm: number) {
-  if (!Number.isFinite(widthCm) || !Number.isFinite(heightCm)) return "";
+  if (!Number.isFinite(widthCm) || !Number.isFinite(heightCm) || widthCm <= 0 || heightCm <= 0) return "";
 
   return `${widthCm} x ${heightCm} cm`;
 }

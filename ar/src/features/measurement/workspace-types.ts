@@ -24,7 +24,7 @@ export const SURFACE_READY_NORMAL_SPREAD_RADIANS =
 
 export type CapturePhase = "shape" | "height";
 export type FlowVersion = "v1" | "v2" | "v3";
-export type V2Mode = "scanWall" | "place" | "edit";
+export type V2Mode = "place" | "edit";
 export type AnchorTrackingState =
   | "idle"
   | "anchored"

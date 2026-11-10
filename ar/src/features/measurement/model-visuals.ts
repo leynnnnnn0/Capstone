@@ -5,6 +5,7 @@ import { computeDimensions } from "./dimensions";
 import { createLabel } from "./labels";
 import { normalizeCatalogAssetUrl, type ModelDefinition } from "./model-catalog";
 import { OBJECT_TYPES } from "./object-types";
+import { defaultV2DimensionsForModel } from "./placement-helpers";
 import {
   MIN_SEGMENT_LENGTH_METERS,
   type MeasurementPlane,
@@ -164,11 +165,37 @@ export function createV2ObjectLabel(
   id: number,
   model: ModelDefinition,
   dimensions: V2PlacedObject["dimensions"],
+  estimated = false,
 ) {
-  const label = createLabel(`${model.label} ${id}`, OBJECT_TYPES[model.type].color);
+  const suffix = estimated ? " (estimated)" : "";
+  const label = createLabel(`${model.label} ${id}${suffix}`, OBJECT_TYPES[model.type].color);
   label.position.set(0, dimensions.heightCm / 100 + 0.12, 0);
 
   return label;
+}
+
+export async function loadV2DefaultDimensions(
+  definition: ModelDefinition,
+): Promise<V2PlacedObject["dimensions"]> {
+  const defaults = defaultV2DimensionsForModel(definition);
+  if (definition.source !== "api") return defaults;
+
+  const source = await loadCatalogModel(normalizeCatalogAssetUrl(definition.file))
+    .catch(() => null);
+  if (!source) return defaults;
+
+  const model = source.clone(true);
+  prepareCatalogModel(model, definition);
+  const size = new THREE.Box3().setFromObject(model, true).getSize(new THREE.Vector3());
+  const widthCm = metersToCentimeters(size.x);
+  const heightCm = metersToCentimeters(size.y);
+  const depthCm = metersToCentimeters(size.z);
+
+  return {
+    segmentsCm: [definition.defaultWidthCm ?? (widthCm || defaults.segmentsCm[0])],
+    heightCm: definition.defaultHeightCm ?? (heightCm || defaults.heightCm),
+    depthCm: depthCm || defaults.depthCm,
+  };
 }
 
 export function createV2ObjectModel(
@@ -177,22 +204,20 @@ export function createV2ObjectModel(
 ) {
   const widthMeters = Math.max(0.05, dimensions.segmentsCm[0] / 100);
   const heightMeters = Math.max(0.05, dimensions.heightCm / 100);
-  const depthMeters = Math.max(0.01, dimensions.depthCm / 100);
-  const color = OBJECT_TYPES[model.type].color;
+  const depthMeters = Math.max(0.001, dimensions.depthCm / 100);
   const group = new THREE.Group();
   const center = new THREE.Vector3(0, heightMeters / 2, depthMeters / 2);
-
-  group.add(
-    createPanelMesh(
-      widthMeters,
-      heightMeters,
-      new THREE.Vector3(1, 0, 0),
-      new THREE.Vector3(0, 1, 0),
-      new THREE.Vector3(0, 0, 1),
-      center,
-      color,
-    ),
+  const halfWidth = widthMeters / 2;
+  const outline = new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-halfWidth, 0, 0),
+      new THREE.Vector3(halfWidth, 0, 0),
+      new THREE.Vector3(halfWidth, heightMeters, 0),
+      new THREE.Vector3(-halfWidth, heightMeters, 0),
+    ]),
+    new THREE.LineBasicMaterial({ color: 0xe2e8f0 }),
   );
+  group.add(outline);
 
   const frame: ModelFrame = {
     center,
@@ -208,7 +233,11 @@ export function createV2ObjectModel(
 
   loadCatalogModel(modelFile)
     .then((catalogModel) => {
+      if (!group.parent) return;
       group.add(fitCatalogModel(catalogModel, frame, model));
+      group.remove(outline);
+      outline.geometry.dispose();
+      outline.material.dispose();
     })
     .catch((error) => {
       console.warn(`Unable to load model ${modelFile}`, error);
@@ -392,10 +421,8 @@ function fitCatalogModel(
 ) {
   const wrapper = new THREE.Group();
   const model = cloneModel(source);
-  removeCatalogModelArtifacts(model);
-  orientCatalogModelForFrame(model, definition);
-  model.updateMatrixWorld(true);
-  const bounds = new THREE.Box3().setFromObject(model);
+  prepareCatalogModel(model, definition);
+  const bounds = new THREE.Box3().setFromObject(model, true);
   const modelSize = new THREE.Vector3();
   const modelCenter = new THREE.Vector3();
   bounds.getSize(modelSize);
@@ -413,6 +440,12 @@ function fitCatalogModel(
   wrapper.position.copy(frame.center);
   wrapper.userData.isCatalogModel = true;
   return wrapper;
+}
+
+function prepareCatalogModel(model: THREE.Group, definition: ModelDefinition) {
+  removeCatalogModelArtifacts(model);
+  orientCatalogModelForFrame(model, definition);
+  model.updateMatrixWorld(true);
 }
 
 function orientCatalogModelForFrame(

@@ -32,6 +32,7 @@ import {
   createV2ObjectModel,
   getPreferredPlaneKind,
   getViewerForward,
+  loadV2DefaultDimensions,
   recolorMeasurementGuides,
   setReticleColor,
 } from "./features/measurement/model-visuals";
@@ -51,7 +52,6 @@ import {
 } from "./features/measurement/placement-helpers";
 import {
   createPlacementAxes,
-  projectPlacementToReferenceWall,
   setV2RootTransform,
 } from "./features/measurement/wall-placement";
 import {
@@ -84,7 +84,7 @@ import {
   snapHeightPoint,
   snapShapePoint,
 } from "./features/measurement/snapping";
-import { requestHitTestSession } from "./features/measurement/xr-session";
+import { getCenterDepthMeters, requestHitTestSession } from "./features/measurement/xr-session";
 import {
   VERSION,
   type AnchorTrackingState,
@@ -134,7 +134,9 @@ export default function App() {
   const currentHitResultRef = useRef<XRHitTestResultWithAnchor | null>(null);
   const currentHitPoseMatrixRef = useRef<THREE.Matrix4 | null>(null);
   const shapePlaneRef = useRef<MeasurementPlane | null>(null);
-  const v2LockedWallRef = useRef<MeasurementPlane | null>(null);
+  const v2PreviewRef = useRef<{ model: THREE.Group; height: number; width: number } | null>(null);
+  const v2WallReadyRef = useRef(false);
+  const v2PlacementRequestedRef = useRef(false);
   const confidenceRef = useRef<ReticleConfidence>("none");
   const noSurfaceSinceRef = useRef<number | null>(null);
   const lastViewerPositionRef = useRef<THREE.Vector3 | null>(null);
@@ -154,7 +156,7 @@ export default function App() {
   const nextV2ObjectIdRef = useRef(1);
 
   // The AR route decides which measuring flow is active: v1 is point-to-point,
-  // v2 is wall scan + placement, and v3 is the simplified placement experiment.
+  // v2 previews and places products on walls, and v3 is a placement experiment.
   const [flowVersion] = useState<FlowVersion>(() =>
     flowVersionFromPath(window.location.pathname),
   );
@@ -208,8 +210,7 @@ export default function App() {
   const v2ObjectsRef = useRef<V2PlacedObject[]>([]);
   const [selectedV2ObjectId, setSelectedV2ObjectId] = useState<number | null>(null);
   const selectedV2ObjectIdRef = useRef<number | null>(null);
-  const [v2WallLocked, setV2WallLocked] = useState(false);
-  const [v2Mode, setV2ModeState] = useState<V2Mode>("scanWall");
+  const [v2Mode, setV2ModeState] = useState<V2Mode>("place");
   const [sessionPanelOpen, setSessionPanelOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [exitPromptOpen, setExitPromptOpen] = useState(false);
@@ -224,7 +225,7 @@ export default function App() {
   const showMovementCoachRef = useRef(false);
   const modelCatalogRef = useRef<ModelDefinition[]>(MODEL_CATALOG);
   const flowVersionRef = useRef<FlowVersion>(flowVersion);
-  const v2ModeRef = useRef<V2Mode>("scanWall");
+  const v2ModeRef = useRef<V2Mode>("place");
   const v3PinchRef = useRef<{
     distance: number;
     widthCm: number;
@@ -310,12 +311,58 @@ export default function App() {
   const arStageLabel = arStageName(copyContext);
   const arPrimaryActionLabel = primaryArAction({
     ...copyContext,
-    wallLocked: v2WallLocked,
   });
 
-  const guidance = v2Guidance(v2Mode, confidence, wallEligible, scanSeconds, isPlacing);
+  const guidance = v2Guidance(confidence, wallEligible, scanSeconds, isPlacing);
   const guidanceVisible = isV2 && isActive && !showArGuide && !catalogOpen &&
     !sessionPanelOpen && !summaryOpen && !exitPromptOpen && !confirmClear;
+  const showV2PreviewRef = useRef(false);
+  showV2PreviewRef.current = guidanceVisible;
+
+  useEffect(() => {
+    const scene = sceneRef.current?.scene;
+    if (!isV2 || !isActive || v2Mode !== "place" || !scene) return;
+
+    const setPreview = (dimensions: V2PlacedObject["dimensions"]) => {
+      const previous = v2PreviewRef.current?.model;
+      const model = createV2ObjectModel(dimensions, selectedModel);
+      model.visible = false;
+      scene.add(model);
+      v2PreviewRef.current = {
+        model,
+        height: dimensions.heightCm / 100,
+        width: dimensions.segmentsCm[0] / 100,
+      };
+      if (previous) {
+        previous.removeFromParent();
+        disposeObject(previous);
+      }
+    };
+    const defaults = defaultV2DimensionsForModel(selectedModel);
+    setPreview(defaults);
+
+    let cancelled = false;
+    void loadV2DefaultDimensions(selectedModel).then((dimensions) => {
+      if (cancelled) return;
+      if (
+        dimensions.segmentsCm[0] !== defaults.segmentsCm[0] ||
+        dimensions.heightCm !== defaults.heightCm ||
+        dimensions.depthCm !== defaults.depthCm
+      ) {
+        setPreview(dimensions);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      const preview = v2PreviewRef.current?.model;
+      v2PreviewRef.current = null;
+      if (preview) {
+        preview.removeFromParent();
+        disposeObject(preview);
+      }
+    };
+  }, [isV2, isActive, v2Mode, selectedModel]);
 
   useEffect(() => {
     if (!confirmClear) return;
@@ -343,15 +390,10 @@ export default function App() {
 
   useEffect(() => {
     setScanSeconds(0);
-    setWallEligible(false);
     if (!guidanceVisible || v2Mode === "edit") return;
     let waitingSince = performance.now();
     const timer = window.setInterval(() => {
-      const plane = currentHitPlaneRef.current;
-      const position = currentHitPositionRef.current;
-      const eligible = !!(plane?.kind === "wall" && position && createCleanV2WallPlane(plane, position));
-      setWallEligible(eligible);
-      if (confidenceRef.current === "high" && (v2Mode !== "scanWall" || eligible)) {
+      if (v2WallReadyRef.current) {
         waitingSince = performance.now();
         setScanSeconds(0);
       } else {
@@ -437,6 +479,8 @@ export default function App() {
   const resetSurfaceTracking = useCallback(() => {
     surfaceSamplesRef.current = [];
     missedHitFramesRef.current = 0;
+    v2WallReadyRef.current = false;
+    setWallEligible(false);
     currentHitPositionRef.current = null;
     currentHitNormalRef.current = null;
     currentHitPlaneRef.current = null;
@@ -495,7 +539,7 @@ export default function App() {
 
       setStatus(
         flowVersionRef.current === "v2"
-          ? `${model.label} selected. ${v2ModeRef.current === "scanWall" ? "Find and lock a wall to continue." : "Aim at the wall, then tap Place product."}`
+          ? `${model.label} selected. Aim at the wall, then tap Place product.`
           : flowVersionRef.current === "v3"
           ? `${model.label} selected. Tap once in AR to place it.`
           : `${model.label} selected. Measure the shape, then height.`,
@@ -741,7 +785,7 @@ export default function App() {
       }
 
       const measurementScene = sceneRef.current;
-      const session = await requestHitTestSession(overlayRef.current);
+      const session = await requestHitTestSession(overlayRef.current, flowVersionRef.current === "v2");
       sessionRef.current = session;
 
       measurementScene.renderer.xr.setReferenceSpaceType("local");
@@ -773,10 +817,8 @@ export default function App() {
       setSummaryOpen(false);
       setCapturePhase("shape");
       capturePhaseRef.current = "shape";
-      v2LockedWallRef.current = null;
-      setV2WallLocked(false);
-      setV2Mode(flowVersionRef.current === "v3" ? "place" : "scanWall");
-      setArGuideVisible(true);
+      setV2Mode("place");
+      setArGuideVisible(flowVersionRef.current !== "v2");
       setMovementCoachVisible(false);
       noSurfaceSinceRef.current = null;
       lastViewerPositionRef.current = null;
@@ -788,7 +830,7 @@ export default function App() {
         flowVersionRef.current === "v3"
           ? "Point where the product should go. Move slowly, wait for green, then tap."
           : flowVersionRef.current === "v2"
-          ? "Point at the wall and move slowly. Wait for green, then tap or press Lock wall."
+          ? "Aim at the wall to preview your product."
           : "Move slowly until the circle turns green, then tap the first outline point.",
       );
     } catch (error) {
@@ -935,6 +977,86 @@ export default function App() {
     );
   };
 
+  const updateV2Preview = (
+    frame: XRFrame,
+    referenceSpace: XRReferenceSpace,
+    measurementScene: MeasurementScene,
+  ) => {
+    const hitPlane = currentHitPlaneRef.current;
+    const hitPosition = currentHitPositionRef.current;
+    const view = frame.getViewerPose(referenceSpace)?.views[0];
+    const visible = !!view && showV2PreviewRef.current && v2ModeRef.current === "place";
+    const sensedDepth = visible && view ? getCenterDepthMeters(frame, view) : null;
+    const hitDepth = visible && view && hitPosition
+      ? -hitPosition.clone().applyMatrix4(new THREE.Matrix4().fromArray(view.transform.inverse.matrix)).z
+      : null;
+    const depthAgrees = sensedDepth == null || (hitDepth != null &&
+      Math.abs(hitDepth - sensedDepth) <= Math.max(0.25, sensedDepth * 0.2));
+    const wall = hitDepth != null && hitDepth > 0 && depthAgrees &&
+      hitPlane?.kind === "wall" && hitPosition && confidenceRef.current === "high"
+      ? createCleanV2WallPlane(hitPlane, hitPosition)
+      : null;
+    if (v2WallReadyRef.current !== !!wall) {
+      v2WallReadyRef.current = !!wall;
+      setWallEligible(!!wall);
+    }
+
+    const preview = v2PreviewRef.current;
+    if (preview) preview.model.visible = visible;
+    if (!view || !visible || !preview) {
+      if (v2PlacementRequestedRef.current) {
+        v2PlacementRequestedRef.current = false;
+        anchoredPlacementPendingRef.current = false;
+        setIsPlacing(false);
+        setStatus("Camera tracking paused. Move your phone slowly and try again.");
+      }
+      return;
+    }
+
+    let position: THREE.Vector3;
+    let axes: V2PlacementAxes;
+    if (wall) {
+      position = wall.anchor.clone();
+      axes = createPlacementAxes(wall, measurementScene.renderer.xr.getCamera());
+    } else {
+      // Depth can give us the distance even when the surface has no reliable hit.
+      const viewMatrix = new THREE.Matrix4().fromArray(view.transform.matrix);
+      const framingDistance = Math.max(
+        1,
+        preview.width * view.projectionMatrix[0],
+        preview.height * view.projectionMatrix[5],
+      );
+      const distance = sensedDepth ?? Math.min(8, framingDistance);
+      position = new THREE.Vector3(0, 0, -distance).applyMatrix4(viewMatrix);
+      const depthDir = new THREE.Vector3(0, 0, 1).transformDirection(viewMatrix);
+      depthDir.y = 0;
+      if (depthDir.lengthSq() < 0.0001) depthDir.set(0, 0, 1);
+      depthDir.normalize();
+      const heightDir = new THREE.Vector3(0, 1, 0);
+      axes = {
+        widthDir: new THREE.Vector3().crossVectors(heightDir, depthDir),
+        heightDir,
+        depthDir,
+      };
+    }
+    // The crosshair marks the model's center; its root sits at the bottom edge.
+    const previewBase = position.clone().addScaledVector(axes.heightDir, -preview.height / 2);
+    setV2RootTransform(preview.model, previewBase, axes);
+
+    if (v2PlacementRequestedRef.current) {
+      v2PlacementRequestedRef.current = false;
+      const session = sessionRef.current;
+      // A surface anchor needs the frame that produced the hit. Without a hit,
+      // keep the estimated position in the session's local space.
+      const hitResult = wall ? currentHitResultRef.current : null;
+      void createPlacedObject(position, axes, hitResult).finally(() => {
+        if (session !== sessionRef.current) return;
+        anchoredPlacementPendingRef.current = false;
+        setIsPlacing(false);
+      });
+    }
+  };
+
   /**
    * Main AR animation loop.
    *
@@ -947,11 +1069,17 @@ export default function App() {
     const hitTestSource = hitTestSourceRef.current;
     if (!measurementScene || !frame || !localSpace || !hitTestSource) return;
 
+    const finishFrame = () => {
+      if (flowVersionRef.current === "v2") updateV2Preview(frame, localSpace, measurementScene);
+      updateV2Anchors(frame, localSpace);
+      measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
+    };
+
     const now = performance.now();
     trackViewerMotion(frame, localSpace, now);
     const results = frame.getHitTestResults(hitTestSource);
     const shouldShowPlacementReticle =
-      flowVersionRef.current !== "v2" || v2ModeRef.current !== "edit";
+      flowVersionRef.current !== "v2";
 
     if (results.length === 0) {
       missedHitFramesRef.current += 1;
@@ -964,11 +1092,7 @@ export default function App() {
           previous === "medium" ? previous : "medium",
         );
         setReticleColor(measurementScene.reticle, "medium");
-        updateV2Anchors(frame, localSpace);
-        measurementScene.renderer.render(
-          measurementScene.scene,
-          measurementScene.camera,
-        );
+        finishFrame();
         return;
       }
 
@@ -982,8 +1106,7 @@ export default function App() {
       confidenceRef.current = "none";
       setConfidence((previous) => (previous === "none" ? previous : "none"));
       noteNoSurfaceFrame(now);
-      updateV2Anchors(frame, localSpace);
-      measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
+      finishFrame();
       return;
     }
 
@@ -999,11 +1122,7 @@ export default function App() {
           previous === "medium" ? previous : "medium",
         );
         setReticleColor(measurementScene.reticle, "medium");
-        updateV2Anchors(frame, localSpace);
-        measurementScene.renderer.render(
-          measurementScene.scene,
-          measurementScene.camera,
-        );
+        finishFrame();
         return;
       }
 
@@ -1017,8 +1136,7 @@ export default function App() {
       confidenceRef.current = "none";
       setConfidence((previous) => (previous === "none" ? previous : "none"));
       noteNoSurfaceFrame(now);
-      updateV2Anchors(frame, localSpace);
-      measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
+      finishFrame();
       return;
     }
 
@@ -1070,13 +1188,9 @@ export default function App() {
     const nextConfidence = stabilizedSurface.confidence;
     confidenceRef.current = nextConfidence;
     setConfidence((previous) => (previous === nextConfidence ? previous : nextConfidence));
-    // A stable floor must not display a green wall-lock target.
-    const canLockWall = flowVersionRef.current !== "v2" || v2ModeRef.current !== "scanWall" ||
-      (activePlane.kind === "wall" && !!createCleanV2WallPlane(activePlane, cleanPosition));
-    setReticleColor(measurementScene.reticle, nextConfidence === "high" && !canLockWall ? "medium" : nextConfidence);
+    setReticleColor(measurementScene.reticle, nextConfidence);
     noteSurfaceFrame();
-    updateV2Anchors(frame, localSpace);
-    measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
+    finishFrame();
   };
 
   /**
@@ -1104,6 +1218,14 @@ export default function App() {
       return;
     }
 
+    if (flowVersionRef.current === "v2") {
+      if (source !== "button" || v2ModeRef.current !== "place" || anchoredPlacementPendingRef.current) return;
+      anchoredPlacementPendingRef.current = true;
+      v2PlacementRequestedRef.current = true;
+      setIsPlacing(true);
+      return;
+    }
+
     const measurementScene = sceneRef.current;
     const position = currentHitPositionRef.current;
     const activeConfidence = confidenceRef.current;
@@ -1124,28 +1246,6 @@ export default function App() {
       anchoredPlacementPendingRef.current = true;
       void placeV3ObjectFromHit(position).finally(() => {
         anchoredPlacementPendingRef.current = false;
-      });
-      return;
-    }
-
-    if (flowVersionRef.current === "v2") {
-      if (v2ModeRef.current === "edit") {
-        setStatus("Model placed. Tap Do Another before placing another item.");
-        return;
-      }
-
-      if (v2ModeRef.current === "scanWall" || !v2LockedWallRef.current) {
-        lockV2WallFromHit();
-        return;
-      }
-
-      if (anchoredPlacementPendingRef.current) return;
-      anchoredPlacementPendingRef.current = true;
-      setIsPlacing(true);
-      setStatus("Placing your product. Keep the wall in view…");
-      void placeV2ObjectFromHit(position).finally(() => {
-        anchoredPlacementPendingRef.current = false;
-        setIsPlacing(false);
       });
       return;
     }
@@ -1236,118 +1336,74 @@ export default function App() {
     );
   };
 
-  /**
-   * V2 wall scan step. The wall plane becomes the reference for straight doors
-   * and windows, while the next tap chooses where the model is placed.
-   */
-  const lockV2WallFromHit = () => {
-    const activePlane = currentHitPlaneRef.current;
-    const position = currentHitPositionRef.current;
-
-    if (confidenceRef.current !== "high") {
-      setStatus("Keep moving slowly. Lock the wall when the circle turns green.");
-      return;
-    }
-
-    if (!activePlane || !position) {
-      setStatus("No wall detected yet. Point at the wall and move your phone slowly.");
-      return;
-    }
-
-    if (activePlane.kind !== "wall") {
-      setStatus("This is not a wall yet. Aim at a vertical wall or its edge, then try again.");
-      return;
-    }
-
-    const cleanPlane = createCleanV2WallPlane(activePlane, position);
-    if (!cleanPlane) {
-      setStatus("Wall looks too slanted. Aim straight at a vertical wall edge and try again.");
-      return;
-    }
-
-    v2LockedWallRef.current = cleanPlane;
-    setV2WallLocked(true);
-    setV2Mode("place");
-    setStatus("Wall locked. Point where the product should go and wait for green.");
-  };
-
-  const rescanV2Wall = () => {
-    markUiInteraction();
-    v2LockedWallRef.current = null;
-    setV2WallLocked(false);
-    setV2Mode("scanWall");
-    setStatus("Point at the wall and move slowly. Wait for green, then lock it.");
-  };
-
-  /**
-   * Prepare the next item. Each new product starts by asking for a wall again so
-   * a previous wall scan is not accidentally reused in another location.
-   */
   const doAnotherV2Object = () => {
     markUiInteraction();
+    setV2Mode("place");
+    selectedV2ObjectIdRef.current = null;
+    setSelectedV2ObjectId(null);
+    setSessionPanelOpen(false);
+    setSummaryOpen(false);
 
     if (flowVersionRef.current === "v3") {
-      setV2Mode("place");
-      selectedV2ObjectIdRef.current = null;
-      setSelectedV2ObjectId(null);
-      setSessionPanelOpen(false);
       setCatalogOpen(false);
-      setSummaryOpen(false);
       setStatus("Ready for another item. Move slowly, wait for green, then tap.");
       return;
     }
 
-    v2LockedWallRef.current = null;
-    setV2WallLocked(false);
-    selectedV2ObjectIdRef.current = null;
-    setSelectedV2ObjectId(null);
-    setV2Mode("scanWall");
-    setSessionPanelOpen(false);
     setShopDetailModel(null);
     setCatalogOpen(true);
-    setSummaryOpen(false);
-    setStatus("Choose the next product, then scan and lock its reference wall.");
+    setStatus("Choose the next product to preview.");
   };
 
   /**
    * Create the Three.js object used by V2/V3 placement.
    *
    * It fits the product GLB into a centimeter-sized frame, adds a label, applies
-   * world-space axes, and attaches the result to a native XR anchor.
+   * world-space axes, and uses a surface anchor when available.
    */
   const createPlacedObject = async (
-    anchor: THREE.Vector3,
+    placementPosition: THREE.Vector3,
     axes: V2PlacementAxes,
     hitResult?: XRHitTestResultWithAnchor | null,
   ) => {
     const measurementScene = sceneRef.current;
+    const session = sessionRef.current;
     const localSpace = localSpaceRef.current;
     const captureConfidence = confidenceRef.current;
-    if (!measurementScene) return null;
-
-    const initialAnchorPoseMatrix = currentHitPoseMatrixRef.current?.clone() ?? null;
-    if (!localSpace || !hitResult?.createAnchor || !initialAnchorPoseMatrix) {
-      updateAnchorTrackingState("unavailable");
-      setStatus("Stable anchoring is unavailable. Move slowly, wait for green, and try again.");
-      return null;
-    }
-
-    const xrAnchor = await createV2XrAnchor(hitResult).catch((error) => {
-      log(`anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
-      return null;
-    });
-
-    if (!xrAnchor) {
-      updateAnchorTrackingState("unavailable");
-      setStatus("Android could not create a stable anchor. Keep the surface visible and try again.");
-      return null;
-    }
-
     const selectedModel = findModel(selectedModelIdRef.current);
-    const dimensions = defaultV2DimensionsForModel(selectedModel);
+    const allowEstimate = flowVersionRef.current === "v2";
+    if (!measurementScene || !session || !localSpace) return null;
+
+    const hitPoseMatrix = hitResult?.createAnchor
+      ? currentHitPoseMatrixRef.current?.clone()
+      : null;
+    const xrAnchor = hitResult && hitPoseMatrix
+      ? await createV2XrAnchor(hitResult).catch((error) => {
+          log(`anchor unavailable: ${error instanceof Error ? error.message : String(error)}`);
+          return null;
+        })
+      : null;
+
+    if (!xrAnchor && !allowEstimate) {
+      if (session === sessionRef.current) {
+        updateAnchorTrackingState("unavailable");
+        setStatus("Android could not create a stable anchor. Keep the surface visible and try again.");
+      }
+      return null;
+    }
+    const initialAnchorPoseMatrix = xrAnchor ? hitPoseMatrix ?? null : null;
+    const dimensions = await loadV2DefaultDimensions(selectedModel);
+
+    if (session !== sessionRef.current) {
+      xrAnchor?.delete?.();
+      return null;
+    }
+    const anchor = allowEstimate
+      ? placementPosition.clone().addScaledVector(axes.heightDir, -dimensions.heightCm / 200)
+      : placementPosition;
     const root = new THREE.Group();
     const model = createV2ObjectModel(dimensions, selectedModel);
-    const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions);
+    const label = createV2ObjectLabel(nextV2ObjectIdRef.current, selectedModel, dimensions, !xrAnchor);
     // The model is authored with its back face at local Z=0. Keeping the root
     // directly on the reference plane makes the product sit flush on the wall.
     const anchorOffset = new THREE.Vector3();
@@ -1363,17 +1419,16 @@ export default function App() {
       id: nextV2ObjectIdRef.current,
       type: selectedModel.type,
       modelId: selectedModel.id,
-      captureConfidence,
+      captureConfidence: xrAnchor ? captureConfidence : "none",
       root,
       model,
       label,
       anchor: anchor.clone(),
       anchorOffset,
       xrAnchor,
-      anchorRelativeMatrix: createAnchorRelativeMatrix(
-        initialAnchorPoseMatrix,
-        root.matrix,
-      ),
+      anchorRelativeMatrix: initialAnchorPoseMatrix
+        ? createAnchorRelativeMatrix(initialAnchorPoseMatrix, root.matrix)
+        : null,
       lastAnchorPoseMatrix: initialAnchorPoseMatrix,
       missedAnchorPoseFrames: 0,
       widthDir: axes.widthDir,
@@ -1388,8 +1443,12 @@ export default function App() {
     selectedV2ObjectIdRef.current = object.id;
     setSelectedV2ObjectId(object.id);
     setV2Mode("edit");
-    updateAnchorTrackingState("anchored");
-    setStatus(`Item ${object.id} anchored. You can now walk around it.`);
+    if (xrAnchor) {
+      updateAnchorTrackingState("anchored");
+      setStatus(`Item ${object.id} anchored. You can now walk around it.`);
+    } else {
+      setStatus(`Item ${object.id} placed at an estimated distance.`);
+    }
     return object;
   };
 
@@ -1466,28 +1525,6 @@ export default function App() {
     await createPlacedObject(anchor, axes, hitResult);
   };
 
-  const placeV2ObjectFromHit = async (position: THREE.Vector3) => {
-    const measurementScene = sceneRef.current;
-    const hitPlane = currentHitPlaneRef.current;
-    const hitResult = currentHitResultRef.current;
-
-    if (!measurementScene || !hitPlane) {
-      setStatus("No surface detected yet. Move camera slowly.");
-      return;
-    }
-
-    const lockedWall = v2LockedWallRef.current;
-    if (!lockedWall) {
-      setStatus("Lock a reference wall first.");
-      return;
-    }
-
-    const axes = createPlacementAxes(lockedWall, measurementScene.camera);
-    const wallPosition = projectPlacementToReferenceWall(position, lockedWall);
-    const object = await createPlacedObject(wallPosition, axes, hitResult);
-    if (object) log(`v2 item ${object.id} anchored`);
-  };
-
   /**
    * Update height/width/depth for a placed object and rebuild its visual frame.
    */
@@ -1501,10 +1538,12 @@ export default function App() {
     if (!measurementScene || !currentObject) return;
 
     ignorePlacementUntilRef.current = performance.now() + 700;
-    const nextDimensions = normalizeV2Dimensions({
-      ...currentObject.dimensions,
-      ...patch,
-    });
+    const edited = normalizeV2Dimensions({ ...currentObject.dimensions, ...patch });
+    const nextDimensions = {
+      segmentsCm: patch.segmentsCm ? edited.segmentsCm : currentObject.dimensions.segmentsCm,
+      heightCm: patch.heightCm == null ? currentObject.dimensions.heightCm : edited.heightCm,
+      depthCm: patch.depthCm == null ? currentObject.dimensions.depthCm : edited.depthCm,
+    };
     const selectedModel = findModel(currentObject.modelId);
 
     currentObject.root.remove(currentObject.model);
@@ -1517,6 +1556,7 @@ export default function App() {
       currentObject.id,
       selectedModel,
       nextDimensions,
+      currentObject.captureConfidence === "none",
     );
     currentObject.root.add(nextModel);
     currentObject.root.add(nextLabel);
@@ -1585,6 +1625,7 @@ export default function App() {
       object.id,
       selectedModel,
       object.dimensions,
+      object.captureConfidence === "none",
     );
 
     object.root.add(nextModel);
@@ -1720,6 +1761,8 @@ export default function App() {
     segmentsRef.current = [];
     shapePlaneRef.current = null;
     currentHitPlaneRef.current = null;
+    v2WallReadyRef.current = false;
+    setWallEligible(false);
     currentHitPositionRef.current = null;
     currentHitNormalRef.current = null;
     lastPlacementPositionRef.current = null;
@@ -1802,7 +1845,6 @@ export default function App() {
     });
     v2ObjectsRef.current = [];
     shapePlaneRef.current = null;
-    v2LockedWallRef.current = null;
     v3PinchRef.current = null;
     v3DragRef.current = null;
     anchoredPlacementPendingRef.current = false;
@@ -1815,8 +1857,7 @@ export default function App() {
     setSelectedObjectId(null);
     selectedV2ObjectIdRef.current = null;
     setSelectedV2ObjectId(null);
-    setV2WallLocked(false);
-    setV2Mode("scanWall");
+    setV2Mode("place");
     anchorTrackingStateRef.current = "idle";
     setAnchorTrackingState("idle");
     setReassignCategoryId(DEFAULT_MODEL.category);
@@ -1910,6 +1951,9 @@ export default function App() {
     viewerSpaceRef.current = null;
     localSpaceRef.current = null;
     sessionRef.current = null;
+    v2PlacementRequestedRef.current = false;
+    v2WallReadyRef.current = false;
+    setWallEligible(false);
     currentHitPositionRef.current = null;
     currentHitNormalRef.current = null;
     currentHitPlaneRef.current = null;
@@ -2016,6 +2060,7 @@ export default function App() {
         ) : directArEntry ? (
           <DirectArEntry
             selectedModel={selectedModel}
+            productId={requestedProductId ?? selectedModel.productId}
             catalogReady={catalogReady}
             onStartSession={startSession}
           />
@@ -2087,11 +2132,10 @@ export default function App() {
             <div className={`reticle ${guidance.ready ? "high" : "medium"}`} aria-hidden="true"><span className="reticle-center" /></div>
             <section className={`v2-guidance ${guidance.ready ? "is-ready" : "is-scanning"}`} data-xr-ui="true" onPointerDown={markUiInteraction}>
               <div role="status" aria-live="polite" aria-atomic="true">
-                <small>{v2Mode === "scanWall" ? "1 · Find wall" : "2 · Place product"} · {activeObjectCount} placed</small>
+                <small>{guidance.ready || isPlacing ? "Place product" : "Preview"} · {activeObjectCount} placed</small>
                 <strong>{guidance.title}</strong>
                 <p>{guidance.detail}</p>
               </div>
-              {v2Mode === "place" && <button type="button" onClick={rescanV2Wall}>Choose a different wall</button>}
             </section>
           </>
         )}
@@ -2136,47 +2180,28 @@ export default function App() {
               type="button"
               className="ar-capture-button"
               disabled={
-                isPlacing || ((isV3 && v2Mode === "place") && confidence !== "high")
+                isPlacing || (isV3 && v2Mode === "place" && confidence !== "high")
               }
               onClick={() => {
                 if (isV2) {
                   if (v2Mode === "edit") doAnotherV2Object();
-                  else if (v2Mode === "scanWall") lockV2WallFromHit();
                   else placePointFromHit("button");
                   return;
                 }
-                if (!isPlacementFlow) {
-                  finishShape();
-                  return;
-                }
-
-                if (isV3 && v2Mode === "place") {
-                  placePointFromHit();
-                  return;
-                }
-
-                if (v2Mode === "edit") {
-                  doAnotherV2Object();
-                  return;
-                }
-
-                if (v2WallLocked) {
-                  rescanV2Wall();
-                  return;
-                }
-
-                lockV2WallFromHit();
+                if (!isPlacementFlow) finishShape();
+                else if (v2Mode === "edit") doAnotherV2Object();
+                else placePointFromHit("button");
               }}
             >
               <ScanLine className="size-5" />
-              <span>{isV2 ? isPlacing ? "Placing…" : v2Mode === "edit" ? "Add another" : v2Mode === "place" ? "Place product" : "Lock wall" : arPrimaryActionLabel}</span>
+              <span>{isV2 ? isPlacing ? "Placing…" : v2Mode === "edit" ? "Add another" : guidance.ready ? "Place product" : "Place preview" : arPrimaryActionLabel}</span>
             </button>
             <button type="button" onClick={openSummary}>
               <ClipboardList className="size-5" />
               <span>Quote Items</span>
               {activeObjectCount > 0 && <i>{activeObjectCount}</i>}
             </button>
-            <button type="button" onClick={() => isV2 ? setConfirmClear(true) : resetAll()}>
+            <button type="button" disabled={isPlacing} onClick={() => isV2 ? setConfirmClear(true) : resetAll()}>
               <Trash2 className="size-5" />
               <span>Reset</span>
             </button>

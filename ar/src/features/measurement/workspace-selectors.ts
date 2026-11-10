@@ -44,14 +44,6 @@ export function confidenceInstruction({
   isV3,
   mode,
 }: ArCopyContext) {
-  if (isV2 && mode === "scanWall") {
-    if (confidence === "high") {
-      return "Wall ready. Tap the green circle or Lock wall.";
-    }
-    return confidence === "none"
-      ? "Point at the wall, then move your phone slowly."
-      : "Keep moving slowly. Wait for the circle to turn green.";
-  }
   if (isV2 && mode === "place") {
     return confidence === "high"
       ? "Ready. Tap the green circle to place the product."
@@ -80,13 +72,11 @@ export function confidenceInstruction({
 export function arStageName({
   capturePhase,
   isPlacementFlow,
-  isV2,
   mode,
 }: Pick<
   ArCopyContext,
-  "capturePhase" | "isPlacementFlow" | "isV2" | "mode"
+  "capturePhase" | "isPlacementFlow" | "mode"
 >) {
-  if (isV2 && mode === "scanWall") return "Step 1 · Scan wall";
   if (isPlacementFlow && mode === "place") return "Step 2 · Place product";
   if (isPlacementFlow && mode === "edit") return "Adjust product";
   if (capturePhase === "height") return "Height capture";
@@ -99,14 +89,12 @@ export function primaryArAction({
   isPlacementFlow,
   isV3,
   mode,
-  wallLocked,
 }: Pick<
   ArCopyContext,
   "capturePhase" | "confidence" | "isPlacementFlow" | "isV3" | "mode"
-> & { wallLocked: boolean }) {
+>) {
   if (!isPlacementFlow) return capturePhase === "height" ? "Set height" : "Finish";
   if (mode === "edit") return "Another";
   if (isV3) return confidence === "high" ? "Place" : "Scanning";
-  if (wallLocked) return "Rescan";
-  return "Lock wall";
+  return "Place product";
 }
