@@ -1,5 +1,6 @@
 "use client";
 
+import { customerPanelClass, customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -189,8 +190,14 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
     return <DetailPageSkeleton customer />;
   }
 
+  const quoteItems = appointment.quotation?.items ?? [];
+  const completedInspectionCanBeSigned =
+    !appointment.work_job &&
+    quoteItems.length > 0 &&
+    quoteItems.every((item) => item.status === "approved");
   const quotationCanBeSigned =
-    !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]) &&
+    !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
+    (appointment.status !== CustomerStatus.Completed || completedInspectionCanBeSigned) &&
     !statusIn(appointment.work_job?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]);
   const quotationCanBeDownloaded =
     !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
@@ -403,8 +410,8 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
-        <section className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(400px,34%,480px)]">
+        <section className={`${customerPanelClass} min-w-0 self-start space-y-5`}>
           {appointment.work_job && (
             <LinkedWorkJobCard workJob={appointment.work_job} />
           )}
@@ -416,7 +423,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           {/* <CustomerQuoteImageList quotation={appointment.quotation} /> */}
         </section>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <CustomerDetailAccordion title="Activity log">
             <CustomerActivityLog
               remarks={appointment.remarks}
@@ -445,7 +452,7 @@ function LinkedWorkJobCard({
   workJob: NonNullable<CustomerAppointment["work_job"]>;
 }) {
   return (
-    <section className="rounded-xl border bg-card p-5 shadow-sm">
+    <section className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">

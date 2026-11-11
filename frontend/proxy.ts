@@ -41,7 +41,10 @@ export function proxy(request: NextRequest) {
     PUBLIC_ROUTES.some((route) => route !== "/" && matchesRoute(pathname, route));
 
   if (!token && !isPublic) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginPath = STAFF_ROUTES.some((route) => matchesRoute(pathname, route))
+      ? "/staff/login"
+      : "/login";
+    return NextResponse.redirect(new URL(loginPath, request.url));
   }
 
   if (token && role === "customer" && STAFF_ROUTES.some((route) => matchesRoute(pathname, route))) {

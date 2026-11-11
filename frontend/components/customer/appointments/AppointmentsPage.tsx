@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
+import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { Button } from "@/components/ui/button";
 import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
@@ -49,22 +50,24 @@ export default function AppointmentsPage() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {loading ? (
-          <CustomerCardGridSkeleton />
-        ) : (
-          appointments.map((appointment) => (
-            <AppointmentCard key={appointment.id} appointment={appointment} />
-          ))
-        )}
-      </div>
-
-      {!loading && appointments.length === 0 && (
-        <div className="rounded-xl border border-dashed bg-card p-12 text-center">
-          <p className="text-lg font-medium text-[#101820]">No appointments yet</p>
-          <p className="mt-2 text-sm text-[#667584]">Start by creating your first inspection request.</p>
+      <section className={customerPanelClass}>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {loading ? (
+            <CustomerCardGridSkeleton />
+          ) : (
+            appointments.map((appointment) => (
+              <AppointmentCard key={appointment.id} appointment={appointment} />
+            ))
+          )}
         </div>
-      )}
+
+        {!loading && appointments.length === 0 && (
+          <div className="rounded-xl border border-dashed bg-card p-12 text-center">
+            <p className="text-lg font-medium text-[#101820]">No appointments yet</p>
+            <p className="mt-2 text-sm text-[#667584]">Start by creating your first inspection request.</p>
+          </div>
+        )}
+      </section>
 
       {meta && meta.last_page > 1 && (
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-full bg-white p-2">

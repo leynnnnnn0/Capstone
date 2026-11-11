@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,6 @@ export default function StaffLoginPage() {
 }
 
 function StaffLoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,7 +54,7 @@ function StaffLoginForm() {
   function redirectForUser(payload: LoginResponse) {
     const user = unwrapUser(payload.user);
     const role = user.roles?.[0] ?? user.role;
-    router.push(role === "customer" ? "/account" : "/dashboard");
+    window.location.replace(role === "customer" ? "/account" : "/dashboard");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -69,6 +68,7 @@ function StaffLoginForm() {
     try {
       const response = await api<StaffLoginResponse>("/api/login", {
         method: "POST",
+        skipAuth: true,
         body: JSON.stringify({
           email: form.get("email"),
           password: form.get("password"),
@@ -100,6 +100,7 @@ function StaffLoginForm() {
     try {
       const response = await api<LoginResponse>("/api/two-factor-challenge", {
         method: "POST",
+        skipAuth: true,
         body: JSON.stringify({
           challenge_id: challengeId,
           code: form.get("code"),

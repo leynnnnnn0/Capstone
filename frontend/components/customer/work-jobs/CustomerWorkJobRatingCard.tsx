@@ -1,5 +1,6 @@
 "use client";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useMemo, useState } from "react";
 import { MessageSquareHeart, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -50,7 +51,7 @@ export default function CustomerWorkJobRatingCard({
 
   if (!canRate && !existingRating) {
     return (
-      <section className="rounded-xl border bg-card p-5 shadow-sm">
+      <section className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <MessageSquareHeart className="size-4" />
@@ -112,7 +113,7 @@ export default function CustomerWorkJobRatingCard({
   }
 
   return (
-    <section className="rounded-xl border bg-card p-5 shadow-sm">
+    <section className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <MessageSquareHeart className="size-4" />

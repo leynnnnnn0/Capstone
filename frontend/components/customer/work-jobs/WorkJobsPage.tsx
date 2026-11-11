@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
+import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
 import { Button } from "@/components/ui/button";
 import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
@@ -43,24 +44,26 @@ export default function WorkJobsPage() {
         description="Follow scheduled installations, assigned teams, service progress, payments, and completion updates in one place."
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {loading ? (
-          <CustomerCardGridSkeleton />
-        ) : (
-          workJobs.map((workJob) => (
-            <WorkJobCard key={workJob.id} workJob={workJob} />
-          ))
-        )}
-      </div>
-
-      {!loading && workJobs.length === 0 && (
-        <div className="rounded-xl border border-dashed bg-card p-12 text-center">
-          <p className="text-lg font-medium text-[#101820]">No work jobs yet</p>
-          <p className="mt-2 text-sm text-[#667584]">
-            Your work jobs will appear here when our team schedules installation or service.
-          </p>
+      <section className={customerPanelClass}>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {loading ? (
+            <CustomerCardGridSkeleton />
+          ) : (
+            workJobs.map((workJob) => (
+              <WorkJobCard key={workJob.id} workJob={workJob} />
+            ))
+          )}
         </div>
-      )}
+
+        {!loading && workJobs.length === 0 && (
+          <div className="rounded-xl border border-dashed bg-card p-12 text-center">
+            <p className="text-lg font-medium text-[#101820]">No work jobs yet</p>
+            <p className="mt-2 text-sm text-[#667584]">
+              Your work jobs will appear here when our team schedules installation or service.
+            </p>
+          </div>
+        )}
+      </section>
 
       {meta && meta.last_page > 1 && (
         <div className="mt-6 flex flex-wrap items-center justify-end gap-3 rounded-full bg-white p-2">

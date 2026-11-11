@@ -1,5 +1,6 @@
 "use client";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useState } from "react";
 import Image from "next/image";
 import { Calculator, CalendarDays, CheckCircle2, Download, FileText, Images, Layers, Maximize2, Package, PenLine } from "lucide-react";
@@ -46,7 +47,7 @@ export default function CustomerQuoteSummary({
 
   if (!quotation || items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed bg-card p-6">
+      <div className={`rounded-xl border border-dashed bg-card p-6 ${customerRecordWaveClass}`}>
         <p className="text-sm font-medium text-[#101820]">No quote items yet</p>
         <p className="mt-1 text-sm text-[#667584]">
           Quote details will appear once your selected items are prepared.
@@ -63,7 +64,7 @@ export default function CustomerQuoteSummary({
   canDownload = isSigned;
 
   return (
-    <section id="customer-quotation" className="scroll-mt-24 rounded-xl border bg-card p-5 shadow-sm">
+    <section id="customer-quotation" className={`@container min-w-0 scroll-mt-24 rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -139,7 +140,7 @@ export default function CustomerQuoteSummary({
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-emerald-50 px-4 py-4">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-emerald-50 px-4 py-4">
         <div className="flex items-center gap-3">
           <Calculator className="size-5 text-slate-900" />
           <div>
@@ -212,7 +213,7 @@ function ReadonlyQuoteItem({
 
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200">
-      <div className="flex items-start justify-between gap-4 p-4">
+      <div className="flex flex-col items-start gap-3 p-3 @min-[22rem]:flex-row @min-[22rem]:justify-between @min-[22rem]:p-4">
         <div className="flex min-w-0 gap-3">
           {image && (
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
@@ -230,7 +231,7 @@ function ReadonlyQuoteItem({
           </span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate text-sm font-semibold leading-tight text-slate-950">
+              <h3 className="wrap-anywhere text-sm font-semibold leading-tight text-slate-950">
                 {item.name}
               </h3>
               <Badge
@@ -262,7 +263,7 @@ function ReadonlyQuoteItem({
             </div>
           </div>
         </div>
-        <p className="shrink-0 text-sm font-semibold text-primary">
+        <p className="self-end text-right text-sm font-semibold text-primary @min-[22rem]:self-start">
           {formatPeso(item.total_amount)}
         </p>
       </div>
@@ -302,7 +303,7 @@ function ReadonlyQuoteItem({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 w-full gap-2 text-xs"
+            className="h-auto min-h-8 w-full gap-2 whitespace-normal py-1.5 text-xs"
             onClick={onOpenPhotos}
           >
             <Images className="size-3.5" />

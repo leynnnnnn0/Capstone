@@ -1,5 +1,6 @@
 "use client";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -17,7 +18,7 @@ export default function CustomerDetailAccordion({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-5 text-left shadow-sm transition-colors hover:bg-[#f7f9fa]"
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-5 text-left transition-colors hover:bg-[#f7f9fa] ${customerRecordWaveClass}`}
         aria-expanded="false"
       >
         <span className="text-xs font-semibold uppercase tracking-widest text-[#2d425b]">{title}</span>
@@ -27,12 +28,12 @@ export default function CustomerDetailAccordion({
   }
 
   return (
-    <section className="relative">
+    <section className="relative min-w-0">
       {children}
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="absolute -right-2 -top-2 z-20 flex size-7 items-center justify-center rounded-full border bg-white text-[#2d425b] shadow-sm transition-colors hover:bg-[#f3f6f8]"
+        className="absolute right-0 -top-2 z-20 flex size-7 items-center justify-center rounded-full border bg-white text-[#2d425b] shadow-sm transition-colors hover:bg-[#f3f6f8]"
         aria-expanded="true"
         aria-label={`Collapse ${title}`}
       >

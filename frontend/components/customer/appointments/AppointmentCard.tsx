@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, BriefcaseBusiness, CalendarDays, MapPin } from "lucide-react";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import {
   formatCustomerDate,
@@ -10,16 +11,17 @@ import {
   formatPeso,
 } from "@/features/customer/customer-utils";
 import type { CustomerAppointment } from "@/features/customer/types";
+import { cn } from "@/lib/utils";
 
 export default function AppointmentCard({ appointment }: { appointment: CustomerAppointment }) {
   return (
     <Link
       href={`/account/appointments/${appointment.id}`}
-      className="group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30"
+      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordWaveClass)}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8ca0b2]">
+          <p className="text-[length:var(--customer-small-text,0.625rem)] font-bold uppercase tracking-[0.18em] text-[#52687e]">
             {appointment.appointment_number}
           </p>
           <h3 className="mt-2 text-lg font-medium capitalize tracking-[-0.025em] text-[#101820]">
@@ -29,7 +31,7 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
         <CustomerStatusBadge status={appointment.status} />
       </div>
 
-      <div className="space-y-2.5 text-sm text-[#667584]">
+      <div className="space-y-2.5 text-sm text-[#40546a]">
         <p className="flex items-center gap-2">
           <CalendarDays className="size-4 text-[#608db9]" />
           {formatCustomerDate(appointment.preferred_date)} · {appointment.preferred_time}
@@ -48,7 +50,7 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
       </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-[#e8edf1] pt-4">
-        <span className="text-xs font-medium text-[#8ca0b2]">
+        <span className="text-xs font-medium text-[#52687e]">
           {appointment.quotation ? `${appointment.quotation.items.length} quote item(s)` : "No quote yet"}
         </span>
         <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#2c5282]">

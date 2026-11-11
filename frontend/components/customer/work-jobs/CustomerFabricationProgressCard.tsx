@@ -1,5 +1,6 @@
 "use client";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { AlertTriangle, CalendarDays, Check, Clock3, Factory, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,18 @@ import {
   fabricationStatusOptions,
 } from "@/features/customer/fabrication";
 import { formatCustomerDate, formatCustomerDateTime } from "@/features/customer/customer-utils";
-import type { CustomerWorkJob } from "@/features/customer/types";
+import type { CustomerFabricationStatus, CustomerWorkJob } from "@/features/customer/types";
 import { cn } from "@/lib/utils";
+
+const stageDescriptions: Partial<Record<CustomerFabricationStatus, string>> = {
+  pending: "Review the order and plan fabrication.",
+  materials_preparation: "Gather and prepare the materials for your order.",
+  waiting_for_materials: "Receive any remaining materials.",
+  queued: "Assign the order to a fabrication slot.",
+  in_progress: "Build and assemble the order.",
+  quality_check: "Inspect the finished pieces before release.",
+  ready_for_installation: "Release the order for installation.",
+};
 
 export default function CustomerFabricationProgressCard({ workJob }: { workJob: CustomerWorkJob }) {
   const fabrication = workJob.fabrication;
@@ -19,7 +30,7 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
 
   if (fabrication.status === "not_required") {
     return (
-      <section className="rounded-lg border bg-card p-5 shadow-sm">
+      <section className={`rounded-lg border bg-card p-5 ${customerRecordWaveClass}`}>
         <div className="flex items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
             <Check className="size-4" />
@@ -39,7 +50,7 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
   const currentIndex = fabricationStageIndex(fabrication.status);
 
   return (
-    <section className="rounded-lg border bg-card p-5 shadow-sm">
+    <section className={`rounded-lg border bg-card p-5 ${customerRecordWaveClass}`}>
       <div>
         <div className="space-y-4">
           <div>
@@ -95,40 +106,53 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
           />
         </div>
 
-        <div className="mt-5 space-y-1.5">
+        <ol aria-label="Fabrication stages" className="mt-6">
           {fabricationStages.map((stage, index) => {
             const done = currentIndex > index || fabrication.status === "ready_for_installation";
-            const current = currentIndex === index && fabrication.status !== "on_hold";
+            const current = !done && currentIndex === index && fabrication.status !== "on_hold";
             const label = fabricationStatusOptions.find((option) => option.value === stage)?.label ?? stage;
 
             return (
-              <div
+              <li
                 key={stage}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
-                  current && "border-[#9db2c0] bg-[#eef4f7]",
-                  done && !current && "border-emerald-100 bg-emerald-50/70",
-                  !done && !current && "border-[#e3e9ee] bg-[#f8fafb]",
-                )}
+                aria-current={current ? "step" : undefined}
+                className="relative grid grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-3 pb-5 last:pb-0"
               >
-                <span className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
-                  current && "bg-[#2d425b] text-white",
-                  done && !current && "bg-emerald-600 text-white",
-                  !done && !current && "bg-[#e5edf3] text-[#7a8997]",
-                )}>
-                  {done ? <Check className="size-3.5" /> : index + 1}
+                {index < fabricationStages.length - 1 && (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute bottom-1 left-[13px] top-8 w-0.5 rounded-full",
+                      current ? "bg-[#9db2c0]" : done ? "bg-emerald-400" : "bg-slate-300",
+                    )}
+                  />
+                )}
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex size-7 items-center justify-center rounded-lg border",
+                    current
+                      ? "border-[#2d425b] bg-[#2d425b] text-white ring-2 ring-[#b9cbd8] ring-offset-1"
+                      : done
+                        ? "border-emerald-600 bg-emerald-600 text-white"
+                        : "border-slate-300 bg-[#f8fafb] text-slate-400",
+                  )}
+                >
+                  {done ? <Check className="size-4" /> : <span className="size-2 rounded-full bg-current" />}
                 </span>
-                <p className={cn(
-                  "text-xs font-medium leading-4",
-                  current ? "text-[#2d425b]" : done ? "text-emerald-800" : "text-[#71808d]",
-                )}>
-                  {shortStageLabel(label)}
-                </p>
-              </div>
+                <div className="pt-0.5">
+                  <p className="text-sm font-semibold leading-snug text-[#2d425b]">
+                    {shortStageLabel(label)}
+                    <span className="sr-only">
+                      {done ? " (completed)" : current ? " (current step)" : " (upcoming)"}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-[#52687e]">{stageDescriptions[stage]}</p>
+                </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
         {fabrication.status === "on_hold" && (
           <div className="mt-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">

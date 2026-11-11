@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarPlus, Clock, Wrench } from "lucide-react";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
+import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
 import {
   Tooltip,
@@ -21,6 +22,12 @@ import {
 import { isActiveAppointment, isActiveWorkJob } from "@/features/customer/customer-utils";
 import type { CustomerAppointment, CustomerWorkJob } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+
+const cornerWaveClass =
+  "relative isolate overflow-hidden shadow-[0_2px_4px_rgba(22,45,74,0.06),0_6px_14px_rgba(22,45,74,0.09)] " +
+  "before:pointer-events-none before:absolute before:right-0 before:bottom-0 before:-z-10 before:h-24 before:w-48 before:max-w-[70%] " +
+  "before:bg-[url('/images/customer-dashboard-waves.webp')] before:bg-cover before:bg-right-bottom before:opacity-45 " +
+  "before:[mask-image:radial-gradient(ellipse_at_bottom_right,black,transparent_72%)]";
 
 export default function CustomerDashboard() {
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
@@ -79,39 +86,36 @@ export default function CustomerDashboard() {
       <section className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Manage your inspections and installation progress from one place.
-          </p>
+            <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="mt-1 max-w-xl text-sm text-[#40546a] dark:text-slate-300">
+              Manage your inspections and installation progress from one place.
+            </p>
+          </div>
+          <Link
+            href="/account/appointments/new"
+            className="group inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            New appointment
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
-        <Link
-          href="/account/appointments/new"
-          className="group inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          New appointment
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-        </Link>
-      </div>
       </section>
 
       <TooltipProvider>
-        <div className="mt-8 grid grid-cols-2 gap-x-4 sm:grid-cols-3 sm:gap-x-7 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
           {stats.map((stat) => {
             const Icon = stat.icon;
 
             return (
               <Tooltip key={stat.label}>
                 <TooltipTrigger asChild>
-                  <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
+                  <article className={`rounded-lg border border-[#d5e0ea] bg-white p-4 text-left sm:p-5 ${cornerWaveClass}`}>
                     <div className="flex items-start justify-between gap-2 sm:gap-4">
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">My activity</p>
-                        <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{stat.label}</h2>
-                      </div>
-                      <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
+                      <h2 className="text-sm font-semibold leading-snug text-[#162d4a]">{stat.label}</h2>
+                      <Icon className="mt-0.5 size-4 shrink-0 text-[#2d425b] sm:size-[18px]" />
                     </div>
                     {loading ? <Skeleton className="mt-2 h-7 w-10 sm:h-8 sm:w-12" /> : <p className="mt-1 text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{stat.value}</p>}
-                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{stat.description}</p>
+                    <p className="mt-1.5 text-xs leading-snug text-[#40546a]">{stat.description}</p>
                   </article>
                 </TooltipTrigger>
                 <TooltipContent>{stat.tooltip}</TooltipContent>
@@ -121,8 +125,8 @@ export default function CustomerDashboard() {
         </div>
       </TooltipProvider>
 
-      <div className="mt-8 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-lg border bg-white p-4 sm:p-5">
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <section className={customerPanelClass}>
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold">Recent appointments</h2>
@@ -145,11 +149,10 @@ export default function CustomerDashboard() {
           </div>
         </section>
 
-        <section className="rounded-lg border bg-white p-4 sm:p-5">
+        <section className={customerPanelClass}>
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Installation</p>
-              <h2 className="mt-1 text-base font-semibold">Active work jobs</h2>
+              <h2 className="text-base font-semibold">Active work jobs</h2>
             </div>
             <Link href="/account/work-jobs" className="text-xs font-semibold text-[#2c5282] hover:underline">
               View all
@@ -175,7 +178,7 @@ export default function CustomerDashboard() {
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-md border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+    <div className="rounded-md border border-dashed border-[#d5e0ea] bg-[#f5f8fb] p-8 text-center text-sm text-[#40546a]">
       {label}
     </div>
   );

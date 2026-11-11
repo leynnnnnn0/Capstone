@@ -2,6 +2,7 @@
 
 import { CalendarDays, Clock3, ShieldCheck, UserRoundCheck } from "lucide-react";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { Badge } from "@/components/ui/badge";
 import { formatCustomerDate } from "@/features/customer/customer-utils";
 import { CustomerStatus } from "@/features/customer/status";
@@ -28,7 +29,7 @@ export default function WorkJobWarrantyCard({
       className={cn(
         "border bg-white p-5",
         customer
-          ? "rounded-[1.5rem] border-[#dce4ea] shadow-[0_18px_60px_rgba(22,45,74,0.06)]"
+          ? `rounded-[1.5rem] border-[#dce4ea] ${customerRecordWaveClass}`
           : "rounded-lg border-slate-200 shadow-sm",
       )}
     >

@@ -1,5 +1,6 @@
 "use client";
 
+import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -170,7 +171,7 @@ export default function AppointmentForm({
 
   return (
     <form onSubmit={submit} className="grid gap-5 lg:grid-cols-[1fr_340px]">
-      <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-7">
+      <div className={customerPanelClass}>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField kind="name" label="First Name" value={data.first_name} error={errors.first_name} onChange={(value) => setField("first_name", value)} />
           <TextField kind="name" label="Last Name" value={data.last_name} error={errors.last_name} onChange={(value) => setField("last_name", value)} />

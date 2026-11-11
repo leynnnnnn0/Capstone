@@ -3,24 +3,26 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarClock, MapPin } from "lucide-react";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { formatCustomerSchedule } from "@/features/customer/customer-utils";
 import type { CustomerWorkJob } from "@/features/customer/types";
+import { cn } from "@/lib/utils";
 
 export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
   return (
     <Link
       href={`/account/work-jobs/${workJob.id}`}
-      className="group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30"
+      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordWaveClass)}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8ca0b2]">
+          <p className="text-[length:var(--customer-small-text,0.625rem)] font-bold uppercase tracking-[0.18em] text-[#52687e]">
             {workJob.work_job_number}
           </p>
           {workJob.is_back_job && (
-            <Badge variant="outline" className="mt-1 border-transparent bg-blue-600 text-[10px] text-white">
+            <Badge variant="outline" className="mt-1 border-transparent bg-blue-600 text-[length:var(--customer-small-text,0.625rem)] text-white">
               Back Job
             </Badge>
           )}
@@ -31,7 +33,7 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
         <CustomerStatusBadge status={workJob.status} />
       </div>
 
-      <div className="space-y-2.5 text-sm text-[#667584]">
+      <div className="space-y-2.5 text-sm text-[#40546a]">
         <p className="flex items-center gap-2">
           <CalendarClock className="size-4 text-[#608db9]" />
           {formatCustomerSchedule(workJob.scheduled_date, workJob.scheduled_time_from, workJob.scheduled_time_until)}
@@ -42,7 +44,7 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
         </p>
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e8edf1] pt-4 text-xs font-medium text-[#8ca0b2]">
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e8edf1] pt-4 text-xs font-medium text-[#52687e]">
         <span>{workJob.workers.length > 0 ? `Assigned to ${workJob.workers.map((worker) => worker.full_name).join(", ")}` : "Staff assignment pending"}</span>
         <ArrowUpRight className="size-4 shrink-0 text-[#2c5282] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { AlertCircle, CreditCard, WalletCards } from "lucide-react";
@@ -81,7 +82,7 @@ export default function CustomerWorkJobPaymentCard({
   const canPayOnline = Boolean(config?.enabled && config.client_id && summary.can_accept_payment);
 
   return (
-    <section className="rounded-xl border bg-card p-5 shadow-sm">
+    <section className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

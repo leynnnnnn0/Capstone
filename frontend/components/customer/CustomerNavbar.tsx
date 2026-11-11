@@ -148,7 +148,7 @@ export default function CustomerNavbar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors",
+                  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[length:var(--customer-small-text,0.625rem)] font-medium text-muted-foreground transition-colors",
                   active && "text-foreground",
                 )}
               >

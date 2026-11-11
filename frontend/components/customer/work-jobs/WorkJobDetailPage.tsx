@@ -1,5 +1,6 @@
 "use client";
 
+import { customerPanelClass, customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
@@ -86,8 +87,8 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         </div>
       </div>
 
-      <div className="grid min-w-0 w-full max-w-full gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="min-w-0 space-y-5">
+      <div className="grid min-w-0 w-full max-w-full grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(400px,34%,480px)]">
+        <section className={`${customerPanelClass} min-w-0 self-start space-y-5`}>
           {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
           <WorkJobInfoCard workJob={workJob} />
         </section>
@@ -145,7 +146,7 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
     : "Pending assignment";
 
   return (
-    <div className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+    <div className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
       <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
         Schedule &amp; Service Details
       </h2>
@@ -176,7 +177,7 @@ function LinkedAppointmentCard({ workJob }: { workJob: CustomerWorkJob }) {
   if (!workJob.appointment) return null;
 
   return (
-    <section className="min-w-0 w-full max-w-full overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+    <section className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
