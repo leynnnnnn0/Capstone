@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarPlus, Clock, Wrench } from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarPlus, Clock, Wrench } from "lucide-react";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
 import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
@@ -57,11 +57,25 @@ export default function CustomerDashboard() {
   const stats = useMemo(
     () => [
       {
+        label: "Pending Appointments",
+        value: appointments.filter((item) => item.status === "pending").length,
+        icon: CalendarPlus,
+        description: "awaiting schedule confirmation",
+        tooltip: "Requests waiting for the SOG team to confirm the schedule.",
+      },
+      {
         label: "Active Appointments",
-        value: appointments.filter(isActiveAppointment).length,
+        value: appointments.filter((item) => item.status !== "pending" && isActiveAppointment(item)).length,
         icon: Clock,
         description: "appointments in progress",
         tooltip: "Appointments still moving through inspection, quotation, or scheduling.",
+      },
+      {
+        label: "Completed Appointments",
+        value: appointments.filter((item) => item.status === "completed").length,
+        icon: CalendarCheck,
+        description: "appointments completed",
+        tooltip: "Appointments that have been marked completed.",
       },
       {
         label: "Active Work Jobs",
@@ -69,13 +83,6 @@ export default function CustomerDashboard() {
         icon: Wrench,
         description: "scheduled or active jobs",
         tooltip: "Installation or service jobs that are scheduled or in progress.",
-      },
-      {
-        label: "Pending Appointments",
-        value: appointments.filter((item) => item.status === "pending").length,
-        icon: CalendarPlus,
-        description: "awaiting schedule confirmation",
-        tooltip: "Requests waiting for the SOG team to confirm the schedule.",
       },
     ],
     [appointments, workJobs],
@@ -102,7 +109,7 @@ export default function CustomerDashboard() {
       </section>
 
       <TooltipProvider>
-        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {stats.map((stat) => {
             const Icon = stat.icon;
 

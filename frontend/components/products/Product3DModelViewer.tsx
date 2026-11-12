@@ -338,7 +338,7 @@ export default function Product3DModelViewer({
             alt={title}
             ar={ar}
             ar-modes={ar ? "webxr scene-viewer quick-look" : undefined}
-            ar-scale={ar ? "fixed" : undefined}
+            ar-scale={ar ? "auto" : undefined}
             scale={ar ? scaleAttribute(viewerScale) : undefined}
             camera-controls
             auto-rotate={false}
