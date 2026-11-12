@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
-import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ITEMS_PER_PAGE, PaginationControls } from "@/components/ui/pagination-controls";
 import {
   Select,
   SelectContent,
@@ -123,23 +123,28 @@ export default function AdminPaymentsPage() {
       date_from: searchParams.get("date_from") ?? "",
       date_to: searchParams.get("date_to") ?? "",
       page: searchParams.get("page") ?? "1",
-      per_page: searchParams.get("per_page") ?? "15",
+      per_page: String(ITEMS_PER_PAGE),
     }),
     [searchParams],
   );
   const debouncedSearch = useDebouncedValue(search.trim());
 
   const loadPayments = useCallback(
-    (ignoreResult?: () => boolean) => {
-      setLoading(true);
-      setError(null);
+    (ignoreResult?: () => boolean, showLoading = true) => {
+      if (showLoading) {
+        setLoading(true);
+        setError(null);
+      }
 
       fetchAdminPayments(filters)
         .then((nextResponse) => {
-          if (!ignoreResult?.()) setResponse(nextResponse);
+          if (!ignoreResult?.()) {
+            setResponse(nextResponse);
+            setError(null);
+          }
         })
         .catch((nextError) => {
-          if (!ignoreResult?.()) {
+          if (showLoading && !ignoreResult?.()) {
             setError(nextError instanceof Error ? nextError.message : "Unable to load payments.");
           }
         })
@@ -169,7 +174,7 @@ export default function AdminPaymentsPage() {
     router.replace(`/dashboard/payments${params.toString() ? `?${params.toString()}` : ""}`);
   }, [debouncedSearch, filters.search, router, search, searchParams]);
 
-  useRealtimeRefresh(() => loadPayments(), ["payment", "work_job"]);
+  useRealtimeRefresh(() => loadPayments(undefined, false), ["payment", "work_job"]);
 
   function applyFilter(next: Record<string, string>, options: { resetPage?: boolean } = {}) {
     const cleanNext = normalizeDateRange(filters, next);

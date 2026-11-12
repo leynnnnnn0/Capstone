@@ -3,6 +3,8 @@
 use App\Enums\AppointmentStatus;
 use App\Enums\WorkJobStatus;
 use App\Models\Appointment;
+use App\Models\Quotation;
+use App\Models\QuotationItem;
 use App\Models\User;
 use App\Models\WorkJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -213,4 +215,31 @@ it('prevents customers from accessing staff appointment endpoints', function () 
     $this->actingAs($customer)
         ->getJson('/api/v1/appointments')
         ->assertForbidden();
+});
+
+it('lets only the appointment owner approve the reviewed quotation', function () {
+    $customer = User::factory()->create(['role' => 'customer']);
+    $otherCustomer = User::factory()->create(['role' => 'customer']);
+    $appointment = Appointment::factory()->create([
+        'user_id' => $customer->id,
+        'status' => AppointmentStatus::Completed,
+    ]);
+    $quotation = Quotation::factory()->create(['appointment_id' => $appointment->id]);
+    $items = QuotationItem::factory()->count(2)->create(['quotation_id' => $quotation->id]);
+    $endpoint = "/api/v1/customer/appointments/{$appointment->id}/quotation/approve";
+    $payload = ['item_ids' => $items->modelKeys()];
+
+    $this->actingAs($otherCustomer)->postJson($endpoint, $payload)->assertNotFound();
+    $this->actingAs($customer)
+        ->postJson($endpoint, ['item_ids' => [$items->first()->id]])
+        ->assertConflict();
+    expect($quotation->quotation_items()->where('status', 'for_acceptance')->count())->toBe(2);
+
+    $this->postJson($endpoint, $payload)
+        ->assertOk()
+        ->assertJsonPath('data.quotation.items.0.status', 'approved')
+        ->assertJsonPath('data.quotation.items.1.status', 'approved')
+        ->assertJsonPath('data.quotation.signature_status', 'unsigned');
+
+    $this->postJson($endpoint, $payload)->assertOk();
 });

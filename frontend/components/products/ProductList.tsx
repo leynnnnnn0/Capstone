@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CircleCheck, Eye, ImageOff, Layers3, Package, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
+import { CircleCheck, Eye, ImageOff, Package, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -24,7 +24,7 @@ import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { AdminMobileRecord } from "@/components/ui/admin-mobile-record";
 import { Button } from "@/components/ui/button";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
-import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ITEMS_PER_PAGE, PaginationControls } from "@/components/ui/pagination-controls";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { deleteProduct, fetchCategories, fetchProducts } from "@/features/products/product-api";
@@ -32,13 +32,14 @@ import type { Category, PaginatedResponse, Product } from "@/features/products/t
 import {
   formatCurrency,
   productCover,
-  productVariants,
 } from "@/features/products/product-utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { currentPathWithSearch, withReturnTo } from "@/lib/return-to";
 
 export default function ProductList() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const returnTo = currentPathWithSearch("/dashboard/products", searchParams);
   const [response, setResponse] = useState<PaginatedResponse<Product> | null>(null);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -54,9 +55,8 @@ export default function ProductList() {
       unit: searchParams.get("unit") ?? "all",
       has_3d_model: searchParams.get("has_3d_model") ?? "all",
       has_warranty: searchParams.get("has_warranty") ?? "all",
-      has_variants: searchParams.get("has_variants") ?? "all",
       sort: searchParams.get("sort") ?? "newest",
-      per_page: searchParams.get("per_page") ?? "15",
+      per_page: String(ITEMS_PER_PAGE),
       page: searchParams.get("page") ?? "1",
     }),
     [searchParams],
@@ -69,7 +69,6 @@ export default function ProductList() {
     filters.unit !== "all" ||
     filters.has_3d_model !== "all" ||
     filters.has_warranty !== "all" ||
-    filters.has_variants !== "all" ||
     filters.sort !== "newest",
   );
 
@@ -123,7 +122,6 @@ export default function ProductList() {
   const products = response?.data ?? [];
   const totalProducts = response?.meta?.total ?? products.length;
   const activeProducts = products.filter((product) => product.is_active).length;
-  const variants = products.reduce((total, product) => total + productVariants(product).length, 0);
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -154,7 +152,7 @@ export default function ProductList() {
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Products</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
-            Manage catalog pricing, availability, variants, and customer-facing product assets from one place.
+            Manage catalog pricing, availability and customer-facing product assets from one place.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
@@ -176,10 +174,9 @@ export default function ProductList() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10">
         <AdminSummaryCard label="Products" value={totalProducts} icon={Package} eyebrow="Live workspace" description="all catalog entries" />
         <AdminSummaryCard label="Active on this page" value={activeProducts} icon={CircleCheck} eyebrow="Live workspace" description="available to customers" />
-        <AdminSummaryCard label="Variants on this page" value={variants} icon={Layers3} eyebrow="Live workspace" description="configured product variants" />
       </section>
 
       <section className="space-y-4">
@@ -211,7 +208,6 @@ export default function ProductList() {
               <ProductFilter label="Unit" value={filters.unit} onChange={(value) => setFilter("unit", value)} options={[["all", "All units"], ["sqm", "Square meter"], ["sqft", "Square foot"], ["meter", "Meter"], ["piece", "Piece"], ["set", "Set"]]} />
               <ProductFilter label="3D model" value={filters.has_3d_model} onChange={(value) => setFilter("has_3d_model", value)} options={[["all", "Any"], ["true", "With 3D model"], ["false", "Without 3D model"]]} />
               <ProductFilter label="Warranty" value={filters.has_warranty} onChange={(value) => setFilter("has_warranty", value)} options={[["all", "Any"], ["true", "With warranty"], ["false", "Without warranty"]]} />
-              <ProductFilter label="Variants" value={filters.has_variants} onChange={(value) => setFilter("has_variants", value)} options={[["all", "Any"], ["true", "With variants"], ["false", "Without variants"]]} />
               <ProductFilter label="Sort by" value={filters.sort} onChange={(value) => setFilter("sort", value)} options={[["newest", "Newest first"], ["oldest", "Oldest first"], ["name_asc", "Name A–Z"], ["price_asc", "Price: low to high"], ["price_desc", "Price: high to low"]]} />
             </div>
           )}
@@ -229,30 +225,29 @@ export default function ProductList() {
           </div>
         ) : (
           products.map((product) => (
-            <ProductCard key={product.id} product={product} onDelete={() => setDeleteTarget(product)} />
+            <ProductCard key={product.id} product={product} returnTo={returnTo} onDelete={() => setDeleteTarget(product)} />
           ))
         )}
       </div>
 
       <TableFrame className="hidden md:block">
-        <Table>
-          <TableHeader>
+        <Table className="sm:text-[length:calc(var(--text-base)-2px)]">
+          <TableHeader className="[&_th]:text-[length:calc(var(--text-sm)-2px)]">
             <TableRow>
               <TableHead className="w-16">Image</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Unit</TableHead>
-              <TableHead>Variants</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-28">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!response ? (
-              <TableSkeletonRows columns={7} />
+              <TableSkeletonRows columns={6} />
             ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
                   <Package className="mx-auto mb-2 h-8 w-8 opacity-40" />
                   No products found.
                 </TableCell>
@@ -263,7 +258,7 @@ export default function ProductList() {
                 return (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                      <div className="relative flex size-12 items-center justify-center overflow-hidden rounded-md border bg-muted">
                         {cover ? (
                           <img src={cover} alt={product.name} className="h-full w-full object-cover" />
                         ) : (
@@ -275,22 +270,19 @@ export default function ProductList() {
                     <TableCell className="whitespace-nowrap tabular-nums">{formatCurrency(product.price_per_unit)}</TableCell>
                     <TableCell className="uppercase text-muted-foreground">{product.unit}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{productVariants(product).length}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={product.is_active ? "default" : "secondary"}>
+                      <Badge variant={product.is_active ? "default" : "secondary"} className="text-[length:13px]">
                         {product.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                        <Button asChild size="icon-sm" variant="ghost">
-          <Link href={`/dashboard/products/${product.id}`}>
+          <Link href={withReturnTo(`/dashboard/products/${product.id}`, returnTo)}>
             <Eye className="h-3.5 w-3.5" />
           </Link>
         </Button>
                         <Button asChild size="icon-sm" variant="ghost">
-                          <Link href={`/dashboard/products/${product.id}/edit`} aria-label={`Edit ${product.name}`}>
+                          <Link href={withReturnTo(`/dashboard/products/${product.id}/edit`, returnTo)} aria-label={`Edit ${product.name}`}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
@@ -376,13 +368,13 @@ function ProductFilter({
   );
 }
 
-function ProductCard({ product, onDelete }: { product: Product; onDelete: () => void }) {
+function ProductCard({ product, returnTo, onDelete }: { product: Product; returnTo: string; onDelete: () => void }) {
   const cover = productCover(product);
 
   return (
     <AdminMobileRecord>
       <div className="flex items-start gap-3">
-        <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce4ea] bg-[#f4f7f9]">
+        <div className="relative flex size-[72px] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dce4ea] bg-[#f4f7f9]">
           {cover ? (
             <img
               src={cover}
@@ -394,16 +386,12 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{product.name}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="truncate text-base font-semibold">{product.name}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {formatCurrency(product.price_per_unit)} / {product.unit}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant="secondary">
-              {productVariants(product).length} variant
-              {productVariants(product).length === 1 ? "" : "s"}
-            </Badge>
-            <Badge variant={product.is_active ? "default" : "secondary"}>
+            <Badge variant={product.is_active ? "default" : "secondary"} className="text-[13px]">
               {product.is_active ? "Active" : "Inactive"}
             </Badge>
           </div>
@@ -411,13 +399,13 @@ function ProductCard({ product, onDelete }: { product: Product; onDelete: () => 
       </div>
       <div className="mt-4 flex justify-end gap-1 border-t border-[#e8edf1] pt-3">
         <Button asChild size="icon-sm" variant="ghost">
-          <Link href={`/dashboard/products/${product.id}`}>
+          <Link href={withReturnTo(`/dashboard/products/${product.id}`, returnTo)}>
             <Eye className="h-3.5 w-3.5" />
           </Link>
         </Button>
         <Button asChild size="icon-sm" variant="ghost">
           <Link
-            href={`/dashboard/products/${product.id}/edit`}
+            href={withReturnTo(`/dashboard/products/${product.id}/edit`, returnTo)}
             aria-label={`Edit ${product.name}`}
           >
             <Pencil className="h-3.5 w-3.5" />

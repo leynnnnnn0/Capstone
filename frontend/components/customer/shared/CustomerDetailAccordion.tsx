@@ -7,11 +7,13 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 export default function CustomerDetailAccordion({
   title,
   children,
+  defaultOpen = false,
 }: {
   title: string;
   children: ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   if (!open) {
     return (

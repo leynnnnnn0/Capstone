@@ -29,6 +29,7 @@ import {
 } from "@/features/admin-work-jobs/admin-work-job-utils";
 import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob, AdminWorkJobStatus } from "@/features/admin-work-jobs/types";
+import { ApiError } from "@/lib/api";
 
 const flow: AdminWorkJobStatus[] = [
   CustomerStatus.Confirmed,
@@ -49,6 +50,8 @@ export default function AdminWorkJobStatusActions({
   const [saving, setSaving] = useState(false);
   const nextStatus = nextWorkJobStatus(workJob.status as AdminWorkJobStatus);
   const canAdvance = Boolean(nextStatus);
+  const waitingForFabrication =
+    nextStatus === CustomerStatus.OnTheWay && workJob.fabrication.progress_percentage < 100;
   const canCancel = [
     CustomerStatus.Pending,
     CustomerStatus.Confirmed,
@@ -60,9 +63,18 @@ export default function AdminWorkJobStatusActions({
     CustomerStatus.OnTheWay,
   ].includes(workJob.status);
 
-  if (!canAdvance && !canCancel && !canReopen && !canMarkNoShow) return null;
+  if (!canAdvance && !canCancel && !canReopen && !canMarkNoShow) {
+    return (
+      <div className="space-y-2 rounded-lg border bg-card p-5 shadow-sm">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Current Status</h2>
+        <p className="text-sm font-medium">{workJob.status_label}</p>
+        <p className="text-sm text-muted-foreground">No status updates are available.</p>
+      </div>
+    );
+  }
 
   async function submit() {
+    if (action === "advance" && waitingForFabrication) return;
     setSaving(true);
     try {
       const currentAction = action;
@@ -86,8 +98,8 @@ export default function AdminWorkJobStatusActions({
               ? "Work job marked as no show."
               : "Work job status updated.",
       );
-    } catch {
-      toast.error("Unable to update work job status.");
+    } catch (error) {
+      toast.error(error instanceof ApiError && error.status === 422 ? error.message : "Unable to update work job status.");
     } finally {
       setSaving(false);
     }
@@ -102,10 +114,13 @@ export default function AdminWorkJobStatusActions({
       <StatusFlowIndicator current={workJob.status as AdminWorkJobStatus} />
       <div className="flex flex-col gap-2">
         {canAdvance && nextStatus && (
-          <Button type="button" variant="outline" onClick={() => setAction("advance")} className="w-full gap-2">
+          <Button type="button" variant="outline" disabled={waitingForFabrication} onClick={() => setAction("advance")} className="w-full gap-2">
             {statusIcon(nextStatus)}
             Mark as {workJobStatusLabel(nextStatus)}
           </Button>
+        )}
+        {waitingForFabrication && (
+          <p className="text-xs text-muted-foreground">Set fabrication to Ready for Installation before marking this work job as On the Way.</p>
         )}
         {canMarkNoShow && (
           <Button type="button" variant="outline" onClick={() => setAction("no_show")} className="w-full gap-2 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800">
@@ -169,7 +184,7 @@ export default function AdminWorkJobStatusActions({
               setAction(null);
               setRemarks("");
             }}>Go Back</Button>
-            <Button type="button" variant={action === "cancel" ? "destructive" : "default"} onClick={submit} disabled={saving || ((action === "cancel" || action === "no_show") && !remarks.trim())}>
+            <Button type="button" variant={action === "cancel" ? "destructive" : "default"} onClick={submit} disabled={saving || (action === "advance" && waitingForFabrication) || ((action === "cancel" || action === "no_show") && !remarks.trim())}>
               {saving ? <Loader2 className="size-4 animate-spin" /> : null}
               Confirm
             </Button>

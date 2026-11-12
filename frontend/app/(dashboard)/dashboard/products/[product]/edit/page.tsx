@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Package } from "lucide-react";
 
@@ -9,9 +9,11 @@ import { ProductErrorState, ProductLoadingState } from "@/components/products/Pr
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
 import { fetchCategories, fetchProduct } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
+import { safeReturnTo, withReturnTo } from "@/lib/return-to";
 
 export default function ProductEditPage() {
   const params = useParams<{ product: string }>();
+  const returnTo = safeReturnTo(useSearchParams().get("returnTo"), "");
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,16 +38,16 @@ export default function ProductEditPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        backHref={`/dashboard/products/${product.id}`}
+        backHref={withReturnTo(`/dashboard/products/${product.id}`, returnTo)}
         backLabel="Back to product"
         eyebrow="Product catalog"
         title="Edit product"
-        description="Update the product basics, category assignments, media, variants, and options."
+        description="Update the product basics, category assignments, media, and options."
         icon={Package}
         recordLabel="Product record"
         recordValue={product.name}
       />
-      <ProductEditForm product={product} categories={categories} />
+      <ProductEditForm product={product} categories={categories} returnTo={returnTo} />
     </div>
   );
 }

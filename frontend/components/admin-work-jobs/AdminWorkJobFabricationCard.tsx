@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Factory, Loader2, Pencil, TimerReset } from "lucide-react";
+import { CalendarDays, Check, Factory, Loader2, Pencil, TimerReset } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,11 +28,24 @@ import { updateWorkJobFabrication } from "@/features/admin-work-jobs/admin-work-
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import {
   fabricationEtaLabel,
+  fabricationStageIndex,
+  fabricationStages,
   fabricationStatusOptions,
 } from "@/features/customer/fabrication";
 import type { CustomerFabricationStatus } from "@/features/customer/types";
 import { todayIsoDate } from "@/features/forms/validation";
 import { ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+const stageLabels: Partial<Record<CustomerFabricationStatus, string>> = {
+  pending: "Planning",
+  materials_preparation: "Preparing Materials",
+  waiting_for_materials: "Waiting for Materials",
+  queued: "Queued",
+  in_progress: "Fabricating",
+  quality_check: "Quality Check",
+  ready_for_installation: "Ready for Installation",
+};
 
 type FormState = {
   status: CustomerFabricationStatus;
@@ -122,12 +135,7 @@ export default function AdminWorkJobFabricationCard({
         )}
       </div>
 
-      <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-primary transition-[width] duration-500"
-          style={{ width: `${fabrication.progress_percentage}%` }}
-        />
-      </div>
+      {fabrication.status !== "not_required" && <FabricationStages status={fabrication.status} />}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <InfoTile icon={TimerReset} label="Customer ETA" value={fabricationEtaLabel(fabrication)} />
@@ -210,6 +218,41 @@ export default function AdminWorkJobFabricationCard({
         </DialogContent>
       </Dialog>
     </section>
+  );
+}
+
+function FabricationStages({ status }: { status: CustomerFabricationStatus }) {
+  const currentIndex = fabricationStageIndex(status);
+
+  return (
+    <div className="mt-5 overflow-x-auto">
+      <ol aria-label="Fabrication stages" className="grid min-w-[42rem] grid-cols-7 py-2">
+        {fabricationStages.map((stage, index) => {
+          const current = index === currentIndex && status !== "on_hold";
+          const complete = index < currentIndex || status === "ready_for_installation";
+
+          return (
+            <li key={stage} aria-current={current ? "step" : undefined} className="relative flex flex-col items-center gap-2 px-2 text-center">
+              {index < fabricationStages.length - 1 && (
+                <span aria-hidden="true" className={cn("absolute left-1/2 top-4 w-full border-t-2", complete ? "border-emerald-600" : "border-border")} />
+              )}
+              <span aria-hidden="true" className={cn(
+                "relative grid size-8 place-items-center rounded-full border",
+                complete ? "border-emerald-700 bg-emerald-700 text-white"
+                  : current ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/20"
+                    : "border-border bg-muted text-muted-foreground",
+              )}>
+                {complete ? <Check className="size-4" /> : <span className="size-1.5 rounded-full bg-current" />}
+              </span>
+              <span className={cn("text-xs leading-tight", current ? "font-semibold text-primary" : "text-muted-foreground")}>
+                {stageLabels[stage] ?? stage}
+                {complete && <span className="sr-only"> (complete)</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 

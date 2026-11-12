@@ -35,15 +35,15 @@ test.beforeEach(async ({ page }) => {
 test("quote picker paginates all products and resets filters to page one", async ({ page }) => {
   await page.goto("/get-quote");
   const cards = page.getByRole("button", { name: /Quote Product/ });
-  await expect(cards).toHaveCount(12);
-  await expect(page.getByText("Page 1 of 9")).toBeVisible();
+  await expect(cards).toHaveCount(8);
+  await expect(page.getByText("Page 1 of 13")).toBeVisible();
   await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("Page 2 of 9")).toBeVisible();
-  await expect(cards.first()).toContainText("Quote Product 13");
+  await expect(page.getByText("Page 2 of 13")).toBeVisible();
+  await expect(cards.first()).toContainText("Quote Product 9");
   await cards.first().click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.getByText("Page 2 of 9")).toBeVisible();
+  await expect(page.getByText("Page 2 of 13")).toBeVisible();
 
   await page.getByRole("button", { name: "Windows", exact: true }).click();
   await expect(cards).toHaveCount(1);
@@ -52,7 +52,7 @@ test("quote picker paginates all products and resets filters to page one", async
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
 
   await page.getByRole("button", { name: "All", exact: true }).click();
-  await expect(page.getByText("Page 1 of 9")).toBeVisible();
+  await expect(page.getByText("Page 1 of 13")).toBeVisible();
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await page.getByPlaceholder("Search quote products...").fill("Quote Product 101");
   await expect(cards).toHaveCount(1);

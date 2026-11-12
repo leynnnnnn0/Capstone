@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ITEMS_PER_PAGE } from "@/components/ui/pagination-controls";
 import Link from "next/link";
 import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -65,7 +66,7 @@ export default function AdminWorkJobsPage() {
       date_from: searchParams.get("date_from") ?? "",
       date_to: searchParams.get("date_to") ?? "",
       page: searchParams.get("page") ?? "1",
-      per_page: searchParams.get("per_page") ?? "10",
+      per_page: String(ITEMS_PER_PAGE),
     }),
     [searchParams],
   );
@@ -78,6 +79,7 @@ export default function AdminWorkJobsPage() {
       .then((nextResponse) => {
         if (mounted) setResponse(nextResponse);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => {
         if (mounted) setLoading(false);
       });
@@ -97,10 +99,7 @@ export default function AdminWorkJobsPage() {
     else params.delete("search");
     router.replace(`/dashboard/work-jobs${params.toString() ? `?${params.toString()}` : ""}`);
   }, [debouncedSearch, filters.search, router, search, searchParams]);
-  useRealtimeRefresh(() => {
-    setLoading(true);
-    reload();
-  }, ["work_job"]);
+  useRealtimeRefresh(() => reload(), ["work_job", "appointment"]);
 
   function applyFilter(next: Record<string, string>) {
     const cleanNext = normalizeDateRange(filters, next);
@@ -109,7 +108,7 @@ export default function AdminWorkJobsPage() {
       if (!value || value === "all") params.delete(key);
       else params.set(key, value);
     });
-    params.delete("page");
+    if (!("page" in next)) params.delete("page");
     router.push(`/dashboard/work-jobs${params.toString() ? `?${params.toString()}` : ""}`);
   }
 

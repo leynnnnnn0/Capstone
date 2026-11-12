@@ -1,16 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import {
   CalendarClock,
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 
 import type { CustomerRemark } from "@/features/customer/types";
-
-const INITIAL_VISIBLE = 3;
 
 const actionStyles: Record<
   string,
@@ -65,101 +60,69 @@ export default function AdminActivityLog({
   remarks: CustomerRemark[];
   emptyDescription?: string;
 }) {
-  const [sectionOpen, setSectionOpen] = useState(false);
-  const [itemsExpanded, setItemsExpanded] = useState(false);
-
-  const hasMore = remarks.length > INITIAL_VISIBLE;
-  const visibleRemarks = itemsExpanded ? remarks : remarks.slice(0, INITIAL_VISIBLE);
-  const hiddenCount = remarks.length - INITIAL_VISIBLE;
-
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={sectionOpen ? "mb-5 flex items-center justify-between gap-3" : "flex items-center justify-between gap-3"}>
+      <div className="mb-5">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">
           Activity Log
         </h2>
-        <button type="button" onClick={() => setSectionOpen((open) => !open)} className="flex size-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900" aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse activity log" : "Expand activity log"}>
-          {sectionOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
       </div>
 
-      {sectionOpen && (remarks.length === 0 ? (
+      {remarks.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
           <CalendarClock size={28} className="text-slate-400/60" />
           <p className="text-sm text-slate-500">No activity yet.</p>
           <p className="text-xs text-slate-400">{emptyDescription}</p>
         </div>
       ) : (
-        <>
-          <ol className="relative ml-2 space-y-0 border-l border-slate-200">
-            {visibleRemarks.map((remark) => {
-              const style = actionStyles[remark.action] ?? {
-                dot: "bg-slate-400",
-                badge: "bg-slate-600 text-white",
-                label: toTitleCase(remark.action),
-              };
+        <ol className="relative ml-2 space-y-0 border-l border-slate-200">
+          {remarks.map((remark) => {
+            const style = actionStyles[remark.action] ?? {
+              dot: "bg-slate-400",
+              badge: "bg-slate-600 text-white",
+              label: toTitleCase(remark.action),
+            };
 
-              return (
-                <li key={remark.id} className="relative pb-6 pl-6 last:pb-0">
-                  <span
-                    className={`absolute top-1 -left-[5px] h-2.5 w-2.5 rounded-full ring-2 ring-white ${style.dot}`}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize leading-none ${style.badge}`}
-                      >
-                        <span aria-hidden="true" className="size-1.5 rounded-full bg-white/85" />
-                        {style.label}
-                      </span>
-                      <span className="text-[11px] text-slate-500">
-                        {formatDateTime(remark.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      By{" "}
-                      <span className="font-medium text-slate-950">
-                        {remark.user?.full_name ?? "SOG Team"}
-                      </span>
-                    </p>
-                    {remark.message && (
-                      <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <MessageSquare
-                          size={12}
-                          className="mt-0.5 shrink-0 text-slate-500"
-                        />
-                        <p className="text-xs leading-relaxed text-slate-900">
-                          {remark.message}
-                        </p>
-                      </div>
-                    )}
+            return (
+              <li key={remark.id} className="relative pb-6 pl-6 last:pb-0">
+                <span
+                  className={`absolute top-1 -left-[5px] h-2.5 w-2.5 rounded-full ring-2 ring-white ${style.dot}`}
+                />
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize leading-none ${style.badge}`}
+                    >
+                      <span aria-hidden="true" className="size-1.5 rounded-full bg-white/85" />
+                      {style.label}
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      {formatDateTime(remark.created_at)}
+                    </span>
                   </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          {hasMore && (
-            <button
-              onClick={() => setItemsExpanded((prev) => !prev)}
-              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            >
-              {itemsExpanded ? (
-                <>
-                  <ChevronUp size={13} />
-                  Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown size={13} />
-                  Show {hiddenCount} more{" "}
-                  {hiddenCount === 1 ? "activity" : "activities"}
-                </>
-              )}
-            </button>
-          )}
-        </>
-      ))}
+                  <p className="text-xs text-slate-500">
+                    By{" "}
+                    <span className="font-medium text-slate-950">
+                      {remark.user?.full_name ?? "SOG Team"}
+                    </span>
+                  </p>
+                  {remark.message && (
+                    <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <MessageSquare
+                        size={12}
+                        className="mt-0.5 shrink-0 text-slate-500"
+                      />
+                      <p className="text-xs leading-relaxed text-slate-900">
+                        {remark.message}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 }

@@ -47,6 +47,7 @@ import type { AdminPayment } from "@/features/admin-payments/types";
 import { fetchAdminWorkJobs } from "@/features/admin-work-jobs/admin-work-job-api";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import type { CustomerQuotationItem } from "@/features/customer/types";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 const statusChartConfig = {
   count: { label: "Appointments", color: "#5f87b5" },
@@ -68,20 +69,36 @@ export default function AdminDashboardPage() {
   const [workJobs, setWorkJobs] = useState<AdminWorkJob[]>([]);
   const [payments, setPayments] = useState<AdminPayment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
+    let active = true;
+
     Promise.all([
       fetchAdminAppointments({ per_page: "250" }),
       fetchAdminWorkJobs({ per_page: "250" }),
       fetchAdminPayments({ per_page: "250" }),
     ])
       .then(([appointmentResponse, workJobResponse, paymentResponse]) => {
+        if (!active) return;
+
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
         setPayments(paymentResponse.data);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => {
+        // Keep the last successful snapshot until the next refresh.
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [revision]);
+
+  useRealtimeRefresh(() => setRevision((value) => value + 1), ["appointment", "work_job", "payment"]);
 
   const metrics = useMemo(() => buildMetrics(appointments, workJobs, payments), [appointments, workJobs, payments]);
 

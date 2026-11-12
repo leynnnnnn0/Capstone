@@ -276,6 +276,60 @@
     }
 }
 
+/* Dashboard typography also applies to dialogs and menus rendered in portals. */
+:root:has(.admin-workspace) {
+  --text-xs: calc(.75rem + 2px);
+  --text-sm: calc(.875rem + 2px);
+  --text-base: calc(1rem + 2px);
+  --text-lg: calc(1.125rem + 2px);
+  --text-xl: calc(1.25rem + 2px);
+  --text-2xl: calc(1.5rem + 2px);
+  --text-3xl: calc(1.875rem + 2px);
+  --text-4xl: calc(2.25rem + 2px);
+  --text-5xl: calc(3rem + 2px);
+  --text-6xl: calc(3.75rem + 2px);
+  --text-7xl: calc(4.5rem + 2px);
+  --text-8xl: calc(6rem + 2px);
+  --text-9xl: calc(8rem + 2px);
+}
+
+:root:has(.admin-workspace) body {
+  font-size: var(--text-base);
+}
+
+:root:has(.admin-workspace) [class~="text-[8px]"] { font-size: 10px; }
+:root:has(.admin-workspace) [class~="text-[9px]"] { font-size: 11px; }
+:root:has(.admin-workspace) [class~="text-[10px]"] { font-size: 12px; }
+:root:has(.admin-workspace) [class~="text-[11px]"] { font-size: 13px; }
+:root:has(.admin-workspace) [class~="text-[12px]"] { font-size: 14px; }
+:root:has(.admin-workspace) [class~="text-[13px]"] { font-size: 15px; }
+:root:has(.admin-workspace) [class~="text-[14px]"] { font-size: 16px; }
+:root:has(.admin-workspace) [class~="text-[15px]"] { font-size: 17px; }
+:root:has(.admin-workspace) [class~="text-[16px]"] { font-size: 18px; }
+:root:has(.admin-workspace) [class~="text-[18px]"] { font-size: 20px; }
+:root:has(.admin-workspace) [class~="text-[20px]"] { font-size: 22px; }
+:root:has(.admin-workspace) [class~="text-[22px]"] { font-size: 24px; }
+:root:has(.admin-workspace) [class~="text-[24px]"] { font-size: 26px; }
+:root:has(.admin-workspace) [class~="text-[26px]"] { font-size: 28px; }
+:root:has(.admin-workspace) [class~="text-[28px]"] { font-size: 30px; }
+:root:has(.admin-workspace) [class~="text-[30px]"] { font-size: 32px; }
+:root:has(.admin-workspace) [class~="text-[32px]"] { font-size: 34px; }
+:root:has(.admin-workspace) [class~="text-[48px]"] { font-size: 50px; }
+:root:has(.admin-workspace) [class~="text-[0.8rem]"] { font-size: calc(0.8rem + 2px); }
+:root:has(.admin-workspace) [class~="text-[2.5rem]"] { font-size: calc(2.5rem + 2px); }
+
+@media (width >= 40rem) {
+  :root:has(.admin-workspace) [class~="sm:text-[10px]"] { font-size: 12px; }
+  :root:has(.admin-workspace) [class~="sm:text-[12px]"] { font-size: 14px; }
+  :root:has(.admin-workspace) [class~="sm:text-[14px]"] { font-size: 16px; }
+  :root:has(.admin-workspace) [class~="sm:text-[15px]"] { font-size: 17px; }
+  :root:has(.admin-workspace) [class~="sm:text-[16px]"] { font-size: 18px; }
+  :root:has(.admin-workspace) [class~="sm:text-[18px]"] { font-size: 20px; }
+  :root:has(.admin-workspace) [class~="sm:text-[22px]"] { font-size: 24px; }
+  :root:has(.admin-workspace) [class~="sm:text-[28px]"] { font-size: 30px; }
+  :root:has(.admin-workspace) [class~="sm:text-[30px]"] { font-size: 32px; }
+}
+
 /* Authenticated workspace: quiet surfaces and compact, product-led hierarchy. */
 .admin-workspace [data-slot="card"] {
   border-color: var(--border);
@@ -294,7 +348,6 @@
 
 .admin-workspace th {
   color: var(--muted-foreground);
-  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;

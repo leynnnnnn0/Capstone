@@ -149,6 +149,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
   const [items, setItems] = useState<AdminLineItem[]>([]);
   const [hasQuotation, setHasQuotation] = useState(false);
   const [quotationOpen, setQuotationOpen] = useState(false);
+  const [quotationSheetContent, setQuotationSheetContent] = useState<HTMLDivElement | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -612,6 +613,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
 
       <Sheet open={quotationOpen} onOpenChange={setQuotationOpen}>
         <SheetContent
+          ref={setQuotationSheetContent}
           side="bottom"
           className="h-[86vh] overflow-hidden rounded-t-xl p-0 sm:max-w-none"
         >
@@ -710,6 +712,7 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
                       item={item}
                       index={index}
                       products={products}
+                      pickerContainer={quotationSheetContent}
                       errors={errors as Record<string, string>}
                       onUpdate={updateItem}
                       onRemove={(id) =>

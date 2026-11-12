@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ITEMS_PER_PAGE } from "@/components/ui/pagination-controls";
 import Link from "next/link";
 import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -66,7 +67,7 @@ export default function AdminAppointmentsPage() {
       date_from: searchParams.get("date_from") ?? "",
       date_to: searchParams.get("date_to") ?? "",
       page: searchParams.get("page") ?? "1",
-      per_page: searchParams.get("per_page") ?? "10",
+      per_page: String(ITEMS_PER_PAGE),
     }),
     [searchParams],
   );
@@ -80,6 +81,7 @@ export default function AdminAppointmentsPage() {
       .then((nextResponse) => {
         if (mounted) setResponse(nextResponse);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => {
         if (mounted) setLoading(false);
       });
@@ -100,10 +102,7 @@ export default function AdminAppointmentsPage() {
     else params.delete("search");
     router.replace(`/dashboard/appointments${params.toString() ? `?${params.toString()}` : ""}`);
   }, [debouncedSearch, filters.search, router, search, searchParams]);
-  useRealtimeRefresh(() => {
-    setLoading(true);
-    reload();
-  }, ["appointment", "quotation"]);
+  useRealtimeRefresh(() => reload(), ["appointment", "quotation", "work_job"]);
 
   function applyFilter(next: Record<string, string>, options: { resetPage?: boolean } = {}) {
     const cleanNext = normalizeDateRange(filters, next);

@@ -473,9 +473,14 @@ class WorkJobService
 
     private function transition(WorkJob $workJob, WorkJobStatus $next, User $actor, string $message): WorkJob
     {
-        $this->ensureCanTransition($workJob, $next);
+        $workJob = DB::transaction(function () use ($workJob, $next, $actor, $message) {
+            $workJob = WorkJob::query()->lockForUpdate()->findOrFail($workJob->id);
+            $this->ensureCanTransition($workJob, $next);
 
-        DB::transaction(function () use ($workJob, $next, $actor, $message) {
+            if ($next === WorkJobStatus::OnTheWay && $workJob->fabrication_status->progressPercentage() < 100) {
+                throw new InvalidStatusTransitionException('Fabrication must be complete before marking this work job as on the way.');
+            }
+
             $workJob->update(['status' => $next]);
 
             $workJob->remarks()->create([
@@ -483,6 +488,8 @@ class WorkJobService
                 'action' => $next->value,
                 'message' => $message,
             ]);
+
+            return $workJob;
         });
 
         $workJob = $workJob->fresh()->load($this->relations());

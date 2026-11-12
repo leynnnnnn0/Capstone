@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+export const ITEMS_PER_PAGE = 8;
+
 export type PaginationMeta = {
   current_page: number;
   last_page: number;

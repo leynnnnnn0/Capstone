@@ -1,6 +1,7 @@
 <?php
 // tests/Feature/WorkJobs/WorkJobStatusTest.php
 
+use App\Enums\FabricationStatus;
 use App\Enums\WorkJobStatus;
 use App\Models\User;
 use App\Models\WorkJob;
@@ -26,8 +27,11 @@ it('confirms a pending work job', function () {
     expect($workJob->fresh()->status)->toBe(WorkJobStatus::Confirmed);
 });
 
-it('marks confirmed work job as on the way', function () {
-    $workJob = WorkJob::factory()->create(['status' => WorkJobStatus::Confirmed]);
+it('marks confirmed work job as on the way', function (FabricationStatus $fabricationStatus) {
+    $workJob = WorkJob::factory()->create([
+        'status' => WorkJobStatus::Confirmed,
+        'fabrication_status' => $fabricationStatus,
+    ]);
 
     $this->actingAs($this->admin)
         ->patchJson("/api/v1/work-jobs/{$workJob->id}/on-the-way")
@@ -35,6 +39,21 @@ it('marks confirmed work job as on the way', function () {
         ->assertJsonPath('data.status', WorkJobStatus::OnTheWay->value);
 
     expect($workJob->fresh()->status)->toBe(WorkJobStatus::OnTheWay);
+})->with(['no fabrication required' => FabricationStatus::NotRequired, 'ready for installation' => FabricationStatus::ReadyForInstallation]);
+
+it('blocks travel while fabrication is incomplete', function () {
+    $workJob = WorkJob::factory()->create([
+        'status' => WorkJobStatus::Confirmed,
+        'fabrication_status' => FabricationStatus::QualityCheck,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patchJson("/api/v1/work-jobs/{$workJob->id}/on-the-way")
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Fabrication must be complete before marking this work job as on the way.');
+
+    expect($workJob->fresh()->status)->toBe(WorkJobStatus::Confirmed);
+    expect($workJob->remarks()->exists())->toBeFalse();
 });
 
 it('marks on the way work job as in progress', function () {

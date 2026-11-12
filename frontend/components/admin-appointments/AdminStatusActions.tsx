@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronDown, ChevronUp, Loader2, RotateCcw, UserX, Truck, Undo2, Wrench, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, RotateCcw, UserX, Truck, Undo2, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  cancelAppointment,
   markAppointmentCompleted,
   markAppointmentInProgress,
   markAppointmentNoShow,
@@ -41,51 +40,46 @@ export default function AdminStatusActions({
   appointment: AdminAppointment;
   onUpdated: (appointment: AdminAppointment) => void;
 }) {
-  const [action, setAction] = useState<"advance" | "cancel" | "reopen" | "no_show" | null>(null);
+  const [action, setAction] = useState<"advance" | "reopen" | "no_show" | null>(null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
-  const [sectionOpen, setSectionOpen] = useState(false);
   const nextStatus = nextAppointmentStatus(appointment.status);
   const canAdvance = Boolean(nextStatus);
-  const canCancel = [
-    CustomerStatus.Pending,
-    CustomerStatus.Confirmed,
-    CustomerStatus.Rescheduled,
-    CustomerStatus.OnTheWay,
-    CustomerStatus.Reopened,
-  ].includes(appointment.status);
   const canMarkNoShow = [CustomerStatus.OnTheWay].includes(appointment.status);
   const canRebook = [CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const canReopen = appointment.status === CustomerStatus.Cancelled;
 
-  if (!canAdvance && !canCancel && !canRebook && !canReopen && !canMarkNoShow) return null;
+  if (!canAdvance && !canRebook && !canReopen && !canMarkNoShow) {
+    return (
+      <div className="space-y-2 rounded-lg border bg-card p-5 shadow-sm">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Current Status</h2>
+        <p className="text-sm font-medium">{appointment.status_label}</p>
+        <p className="text-sm text-muted-foreground">No status updates are available.</p>
+      </div>
+    );
+  }
 
   async function submit() {
-    if (action === "cancel" && !reason.trim()) return;
     if (action === "no_show" && !reason.trim()) return;
 
     setSaving(true);
     try {
       const currentAction = action;
       const response =
-        action === "cancel"
-          ? await cancelAppointment(appointment.id, reason)
-          : action === "reopen"
-            ? await reopenAppointment(appointment.id, reason || "Appointment reopened by admin.")
+        action === "reopen"
+          ? await reopenAppointment(appointment.id, reason || "Appointment reopened by admin.")
           : action === "no_show"
             ? await markAppointmentNoShow(appointment.id, reason)
-          : await advanceAppointment(appointment.id, nextStatus);
+            : await advanceAppointment(appointment.id, nextStatus);
       onUpdated(response.data);
       setAction(null);
       setReason("");
       toast.success(
-        currentAction === "cancel"
-          ? "Appointment cancelled."
-          : currentAction === "reopen"
-            ? "Appointment reopened."
-            : currentAction === "no_show"
-              ? "Appointment marked as no show."
-              : "Appointment status updated.",
+        currentAction === "reopen"
+          ? "Appointment reopened."
+          : currentAction === "no_show"
+            ? "Appointment marked as no show."
+            : "Appointment status updated.",
       );
     } catch {
       toast.error("Unable to update appointment status.");
@@ -98,20 +92,16 @@ export default function AdminStatusActions({
     <div className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Update Status</h2>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse status controls" : "Expand status controls"}>
-          {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </Button>
       </div>
-      {sectionOpen && <>
-        <p className="text-xs text-muted-foreground">
-          {canReopen
-            ? "Create a new booking from this appointment, or reopen only if cancellation was a correction."
-            : canRebook
-              ? "Create a new booking from this no-show appointment."
-            : "Advance this appointment through the workflow."}
-        </p>
-        {!canRebook && <StatusFlowIndicator current={appointment.status} />}
-        <div className="flex flex-col gap-2">
+      <p className="text-xs text-muted-foreground">
+        {canReopen
+          ? "Create a new booking from this appointment, or reopen only if cancellation was a correction."
+          : canRebook
+            ? "Create a new booking from this no-show appointment."
+          : "Advance this appointment through the workflow."}
+      </p>
+      {!canRebook && <StatusFlowIndicator current={appointment.status} />}
+      <div className="flex flex-col gap-2">
         {canRebook && (
           <>
             <Button asChild className="w-full gap-2">
@@ -134,49 +124,38 @@ export default function AdminStatusActions({
             Mark as {statusLabel(nextStatus)}
           </Button>
         )}
-        {canCancel && (
-          <Button type="button" variant="outline" onClick={() => setAction("cancel")} className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
-            <XCircle className="size-4" />
-            Cancel Appointment
-          </Button>
-        )}
         {canMarkNoShow && (
           <Button type="button" variant="outline" onClick={() => setAction("no_show")} className="w-full gap-2 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800">
             <UserX className="size-4" />
             Mark No Show
           </Button>
         )}
-        </div>
-      </>}
+      </div>
       <Dialog open={Boolean(action)} onOpenChange={(open) => !open && setAction(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {action === "cancel"
-                ? "Cancel appointment?"
-                : action === "reopen"
-                  ? "Reopen appointment?"
-                  : action === "no_show"
-                    ? "Mark customer as no show?"
+              {action === "reopen"
+                ? "Reopen appointment?"
+                : action === "no_show"
+                  ? "Mark customer as no show?"
                   : `Mark as ${statusLabel(nextStatus)}`}
             </DialogTitle>
             <DialogDescription>
-              {action === "cancel"
-                ? "Provide a reason before cancelling this appointment."
-                : action === "reopen"
-                  ? "Use this only when the cancellation was a mistake or admin correction."
-                  : action === "no_show"
-                    ? "Add a short note for the activity log and customer update."
+              {action === "reopen"
+                ? "Use this only when the cancellation was a mistake or admin correction."
+                : action === "no_show"
+                  ? "Add a short note for the activity log and customer update."
                   : `This will update ${appointment.appointment_number}.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="status_reason">{action === "cancel" || action === "no_show" ? "Reason" : "Remarks"}</Label>
+            <Label htmlFor="status_reason">{action === "no_show" ? "Reason" : "Remarks"}</Label>
             <Textarea id="status_reason" value={reason} onChange={(event) => setReason(event.target.value)} className="resize-none" />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setAction(null)}>Go Back</Button>
-            <Button type="button" variant={action === "cancel" ? "destructive" : "default"} onClick={submit} disabled={saving || ((action === "cancel" || action === "no_show") && !reason.trim())}>
+            <Button type="button" onClick={submit} disabled={saving || (action === "no_show" && !reason.trim())}>
               {saving ? <Loader2 className="size-4 animate-spin" /> : null}
               Confirm
             </Button>

@@ -26,6 +26,8 @@ export default function CustomerQuoteSummary({
   canSign = true,
   canDownload = true,
   onSigned,
+  onApprove,
+  approving = false,
   appointment,
 }: {
   quotation?: CustomerQuotation | null;
@@ -33,6 +35,8 @@ export default function CustomerQuoteSummary({
   canSign?: boolean;
   canDownload?: boolean;
   onSigned?: () => void;
+  onApprove?: () => void;
+  approving?: boolean;
   appointment?: CustomerAppointment;
 }) {
   const [signOpen, setSignOpen] = useState(false);
@@ -40,10 +44,7 @@ export default function CustomerQuoteSummary({
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const items = quotation?.items ?? [];
 
-  canSign = items.findIndex((item) => item.status != "approved") == -1;
-
-  
-
+  const showSignAction = canSign && items.every((item) => item.status === "approved");
 
   if (!quotation || items.length === 0) {
     return (
@@ -90,7 +91,7 @@ export default function CustomerQuoteSummary({
               </a>
             </Button>
           )}
-          {canSign && (
+          {showSignAction && (
             <Button
               type="button"
               variant={isSigned ? "outline" : "default"}
@@ -159,19 +160,25 @@ export default function CustomerQuoteSummary({
         </p>
       )}
 
+      {onApprove && (
+        <Button type="button" className="mt-4 w-full" disabled={approving} onClick={onApprove}>
+          {approving ? "Approving…" : "Approve quotation"}
+        </Button>
+      )}
+
       {isSigned && quotation.customer_signed_at && (
         <p className="mt-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700">
           Signed by {quotation.customer_signature_name ?? "customer"} on {formatDate(quotation.customer_signed_at)}.
         </p>
       )}
 
-      {needsResign && canSign && (
+      {needsResign && showSignAction && (
         <p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
           This quotation changed after it was signed. Please review and sign again.
         </p>
       )}
 
-      {canSign && (
+      {showSignAction && (
         <CustomerSignatureDialog
           quotationId={quotation.id}
           defaultName={signerName}

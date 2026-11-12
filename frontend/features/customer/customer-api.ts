@@ -73,6 +73,13 @@ export function rescheduleCustomerAppointment(
   });
 }
 
+export function approveCustomerQuotation(appointmentId: number, itemIds: number[]) {
+  return api<ResourceResponse<CustomerAppointment>>(`/api/v1/customer/appointments/${appointmentId}/quotation/approve`, {
+    method: "POST",
+    body: JSON.stringify({ item_ids: itemIds }),
+  });
+}
+
 export function signCustomerQuotation(
   quotationId: string | number,
   payload: { signer_name: string; signature: string },

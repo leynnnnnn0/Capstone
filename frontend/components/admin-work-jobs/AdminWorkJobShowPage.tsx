@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
+import AdminDetailTabs from "@/components/admin/AdminDetailTabs";
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminQuotationDetails from "@/components/admin-appointments/AdminQuotationDetails";
 import CustomerLocationCard from "@/components/customer/shared/CustomerLocationCard";
@@ -15,6 +14,7 @@ import AdminWorkJobHeader from "@/components/admin-work-jobs/AdminWorkJobHeader"
 import AdminWorkJobPaymentsCard from "@/components/admin-work-jobs/AdminWorkJobPaymentsCard";
 import AdminWorkJobRatingCard from "@/components/admin-work-jobs/AdminWorkJobRatingCard";
 import AdminWorkJobStatusActions from "@/components/admin-work-jobs/AdminWorkJobStatusActions";
+import WorkJobProgress from "@/components/work-jobs/WorkJobProgress";
 import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { hasRole } from "@/features/auth/current-user-api";
@@ -22,6 +22,7 @@ import { fetchAdminWorkJob } from "@/features/admin-work-jobs/admin-work-job-api
 import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { affectsWorkJob } from "@/features/notifications/record-changes";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string }) {
@@ -29,7 +30,9 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
   const [workJob, setWorkJob] = useState<AdminWorkJob | null>(null);
 
   const reload = useCallback(() => {
-    fetchAdminWorkJob(workJobId).then((response) => setWorkJob(response.data));
+    fetchAdminWorkJob(workJobId)
+      .then((response) => setWorkJob(response.data))
+      .catch(() => { /* Keep the last successful snapshot. */ });
   }, [workJobId]);
 
   useEffect(() => {
@@ -37,13 +40,8 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
   }, [reload]);
 
   useRealtimeRefresh((payload) => {
-    if (
-      payload.id === Number(workJobId) ||
-      payload.parent_work_job_id === Number(workJobId)
-    ) {
-      reload();
-    }
-  }, ["work_job"]);
+    if (affectsWorkJob(payload, Number(workJobId), workJob)) reload();
+  }, ["appointment", "quotation", "work_job"]);
 
   if (!workJob) {
     return <DetailPageSkeleton />;
@@ -56,90 +54,92 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
     CustomerStatus.Completed,
   ].includes(workJob.status);
   const isWorker = hasRole(user, "staff");
-  const canUpdateStatus = [
-    CustomerStatus.Pending,
-    CustomerStatus.Confirmed,
-    CustomerStatus.Rescheduled,
-    CustomerStatus.OnTheWay,
-    CustomerStatus.InProgress,
-    CustomerStatus.Cancelled,
-  ].includes(workJob.status);
+  const newestRemarks = [...workJob.remarks].sort(
+    (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id,
+  );
 
   return (
     <div className="space-y-6">
       <AdminWorkJobHeader workJob={workJob} />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <AdminWorkJobDetailsCard workJob={workJob} />
-          <CustomerLocationCard address={workJob.address ?? ""} addressLat={workJob.address_lat} addressLng={workJob.address_lng} compact />
-        </div>
-        <aside className="space-y-4">
-          <WorkJobDetailAccordion title="Fabrication progress">
-            <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage />
-          </WorkJobDetailAccordion>
-          {canUpdateStatus && <WorkJobDetailAccordion title="Update status">
-            <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />
-          </WorkJobDetailAccordion>}
-          <WorkJobDetailAccordion title="Back jobs">
-            <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />
-          </WorkJobDetailAccordion>
-          <WorkJobDetailAccordion title="Charges">
-            <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
-          </WorkJobDetailAccordion>
-          <WorkJobDetailAccordion title="Payments">
-            <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
-          </WorkJobDetailAccordion>
-          <WorkJobDetailAccordion title="Warranty record">
-            <WorkJobWarrantyCard workJob={workJob} />
-          </WorkJobDetailAccordion>
-          <WorkJobDetailAccordion title="Customer satisfaction">
-            <AdminWorkJobRatingCard workJob={workJob} />
-          </WorkJobDetailAccordion>
-          <WorkJobDetailAccordion title="Assigned staff">
-            <AssignedWorkers workers={workJob.workers} />
-          </WorkJobDetailAccordion>
-          <AdminQuotationDetails
-            quotation={workJob.quotation ?? null}
-            canDownload={quotationCanBeDownloaded}
-            canSign={quotationCanBeSigned}
-          />
-          <AdminActivityLog remarks={workJob.remarks} />
-        </aside>
-      </div>
+      <AdminDetailTabs
+        label="Work job details"
+        tabs={[
+          {
+            value: "overview",
+            label: "Overview",
+            content: (
+              <>
+                <WorkJobProgress workJob={workJob} remarks={newestRemarks} showStatusLabel={false} />
+                <div className="grid items-start gap-6 lg:grid-cols-2">
+                  <div className="space-y-4">
+                    <AdminWorkJobDetailsCard workJob={workJob} />
+                    <AssignedWorkers workers={workJob.workers} />
+                  </div>
+                  <CustomerLocationCard
+                    address={workJob.address ?? ""}
+                    addressLat={workJob.address_lat}
+                    addressLng={workJob.address_lng}
+                    compact
+                  />
+                </div>
+              </>
+            ),
+          },
+          {
+            value: "fabrication",
+            label: "Fabrication",
+            content: <AdminWorkJobFabricationCard workJob={workJob} onUpdated={setWorkJob} canManage />,
+          },
+          {
+            value: "status",
+            label: "Status",
+            content: <AdminWorkJobStatusActions workJob={workJob} onUpdated={setWorkJob} />,
+          },
+          {
+            value: "quotation",
+            label: "Quotation",
+            content: (
+              <AdminQuotationDetails
+                quotation={workJob.quotation ?? null}
+                canDownload={quotationCanBeDownloaded}
+                canSign={quotationCanBeSigned}
+                collapsible={false}
+              />
+            ),
+          },
+          {
+            value: "billing",
+            label: "Billing",
+            content: (
+              <>
+                <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
+                <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
+              </>
+            ),
+          },
+          {
+            value: "warranty",
+            label: "Warranty",
+            content: <WorkJobWarrantyCard workJob={workJob} />,
+          },
+          {
+            value: "back-jobs",
+            label: "Back Jobs",
+            content: <AdminWorkJobBackJobsCard workJob={workJob} onUpdated={setWorkJob} canCreate={!isWorker} />,
+          },
+          {
+            value: "satisfaction",
+            label: "Customer Satisfaction",
+            content: <AdminWorkJobRatingCard workJob={workJob} />,
+          },
+          {
+            value: "activity",
+            label: "Activity",
+            content: <AdminActivityLog remarks={workJob.remarks} />,
+          },
+        ]}
+      />
     </div>
-  );
-}
-
-function WorkJobDetailAccordion({ title, children }: { title: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-between gap-3 rounded-lg border bg-card p-5 text-left shadow-sm transition-colors hover:bg-muted/30"
-        aria-expanded="false"
-      >
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">{title}</span>
-        <ChevronDown className="size-4 shrink-0" />
-      </button>
-    );
-  }
-
-  return (
-    <section className="relative">
-      {children}
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        className="absolute -right-2 -top-2 z-20 flex size-7 items-center justify-center rounded-full border bg-white text-foreground shadow-sm transition-colors hover:bg-muted"
-        aria-expanded="true"
-        aria-label={`Collapse ${title}`}
-      >
-        <ChevronUp className="size-4" />
-      </button>
-    </section>
   );
 }
 

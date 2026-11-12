@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Customer;
 
 use App\Enums\AppointmentStatus;
 use App\Events\AppointmentUpdated;
+use App\Events\QuotationChanged;
+use App\Events\QuotationSignatureInvalidated;
 use App\Exceptions\InvalidStatusTransitionException;
 use App\Exceptions\SlotFullException;
 use App\Http\Controllers\Controller;
@@ -81,6 +83,62 @@ class CustomerAppointmentController extends Controller
         $appointment->load(self::APPOINTMENT_RELATIONS);
 
         return response()->json(['data' => new AppointmentResource($appointment)]);
+    }
+
+    public function approveQuotation(Request $request, Appointment $appointment): JsonResponse
+    {
+        $customer = $request->user();
+        abort_unless($this->recordAccess->canAccessAppointment($customer, $appointment), 404);
+
+        $validated = $request->validate([
+            'item_ids' => ['required', 'array', 'min:1'],
+            'item_ids.*' => ['required', 'integer', 'distinct'],
+        ]);
+
+        DB::transaction(function () use ($appointment, $customer, $validated) {
+            $appointment = Appointment::query()->lockForUpdate()->findOrFail($appointment->id);
+            abort_unless($this->recordAccess->canAccessAppointment($customer, $appointment), 404);
+            abort_if(
+                $appointment->status !== AppointmentStatus::Completed || $appointment->workJob()->exists(),
+                422,
+                'Quotations can be approved after inspection and before a work job is created.'
+            );
+
+            $quotation = $appointment->quotation()->lockForUpdate()->firstOrFail();
+            abort_if($quotation->expires_at?->lt(today()), 422, 'This quotation has expired.');
+
+            $items = $quotation->quotation_items()->orderBy('id')->lockForUpdate()->get();
+            $reviewedIds = collect($validated['item_ids'])->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+            abort_if(
+                $items->modelKeys() !== $reviewedIds
+                    || $items->contains(fn ($item) => ! in_array($item->status, ['for_acceptance', 'approved'], true)),
+                409,
+                'The quotation has changed. Review the latest items before approving.'
+            );
+
+            $pending = $items->where('status', 'for_acceptance');
+            if ($pending->isEmpty()) {
+                return;
+            }
+
+            foreach ($pending as $item) {
+                $item->update(['status' => 'approved']);
+            }
+
+            $reason = 'Quotation approval changed. Please review and sign again.';
+            $invalidated = $quotation->invalidateSignature($reason);
+
+            DB::afterCommit(function () use ($quotation, $customer, $invalidated, $reason) {
+                $quotation->load(['appointment', 'quotation_items.options']);
+                if ($invalidated) {
+                    QuotationSignatureInvalidated::dispatch($quotation, $reason, $customer);
+                }
+                QuotationChanged::dispatch($quotation, 'item_approved', 'Customer approved the quotation.', $customer);
+            });
+        });
+
+        return $this->show($request, $appointment);
     }
 
     public function update(UpdateCustomerAppointmentRequest $request, Appointment $appointment): JsonResponse

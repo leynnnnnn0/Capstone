@@ -1,16 +1,18 @@
 "use client";
 
-import { customerPanelClass, customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, CalendarClock, RotateCcw, Pencil, XCircle } from "lucide-react";
+import { BriefcaseBusiness, CalendarClock, FileText, LayoutList, RotateCcw, Pencil, XCircle } from "lucide-react";
+import { Tabs } from "radix-ui";
 
 import AppointmentInfoCard from "@/components/customer/appointments/AppointmentInfoCard";
 import CustomerOrderNextStepCard from "@/components/customer/appointments/CustomerOrderNextStepCard";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
-import CustomerDetailAccordion from "@/components/customer/shared/CustomerDetailAccordion";
+import CustomerRecordProgress from "@/components/customer/shared/CustomerRecordProgress";
+import CustomerRecordTabs, { customerRecordTabPanelClass } from "@/components/customer/shared/CustomerRecordTabs";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { CustomerStatus, statusIn } from "@/features/customer/status";
@@ -30,15 +32,30 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  approveCustomerQuotation,
   cancelCustomerAppointment,
   getCustomerAppointment,
   rescheduleCustomerAppointment,
 } from "@/features/customer/customer-api";
 import type { CustomerAppointment } from "@/features/customer/types";
 import { todayIsoDate, timeToMinutes } from "@/features/forms/validation";
+import { affectsAppointment } from "@/features/notifications/record-changes";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { ApiError } from "@/lib/api";
 import { toast } from "sonner";
+
+const appointmentTabs = [
+  { value: "overview", label: "Overview", icon: LayoutList },
+  { value: "quotation", label: "Quotation", icon: FileText },
+];
+
+const appointmentStages = [
+  { status: CustomerStatus.Pending, label: "Requested" },
+  { status: CustomerStatus.Confirmed, label: "Confirmed" },
+  { status: CustomerStatus.OnTheWay, label: "On the way" },
+  { status: CustomerStatus.InProgress, label: "In progress" },
+  { status: CustomerStatus.Completed, label: "Completed" },
+];
 
 type RescheduleForm = {
   appointment_date: string;
@@ -49,7 +66,9 @@ type RescheduleForm = {
 
 export default function AppointmentDetailPage({ appointmentId }: { appointmentId: string }) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
   const [appointment, setAppointment] = useState<CustomerAppointment | null>(null);
+  const [approving, setApproving] = useState(false);
   const [reason, setReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -65,7 +84,9 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   });
 
   const reload = useCallback(() => {
-    getCustomerAppointment(appointmentId).then((response) => setAppointment(response.data));
+    getCustomerAppointment(appointmentId)
+      .then((response) => setAppointment(response.data))
+      .catch(() => { /* Keep the last successful snapshot. */ });
   }, [appointmentId]);
 
   useEffect(() => {
@@ -73,10 +94,8 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   }, [reload]);
 
   useRealtimeRefresh((payload) => {
-    if (payload.id === Number(appointmentId) || payload.appointment_id === Number(appointmentId)) {
-      reload();
-    }
-  }, ["appointment", "quotation"]);
+    if (affectsAppointment(payload, Number(appointmentId), appointment?.work_job)) reload();
+  }, ["appointment", "quotation", "work_job"]);
 
   async function cancelAppointment() {
     if (!appointment || !reason.trim()) return;
@@ -191,14 +210,37 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
   }
 
   const quoteItems = appointment.quotation?.items ?? [];
-  const completedInspectionCanBeSigned =
+  const canApproveQuotation =
     !appointment.work_job &&
-    quoteItems.length > 0 &&
-    quoteItems.every((item) => item.status === "approved");
+    appointment.status === CustomerStatus.Completed &&
+    (!appointment.quotation?.expires_at || appointment.quotation.expires_at >= todayIsoDate()) &&
+    quoteItems.some((item) => item.status === "for_acceptance") &&
+    quoteItems.every((item) => item.status === "for_acceptance" || item.status === "approved");
+
+  async function approveQuotation() {
+    if (!appointment || !canApproveQuotation || approving) return;
+    setApproving(true);
+
+    try {
+      const response = await approveCustomerQuotation(appointment.id, quoteItems.map((item) => item.id));
+      setAppointment(response.data);
+      toast.success("Quotation approved. You can now sign it.");
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Could not approve the quotation. Try again.");
+      if (error instanceof ApiError && error.status === 409) reload();
+    } finally {
+      setApproving(false);
+    }
+  }
+
   const quotationCanBeSigned =
+    quoteItems.length > 0 &&
+    quoteItems.every((item) => item.status === "approved") &&
     !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
-    (appointment.status !== CustomerStatus.Completed || completedInspectionCanBeSigned) &&
+    (appointment.status !== CustomerStatus.Completed || !appointment.work_job) &&
     !statusIn(appointment.work_job?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow, CustomerStatus.Completed]);
+  const quotationNeedsAction =
+    canApproveQuotation || (quotationCanBeSigned && appointment.quotation?.signature_status !== "signed");
   const quotationCanBeDownloaded =
     !statusIn(appointment.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
     !statusIn(appointment.work_job?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]);
@@ -213,13 +255,15 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
           >
             Back
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Appointment details
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{appointment.appointment_number}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+              {appointment.appointment_number}
+            </h1>
+            <CustomerStatusBadge status={appointment.status} />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{appointment.full_name}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <CustomerStatusBadge status={appointment.status} />
+        <div className="flex flex-wrap items-center gap-3">
           <CustomerContactLocationSheet
             fullName={appointment.full_name}
             phoneNumber={appointment.phone_number}
@@ -410,38 +454,56 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(400px,34%,480px)]">
-        <section className={`${customerPanelClass} min-w-0 self-start space-y-5`}>
-          {appointment.work_job && (
-            <LinkedWorkJobCard workJob={appointment.work_job} />
-          )}
+      <CustomerRecordProgress
+        title="Appointment progress"
+        status={appointment.status}
+        statusLabel={appointment.status_label}
+        remarks={appointment.remarks}
+        stages={appointmentStages.map((stage) => ({
+          ...stage,
+          fallbackTimestamp: stage.status === CustomerStatus.Pending ? appointment.created_at : undefined,
+        }))}
+      />
 
-          <CustomerOrderNextStepCard appointment={appointment} />
+      <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="mt-5 min-w-0">
+        <CustomerRecordTabs
+          label="Appointment details"
+          tabs={appointmentTabs}
+          attentionTab={quotationNeedsAction ? "quotation" : undefined}
+        />
 
-          <AppointmentInfoCard appointment={appointment} />
-
-          {/* <CustomerQuoteImageList quotation={appointment.quotation} /> */}
-        </section>
-
-        <aside className="min-w-0 space-y-4">
-          <CustomerDetailAccordion title="Activity log">
+        <Tabs.Content value="overview" className={customerRecordTabPanelClass}>
+          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+            <div className="min-w-0 space-y-4">
+              <CustomerOrderNextStepCard
+                appointment={appointment}
+                canApproveQuotation={canApproveQuotation}
+                onReviewQuotation={() => setActiveTab("quotation")}
+              />
+              <AppointmentInfoCard appointment={appointment} />
+              {appointment.work_job && <LinkedWorkJobCard workJob={appointment.work_job} />}
+            </div>
             <CustomerActivityLog
-              remarks={appointment.remarks}
+              remarks={appointment.remarks.slice(0, 3)}
               emptyDescription="Updates from your inspection request will appear here."
             />
-          </CustomerDetailAccordion>
-          <CustomerDetailAccordion title="Quotation">
-            <CustomerQuoteSummary
-              quotation={appointment.quotation}
-              signerName={appointment.full_name}
-              canSign={quotationCanBeSigned}
-              canDownload={quotationCanBeDownloaded}
-              onSigned={reload}
-              appointment={appointment}
-            />
-          </CustomerDetailAccordion>
-        </aside>
-      </div>
+          </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="quotation" className={customerRecordTabPanelClass}>
+          <CustomerQuoteSummary
+            quotation={appointment.quotation}
+            signerName={appointment.full_name}
+            canSign={quotationCanBeSigned}
+            canDownload={quotationCanBeDownloaded}
+            onSigned={reload}
+            onApprove={canApproveQuotation ? approveQuotation : undefined}
+            approving={approving}
+            appointment={appointment}
+          />
+        </Tabs.Content>
+
+      </Tabs.Root>
     </>
   );
 }

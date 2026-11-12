@@ -43,6 +43,7 @@ export default function CustomerDashboard() {
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => setLoading(false));
   }, []);
 

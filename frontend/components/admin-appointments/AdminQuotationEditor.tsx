@@ -46,6 +46,7 @@ export default function AdminQuotationEditor({
   onSaved: () => void;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
+  const [sheetContent, setSheetContent] = useState<HTMLDivElement | null>(null);
   const [items, setItems] = useState<AdminLineItem[]>([]);
   const [notes, setNotes] = useState(appointment.quotation?.notes ?? "");
   const [expiresAt, setExpiresAt] = useState(appointment.quotation?.expires_at ?? "");
@@ -120,7 +121,7 @@ export default function AdminQuotationEditor({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[86vh] overflow-hidden rounded-t-xl p-0 sm:max-w-none">
+      <SheetContent ref={setSheetContent} side="bottom" className="h-[86vh] overflow-hidden rounded-t-xl p-0 sm:max-w-none">
         <SheetHeader className="border-b px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -202,6 +203,7 @@ export default function AdminQuotationEditor({
                     item={item}
                     index={index}
                     products={products}
+                    pickerContainer={sheetContent}
                     errors={errors}
                     onUpdate={updateItem}
                     onRemove={(id) => setItems((current) => current.filter((item) => item.id !== id))}

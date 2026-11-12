@@ -12,6 +12,7 @@ Route::middleware(['auth:sanctum', 'account.role:customer'])->prefix('customer')
     Route::get('/appointments', [CustomerAppointmentController::class, 'index']);
     Route::post('/appointments', [CustomerAppointmentController::class, 'store']);
     Route::get('/appointments/{appointment}', [CustomerAppointmentController::class, 'show']);
+    Route::post('/appointments/{appointment}/quotation/approve', [CustomerAppointmentController::class, 'approveQuotation']);
     Route::put('/appointments/{appointment}', [CustomerAppointmentController::class, 'update']);
     Route::patch('/appointments/{appointment}/reschedule', [CustomerAppointmentController::class, 'reschedule']);
     Route::patch('/appointments/{appointment}/cancel', [CustomerAppointmentController::class, 'cancel']);

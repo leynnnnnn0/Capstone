@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { ChevronDown, ChevronsUpDown, ChevronUp, Layers, Trash2 } from "lucide-react";
 
 import NumericInput from "@/components/form/NumericInput";
@@ -36,7 +37,7 @@ import {
   type AdminLineItem,
 } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { Product } from "@/features/products/types";
-import { optionGroupOptions, productOptionGroups, productVariants } from "@/features/products/product-utils";
+import { optionGroupOptions, productCover, productOptionGroups, productVariants } from "@/features/products/product-utils";
 import {
   displayedDimensionLimit,
   isQuantityOnlyUnit,
@@ -48,6 +49,7 @@ export default function AdminQuotationLineItemRow({
   item,
   index,
   products,
+  pickerContainer,
   errors,
   onUpdate,
   onRemove,
@@ -55,6 +57,7 @@ export default function AdminQuotationLineItemRow({
   item: AdminLineItem;
   index: number;
   products: Product[];
+  pickerContainer: HTMLDivElement | null;
   errors: Record<string, string>;
   onUpdate: (id: string, updates: Partial<AdminLineItem>) => void;
   onRemove: (id: string) => void;
@@ -121,7 +124,8 @@ export default function AdminQuotationLineItemRow({
     <div className="rounded-lg border bg-card">
       <div className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
         <button type="button" className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setExpanded((value) => !value)}>
-          <div className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">{index + 1}</div>
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary">{index + 1}</div>
+          {selectedProduct && <ProductThumbnail product={selectedProduct} />}
           <span className="min-w-0">
             <p className="text-sm font-semibold">{item.name || <span className="text-muted-foreground italic">Unnamed item</span>}</p>
             {Number(item.total_amount) > 0 && <p className="text-xs text-muted-foreground">₱{fmtPeso(item.total_amount)}</p>}
@@ -164,10 +168,15 @@ export default function AdminQuotationLineItemRow({
                     <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-                  <Command>
+                <PopoverContent
+                  container={pickerContainer}
+                  collisionBoundary={pickerContainer ?? undefined}
+                  align="start"
+                  className="max-h-(--radix-popover-content-available-height) w-[var(--radix-popover-trigger-width)] p-0"
+                >
+                  <Command className="min-h-0">
                     <CommandInput placeholder="Search products..." />
-                    <CommandList>
+                    <CommandList className="min-h-0 overscroll-contain">
                       <CommandEmpty>No products found.</CommandEmpty>
                       <CommandGroup>
                         {products.map((product) => (
@@ -180,6 +189,7 @@ export default function AdminQuotationLineItemRow({
                               setProductOpen(false);
                             }}
                           >
+                            <ProductThumbnail product={product} />
                             <span className="min-w-0 flex-1 truncate">{product.name}</span>
                             {!product.is_active && <Badge variant="outline">Inactive</Badge>}
                           </CommandItem>
@@ -298,6 +308,17 @@ export default function AdminQuotationLineItemRow({
         </div>
       )}
     </div>
+  );
+}
+
+function ProductThumbnail({ product }: { product: Product }) {
+  const cover = productCover(product);
+  if (!cover) return null;
+
+  return (
+    <span className="relative block size-10 shrink-0 overflow-hidden rounded-md border bg-muted">
+      <Image src={cover} alt="" fill unoptimized className="object-contain" />
+    </span>
   );
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Calculator,
   CalendarDays,
@@ -42,6 +43,7 @@ import {
 } from "@/features/admin-appointments/admin-appointment-api";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
+import { productCover } from "@/features/products/product-utils";
 
 const approvedStatus = "approved";
 
@@ -57,17 +59,20 @@ export default function AdminQuotationDetails({
   quotation,
   canDownload = true,
   canSign = true,
+  collapsible = true,
 }: {
   quotation?: CustomerQuotation | null;
   canDownload?: boolean;
   canSign?: boolean;
+  collapsible?: boolean;
 }) {
   const [itemOverrides, setItemOverrides] = useState<Record<number, CustomerQuotationItem>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
   const [photoItemId, setPhotoItemId] = useState<number | null>(null);
   const [showAllItems, setShowAllItems] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
-  const [sectionOpen, setSectionOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const sectionOpen = !collapsible || expanded;
   const [signatureOverride, setSignatureOverride] = useState<{
     status?: CustomerQuotation["signature_status"];
     signedAt?: CustomerQuotation["customer_signed_at"];
@@ -85,7 +90,7 @@ export default function AdminQuotationDetails({
   };
   const activePhotoItem = items.find((item) => item.id === photoItemId) ?? null;
   const approvedItems = useMemo(() => items.filter((item) => item.status === approvedStatus), [items]);
-  const visibleItems = showAllItems ? items : items.slice(0, 1);
+  const visibleItems = !collapsible || showAllItems ? items : items.slice(0, 1);
   const allTotal = items.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const approvedTotal = approvedItems.reduce((sum, item) => sum + Number(item.total_amount), 0);
   const signatureLabel = signature.status === "signed"
@@ -100,9 +105,11 @@ export default function AdminQuotationDetails({
         <CardHeader className="p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Quotation</h2>
-            <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
-              {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-            </Button>
+            {collapsible && (
+              <Button type="button" variant="ghost" size="icon-sm" onClick={() => setExpanded((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
+                {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+              </Button>
+            )}
           </div>
           {sectionOpen && <CardDescription className="text-xs">No quotation yet.</CardDescription>}
         </CardHeader>
@@ -177,9 +184,11 @@ export default function AdminQuotationDetails({
               {sectionOpen && <Badge variant="outline" className="h-7 text-xs leading-tight">
                 {items.length} item{items.length !== 1 ? "s" : ""}
               </Badge>}
-              <Button type="button" variant="ghost" size="icon-sm" onClick={() => setSectionOpen((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
-                {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-              </Button>
+              {collapsible && (
+                <Button type="button" variant="ghost" size="icon-sm" onClick={() => setExpanded((open) => !open)} aria-expanded={sectionOpen} aria-label={sectionOpen ? "Collapse quotation" : "Expand quotation"}>
+                  {sectionOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                </Button>
+              )}
             </div>
           </div>
           {sectionOpen && <CardDescription className="text-xs">Created {formatQuoteDate(quotation.created_at, quotation.id)}</CardDescription>}
@@ -224,7 +233,7 @@ export default function AdminQuotationDetails({
               />
             ))}
           </div>
-          {items.length > 1 && (
+          {collapsible && items.length > 1 && (
             <Button
               type="button"
               variant="outline"
@@ -312,15 +321,21 @@ function QuotationItemCard({
 }) {
   const isApproved = item.status === approvedStatus;
   const photoCount = (item.before_images?.length ?? 0) + (item.after_images?.length ?? 0);
+  const cover = item.product ? productCover(item.product) : "";
 
   return (
     <div className="rounded-lg border transition-colors">
-      <div className="flex items-start justify-between px-3 py-2.5">
-        <div className="flex items-start gap-2.5">
+      <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5">
           <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${isApproved ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-primary/10 text-primary"}`}>
             {index + 1}
           </div>
-          <div>
+          {cover && (
+            <div className="relative size-14 shrink-0 overflow-hidden rounded-md border bg-muted sm:size-24">
+              <Image src={cover} alt={item.product?.name ?? item.name} fill unoptimized className="object-contain" />
+            </div>
+          )}
+          <div className="min-w-0">
             <p className="text-sm leading-tight font-semibold">{item.name}</p>
             {item.description && <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>}
             <div className="mt-1 flex flex-wrap gap-1.5">

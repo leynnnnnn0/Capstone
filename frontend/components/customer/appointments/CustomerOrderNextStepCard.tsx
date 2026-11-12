@@ -1,5 +1,4 @@
 import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
-import Link from "next/link";
 import { ArrowRight, Check, Clock3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,10 +13,18 @@ const milestones = [
   "Create work job",
 ];
 
-export default function CustomerOrderNextStepCard({ appointment }: { appointment: CustomerAppointment }) {
+export default function CustomerOrderNextStepCard({
+  appointment,
+  canApproveQuotation = false,
+  onReviewQuotation,
+}: {
+  appointment: CustomerAppointment;
+  canApproveQuotation?: boolean;
+  onReviewQuotation: () => void;
+}) {
   if (appointment.status !== CustomerStatus.Completed || appointment.work_job) return null;
 
-  const state = resolveState(appointment);
+  const state = resolveState(appointment, canApproveQuotation);
 
   return (
     <section className={`@container rounded-xl border bg-card p-5 sm:p-6 ${customerRecordWaveClass}`}>
@@ -32,11 +39,9 @@ export default function CustomerOrderNextStepCard({ appointment }: { appointment
           </div>
         </div>
         {state.action && (
-          <Button asChild className="shrink-0 gap-2">
-            <Link href="#customer-quotation">
-              {state.action}
-              <ArrowRight className="size-4" />
-            </Link>
+          <Button type="button" className="shrink-0 gap-2" onClick={onReviewQuotation}>
+            {state.action}
+            <ArrowRight className="size-4" />
           </Button>
         )}
       </div>
@@ -55,7 +60,7 @@ export default function CustomerOrderNextStepCard({ appointment }: { appointment
   );
 }
 
-function resolveState(appointment: CustomerAppointment) {
+function resolveState(appointment: CustomerAppointment, canApproveQuotation: boolean) {
   const quotation = appointment.quotation;
   const items = quotation?.items ?? [];
   const allApproved = items.length > 0 && items.every((item) => item.status === "approved");
@@ -66,6 +71,15 @@ function resolveState(appointment: CustomerAppointment) {
       description: "Your ocular visit is complete. SOG is reviewing the site measurements and preparing your final quotation. You will receive a notification when it is ready.",
       currentStep: 1,
       action: null,
+    };
+  }
+
+  if (canApproveQuotation) {
+    return {
+      title: "Your quotation is ready to review",
+      description: "Review the quoted items and total, then approve the quotation to continue to signing.",
+      currentStep: 1,
+      action: "Review quotation",
     };
   }
 

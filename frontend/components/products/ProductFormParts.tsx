@@ -19,7 +19,6 @@ import {
 
 import FormSelect from "@/components/form/FormSelect";
 import NumericInput from "@/components/form/NumericInput";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,17 +35,14 @@ import type {
   ProductImage,
   ProductOptionGroupDraft,
   ProductUnit,
-  ProductVariantDraft,
   ProductWarrantyFormState,
 } from "@/features/products/types";
 import {
-  calcArea,
   createImageDrafts,
   formatFileSize,
   formatCurrency,
   generateId,
   imageUrl,
-  MAX_VARIANT_IMAGES,
   model3DUrl,
   newImageOrderToken,
   PRODUCT_UNITS,
@@ -649,123 +645,6 @@ export type ProductBasicsValue = {
   price_per_unit: string;
 };
 
-export function VariantEditor({
-  variants,
-  onChange,
-  errors = {},
-}: {
-  variants: ProductVariantDraft[];
-  onChange: (variants: ProductVariantDraft[]) => void;
-  errors?: ProductFormErrors;
-}) {
-  const addVariant = () => {
-    onChange([
-      ...variants,
-      {
-        id: generateId(),
-        width: "",
-        height: "",
-        price: "",
-        images: [],
-        existing_images: [],
-        deleted_image_ids: [],
-      },
-    ]);
-  };
-
-  const updateVariant = (
-    id: string,
-    patch: Partial<ProductVariantDraft>,
-  ) => {
-    onChange(variants.map((variant) => (variant.id === id ? { ...variant, ...patch } : variant)));
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Variants</CardTitle>
-            <CardDescription>Optional fixed-size products with their own images.</CardDescription>
-          </div>
-          <Button type="button" size="sm" onClick={addVariant}>
-            <Plus className="h-3.5 w-3.5" />
-            Add
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {variants.length === 0 ? (
-          <p className="rounded-lg border border-dashed py-8 text-center text-sm text-muted-foreground">
-            No variants added.
-          </p>
-        ) : (
-          variants.map((variant, index) => (
-            <div key={variant.id} className="space-y-3 rounded-lg border p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">Variant #{index + 1}</Badge>
-                  {variant.width && variant.height && (
-                    <Badge variant="secondary">
-                      {calcArea(variant.width, variant.height)} sqm
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => onChange(variants.filter((item) => item.id !== variant.id))}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <NumericInput
-                  placeholder="Width (cm)"
-                  value={variant.width}
-                  onValueChange={(value) => updateVariant(variant.id, { width: value })}
-                />
-                <NumericInput
-                  placeholder="Height (cm)"
-                  value={variant.height}
-                  onValueChange={(value) => updateVariant(variant.id, { height: value })}
-                />
-                <NumericInput
-                  placeholder="Fixed Price"
-                  value={variant.price}
-                  decimalScale={2}
-                  onValueChange={(value) => updateVariant(variant.id, { price: value })}
-                />
-              </div>
-              <FieldError message={errors[`variants.${index}.width`]} />
-              <FieldError message={errors[`variants.${index}.height`]} />
-              <FieldError message={errors[`variants.${index}.price`]} />
-              <ImageUploader
-                existingImages={variant.existing_images ?? []}
-                images={variant.images}
-                max={MAX_VARIANT_IMAGES}
-                onChange={(images) => updateVariant(variant.id, { images })}
-                onRemoveExisting={(imageId) =>
-                  updateVariant(variant.id, {
-                    existing_images: (variant.existing_images ?? []).filter(
-                      (image) => image.id !== imageId,
-                    ),
-                    deleted_image_ids: [
-                      ...(variant.deleted_image_ids ?? []),
-                      imageId,
-                    ],
-                  })
-                }
-              />
-            </div>
-          ))
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 export function OptionGroupEditor({
   groups,
   onChange,
@@ -926,7 +805,6 @@ export function ProductSummaryCard({
   unit,
   price,
   categories,
-  variants,
   optionGroups,
   images,
   model3D,
@@ -937,14 +815,13 @@ export function ProductSummaryCard({
   unit: string;
   price: string;
   categories: number[];
-  variants: number;
   optionGroups: number;
   images: number;
   model3D?: boolean;
   warrantyMonths?: string;
   warrantyActive?: boolean;
 }) {
-  if (!name && categories.length === 0 && variants === 0 && optionGroups === 0) return null;
+  if (!name && categories.length === 0 && optionGroups === 0) return null;
 
   return (
     <Card className="bg-muted/30">
@@ -962,7 +839,6 @@ export function ProductSummaryCard({
           label="Warranty"
           value={warrantyActive ? `${warrantyMonths || "0"} months` : "Inactive"}
         />
-        <SummaryRow label="Variants" value={String(variants)} />
         <SummaryRow label="Option Groups" value={String(optionGroups)} />
       </CardContent>
     </Card>

@@ -241,6 +241,19 @@ const workJob = {
   scheduled_time_until: "11:00",
   status: "in_progress",
   status_label: "In Progress",
+  fabrication: {
+    status: "ready_for_installation",
+    status_label: "Ready for Installation",
+    description: "Fabrication is complete.",
+    progress_percentage: 100,
+    expected_completion_date: null,
+    days_remaining: null,
+    is_overdue: false,
+    started_at: null,
+    completed_at: null,
+    notes: null,
+    updated_at: null,
+  },
   notes: "E2E work job notes",
   created_at: "2026-05-23T04:00:00.000000Z",
   workers: [{ id: 1, full_name: "Admin User" }],
@@ -249,6 +262,13 @@ const workJob = {
   remarks: [
     {
       id: 1,
+      action: "on_the_way",
+      message: "Installer is on the way.",
+      by: "Admin User",
+      created_at: "2026-05-23T04:30:00.000000Z",
+    },
+    {
+      id: 2,
       action: "in_progress",
       message: "Installation started.",
       by: "Admin User",
@@ -384,10 +404,10 @@ export async function mockApi(page: Page) {
   });
 }
 
-export async function signInAsCustomer(page: Page) {
+export async function signInAsCustomer(page: Page, url = "http://127.0.0.1:3000") {
   await page.context().addCookies([
-    { name: "auth_token", value: "e2e-token", domain: "127.0.0.1", path: "/" },
-    { name: "user_role", value: "customer", domain: "127.0.0.1", path: "/" },
+    { name: "auth_token", value: "e2e-token", url },
+    { name: "user_role", value: "customer", url },
   ]);
 }
 

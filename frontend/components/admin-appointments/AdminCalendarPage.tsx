@@ -32,6 +32,7 @@ export default function AdminCalendarPage() {
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,10 +40,7 @@ export default function AdminCalendarPage() {
     reload();
   }, [reload]);
 
-  useRealtimeRefresh(() => {
-    setLoading(true);
-    reload();
-  }, ["appointment", "work_job", "work-job"]);
+  useRealtimeRefresh(() => reload(), ["appointment", "work_job"]);
 
   return (
     <div className="space-y-10">

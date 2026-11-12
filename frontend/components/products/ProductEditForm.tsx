@@ -12,7 +12,6 @@ import {
   Product3DModelUploader,
   ProductSummaryCard,
   ProductWarrantyCard,
-  VariantEditor,
   type ProductBasicsValue,
 } from "@/components/products/ProductFormParts";
 import {
@@ -39,15 +38,17 @@ import {
   MAX_PRODUCT_IMAGES,
   productImages,
 } from "@/features/products/product-utils";
+import { withReturnTo } from "@/lib/return-to";
 
 type ProductEditFormProps = {
   product: Product;
   categories: Category[];
+  returnTo: string;
 };
 
-export default function ProductEditForm({ product, categories }: ProductEditFormProps) {
+export default function ProductEditForm({ product, categories, returnTo }: ProductEditFormProps) {
   const router = useRouter();
-  const [data, setData] = useState<ProductFormState>(() => createProductEditForm(product));
+  const [data, setData] = useState<ProductFormState>(() => ({ ...createProductEditForm(product), variants: [] }));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -117,7 +118,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
     try {
       const updatedProduct = await updateProduct(product.id, appendProductFormData(data));
       toast.success("Product updated successfully.");
-      router.push(`/dashboard/products/${updatedProduct.id}`);
+      router.push(withReturnTo(`/dashboard/products/${updatedProduct.id}`, returnTo));
     } catch (error) {
       setConfirmOpen(false);
       toast.error(error instanceof Error ? error.message : "Failed to update product.");
@@ -178,12 +179,6 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
               </label>
             </CardContent>
           </Card>
-
-          <VariantEditor
-            variants={data.variants}
-            errors={errors}
-            onChange={(variants) => setField("variants", variants)}
-          />
 
           <OptionGroupEditor
             groups={data.option_groups}
@@ -273,7 +268,6 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
             unit={data.unit}
             price={data.price_per_unit}
             categories={data.category_ids}
-            variants={data.variants.length}
             optionGroups={data.option_groups.length}
             images={visibleProductImages.length + data.images.length}
             model3D={hasVisible3DModel}
@@ -289,7 +283,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push(`/dashboard/products/${product.id}`)}
+          onClick={() => router.push(withReturnTo(`/dashboard/products/${product.id}`, returnTo))}
         >
           Cancel
         </Button>
@@ -303,7 +297,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
           <AlertDialogHeader>
             <AlertDialogTitle>Save product changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will update product details, pricing, warranty policy, variants, options, images, and 3D model settings.
+              This will update product details, pricing, warranty policy, options, images, and 3D model settings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

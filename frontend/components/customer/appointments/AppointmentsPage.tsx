@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ITEMS_PER_PAGE } from "@/components/ui/pagination-controls";
 import Link from "next/link";
 
 import AppointmentCard from "@/components/customer/appointments/AppointmentCard";
@@ -19,23 +20,22 @@ export default function AppointmentsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(() => {
-    setLoading(true);
-    getCustomerAppointments({ page, per_page: 9 })
+  const reload = useCallback((showLoading = true) => {
+    if (showLoading) setLoading(true);
+    getCustomerAppointments({ page, per_page: ITEMS_PER_PAGE })
       .then((response) => {
         setAppointments(response.data);
         setMeta(response.meta);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => setLoading(false));
   }, [page]);
 
   useEffect(() => {
-    void Promise.resolve().then(reload);
+    void Promise.resolve().then(() => reload());
   }, [reload]);
 
-  useRealtimeRefresh(() => {
-    reload();
-  }, ["appointment", "quotation"]);
+  useRealtimeRefresh(() => reload(false), ["appointment", "quotation", "work_job"]);
 
   return (
     <>

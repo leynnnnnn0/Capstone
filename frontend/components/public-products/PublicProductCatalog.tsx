@@ -8,12 +8,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Footer from "@/components/landing/Footer";
 import Navbar from "@/components/landing/Navbar";
 import PublicPageHero from "@/components/landing/PublicPageHero";
-import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
+import { ITEMS_PER_PAGE, PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NativeShimmerImage } from "@/components/ui/shimmer-image";
 import { fetchCategories, fetchProducts } from "@/features/products/product-api";
 import type { Category, Product } from "@/features/products/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   formatCurrency,
   productCategories,
@@ -87,14 +86,10 @@ function categorySlug(name: string) {
 
 const CATALOG_SCROLL_PREFIX = "sog_products_scroll:";
 const CATALOG_SCROLL_RETURN_KEY = "sog_products_scroll_return";
-const MOBILE_PRODUCTS_PER_PAGE = 4;
-const DESKTOP_PRODUCTS_PER_PAGE = 12;
 
 export default function PublicProductCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
-  const productsPerPage = isMobile ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE;
   const requestedCategoryId = searchParams.get("category_id") ?? "";
   const requestedCategorySlug = searchParams.get("category") ?? "";
   const activeHas3dModel = searchParams.get("has_3d_model") === "1" ? "1" : "";
@@ -144,7 +139,7 @@ export default function PublicProductCatalog() {
           return Promise.all([
             fetchProducts({
               is_active: "1",
-              per_page: String(productsPerPage),
+              per_page: String(ITEMS_PER_PAGE),
               page: String(activePage),
               category_id: resolvedCategoryId,
               search: activeSearch,
@@ -171,7 +166,7 @@ export default function PublicProductCatalog() {
     return () => {
       mounted = false;
     };
-  }, [activeHas3dModel, activePage, activeSearch, productsPerPage, requestedCategoryId, requestedCategorySlug]);
+  }, [activeHas3dModel, activePage, activeSearch, requestedCategoryId, requestedCategorySlug]);
 
   useEffect(() => {
     queueMicrotask(() => setSearch(activeSearch));

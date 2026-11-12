@@ -4,6 +4,8 @@ import type { AdminUser, AdminUserForm, UserCollection, UserOptions } from "./ty
 type ResourceResponse<T> = { data: T };
 
 export type AdminUserFilters = {
+  page?: string;
+  per_page?: string;
   search?: string;
   role?: string;
   email_status?: string;

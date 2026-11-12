@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateField } from "@/components/ui/date-field";
-import { PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
+import { ITEMS_PER_PAGE, PaginationControls, type PaginationMeta } from "@/components/ui/pagination-controls";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFrame, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,7 +38,7 @@ export default function AdminAuditsPage() {
       setLoading(true);
       fetchAudits({
         page,
-        per_page: 25,
+        per_page: ITEMS_PER_PAGE,
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
         ...(event !== "all" ? { event } : {}),
         ...(recordType !== "all" ? { auditable_type: recordType } : {}),

@@ -12,11 +12,10 @@ import LivePriceBar from "@/components/quote/LivePriceBar";
 import OptionGroupPicker from "@/components/quote/OptionGroupPicker";
 import QuoteProductCard from "@/components/quote/QuoteProductCard";
 import VariantPicker from "@/components/quote/VariantPicker";
-import { PaginationControls } from "@/components/ui/pagination-controls";
+import { ITEMS_PER_PAGE, PaginationControls } from "@/components/ui/pagination-controls";
 import type { Category, Product, ProductVariant } from "@/features/products/types";
 import { productCategories as categoriesForProduct } from "@/features/products/product-utils";
 import type { QuoteCartItem, QuoteDraft, SizeMode } from "@/features/quotes/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   createQuoteDraft,
   createQuoteId,
@@ -27,8 +26,6 @@ import {
   quoteProductImage,
 } from "@/features/quotes/quote-utils";
 
-const MOBILE_PRODUCTS_PER_PAGE = 4;
-const DESKTOP_PRODUCTS_PER_PAGE = 12;
 
 export default function ProductConfigurator({
   products,
@@ -53,8 +50,6 @@ export default function ProductConfigurator({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
-  const productsPerPage = isMobile ? MOBILE_PRODUCTS_PER_PAGE : DESKTOP_PRODUCTS_PER_PAGE;
   const activeCategory = searchParams.get("category_id") ?? "";
   const activeSearch = searchParams.get("q") ?? "";
   const initialProduct = products[0] ?? null;
@@ -122,12 +117,12 @@ export default function ProductConfigurator({
     });
   }, [activeCategory, products, search]);
 
-  const filterKey = JSON.stringify([activeCategory, search.trim().toLowerCase(), productsPerPage]);
-  const lastPage = Math.max(1, Math.ceil(visibleProducts.length / productsPerPage));
+  const filterKey = JSON.stringify([activeCategory, search.trim().toLowerCase()]);
+  const lastPage = Math.max(1, Math.ceil(visibleProducts.length / ITEMS_PER_PAGE));
   const currentPage = pagination.filter === filterKey ? Math.min(pagination.page, lastPage) : 1;
   const pageProducts = visibleProducts.slice(
-    (currentPage - 1) * productsPerPage,
-    currentPage * productsPerPage,
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
   );
 
   const ready = draft ? isQuoteDraftReady(draft) : false;
@@ -281,7 +276,7 @@ export default function ProductConfigurator({
             meta={{
               current_page: currentPage,
               last_page: lastPage,
-              per_page: productsPerPage,
+              per_page: ITEMS_PER_PAGE,
               total: visibleProducts.length,
             }}
             onPageChange={(page) => setPagination({ page, filter: filterKey })}

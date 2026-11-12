@@ -93,6 +93,7 @@ class RealtimeNotificationService
             'type' => 'work_job',
             'action' => $action,
             'id' => $workJob->id,
+            'appointment_id' => $workJob->appointment_id,
             'parent_work_job_id' => $workJob->parent_work_job_id,
             'number' => $workJob->work_job_number,
         ]);
@@ -175,6 +176,7 @@ class RealtimeNotificationService
             'type' => 'work_job',
             'action' => 'payment_paid',
             'id' => $workJob->id,
+            'appointment_id' => $workJob->appointment_id,
             'number' => $workJob->work_job_number,
         ]);
     }
@@ -216,6 +218,7 @@ class RealtimeNotificationService
             'type' => 'work_job',
             'action' => 'payment_refunded',
             'id' => $workJob->id,
+            'appointment_id' => $workJob->appointment_id,
             'payment_id' => $payment->id,
             'refund_id' => $refund->id,
             'number' => $workJob->work_job_number,

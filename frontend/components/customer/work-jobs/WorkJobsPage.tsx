@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { ITEMS_PER_PAGE } from "@/components/ui/pagination-controls";
 import WorkJobCard from "@/components/customer/work-jobs/WorkJobCard";
 import { customerPanelClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerPageHeader from "@/components/customer/shared/CustomerPageHeader";
@@ -18,23 +19,22 @@ export default function WorkJobsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const reload = useCallback(() => {
-    setLoading(true);
-    getCustomerWorkJobs({ page, per_page: 9 })
+  const reload = useCallback((showLoading = true) => {
+    if (showLoading) setLoading(true);
+    getCustomerWorkJobs({ page, per_page: ITEMS_PER_PAGE })
       .then((response) => {
         setWorkJobs(response.data);
         setMeta(response.meta);
       })
+      .catch(() => { /* Keep the last successful snapshot. */ })
       .finally(() => setLoading(false));
   }, [page]);
 
   useEffect(() => {
-    void Promise.resolve().then(reload);
+    void Promise.resolve().then(() => reload());
   }, [reload]);
 
-  useRealtimeRefresh(() => {
-    reload();
-  }, ["work_job"]);
+  useRealtimeRefresh(() => reload(false), ["work_job", "appointment"]);
 
   return (
     <>

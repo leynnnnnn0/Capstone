@@ -1,15 +1,16 @@
 "use client";
 
-import { customerPanelClass, customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BriefcaseBusiness, CalendarDays, Clock, FileText, UserRoundCheck, Wrench } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, Clock, CreditCard, Factory, FileText, History, LayoutList, ShieldCheck, UserRoundCheck, Wrench } from "lucide-react";
+import { Tabs } from "radix-ui";
 
+import CustomerRecordTabs, { customerRecordTabPanelClass } from "@/components/customer/shared/CustomerRecordTabs";
 import CustomerActivityLog from "@/components/customer/shared/CustomerActivityLog";
 import CustomerContactLocationSheet from "@/components/customer/shared/CustomerContactLocationSheet";
-import CustomerDetailAccordion from "@/components/customer/shared/CustomerDetailAccordion";
 import CustomerQuoteSummary from "@/components/customer/shared/CustomerQuoteSummary";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import CustomerWorkJobBackJobsCard from "@/components/customer/work-jobs/CustomerWorkJobBackJobsCard";
@@ -18,19 +19,33 @@ import CustomerWorkJobPaymentCard from "@/components/customer/work-jobs/Customer
 import CustomerWorkJobRatingCard from "@/components/customer/work-jobs/CustomerWorkJobRatingCard";
 import { Button } from "@/components/ui/button";
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
+import WorkJobProgress from "@/components/work-jobs/WorkJobProgress";
 import WorkJobWarrantyCard from "@/components/work-jobs/WorkJobWarrantyCard";
 import { getCustomerWorkJob } from "@/features/customer/customer-api";
 import { formatCustomerDate, formatCustomerSchedule } from "@/features/customer/customer-utils";
 import { CustomerStatus, statusIn } from "@/features/customer/status";
 import type { CustomerWorkJob } from "@/features/customer/types";
+import { affectsWorkJob } from "@/features/notifications/record-changes";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
+import { cn } from "@/lib/utils";
+
+const workJobTabs = [
+  { value: "overview", label: "Overview", icon: LayoutList },
+  { value: "fabrication", label: "Fabrication", icon: Factory },
+  { value: "quotation", label: "Quotation", icon: FileText },
+  { value: "payments", label: "Payments", icon: CreditCard },
+  { value: "aftercare", label: "Aftercare", icon: ShieldCheck },
+  { value: "activity", label: "Activity", icon: History },
+];
 
 export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) {
   const router = useRouter();
   const [workJob, setWorkJob] = useState<CustomerWorkJob | null>(null);
 
   const reload = useCallback(() => {
-    getCustomerWorkJob(workJobId).then((response) => setWorkJob(response.data));
+    getCustomerWorkJob(workJobId)
+      .then((response) => setWorkJob(response.data))
+      .catch(() => { /* Keep the last successful snapshot. */ });
   }, [workJobId]);
 
   useEffect(() => {
@@ -38,13 +53,8 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
   }, [reload]);
 
   useRealtimeRefresh((payload) => {
-    if (
-      payload.id === Number(workJobId) ||
-      payload.parent_work_job_id === Number(workJobId)
-    ) {
-      reload();
-    }
-  }, ["work_job"]);
+    if (affectsWorkJob(payload, Number(workJobId), workJob)) reload();
+  }, ["appointment", "quotation", "work_job"]);
 
   if (!workJob) {
     return <DetailPageSkeleton customer />;
@@ -58,6 +68,9 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
     !statusIn(workJob.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]) &&
     !statusIn(workJob.appointment?.status, [CustomerStatus.Cancelled, CustomerStatus.NoShow]);
   const hasBackJobs = Boolean(workJob.parent_work_job || workJob.back_jobs?.length);
+  const newestRemarks = [...workJob.remarks].sort(
+    (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || b.id - a.id,
+  );
 
   return (
     <>
@@ -69,13 +82,15 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
           >
             Back
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Work job details
-          </h1>
-          <p className="mt-1 break-all text-sm text-muted-foreground">{workJob.work_job_number}</p>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+              {workJob.work_job_number}
+            </h1>
+            <CustomerStatusBadge status={workJob.status} />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{workJob.full_name}</p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <CustomerStatusBadge status={workJob.status} />
           <CustomerContactLocationSheet
             fullName={workJob.full_name}
             phoneNumber={workJob.phone_number}
@@ -87,51 +102,55 @@ export default function WorkJobDetailPage({ workJobId }: { workJobId: string }) 
         </div>
       </div>
 
-      <div className="grid min-w-0 w-full max-w-full grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_clamp(400px,34%,480px)]">
-        <section className={`${customerPanelClass} min-w-0 self-start space-y-5`}>
-          {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
-          <WorkJobInfoCard workJob={workJob} />
-        </section>
+      <WorkJobProgress workJob={workJob} remarks={newestRemarks} />
 
-        <aside className="min-w-0 space-y-4">
-          <CustomerDetailAccordion title="Fabrication progress">
-            <CustomerFabricationProgressCard workJob={workJob} />
-          </CustomerDetailAccordion>
+      <Tabs.Root defaultValue="overview" key={workJob.id} className="mt-5 min-w-0">
+        <CustomerRecordTabs label="Work job details" tabs={workJobTabs} />
 
-          {hasBackJobs && <CustomerDetailAccordion title="Back job updates">
-            <CustomerWorkJobBackJobsCard workJob={workJob} />
-          </CustomerDetailAccordion>}
-
-          <CustomerDetailAccordion title="Warranty record">
-            <WorkJobWarrantyCard workJob={workJob} customer />
-          </CustomerDetailAccordion>
-
-          <CustomerDetailAccordion title="Customer satisfaction">
-            <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
-          </CustomerDetailAccordion>
-
-          <CustomerDetailAccordion title="Payments">
-            <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
-          </CustomerDetailAccordion>
-
-          <CustomerDetailAccordion title="Quotation">
-            <CustomerQuoteSummary
-              quotation={quotation}
-              signerName={workJob.full_name}
-              canSign={quotationCanBeSigned}
-              canDownload={quotationCanBeDownloaded}
-              onSigned={reload}
-            />
-          </CustomerDetailAccordion>
-
-          <CustomerDetailAccordion title="Activity log">
+        <Tabs.Content value="overview" className={customerRecordTabPanelClass}>
+          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
+            <div className="min-w-0 space-y-4">
+              <WorkJobInfoCard workJob={workJob} />
+              {workJob.appointment && <LinkedAppointmentCard workJob={workJob} />}
+            </div>
             <CustomerActivityLog
-              remarks={workJob.remarks}
+              remarks={newestRemarks.slice(0, 3)}
               emptyDescription="Updates from this work job will appear here."
             />
-          </CustomerDetailAccordion>
-        </aside>
-      </div>
+          </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="fabrication" className={customerRecordTabPanelClass}>
+          <CustomerFabricationProgressCard workJob={workJob} />
+        </Tabs.Content>
+
+        <Tabs.Content value="quotation" className={customerRecordTabPanelClass}>
+          <CustomerQuoteSummary
+            quotation={quotation}
+            signerName={workJob.full_name}
+            canSign={quotationCanBeSigned}
+            canDownload={quotationCanBeDownloaded}
+            onSigned={reload}
+          />
+        </Tabs.Content>
+
+        <Tabs.Content value="payments" className={customerRecordTabPanelClass}>
+          <CustomerWorkJobPaymentCard workJob={workJob} onPaid={setWorkJob} />
+        </Tabs.Content>
+
+        <Tabs.Content value="aftercare" className={cn(customerRecordTabPanelClass, "space-y-4")}>
+          {hasBackJobs && <CustomerWorkJobBackJobsCard workJob={workJob} />}
+          <WorkJobWarrantyCard workJob={workJob} customer />
+          <CustomerWorkJobRatingCard workJob={workJob} onSaved={setWorkJob} />
+        </Tabs.Content>
+
+        <Tabs.Content value="activity" className={customerRecordTabPanelClass}>
+          <CustomerActivityLog
+            remarks={newestRemarks}
+            emptyDescription="Updates from this work job will appear here."
+          />
+        </Tabs.Content>
+      </Tabs.Root>
     </>
   );
 }

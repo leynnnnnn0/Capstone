@@ -12,10 +12,19 @@ import type { ComponentType, ReactNode } from "react";
 import { formatAdminDate } from "@/features/admin-appointments/admin-appointment-utils";
 import type { AdminAppointment } from "@/features/admin-appointments/types";
 
-export default function AdminAppointmentDetailsCard({ appointment }: { appointment: AdminAppointment }) {
+export default function AdminAppointmentDetailsCard({
+  appointment,
+  action,
+}: {
+  appointment: AdminAppointment;
+  action?: ReactNode;
+}) {
   return (
     <div className="rounded-lg border bg-card p-5 shadow-sm">
-      <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">Appointment Details</h2>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-primary">Appointment Details</h2>
+        {action}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Detail icon={User} label="Customer">{appointment.full_name}</Detail>
         <Detail icon={Phone} label="Phone">{appointment.phone_number}</Detail>

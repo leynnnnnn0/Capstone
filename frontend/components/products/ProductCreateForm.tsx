@@ -25,7 +25,6 @@ import {
   Product3DModelUploader,
   ProductSummaryCard,
   ProductWarrantyCard,
-  VariantEditor,
 } from "@/components/products/ProductFormParts";
 import { createProduct } from "@/features/products/product-api";
 import { validateProductForm } from "@/features/products/product-schema";
@@ -143,12 +142,6 @@ export default function ProductCreateForm({ categories }: { categories: Category
             onChange={setBasicField}
           />
 
-          <VariantEditor
-            variants={data.variants}
-            errors={errors}
-            onChange={(variants) => setField("variants", variants)}
-          />
-
           <OptionGroupEditor
             groups={data.option_groups}
             errors={errors}
@@ -203,7 +196,6 @@ export default function ProductCreateForm({ categories }: { categories: Category
             unit={data.unit}
             price={data.price_per_unit}
             categories={data.category_ids}
-            variants={data.variants.length}
             optionGroups={data.option_groups.length}
             images={data.images.length}
             model3D={Boolean(data.model_3d)}
@@ -229,7 +221,7 @@ export default function ProductCreateForm({ categories }: { categories: Category
           <AlertDialogHeader>
             <AlertDialogTitle>Create product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will add the product, warranty policy, variants, option groups, images, and 3D model to the catalog.
+              This will add the product, warranty policy, option groups, images, and 3D model to the catalog.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { AdminTableSearch } from "@/components/ui/admin-table-search";
 import { AdminMobileRecord } from "@/components/ui/admin-mobile-record";
 import { DateField } from "@/components/ui/date-field";
+import { ITEMS_PER_PAGE, PaginationControls } from "@/components/ui/pagination-controls";
 import { TableSkeletonRows } from "@/components/ui/page-skeletons";
 import {
   Select,
@@ -52,12 +53,10 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [emailStatus, setEmailStatus] = useState("all");
-  const [phoneStatus, setPhoneStatus] = useState("all");
-  const [twoFactor, setTwoFactor] = useState("all");
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [refresh, setRefresh] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const debouncedSearch = useDebouncedValue(search.trim());
@@ -65,17 +64,18 @@ export default function AdminUsersPage() {
     search: debouncedSearch,
     role,
     email_status: emailStatus,
-    phone_status: phoneStatus,
-    two_factor: twoFactor,
     created_from: createdFrom,
     created_to: createdTo,
-  }), [createdFrom, createdTo, debouncedSearch, emailStatus, phoneStatus, role, twoFactor]);
+  }), [createdFrom, createdTo, debouncedSearch, emailStatus, role]);
+  const [pagination, setPagination] = useState({ filters: userFilters, page: 1 });
+  const page = pagination.filters === userFilters ? pagination.page : 1;
+  const request = useMemo(() => ({ filters: userFilters, page, refresh }), [userFilters, page, refresh]);
+  const [settledRequest, setSettledRequest] = useState<typeof request | null>(null);
+  const loading = settledRequest !== request;
   const hasFilters = Boolean(
     search ||
     role !== "all" ||
     emailStatus !== "all" ||
-    phoneStatus !== "all" ||
-    twoFactor !== "all" ||
     createdFrom ||
     createdTo,
   );
@@ -91,18 +91,31 @@ export default function AdminUsersPage() {
   useEffect(() => {
     let active = true;
 
-    fetchAdminUsers(userFilters)
+    fetchAdminUsers({ ...request.filters, page: String(request.page), per_page: String(ITEMS_PER_PAGE) })
       .then((next) => {
-        if (active) setResponse(next);
+        if (!active) return;
+
+        if (next.meta && request.page > next.meta.last_page) {
+          setPagination({ filters: request.filters, page: next.meta.last_page });
+          return;
+        }
+
+        setResponse(next);
+      })
+      .catch((error) => {
+        if (!active) return;
+
+        setResponse(null);
+        toast.error(error instanceof Error ? error.message : "Unable to load users.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setSettledRequest(request);
       });
 
     return () => {
       active = false;
     };
-  }, [userFilters]);
+  }, [request]);
 
   async function remove() {
     if (!deleteTarget) return;
@@ -112,7 +125,7 @@ export default function AdminUsersPage() {
       await deleteAdminUser(deleteTarget.id);
       toast.success("User deleted successfully.");
       setDeleteTarget(null);
-      setResponse(await fetchAdminUsers(userFilters));
+      setRefresh((value) => value + 1);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete user.");
     } finally {
@@ -175,8 +188,6 @@ export default function AdminUsersPage() {
                 setSearch("");
                 setRole("all");
                 setEmailStatus("all");
-                setPhoneStatus("all");
-                setTwoFactor("all");
                 setCreatedFrom("");
                 setCreatedTo("");
               }} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
@@ -191,8 +202,6 @@ export default function AdminUsersPage() {
           <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
             <UserFilter label="Role" value={role} onChange={setRole} options={[["all", "All roles"], ...options.roles.map((item) => [item, adminUserRoleLabels[item] ?? item] as [string, string])]} />
             <UserFilter label="Email" value={emailStatus} onChange={setEmailStatus} options={[["all", "Any verification status"], ["verified", "Verified"], ["unverified", "Unverified"]]} />
-            <UserFilter label="Phone number" value={phoneStatus} onChange={setPhoneStatus} options={[["all", "Any"], ["available", "Has phone number"], ["missing", "Missing phone number"]]} />
-            <UserFilter label="Two-factor authentication" value={twoFactor} onChange={setTwoFactor} options={[["all", "Any"], ["enabled", "Enabled"], ["disabled", "Disabled"]]} />
             <UserDateFilter label="Created from" value={createdFrom} onChange={setCreatedFrom} />
             <UserDateFilter label="Created to" value={createdTo} onChange={setCreatedTo} />
           </div>
@@ -263,6 +272,14 @@ export default function AdminUsersPage() {
           </TableBody>
         </Table>
       </TableFrame>
+
+      {response?.meta && response.meta.total > 0 && (
+        <PaginationControls
+          meta={response.meta}
+          loading={loading || deleting}
+          onPageChange={(nextPage) => setPagination({ filters: userFilters, page: nextPage })}
+        />
+      )}
 
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>

@@ -24,6 +24,7 @@ import { fetchAdminWorkJobs } from "@/features/admin-work-jobs/admin-work-job-ap
 import { formatWorkJobSchedule, workJobStatusLabel } from "@/features/admin-work-jobs/admin-work-job-utils";
 import type { AdminWorkJob } from "@/features/admin-work-jobs/types";
 import type { User } from "@/types/user";
+import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 const chartConfig = {
   count: { label: "Assigned", color: "#5f87b5" },
@@ -33,18 +34,34 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [workJobs, setWorkJobs] = useState<AdminWorkJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
+    let active = true;
+
     Promise.all([
       fetchAdminAppointments({ per_page: "250" }),
       fetchAdminWorkJobs({ per_page: "250" }),
     ])
       .then(([appointmentResponse, workJobResponse]) => {
+        if (!active) return;
+
         setAppointments(appointmentResponse.data);
         setWorkJobs(workJobResponse.data);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => {
+        // Keep the last successful snapshot until the next refresh.
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [revision]);
+
+  useRealtimeRefresh(() => setRevision((value) => value + 1), ["appointment", "work_job"]);
 
   const metrics = useMemo(() => buildWorkerMetrics(appointments, workJobs), [appointments, workJobs]);
 

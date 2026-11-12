@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import AdminDetailTabs from "@/components/admin/AdminDetailTabs";
 import AdminActivityLog from "@/components/admin-appointments/AdminActivityLog";
 import AdminAppointmentDetailsCard from "@/components/admin-appointments/AdminAppointmentDetailsCard";
 import AdminAppointmentHeader from "@/components/admin-appointments/AdminAppointmentHeader";
@@ -17,6 +18,7 @@ import { hasRole } from "@/features/auth/current-user-api";
 import { CustomerStatus } from "@/features/customer/status";
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { affectsAppointment } from "@/features/notifications/record-changes";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 export default function AdminAppointmentShowPage({ appointmentId }: { appointmentId: string }) {
@@ -26,14 +28,14 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
   const [quotationOpen, setQuotationOpen] = useState(false);
 
   const reload = useCallback(() => {
-    fetchAdminAppointment(appointmentId).then((response) => setAppointment(response.data));
+    fetchAdminAppointment(appointmentId)
+      .then((response) => setAppointment(response.data))
+      .catch(() => { /* Keep the last successful snapshot. */ });
   }, [appointmentId]);
 
   useRealtimeRefresh((payload) => {
-    if (payload.id === Number(appointmentId) || payload.appointment_id === Number(appointmentId)) {
-      reload();
-    }
-  }, ["appointment", "quotation"]);
+    if (affectsAppointment(payload, Number(appointmentId), appointment?.work_job)) reload();
+  }, ["appointment", "quotation", "work_job"]);
 
   useEffect(() => {
     reload();
@@ -44,6 +46,7 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
     return <DetailPageSkeleton />;
   }
 
+  const isPending = appointment.status === CustomerStatus.Pending;
   const isWorker = hasRole(user, "staff");
   const quotationCanBeDownloaded = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
   const quotationCanBeSigned = ![CustomerStatus.Cancelled, CustomerStatus.NoShow].includes(appointment.status);
@@ -52,39 +55,68 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
     <div className="space-y-6">
       <AdminAppointmentHeader
         appointment={appointment}
+        onUpdated={setAppointment}
+        quotationOpen={quotationOpen}
         onOpenQuotation={() => setQuotationOpen(true)}
       />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <AdminAppointmentDetailsCard appointment={appointment} />
-          <CustomerLocationCard
-            address={appointment.address}
-            addressLat={appointment.address_lat}
-            addressLng={appointment.address_lng}
-            compact
-          />
-        </div>
-        <aside className="space-y-4">
-          {!isWorker && <AdminProceedToWorkJob appointment={appointment} />}
-          <AdminStatusActions
-            appointment={appointment}
-            onUpdated={setAppointment}
-          />
-          <AdminScheduleForm
-            appointment={appointment}
-            workers={workers}
-            onUpdated={setAppointment}
-            readOnly={isWorker}
-          />
-
-          <AdminQuotationDetails
-            quotation={appointment.quotation}
-            canDownload={quotationCanBeDownloaded}
-            canSign={quotationCanBeSigned}
-          />
-          <AdminActivityLog remarks={appointment.remarks} />
-        </aside>
-      </div>
+      <AdminDetailTabs
+        label="Appointment details"
+        attentionTab={isPending ? "schedule" : undefined}
+        tabs={[
+          {
+            value: "overview",
+            label: "Overview",
+            content: (
+              <div className="grid items-start gap-6 lg:grid-cols-2">
+                <AdminAppointmentDetailsCard
+                  appointment={appointment}
+                  action={!isWorker && <AdminProceedToWorkJob appointment={appointment} />}
+                />
+                <CustomerLocationCard
+                  address={appointment.address}
+                  addressLat={appointment.address_lat}
+                  addressLng={appointment.address_lng}
+                  compact
+                />
+              </div>
+            ),
+          },
+          {
+            value: "schedule",
+            label: "Schedule",
+            content: (
+              <AdminScheduleForm
+                appointment={appointment}
+                workers={workers}
+                onUpdated={setAppointment}
+                readOnly={isWorker}
+              />
+            ),
+          },
+          ...(!isPending ? [{
+            value: "status",
+            label: "Status",
+            content: <AdminStatusActions appointment={appointment} onUpdated={setAppointment} />,
+          }] : []),
+          {
+            value: "quotation",
+            label: "Quotation",
+            content: (
+              <AdminQuotationDetails
+                quotation={appointment.quotation}
+                canDownload={quotationCanBeDownloaded}
+                canSign={quotationCanBeSigned}
+                collapsible={false}
+              />
+            ),
+          },
+          {
+            value: "activity",
+            label: "Activity",
+            content: <AdminActivityLog remarks={appointment.remarks} />,
+          },
+        ]}
+      />
       <AdminQuotationEditor
         appointment={appointment}
         open={quotationOpen}
