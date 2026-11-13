@@ -12,17 +12,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 
 import { UserInfo } from "./user-info";
 import { UserMenuContent } from "./user-menu-content";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function NavUser() {
-  const { state } = useSidebar();
-  const isMobile = useIsMobile();
   const { user: currentUser } = useCurrentUser();
   const user = {
     ...currentUser,
@@ -42,19 +38,19 @@ export function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="group h-auto gap-2 p-0 text-[#2d425b] hover:bg-transparent data-[state=open]:bg-transparent"
+              aria-label="Account menu"
+              className="h-11 gap-2 rounded-full bg-card px-2 text-foreground sm:pr-3 [&>div:nth-child(2)]:hidden sm:[&>div:nth-child(2)]:grid"
             >
               <UserInfo user={user} showEmail />
-              <ChevronsUpDown className="ml-auto size-4 text-[#52708b]" />
+              <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             align="end"
-            side={
-              isMobile ? "bottom" : state === "collapsed" ? "left" : "bottom"
-            }
+            side="bottom"
+            sideOffset={8}
           >
             <UserMenuContent user={user} />
           </DropdownMenuContent>

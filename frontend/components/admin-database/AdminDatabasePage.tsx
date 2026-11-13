@@ -144,14 +144,14 @@ function DatabaseManager({ onPasswordExpired }: { onPasswordExpired: () => void 
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-3xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Database</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">Create secure snapshots and restore the system from an earlier backup.</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Database</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">Create secure snapshots and restore the system from an earlier backup.</p>
           </div>
           <Button
             type="button"
             variant="default"
             size="lg"
-            className="bg-[#2d425b] text-white hover:bg-[#23364b]"
+            className="bg-primary text-white hover:bg-primary/85"
             onClick={createBackup}
             disabled={creating || restoring}
           >
@@ -185,7 +185,7 @@ function DatabaseManager({ onPasswordExpired }: { onPasswordExpired: () => void 
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-[#162d4a]">{backup.filename}</p>
+                        <p className="truncate text-sm font-semibold text-foreground">{backup.filename}</p>
                         {backup.reason === "pre_restore" && <Badge variant="outline">Safety backup</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">

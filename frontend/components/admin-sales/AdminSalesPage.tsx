@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./AdminSalesPage.module.css";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
@@ -169,11 +171,11 @@ export default function AdminSalesPage() {
   const activeFilters = Boolean(filters.date_from || filters.date_to || filters.group_by === "month");
 
   return (
-    <div className="space-y-10">
-      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-6">
+      <section className="flex flex-col gap-5 pb-2 sm:gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Sales report</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+          <h1 className="staff-overview-title font-semibold text-foreground">Sales report</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
             Track paid sales, pending collections, outstanding balances, and top revenue drivers.
           </p>
         </div>
@@ -233,31 +235,49 @@ export default function AdminSalesPage() {
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
-        <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} description="revenue after refunds" />
-        <MetricCard label="Paid Sales" value={formatPeso(summary?.gross_sales ?? 0)} icon={WalletCards} description="settled customer payments" />
-        <MetricCard label="Outstanding" value={formatPeso(summary?.outstanding_amount ?? 0)} icon={BriefcaseBusiness} description="remaining work job balance" />
-        <MetricCard label="Pending" value={formatPeso(summary?.pending_amount ?? 0)} icon={ReceiptText} description="awaiting settlement" />
-      </section>
-
-      <SalesSectionHeading
-        eyebrow="Revenue performance"
-        title="Revenue performance"
-        description="Paid and pending revenue by period, channel, and product."
-      />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-        <Card>
+      <section aria-label="Sales overview" className="grid items-start gap-4 xl:grid-cols-[minmax(18rem,1fr)_minmax(0,2fr)]">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <AdminSummaryCard
+            className={`sales-metric ${styles.metric} ${styles.lead}`}
+            label="Net Sales"
+            value={loading || !summary ? "—" : formatPeso(summary.net_sales)}
+            icon={TrendingUp}
+            tone="blue"
+            description="Settled revenue after refunds"
+          />
+          <AdminSummaryCard
+            className={`sales-metric ${styles.metric}`}
+            label="Paid Sales"
+            value={loading || !summary ? "—" : formatPeso(summary.gross_sales)}
+            icon={WalletCards}
+            description="Settled payments before refunds"
+          />
+          <AdminSummaryCard
+            className={`sales-metric ${styles.metric}`}
+            label="Outstanding"
+            value={loading || !summary ? "—" : formatPeso(summary.outstanding_amount)}
+            icon={BriefcaseBusiness}
+            description="Remaining work job balance"
+          />
+          <AdminSummaryCard
+            className={`sales-metric ${styles.metric}`}
+            label="Pending"
+            value={loading || !summary ? "—" : formatPeso(summary.pending_amount)}
+            icon={ReceiptText}
+            description="Awaiting settlement"
+          />
+        </div>
+        <Card className="flex flex-col xl:self-stretch">
           <SalesPanelHeading
             eyebrow="Cash flow"
             title="Sales Trend"
             description={`Paid and pending amounts by ${filters.group_by === "month" ? "month" : "day"}.`}
             icon={TrendingUp}
           />
-          <CardContent>
-            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
+          <CardContent className="flex flex-1 flex-col">
+            <div className="staff-chart-panel flex flex-1 flex-col justify-center">
               {loading ? <ChartLoading /> : report?.charts.sales_by_period.length ? (
-                <ChartContainer config={trendChartConfig} className="h-[220px] w-full sm:h-[240px] xl:h-[260px]">
+                <ChartContainer config={trendChartConfig} className="h-[220px] w-full sm:h-[240px] xl:h-[clamp(17rem,23vw,23rem)]">
                   <AreaChart data={report.charts.sales_by_period} margin={{ left: 0, right: 8, top: 12 }}>
                   <defs>
                     <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
@@ -283,7 +303,9 @@ export default function AdminSalesPage() {
             </div>
           </CardContent>
         </Card>
+      </section>
 
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(0,2fr)]">
         <Card>
           <SalesPanelHeading eyebrow="Channels" title="Payment Methods" description="Revenue split by payment channel." icon={WalletCards} />
           <CardContent>
@@ -315,7 +337,15 @@ export default function AdminSalesPage() {
             </div>
           </CardContent>
         </Card>
+        <RecentPaymentsTable payments={report?.tables.recent_payments ?? []} loading={loading} />
       </div>
+
+      <OutstandingTable rows={report?.tables.outstanding_work_jobs ?? []} loading={loading} />
+
+      <SalesSectionHeading
+        title="What drove sales"
+        description="See which payment types, products, customers, and work jobs contributed."
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
@@ -370,23 +400,12 @@ export default function AdminSalesPage() {
         </Card>
       </div>
 
-      <SalesSectionHeading
-        eyebrow="Revenue activity"
-        title="Revenue activity"
-        description="Recent payments, leading customers, and outstanding balances."
+      <TopLists
+        customers={report?.tables.top_customers ?? []}
+        workJobs={report?.tables.top_work_jobs ?? []}
+        products={report?.charts.top_products ?? []}
+        loading={loading}
       />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
-        <RecentPaymentsTable payments={report?.tables.recent_payments ?? []} loading={loading} />
-        <TopLists
-          customers={report?.tables.top_customers ?? []}
-          workJobs={report?.tables.top_work_jobs ?? []}
-          products={report?.charts.top_products ?? []}
-          loading={loading}
-        />
-      </div>
-
-      <OutstandingTable rows={report?.tables.outstanding_work_jobs ?? []} loading={loading} />
     </div>
   );
 }
@@ -413,7 +432,6 @@ function SalesSectionHeading({
   title,
   description,
 }: {
-  eyebrow: string;
   title: string;
   description: string;
 }) {
@@ -443,32 +461,6 @@ function SalesPanelHeading({
       </div>
       <p className="text-sm text-muted-foreground">{description}</p>
     </CardHeader>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  icon: Icon,
-  description,
-}: {
-  label: string;
-  value: string;
-  icon: ComponentType<{ className?: string }>;
-  description: string;
-}) {
-  return (
-    <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
-      <div className="flex items-start justify-between gap-2 sm:gap-4">
-        <div>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">Sales</p>
-          <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
-        </div>
-        <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
-      </div>
-      <p className="mt-1 truncate text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{value}</p>
-      <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{description}</p>
-    </article>
   );
 }
 

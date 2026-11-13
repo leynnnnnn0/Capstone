@@ -1,32 +1,39 @@
-import type { ComponentType } from "react";
+import type { ComponentProps, ComponentType } from "react";
 
-export type SummaryTone = "blue" | "mist" | "light" | "slate";
+type SummaryProps = ComponentProps<"article"> & {
+  label: string;
+  value: number | string;
+  icon: ComponentType<{ className?: string }>;
+  tone?: "blue" | "mist" | "light" | "slate";
+  eyebrow?: string;
+  description?: string;
+};
+
+export type SummaryTone = NonNullable<SummaryProps["tone"]>;
 
 export default function AdminSummaryCard({
   label,
   value,
   icon: Icon,
-  eyebrow = "Operations",
+  tone,
+  eyebrow,
   description,
-}: {
-  label: string;
-  value: number | string;
-  icon: ComponentType<{ className?: string }>;
-  tone?: SummaryTone;
-  eyebrow?: string;
-  description?: string;
-}) {
+  className,
+  ...props
+}: SummaryProps) {
   return (
-    <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
-      <div className="flex items-start justify-between gap-2 sm:gap-4">
-        <div>
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">{eyebrow}</p>
-          <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
-        </div>
-        <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
+    <article {...props} className={className ? `staff-summary ${className}` : "staff-summary"} data-featured={tone === "blue"}>
+      <div className="min-w-0">
+        {eyebrow && <p className="staff-summary-description text-xs">{eyebrow}</p>}
+        <h2 className="break-words text-sm font-medium leading-tight">{label}</h2>
       </div>
-      <p className="mt-1 truncate text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl" title={String(value)}>{value}</p>
-      {description && <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{description}</p>}
+      <div className="staff-summary-value mt-auto flex min-w-0 items-center justify-between gap-2">
+        <p className="min-w-0 break-words text-xl font-semibold leading-tight tracking-tight tabular-nums sm:text-3xl">{value}</p>
+        <span className="staff-summary-icon size-7 shrink-0 sm:size-8">
+          <Icon className="size-4" />
+        </span>
+      </div>
+      {description && <p className="staff-summary-description text-xs leading-snug">{description}</p>}
     </article>
   );
 }

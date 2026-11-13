@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Pie,
   PieChart,
   Tooltip,
@@ -28,6 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
@@ -49,21 +49,21 @@ import type { CustomerQuotationItem } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 const statusChartConfig = {
-  count: { label: "Appointments", color: "#5f87b5" },
+  count: { label: "Appointments", color: "var(--primary)" },
 } satisfies ChartConfig;
 
 const revenueChartConfig = {
-  paid: { label: "Paid Collections", color: "#608DB9" },
-  pending: { label: "Pending Payments", color: "#9aabba" },
+  paid: { label: "Paid Collections", color: "var(--primary)" },
+  pending: { label: "Pending Payments", color: "#7b8795" },
 } satisfies ChartConfig;
 
 const workloadChartConfig = {
-  jobs: { label: "Assigned Jobs", color: "#608DB9" },
+  jobs: { label: "Assigned Jobs", color: "var(--primary)" },
 } satisfies ChartConfig;
 
-const pieColors = ["#162d4a", "#315b7d", "#608db9", "#83a8c5", "#a9c3d6", "#cbdbe7"];
+const pieColors = ["var(--primary)", "#537091", "#7694b3", "#a3bbd1", "#7b8795", "#c0cbd6"];
 
-export default function AdminDashboardPage() {
+export default function AdminDashboardPage({ firstName }: { firstName?: string }) {
   const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
   const [workJobs, setWorkJobs] = useState<AdminWorkJob[]>([]);
   const [payments, setPayments] = useState<AdminPayment[]>([]);
@@ -106,19 +106,19 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="space-y-10">
-      <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-6">
+      <section className="flex flex-col gap-5 pb-2 sm:gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">
-            SOG administration
+          <h1 className="staff-overview-title font-semibold text-foreground">
+            {firstName ? `Welcome back, ${firstName}` : "Operations overview"}
           </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-3 sm:text-base sm:leading-7">
             Monitor customer appointments, field work, collections, and daily operations from one workspace.
           </p>
         </div>
 
         <div className="flex shrink-0">
-          <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+          <Button asChild size="lg" className="h-11 gap-2 px-4">
             <Link href="/dashboard/appointments/create">
               <CalendarPlus className="size-4" />
               Create appointment
@@ -127,114 +127,126 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 sm:gap-x-7 xl:grid-cols-4">
-        <TooltipProvider>
-          <MetricCard
-            title="Collected Revenue"
-            value={peso(metrics.collectedRevenue)}
-            description="settled customer revenue"
-            icon={CircleDollarSign}
-            tooltip="Paid records from PayPal, cash, bank transfers, and additional charges."
-          />
-          <MetricCard
-            title="Paid Payments"
-            value={metrics.paidPayments.toString()}
-            description="completed collections"
-            icon={CreditCard}
-            tooltip="Payments currently marked as paid."
-          />
-          <MetricCard
-            title="Open Appointments"
-            value={metrics.openAppointments.toString()}
-            description="active customer bookings"
-            icon={ClipboardList}
-            tooltip="Appointments that are not completed, cancelled, or marked no show."
-          />
-          <MetricCard
-            title="Pending Review"
-            value={metrics.pendingAppointments.toString()}
-            description="awaiting admin confirmation"
-            icon={Clock3}
-            tooltip="Appointment requests waiting for review."
-          />
-          <MetricCard
-            title="Today's Schedule"
-            value={metrics.todayAppointments.toString()}
-            description="appointments scheduled today"
-            icon={CalendarCheck}
-            tooltip="Confirmed appointments and scheduled work jobs for today."
-          />
-          <MetricCard
-            title="Work Jobs Today"
-            value={metrics.todayWorkJobs.toString()}
-            description="scheduled field work"
-            icon={Wrench}
-            tooltip="Work jobs scheduled for today."
-          />
-          <MetricCard
-            title="No Show / Cancelled"
-            value={metrics.serviceRisks.toString()}
-            description="Bookings needing follow-up"
-            icon={TriangleAlert}
-            tooltip="Cancelled and no-show appointments that may need admin review."
-          />
-          <MetricCard
-            title="Additional Charges"
-            value={peso(metrics.additionalChargesPaid)}
-            description="settled add-on charges"
-            icon={ReceiptText}
-            tooltip="Additional charges that have been paid."
-          />
-        </TooltipProvider>
-      </section>
-
-      <DashboardSectionHeading title="Performance" description="Revenue, appointments, and staff workload." />
-
-      <div className="grid gap-4 xl:grid-cols-7">
-        <Card className="xl:col-span-4">
+      <section aria-label="Operations overview" className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="grid gap-3">
+          <TooltipProvider>
+            <MetricCard
+              featured
+              className="staff-review-metric"
+              title="Pending Review"
+              value={metrics.pendingAppointments.toString()}
+              description="awaiting admin confirmation"
+              icon={Clock3}
+              tooltip="Appointment requests waiting for review."
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard
+                title="Today's Schedule"
+                value={metrics.todayAppointments.toString()}
+                description="appointments scheduled today"
+                icon={CalendarCheck}
+                tooltip="Confirmed appointments and scheduled work jobs for today."
+              />
+              <MetricCard
+                title="Work Jobs Today"
+                value={metrics.todayWorkJobs.toString()}
+                description="scheduled field work"
+                icon={Wrench}
+                tooltip="Work jobs scheduled for today."
+              />
+              <MetricCard
+                title="Open Appointments"
+                value={metrics.openAppointments.toString()}
+                description="active customer bookings"
+                icon={ClipboardList}
+                tooltip="Appointments that are not completed, cancelled, or marked no show."
+              />
+              <MetricCard
+                title="No Show / Cancelled"
+                value={metrics.serviceRisks.toString()}
+                description="Bookings needing follow-up"
+                icon={TriangleAlert}
+                tooltip="Cancelled and no-show appointments that may need admin review."
+              />
+            </div>
+          </TooltipProvider>
+        </div>
+        <Card className="lg:self-stretch">
           <DashboardPanelHeading
             title="Collections Trend"
             description="Paid collections versus pending payment requests by month."
             icon={CircleDollarSign}
           />
           <CardContent>
-            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
+            <div className="staff-chart-panel">
               <ChartContainer config={revenueChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
-                <AreaChart data={metrics.collectionsByMonth} margin={{ left: 0, right: 8, top: 12 }}>
+                <BarChart data={metrics.collectionsByMonth} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} />
                   <YAxis width={42} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Number(value) / 1000}k`} />
                   <Tooltip content={<ChartTooltipContent />} />
-                  <Area dataKey="pending" type="monotone" fill="var(--color-pending)" fillOpacity={0.12} stroke="var(--color-pending)" />
-                  <Area dataKey="paid" type="monotone" fill="var(--color-paid)" fillOpacity={0.2} stroke="var(--color-paid)" />
-                </AreaChart>
+                  <Legend verticalAlign="top" iconType="circle" iconSize={8} />
+                  <Bar name={revenueChartConfig.paid.label} dataKey="paid" fill="var(--color-paid)" radius={[5, 5, 2, 2]} />
+                  <Bar name={revenueChartConfig.pending.label} dataKey="pending" fill="var(--color-pending)" radius={[5, 5, 2, 2]} />
+                </BarChart>
               </ChartContainer>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-3">
-          <DashboardPanelHeading
-            title="Appointment Status"
-            description="Current operational distribution."
-            icon={ClipboardList}
-          />
-          <CardContent>
-            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
-              <ChartContainer config={statusChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
-                <PieChart>
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Pie data={metrics.statusData} dataKey="count" nameKey="status" innerRadius={48} outerRadius={82} paddingAngle={3}>
-                    {metrics.statusData.map((entry, index) => (
-                      <Cell key={entry.status} fill={pieColors[index % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-            </div>
+      </section>
+
+      <DashboardSectionHeading title="Current operations" description="See what’s scheduled and which jobs are in progress." />
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <Card>
+          <DashboardPanelHeading title="Upcoming Appointments" description="Next confirmed schedules." icon={CalendarCheck} />
+          <CardContent className="space-y-2.5">
+            {metrics.upcomingAppointments.length ? metrics.upcomingAppointments.map((appointment) => (
+              <CompactSchedule key={appointment.id} title={appointment.full_name} code={appointment.appointment_number} date={formatAdminDate(appointment.appointment_date)} />
+            )) : (
+              <p className="text-sm text-muted-foreground">No confirmed appointments coming up.</p>
+            )}
           </CardContent>
         </Card>
+
+        <Card>
+          <DashboardPanelHeading title="Active Work Jobs" description="Installations and field work in motion." icon={Wrench} />
+          <CardContent className="space-y-2.5">
+            {metrics.activeWorkJobs.length ? metrics.activeWorkJobs.map((job) => (
+              <CompactSchedule key={job.id} title={job.full_name} code={job.work_job_number} date={formatAdminDate(job.scheduled_date)} />
+            )) : (
+              <p className="text-sm text-muted-foreground">No work jobs in progress.</p>
+            )}
+          </CardContent>
+        </Card>
+
       </div>
+
+      <DashboardSectionHeading title="Business performance" description="Collections, workload, and customer demand." />
+      <section aria-label="Collections totals" className="grid gap-3 sm:grid-cols-3">
+        <MetricCard
+          title="Collected Revenue"
+          value={peso(metrics.collectedRevenue)}
+          description="settled customer revenue"
+          icon={CircleDollarSign}
+          tooltip="Paid records from PayPal, cash, bank transfers, and additional charges."
+        />
+        <MetricCard
+          title="Paid Payments"
+          value={metrics.paidPayments.toString()}
+          description="completed collections"
+          icon={CreditCard}
+          tooltip="Payments currently marked as paid."
+        />
+        <MetricCard
+          title="Additional Charges"
+          value={peso(metrics.additionalChargesPaid)}
+          description="settled add-on charges"
+          icon={ReceiptText}
+          tooltip="Additional charges that have been paid."
+        />
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
@@ -244,7 +256,7 @@ export default function AdminDashboardPage() {
             icon={Wrench}
           />
           <CardContent>
-            <div className="rounded-md bg-muted/30 p-2 sm:p-4">
+            <div className="staff-chart-panel">
               <ChartContainer config={workloadChartConfig} className="h-[210px] sm:h-[230px]">
                 <BarChart data={metrics.workerLoad} margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -285,27 +297,28 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      <DashboardSectionHeading title="Current operations" description="Upcoming appointments, active work jobs, and service demand." />
-
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <DashboardPanelHeading title="Upcoming Appointments" description="Next confirmed schedules." icon={CalendarCheck} />
-          <CardContent className="space-y-2.5">
-            {metrics.upcomingAppointments.map((appointment) => (
-              <CompactSchedule key={appointment.id} title={appointment.full_name} code={appointment.appointment_number} date={formatAdminDate(appointment.appointment_date)} />
-            ))}
+          <DashboardPanelHeading
+            title="Appointment Status"
+            description="Current operational distribution."
+            icon={ClipboardList}
+          />
+          <CardContent>
+            <div className="staff-chart-panel">
+              <ChartContainer config={statusChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
+                <PieChart>
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Pie data={metrics.statusData} dataKey="count" nameKey="status" innerRadius={48} outerRadius={82} paddingAngle={3}>
+                    {metrics.statusData.map((entry, index) => (
+                      <Cell key={entry.status} fill={pieColors[index % pieColors.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <DashboardPanelHeading title="Active Work Jobs" description="Installations and field work in motion." icon={Wrench} />
-          <CardContent className="space-y-2.5">
-            {metrics.activeWorkJobs.map((job) => (
-              <CompactSchedule key={job.id} title={job.full_name} code={job.work_job_number} date={formatAdminDate(job.scheduled_date)} />
-            ))}
-          </CardContent>
-        </Card>
-
         <Card>
           <DashboardPanelHeading title="Service Mix" description="Demand by requested service type." icon={Package} />
           <CardContent className="space-y-2">
@@ -313,7 +326,7 @@ export default function AdminDashboardPage() {
               <div key={item.service} className="rounded-xl bg-[#f6f9fb] px-3 py-2.5">
                 <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="capitalize text-[#617689]">{item.service.replaceAll("_", " ")}</span>
-                  <span className="font-semibold text-[#162d4a]">{item.count}</span>
+                  <span className="font-semibold text-foreground">{item.count}</span>
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#dfe8ef]">
                   <div
@@ -374,20 +387,23 @@ export function AdminDashboardSkeleton() {
         <Skeleton className="h-4 w-80 max-w-full" />
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 sm:gap-x-7 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div key={index} className="border-t py-6">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="mt-3 h-4 w-28" />
-            <Skeleton className="mt-2 h-8 w-20" />
-            <Skeleton className="mt-2 h-3 w-32 max-w-full" />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="grid gap-3">
+          <div className="staff-summary staff-review-metric">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="staff-summary-value h-8 w-10" />
+            <Skeleton className="h-4 w-36 max-w-full" />
           </div>
-        ))}
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-7">
-        <DashboardChartSkeleton className="xl:col-span-4" />
-        <DashboardChartSkeleton className="xl:col-span-3" variant="pie" />
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="staff-summary">
+                <Skeleton className="h-4 w-20 max-w-full" />
+                <Skeleton className="mt-auto h-7 w-10" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <DashboardChartSkeleton />
       </div>
 
       <div className="grid gap-3 xl:grid-cols-2">
@@ -464,27 +480,28 @@ function MetricCard({
   description,
   icon: Icon,
   tooltip,
+  featured = false,
+  className,
 }: {
   title: string;
   value: string;
   description: string;
   icon: typeof Wrench;
   tooltip: string;
+  featured?: boolean;
+  className?: string;
 }) {
   return (
     <UiTooltip>
       <TooltipTrigger asChild>
-        <article className="min-h-28 border-t py-4 text-left sm:min-h-40 sm:py-6">
-          <div className="flex items-start justify-between gap-2 sm:gap-4">
-            <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">Operations</p>
-              <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{title}</h2>
-            </div>
-            <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
-          </div>
-          <div className="mt-1 truncate text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{value}</div>
-          <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-[#64879a] sm:mt-2 sm:line-clamp-1 sm:text-xs">{description}</p>
-        </article>
+        <AdminSummaryCard
+          className={className}
+          label={title}
+          value={value}
+          icon={Icon}
+          tone={featured ? "blue" : undefined}
+          description={description}
+        />
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </UiTooltip>

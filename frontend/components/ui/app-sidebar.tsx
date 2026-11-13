@@ -12,13 +12,11 @@ import {
   WalletCards,
 } from "lucide-react";
 import { NavMain } from "./nav-main";
-import { NavUser } from "./nav-user";
 import { can } from "@/features/auth/current-user-api";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -101,20 +99,20 @@ export function AppSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      variant="sidebar"
-      className="border-r border-[#dfe6ec]"
+      variant="floating"
+      className="staff-rail"
     >
-      <SidebarHeader className="h-[78px] justify-center border-b border-[#dfe6ec] px-5 py-0 group-data-[collapsible=icon]:px-2">
+      <SidebarHeader className="h-16 justify-center px-3 group-data-[collapsible=icon]:items-center">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="h-auto gap-2 p-0 text-[#2d425b] hover:bg-transparent data-[active=true]:bg-transparent">
-              <Link href="/dashboard" prefetch>
-                <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#d8e1e8] bg-white p-0.5">
+            <SidebarMenuButton size="lg" asChild className="h-auto gap-2 p-0 text-foreground hover:bg-transparent data-[active=true]:bg-transparent">
+              <Link href="/dashboard" aria-label="SOG Workspace overview" prefetch>
+                <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary p-1">
                   <Image src="/images/sog-logo.png" width={32} height={32} alt="SOG logo" />
                 </span>
                 <span className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="block truncate text-[15px] font-semibold">SOG Admin</span>
-                  <span className="mt-0.5 block truncate text-xs text-[#778ba0]">Glass &amp; Aluminum</span>
+                  <span className="block truncate text-[15px] font-semibold">SOG Workspace</span>
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">Glass &amp; Aluminum</span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -122,14 +120,11 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="py-4">
+      <SidebarContent className="pb-3">
         <NavMain label="Administration" items={visibleItems} />
         {visibleSystemItems.length > 0 && <NavMain label="System" items={visibleSystemItems} />}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-[#dfe6ec] px-5 py-4 group-data-[collapsible=icon]:px-2">
-        <NavUser />
-      </SidebarFooter>
     </Sidebar>
   );
 }

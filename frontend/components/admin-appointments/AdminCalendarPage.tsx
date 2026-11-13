@@ -46,14 +46,14 @@ export default function AdminCalendarPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Calendar</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Calendar</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
             {isWorker ? "Review your assigned appointments and field schedule." : "Review appointments, field work, and staff schedules in one shared calendar."}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
           {!isWorker && (
-            <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+            <Button asChild size="lg" className="gap-2 bg-primary hover:bg-primary/85">
               <Link href="/dashboard/appointments/create">
                 <Plus className="size-4" />
                 Create appointment

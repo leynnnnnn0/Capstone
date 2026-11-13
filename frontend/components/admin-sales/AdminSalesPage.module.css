@@ -1,0 +1,32 @@
+.metric:global(.staff-summary) {
+  position: relative;
+  min-height: 0;
+  gap: .3rem;
+  padding: .875rem 1rem;
+  container-type: inline-size;
+}
+
+.metric h2 {
+  padding-inline-end: 2rem;
+}
+
+.metric :global(.staff-summary-value) p {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-size: clamp(1.1rem, 7cqi, 1.65rem);
+}
+
+.metric :global(.staff-summary-icon) {
+  position: absolute;
+  inset-block-start: .7rem;
+  inset-inline-end: .85rem;
+}
+
+.metric.lead {
+  padding-block: 1rem;
+}
+
+.lead :global(.staff-summary-value) p {
+  font-size: clamp(1.5rem, 9cqi, 2.5rem);
+}

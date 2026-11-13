@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 function TableFrame({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
+      data-slot="table-container"
       className={cn(
         "relative overflow-hidden rounded-lg border bg-card",
         className,

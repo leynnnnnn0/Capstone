@@ -27,7 +27,7 @@ export default function RoleDashboardPage() {
 
   const role = primaryRole(user);
 
-  if (role === "admin") return <AdminDashboardPage />;
+  if (role === "admin") return <AdminDashboardPage firstName={user?.first_name} />;
   if (role === "owner") return <OwnerDashboard user={user} />;
   if (role === "staff") return <WorkerDashboardPage user={user} />;
 
@@ -37,9 +37,9 @@ export default function RoleDashboardPage() {
 function OwnerDashboard({ user }: { user: User | null }) {
   return (
     <div className="space-y-6">
-      <DashboardHeading eyebrow="Owner Dashboard" title={`Welcome back, ${user?.first_name ?? "there"}`} description="Operational view for appointments, work jobs, calendar, products, and reports." />
-      <div className="grid gap-4 md:grid-cols-3">
-        <QuickCard title="Appointments" description="Review, schedule, and update customer appointments." href="/dashboard/appointments" icon={CalendarDays} />
+      <DashboardHeading title={`Welcome back, ${user?.first_name ?? "there"}`} description="Operational view for appointments, work jobs, calendar, products, and reports." />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <QuickCard featured title="Appointments" description="Review, schedule, and update customer appointments." href="/dashboard/appointments" icon={CalendarDays} />
         <QuickCard title="Work Jobs" description="Create jobs from approved appointments and track progress." href="/dashboard/work-jobs" icon={BriefcaseBusiness} />
         <QuickCard title="Calendar" description="See appointments and staff schedules in one place." href="/dashboard/calendar" icon={CalendarDays} />
       </div>
@@ -69,10 +69,10 @@ function CustomerFallbackDashboard() {
   );
 }
 
-function DashboardHeading({ title, description }: { eyebrow: string; title: string; description: string }) {
+function DashboardHeading({ title, description }: { title: string; description: string }) {
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="staff-overview-title font-semibold">{title}</h1>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );
@@ -83,26 +83,28 @@ function QuickCard({
   description,
   href,
   icon: Icon,
+  featured = false,
 }: {
   title: string;
   description: string;
   href: string;
   icon: LucideIcon;
+  featured?: boolean;
 }) {
   return (
-    <Card>
-      <CardHeader className="space-y-3">
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <Card className={featured ? "md:col-span-2" : undefined}>
+      <CardHeader className={featured ? "space-y-3 bg-secondary" : "space-y-3"}>
+        <div className="staff-summary-icon size-11">
           <Icon className="size-5" />
         </div>
         <div>
-          <CardTitle className="text-base">{title}</CardTitle>
+          <CardTitle className={featured ? "text-xl" : "text-base"}>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </div>
       </CardHeader>
-      <CardContent>
-        <Button asChild variant="outline" size="sm">
-          <Link href={href}>Open</Link>
+      <CardContent className={featured ? "pt-4 sm:pt-5 lg:pt-6" : undefined}>
+        <Button asChild variant={featured ? "default" : "outline"} size="sm">
+          <Link href={href}>Open {title.toLowerCase()}</Link>
         </Button>
       </CardContent>
     </Card>

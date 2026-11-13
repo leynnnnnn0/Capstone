@@ -27,7 +27,7 @@ import type { User } from "@/types/user";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 
 const chartConfig = {
-  count: { label: "Assigned", color: "#5f87b5" },
+  count: { label: "Assigned", color: "var(--primary)" },
 } satisfies ChartConfig;
 
 export default function WorkerDashboardPage({ user }: { user: User | null }) {
@@ -72,11 +72,11 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
   return (
     <div className="space-y-4 lg:space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back, {user?.first_name ?? "there"}</h1>
+        <h1 className="staff-overview-title font-semibold">Welcome back, {user?.first_name ?? "there"}</h1>
         <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Your assigned appointments, work jobs, progress, and calendar.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 sm:gap-x-7 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <TooltipProvider>
           <MetricCard
             title="Upcoming Appointments"
@@ -85,6 +85,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             icon={CalendarCheck}
             tooltip="Assigned inspections scheduled from today onward."
             tone="blue"
+            className="staff-lead-metric col-span-2 lg:row-span-2"
           />
           <MetricCard
             title="Upcoming Work Jobs"
@@ -93,6 +94,7 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             icon={BriefcaseBusiness}
             tooltip="Assigned installation or service jobs scheduled from today onward."
             tone="mist"
+            className="col-span-2"
           />
           <MetricCard
             title="Finished Appointments"
@@ -120,15 +122,17 @@ export default function WorkerDashboardPage({ user }: { user: User | null }) {
             <CardDescription>Current workload by progress state.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[210px] sm:h-[230px]">
-              <BarChart data={metrics.statusChart} margin={{ left: 0, right: 8, top: 12 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="status" tickLine={false} axisLine={false} />
-                <YAxis width={28} allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
+            <div className="staff-chart-panel">
+              <ChartContainer config={chartConfig} className="h-[210px] sm:h-[230px]">
+                <BarChart data={metrics.statusChart} margin={{ left: 0, right: 8, top: 12 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="status" tickLine={false} axisLine={false} />
+                  <YAxis width={28} allowDecimals={false} tickLine={false} axisLine={false} />
+                  <Tooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="count" fill="var(--color-count)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -188,6 +192,7 @@ function MetricCard({
   icon: Icon,
   tooltip,
   tone,
+  className,
 }: {
   title: string;
   value: number;
@@ -195,11 +200,13 @@ function MetricCard({
   icon: typeof CalendarCheck;
   tooltip: string;
   tone: SummaryTone;
+  className?: string;
 }) {
   return (
     <UiTooltip>
       <TooltipTrigger asChild>
         <AdminSummaryCard
+          className={className}
           label={title}
           value={value}
           icon={Icon}

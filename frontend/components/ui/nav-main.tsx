@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useSidebar,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
@@ -12,14 +13,15 @@ import type { NavItem } from "@/types/navigation";
 import Link from "next/link";
 
 export function NavMain({ label, items = [] }: { label: string; items: NavItem[] }) {
+  const { setOpenMobile } = useSidebar();
   const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
   return (
-    <SidebarGroup className="px-3 py-2">
-      <SidebarGroupLabel className="mb-2 h-7 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7b8fa3]">
+    <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:items-center">
+      <SidebarGroupLabel className="mb-2 h-7 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </SidebarGroupLabel>
-      <SidebarMenu className="gap-1">
+      <SidebarMenu className="gap-1 group-data-[collapsible=icon]:items-center">
         {items.map((item) => (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
@@ -30,11 +32,11 @@ export function NavMain({ label, items = [] }: { label: string; items: NavItem[]
                   : isCurrentOrParentUrl(item.href)
               }
               tooltip={{ children: item.title }}
-              className="h-10 gap-2 rounded-md border-l-2 border-transparent px-3 text-[15px] font-normal text-[#71869c] hover:bg-[#f2f6f8] hover:text-[#2d425b] data-[active=true]:rounded-l-none data-[active=true]:rounded-r-lg data-[active=true]:border-[#6f95a7] data-[active=true]:bg-[#eef4f7] data-[active=true]:font-semibold data-[active=true]:text-[#2d425b] [&_svg]:size-[18px]"
+              className="staff-nav-link h-11 gap-3 rounded-full px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground [&_svg]:size-[18px]"
             >
-              <Link href={item.href} prefetch>
+              <Link href={item.href} aria-label={item.title} onClick={() => setOpenMobile(false)} prefetch>
                 {item.icon && <item.icon />}
-                <span>{item.title}</span>
+                <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

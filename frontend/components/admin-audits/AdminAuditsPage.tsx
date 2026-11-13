@@ -70,8 +70,8 @@ export default function AdminAuditsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Audit log</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Audit log</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
             Trace authentication events and important record changes across the system.
           </p>
         </div>
@@ -86,8 +86,8 @@ export default function AdminAuditsPage() {
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Activity</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">Audit records</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Activity</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Audit records</h2>
           </div>
           <div className="flex min-w-0 items-center gap-2 lg:w-[40rem]">
           <AdminTableSearch
@@ -104,7 +104,7 @@ export default function AdminAuditsPage() {
               variant="default"
               size="sm"
               onClick={() => setFiltersOpen((value) => !value)}
-              className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4"
+              className="size-11 shrink-0 gap-1.5 rounded-lg bg-primary p-0 text-white hover:bg-primary/85 sm:h-11 sm:w-auto sm:px-4"
               aria-label="Toggle filters"
             >
               <SlidersHorizontal className="size-3.5" />

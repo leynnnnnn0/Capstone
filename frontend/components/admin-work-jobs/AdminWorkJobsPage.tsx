@@ -126,14 +126,14 @@ export default function AdminWorkJobsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Work jobs</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Work jobs</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
             Coordinate installations, monitor job progress, and keep field assignments moving on schedule.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
           {!isWorker && (
-            <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
+            <Button asChild size="lg" className="gap-2 bg-primary hover:bg-primary/85">
               <Link href="/dashboard/work-jobs/create">
                 <BriefcaseBusiness className="size-4" />
                 Create work job
@@ -155,13 +155,13 @@ export default function AdminWorkJobsPage() {
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#64879a]">Operations</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-[#2d425b]">Work job records</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Operations</p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Work job records</h2>
           </div>
           <div className="flex min-w-0 items-center gap-2 lg:w-[38rem]">
           <AdminTableSearch value={search} onChange={setSearch} placeholder="Search by name, phone, work job #..." />
           <div className="flex shrink-0 gap-2">
-            <Button type="button" variant="default" size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-lg bg-[#2d425b] p-0 text-white hover:bg-[#23364b] sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
+            <Button type="button" variant="default" size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-lg bg-primary p-0 text-white hover:bg-primary/85 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
               <SlidersHorizontal className="size-3.5" />
               <span className="hidden sm:inline">Filter</span>
             </Button>
@@ -289,7 +289,7 @@ function WorkJobCard({ workJob }: { workJob: AdminWorkJob }) {
 function WorkJobRow({ workJob }: { workJob: AdminWorkJob }) {
   return (
     <TableRow>
-      <TableCell className="font-semibold text-[#162d4a]">
+      <TableCell className="font-semibold text-foreground">
         <div className="flex flex-col gap-1">
           <span>{workJob.work_job_number}</span>
           {workJob.is_back_job && (

@@ -15,11 +15,15 @@ export default function AppSidebarLayout({
 }: AppLayoutProps) {
   return (
     <TooltipProvider>
-      <SidebarProvider style={{ "--sidebar-width": "15.625rem" } as CSSProperties}>
+      <SidebarProvider
+        defaultOpen={false}
+        className="staff-frame"
+        style={{ "--sidebar-width": "14rem", "--sidebar-width-icon": "3.75rem" } as CSSProperties}
+      >
         <AppSidebar />
         <AppContent
           variant="sidebar"
-          className="admin-workspace overflow-x-hidden"
+          className="admin-workspace min-w-0"
         >
           <RealtimeBridge />
           <AppSidebarHeader breadcrumbs={breadcrumbs} />
