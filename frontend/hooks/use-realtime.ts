@@ -15,7 +15,7 @@ export const REALTIME_NOTIFICATION_CREATED = "sog:notification-created";
 
 export function useRealtimeSubscriptions(user: User | null | undefined) {
   const userId = user?.id;
-  const isStaff = ["admin", "sub_admin", "staff"].some((role) => hasRole(user, role));
+  const isStaff = ["admin", "owner", "staff"].some((role) => hasRole(user, role));
 
   useEffect(() => {
     if (!userId) return;

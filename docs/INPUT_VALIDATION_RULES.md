@@ -225,7 +225,7 @@ Most frontend validation is implemented with Zod and shared helpers in `frontend
 | Email | Shared required email rule | `Email is required.` `Enter a valid email address.` |
 | Phone number | Optional Philippine mobile rule | `Phone number must start with 9 and contain 10 digits.` |
 | Password | Required when creating a user; optional when editing | `Password is required.` for new users when blank; backend returns password policy errors |
-| Role | Must be admin, sub_admin, worker, or customer | Backend/API error if invalid |
+| Role | Must be admin, owner, staff, or customer | Backend/API error if invalid |
 | Permission overrides | Array of permission strings | Backend/API error if invalid |
 
 ## Settings

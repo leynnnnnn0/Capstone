@@ -437,7 +437,7 @@ def build_doc():
             ["PHP 8.3", "Backend programming language used by Laravel."],
             ["Laravel Sanctum", "API authentication for logged-in customer and staff requests."],
             ["Laravel Fortify", "Staff profile, password, and two-factor authentication features."],
-            ["Spatie Laravel Permission", "Role and permission management for admin, sub-admin, worker, and customer access."],
+            ["Spatie Laravel Permission", "Role and permission management for admin, owner, worker, and customer access."],
             ["Laravel Reverb", "Self-hosted realtime broadcasting for notifications and live status updates."],
             ["Laravel Notifications", "Database notifications for appointment, quotation, work job, payment, and status changes."],
             ["Laravel Auditing", "Audit trail for important create, update, and delete actions."],

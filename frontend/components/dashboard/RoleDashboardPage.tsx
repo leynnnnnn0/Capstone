@@ -28,7 +28,7 @@ export default function RoleDashboardPage() {
   const role = primaryRole(user);
 
   if (role === "admin") return <AdminDashboardPage />;
-  if (role === "sub_admin") return <OwnerDashboard user={user} />;
+  if (role === "owner") return <OwnerDashboard user={user} />;
   if (role === "staff") return <WorkerDashboardPage user={user} />;
 
   return <CustomerFallbackDashboard />;

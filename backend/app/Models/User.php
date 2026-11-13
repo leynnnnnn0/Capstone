@@ -83,14 +83,14 @@ class User extends Authenticatable implements AuditableContract
         return $this->hasRole('staff') || $this->role === 'staff';
     }
 
-    public function isSubAdmin(): bool
+    public function isOwner(): bool
     {
-        return $this->hasRole('sub_admin') || $this->role === 'sub_admin';
+        return $this->hasRole('owner') || $this->role === 'owner';
     }
 
     public function isOperationsAdmin(): bool
     {
-        return $this->isAdmin() || $this->isSubAdmin();
+        return $this->isAdmin() || $this->isOwner();
     }
 
     public function isCustomer(): bool

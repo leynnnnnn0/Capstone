@@ -251,7 +251,7 @@ class RealtimeNotificationService
     {
         return User::query()->whereHas('roles', fn ($query) => $query->whereIn('name', [
             'admin',
-            'sub_admin',
+            'owner',
             'staff',
         ]))->get();
     }

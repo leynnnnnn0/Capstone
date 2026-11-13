@@ -67,6 +67,6 @@
 ## Audit
 
 1. System audits changes to users, products, appointments, quotations, work jobs, remarks, images, options, and related records.
-2. Admin/sub-admin can view audit list.
-3. Admin/sub-admin can open audit detail page to inspect before and after values.
+2. Admin/owner can view audit list.
+3. Admin/owner can open audit detail page to inspect before and after values.
 

@@ -15,7 +15,7 @@ Route::prefix('appointments')->group(function () {
     Route::post('/', [AppointmentController::class, 'store'])
         ->middleware('throttle:public-booking');
 
-    Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,staff'])->group(function () {
+    Route::middleware(['auth:sanctum', 'account.role:admin,owner,staff'])->group(function () {
         Route::get('/', [AppointmentController::class, 'index']);
         Route::get('{appointment}', [AppointmentController::class, 'show']);
         Route::put('{appointment}', [AppointmentController::class, 'update']);

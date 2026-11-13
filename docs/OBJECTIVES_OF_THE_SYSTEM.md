@@ -32,7 +32,7 @@ Specifically, the system aims to:
 
 12. Integrate an augmented reality measurement and product preview module that allows customers to visualize glass and aluminum products in a real-world environment and use captured measurements as part of the quotation request process.
 
-13. Ensure that the system applies role-based access control for customers, admins, sub-admins, and workers so that each user can only access the features and records appropriate to their role.
+13. Ensure that the system applies role-based access control for customers, admins, owners, and workers so that each user can only access the features and records appropriate to their role.
 
 14. Improve data accuracy and user experience by applying proper form validation, error handling, confirmation dialogs, responsive design, and user-friendly interfaces across customer, admin, and worker modules.
 

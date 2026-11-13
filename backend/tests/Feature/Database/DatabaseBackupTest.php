@@ -55,10 +55,10 @@ it('requires recent password confirmation for database tools', function () {
 
 it('prevents non-admin accounts from using database tools', function () {
     test()->seed(RoleAndPermissionSeeder::class);
-    $subAdmin = User::factory()->create(['role' => 'sub_admin']);
-    $subAdmin->assignRole('sub_admin');
+    $owner = User::factory()->create(['role' => 'owner']);
+    $owner->assignRole('owner');
 
-    $this->actingAs($subAdmin)
+    $this->actingAs($owner)
         ->getJson('/api/v1/database/backups')
         ->assertForbidden();
 });

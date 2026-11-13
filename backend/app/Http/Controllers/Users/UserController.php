@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Guard;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -70,9 +71,9 @@ class UserController extends Controller
                 'role' => $data['role'],
             ]);
 
-            if ($data['role'] === 'sub_admin') {
+            if ($data['role'] === 'owner') {
                 $data['permissions'] = Permission::query()
-                    ->where('guard_name', Role::findByName('sub_admin')->guard_name)
+                    ->where('guard_name', Guard::getDefaultName($user))
                     ->get()
                     ->all();
             }

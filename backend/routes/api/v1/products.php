@@ -17,7 +17,7 @@ Route::get('product-3d-models/{product3DModel}/file', Product3DModelFileControll
 
 // Product images are managed separately from product update because image upload
 // and delete are common admin actions and need their own storage cleanup.
-Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.role:admin,owner'])->group(function () {
     Route::apiResource('products', ProductController::class)->except(['index', 'show']);
     Route::post('products/{product}/images', [ProductImageController::class, 'store']);
     Route::delete('products/{product}/images/{image}', [ProductImageController::class, 'destroy']);

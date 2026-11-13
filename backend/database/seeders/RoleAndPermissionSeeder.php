@@ -44,7 +44,7 @@ class RoleAndPermissionSeeder extends Seeder
 
     public const ROLES = [
         'admin' => self::PERMISSIONS,
-        'sub_admin' => [
+        'owner' => [
             'dashboard.view',
             'users.view',
             'products.view',

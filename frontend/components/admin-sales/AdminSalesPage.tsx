@@ -348,7 +348,16 @@ export default function AdminSalesPage() {
                 <BarChart data={report.charts.top_products} layout="vertical" margin={{ left: 0, right: 8, top: 12 }}>
                   <CartesianGrid horizontal={false} strokeDasharray="4 4" />
                   <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={compactPeso} />
-                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={72} tickMargin={6} />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    width={128}
+                    tickMargin={8}
+                    tick={<ProductNameTick />}
+                    interval={0}
+                  />
                   <Tooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[0, 6, 6, 0]} />
                 </BarChart>
@@ -379,6 +388,24 @@ export default function AdminSalesPage() {
 
       <OutstandingTable rows={report?.tables.outstanding_work_jobs ?? []} loading={loading} />
     </div>
+  );
+}
+
+function ProductNameTick({
+  x = 0,
+  y = 0,
+  payload,
+}: {
+  x?: number;
+  y?: number;
+  payload?: { value: string };
+}) {
+  return (
+    <foreignObject x={x - 112} y={y - 10} width={112} height={20}>
+      <div className="truncate text-right text-xs leading-5 text-muted-foreground" title={payload?.value}>
+        {payload?.value}
+      </div>
+    </foreignObject>
   );
 }
 

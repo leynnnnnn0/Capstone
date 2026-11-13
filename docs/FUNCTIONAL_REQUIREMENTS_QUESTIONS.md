@@ -14,7 +14,7 @@ Use these questions to finalize exact business behavior.
 1. When an appointment is marked no-show, should the customer be allowed to rebook from the same appointment?
 2. When an appointment is reopened, should it return to pending or confirmed?
 3. When an appointment is cancelled after confirmation, should assigned workers be removed automatically?
-4. Should workers be able to mark no-show, or only admin/sub-admin?
+4. Should workers be able to mark no-show, or only admin/owner?
 
 ## Quotation
 

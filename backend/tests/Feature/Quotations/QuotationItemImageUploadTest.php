@@ -70,14 +70,14 @@ it('prevents non admins from deleting images uploaded by another user', function
     Storage::disk('public')->assertExists($image->image_path);
 });
 
-it('prevents sub admins from deleting images uploaded by another user', function () {
+it('prevents owners from deleting images uploaded by another user', function () {
     Storage::fake('public');
-    $subAdmin = User::factory()->create(['role' => 'sub_admin']);
+    $owner = User::factory()->create(['role' => 'owner']);
     $uploader = User::factory()->create(['role' => 'staff']);
     $quotationItem = QuotationItem::factory()->create();
     $image = createQuotationItemImage($quotationItem, $uploader);
 
-    $this->actingAs($subAdmin)
+    $this->actingAs($owner)
         ->deleteJson("/api/v1/quotation-item-images/{$image->id}")
         ->assertForbidden()
         ->assertJsonPath('message', 'You can only delete photos that you uploaded.');

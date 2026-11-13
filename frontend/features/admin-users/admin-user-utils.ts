@@ -13,14 +13,14 @@ export const emptyAdminUserForm: AdminUserForm = {
 
 export const adminUserRoleLabels: Record<StaffRole, string> = {
   admin: "Admin",
-  sub_admin: "Owner",
+  owner: "Owner",
   staff: "Staff",
   customer: "Customer",
 };
 
 export const adminUserRoleBadgeClasses: Record<StaffRole, string> = {
   admin: "bg-slate-800 text-white",
-  sub_admin: "bg-violet-600 text-white",
+  owner: "bg-violet-600 text-white",
   staff: "bg-emerald-600 text-white",
   customer: "bg-blue-600 text-white",
 };

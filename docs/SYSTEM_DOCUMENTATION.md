@@ -8,7 +8,7 @@ The system is a Laravel API and Next.js frontend for managing customer appointme
 
 - Customer: books appointments, tracks appointments and work jobs, reviews quotation items, downloads quotation PDFs, and signs approved quotations.
 - Worker: views assigned appointments and work jobs, updates operational statuses, creates quotations when allowed, and sees only assigned schedules.
-- Sub Admin: manages operational records based on assigned permissions.
+- Owner: manages operational records based on assigned permissions.
 - Admin: full access to users, products, appointments, work jobs, quotations, dashboard analytics, audit logs, roles, and permissions.
 
 ## Major Modules
@@ -33,7 +33,7 @@ The system is a Laravel API and Next.js frontend for managing customer appointme
 - Customers can create appointments with or without quotation items.
 - Logged-in customer appointment creation can prefill from the customer’s most recent appointment except quotation items.
 - Customers can edit pending appointments, cancel eligible appointments, and rebook cancelled appointments.
-- Admin/sub-admin can create, view, edit, confirm, reschedule, cancel, reopen, mark no-show, and progress appointments.
+- Admin/owner can create, view, edit, confirm, reschedule, cancel, reopen, mark no-show, and progress appointments.
 - Workers can see appointments assigned to them and update allowed statuses.
 - Appointment activity logs record status changes and remarks.
 
@@ -73,7 +73,7 @@ The system is a Laravel API and Next.js frontend for managing customer appointme
 ### Audit Log
 
 - Laravel auditing records changes to business-critical models.
-- Admin/sub-admin can view the audit list and open detail pages.
+- Admin/owner can view the audit list and open detail pages.
 - Audit details show event, actor, record, timestamp, IP, URL, user agent, and before/after values.
 
 ## Architecture

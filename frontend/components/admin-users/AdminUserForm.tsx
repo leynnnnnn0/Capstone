@@ -54,7 +54,7 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const creatingOwner = !editing && form.role === "sub_admin";
+  const creatingOwner = !editing && form.role === "owner";
   const selectedPermissions = creatingOwner ? options.permissions : form.permissions;
 
   const permissionOptions = useMemo(

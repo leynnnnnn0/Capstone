@@ -15,7 +15,7 @@ use App\Http\Controllers\WorkJobs\WorkJobChargeController;
 use App\Http\Controllers\WorkJobs\WorkJobController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'account.role:admin,sub_admin,staff'])->group(function () {
+Route::middleware(['auth:sanctum', 'account.role:admin,owner,staff'])->group(function () {
     Route::get('work-jobs', [WorkJobController::class, 'index']);
     Route::get('work-jobs/{workJob}', [WorkJobController::class, 'show']);
     Route::post('work-jobs', [WorkJobController::class, 'store']);

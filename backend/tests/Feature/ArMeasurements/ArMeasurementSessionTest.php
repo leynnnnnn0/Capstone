@@ -262,7 +262,7 @@ it('allows operations staff to access and review any appointment measurement', f
         ->assertOk()
         ->assertJsonPath('data.status', 'reviewed')
         ->assertJsonPath('data.reviewed_by.id', $staff->id);
-})->with(['admin', 'sub_admin']);
+})->with(['admin', 'owner']);
 
 it('requires review notes when staff requests a retake', function () {
     $admin = User::factory()->create(['role' => 'admin']);
