@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Appointments;
 
+use App\Enums\AppointmentStatus;
 use App\Exceptions\SlotFullException;
 use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
@@ -38,9 +39,11 @@ class AppointmentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $isWorker = $request->user()?->isStaff() && ! $request->user()->isOperationsAdmin();
+
         $query = Appointment::query()
             ->with(self::RELATIONS)
-            ->when($request->user()?->isStaff() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+            ->when($isWorker, function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
             ->when($request->filled('search'), function ($query) use ($request) {
@@ -64,12 +67,30 @@ class AppointmentController extends Controller
             : 'created_at';
         $sortDir = $request->input('sort_dir') === 'asc' ? 'asc' : 'desc';
 
-        $appointments = $query
+        $appointments = (clone $query)
             ->orderBy($sortBy, $sortDir)
             ->paginate((int) $request->input('per_page', 10))
             ->withQueryString();
 
-        return response()->json(AppointmentResource::collection($appointments)->response()->getData(true));
+        $collection = AppointmentResource::collection($appointments);
+
+        $counts = [
+            'active_count' => (clone $query)->whereNotIn('status', [
+                AppointmentStatus::Pending->value,
+                AppointmentStatus::Cancelled->value,
+                AppointmentStatus::Completed->value,
+                AppointmentStatus::NoShow->value,
+            ])->count(),
+            'completed_count' => (clone $query)->where('status', AppointmentStatus::Completed->value)->count(),
+        ];
+
+        if (! $isWorker) {
+            $counts['pending_count'] = (clone $query)->where('status', AppointmentStatus::Pending->value)->count();
+        }
+
+        $collection->additional($counts);
+
+        return $collection->response();
     }
 
     public function show(Request $request, Appointment $appointment): JsonResponse

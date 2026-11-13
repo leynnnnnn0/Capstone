@@ -28,12 +28,8 @@ export default function AdminAuditShowPage({ auditId }: { auditId: string }) {
       <AdminPageHeader
         backHref="/dashboard/audits"
         backLabel="Back to audit log"
-        eyebrow="Security & governance"
         title={`${audit.auditable_type} #${audit.auditable_id}`}
         description={`Review the ${audit.event} event, responsible user, request context, and recorded value changes.`}
-        icon={ShieldCheck}
-        recordLabel="Audit record"
-        recordValue={`Audit #${audit.id}`}
       />
 
       <Card>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PackagePlus } from "lucide-react";
 
 import ProductCreateForm from "@/components/products/ProductCreateForm";
 import { ProductErrorState, ProductLoadingState } from "@/components/products/ProductPageStates";
@@ -29,12 +28,8 @@ export default function CreateProductPage() {
       <AdminPageHeader
         backHref="/dashboard/products"
         backLabel="Back to products"
-        eyebrow="Product catalog"
         title="Create product"
         description="Add catalog details, variants, images, and option groups in one place."
-        icon={PackagePlus}
-        recordLabel="Product record"
-        recordValue="New catalog item"
       />
       <ProductCreateForm categories={categories} />
     </div>

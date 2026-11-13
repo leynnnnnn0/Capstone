@@ -52,4 +52,8 @@ export type SchedulePayload = {
   reason?: string;
 };
 
-export type AppointmentCollection = PaginatedResponse<AdminAppointment>;
+export type AppointmentCollection = PaginatedResponse<AdminAppointment> & {
+  active_count?: number;
+  completed_count?: number;
+  pending_count?: number;
+};

@@ -81,7 +81,15 @@ class ProductController extends Controller
         // Returning the resource response preserves Laravel's paginator links and
         // meta fields. Wrapping it in response()->json() converts it to a plain
         // array and discards that metadata before the public catalog can use it.
-        return ProductResource::collection($products)->response();
+        $collection = ProductResource::collection($products);
+
+        if ($request->boolean('include_active_count')) {
+            $collection->additional([
+                'meta' => ['active_count' => Product::query()->where('is_active', true)->count()],
+            ]);
+        }
+
+        return $collection->response();
     }
 
     /**

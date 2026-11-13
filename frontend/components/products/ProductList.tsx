@@ -41,6 +41,7 @@ export default function ProductList() {
   const searchParams = useSearchParams();
   const returnTo = currentPathWithSearch("/dashboard/products", searchParams);
   const [response, setResponse] = useState<PaginatedResponse<Product> | null>(null);
+  const [refresh, setRefresh] = useState(0);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -79,7 +80,7 @@ export default function ProductList() {
   useEffect(() => {
     let mounted = true;
 
-    fetchProducts(filters)
+    fetchProducts({ ...filters, include_active_count: "1" })
       .then((nextResponse) => {
         if (mounted) setResponse(nextResponse);
       });
@@ -87,7 +88,7 @@ export default function ProductList() {
     return () => {
       mounted = false;
     };
-  }, [filters]);
+  }, [filters, refresh]);
 
   useEffect(() => {
     if (search.trim() !== debouncedSearch) return;
@@ -112,6 +113,7 @@ export default function ProductList() {
           : current,
       );
       setDeleteTarget(null);
+      setRefresh((value) => value + 1);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete product.");
     } finally {
@@ -121,7 +123,7 @@ export default function ProductList() {
 
   const products = response?.data ?? [];
   const totalProducts = response?.meta?.total ?? products.length;
-  const activeProducts = products.filter((product) => product.is_active).length;
+  const activeProducts = response?.meta?.active_count ?? "—";
 
   function setFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -147,10 +149,7 @@ export default function ProductList() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Product catalog
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Products</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Products</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             Manage catalog pricing, availability and customer-facing product assets from one place.
           </p>
@@ -162,21 +161,12 @@ export default function ProductList() {
               New product
             </Link>
           </Button>
-          <div className="hidden items-center gap-3 md:flex">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-              <Package className="size-4" />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Catalog</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{totalProducts} product{totalProducts === 1 ? "" : "s"}</p>
-            </div>
-          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10">
         <AdminSummaryCard label="Products" value={totalProducts} icon={Package} eyebrow="Live workspace" description="all catalog entries" />
-        <AdminSummaryCard label="Active on this page" value={activeProducts} icon={CircleCheck} eyebrow="Live workspace" description="available to customers" />
+        <AdminSummaryCard label="Active" value={activeProducts} icon={CircleCheck} eyebrow="Live workspace" description="available to customers" />
       </section>
 
       <section className="space-y-4">

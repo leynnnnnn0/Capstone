@@ -2,7 +2,6 @@
 
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Package } from "lucide-react";
 
 import ProductEditForm from "@/components/products/ProductEditForm";
 import { ProductErrorState, ProductLoadingState } from "@/components/products/ProductPageStates";
@@ -40,12 +39,8 @@ export default function ProductEditPage() {
       <AdminPageHeader
         backHref={withReturnTo(`/dashboard/products/${product.id}`, returnTo)}
         backLabel="Back to product"
-        eyebrow="Product catalog"
         title="Edit product"
         description="Update the product basics, category assignments, media, and options."
-        icon={Package}
-        recordLabel="Product record"
-        recordValue={product.name}
       />
       <ProductEditForm product={product} categories={categories} returnTo={returnTo} />
     </div>

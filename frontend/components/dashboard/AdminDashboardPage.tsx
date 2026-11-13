@@ -23,7 +23,6 @@ import {
   CreditCard,
   Package,
   ReceiptText,
-  ShieldCheck,
   TriangleAlert,
   Wrench,
 } from "lucide-react";
@@ -110,10 +109,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Business operations · Live overview
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">
             SOG administration
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
@@ -121,22 +117,13 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="flex w-full flex-row items-center justify-between gap-4 lg:w-auto lg:flex-col lg:items-end lg:gap-5">
+        <div className="flex shrink-0">
           <Button asChild size="lg" className="gap-2 bg-[#2d425b] hover:bg-[#23364b]">
             <Link href="/dashboard/appointments/create">
               <CalendarPlus className="size-4" />
               Create appointment
             </Link>
           </Button>
-          <div className="hidden items-center gap-3 md:flex">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-              <ShieldCheck className="size-4" />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Access</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">Administrator only</p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -491,7 +478,7 @@ function MetricCard({
           <div className="flex items-start justify-between gap-2 sm:gap-4">
             <div>
               <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">Operations</p>
-              <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{title}</h2>
+              <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{title}</h2>
             </div>
             <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
           </div>

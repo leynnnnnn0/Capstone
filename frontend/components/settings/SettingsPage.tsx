@@ -549,7 +549,7 @@ function TwoFactorSettings({ enabled, onSaved }: { enabled: boolean; onSaved: ()
         <div className="rounded-lg border p-4">
           <p className="text-sm font-medium">{enabled ? "Two-factor authentication is enabled." : "Two-factor authentication is off."}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {enabled ? "Users will need their authenticator code after signing in." : "Enable it to protect admin, sub-admin, and staff accounts."}
+            {enabled ? "Users will need their authenticator code after signing in." : "Enable it to protect Admin, Owner, and Staff accounts."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

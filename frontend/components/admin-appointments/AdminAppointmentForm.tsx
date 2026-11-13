@@ -312,7 +312,6 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
       <AdminPageHeader
         backHref={appointmentId ? `/dashboard/appointments/${appointmentId}` : "/dashboard/appointments"}
         backLabel={appointmentId ? "Back to appointment" : "Back to appointments"}
-        eyebrow="Customer scheduling"
         title={appointmentId ? "Edit appointment" : rebookId ? "Rebook appointment" : "Create appointment"}
         description={
           rebookId
@@ -321,9 +320,6 @@ export default function AdminAppointmentForm({ appointmentId }: { appointmentId?
               ? "Update the appointment details, schedule, staff, and quotation."
               : "Create the appointment, set the slot, and attach a quotation when needed."
         }
-        icon={CalendarDays}
-        recordLabel="Appointment record"
-        recordValue={appointmentId ? "Existing appointment" : rebookId ? "Rebooked appointment" : "New appointment"}
         actions={(
           <>
             <Button

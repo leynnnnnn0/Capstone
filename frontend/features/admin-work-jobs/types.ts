@@ -64,4 +64,8 @@ export type AdminBackJobForm = {
   notes: string;
 };
 
-export type WorkJobCollection = PaginatedResponse<AdminWorkJob>;
+export type WorkJobCollection = PaginatedResponse<AdminWorkJob> & {
+  active_count?: number;
+  completed_count?: number;
+  pending_count?: number;
+};

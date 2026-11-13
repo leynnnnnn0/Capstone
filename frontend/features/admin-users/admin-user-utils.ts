@@ -13,7 +13,7 @@ export const emptyAdminUserForm: AdminUserForm = {
 
 export const adminUserRoleLabels: Record<StaffRole, string> = {
   admin: "Admin",
-  sub_admin: "Sub Admin",
+  sub_admin: "Owner",
   staff: "Staff",
   customer: "Customer",
 };

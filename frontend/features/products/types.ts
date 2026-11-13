@@ -92,6 +92,7 @@ export type PaginatedResponse<T> = {
     last_page: number;
     per_page: number;
     total: number;
+    active_count?: number;
     from: number | null;
     to: number | null;
   };
@@ -99,6 +100,7 @@ export type PaginatedResponse<T> = {
 };
 
 export type ProductListFilters = {
+  include_active_count?: string;
   page?: string;
   search?: string;
   is_active?: string;

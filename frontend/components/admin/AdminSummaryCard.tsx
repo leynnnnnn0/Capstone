@@ -21,7 +21,7 @@ export default function AdminSummaryCard({
       <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">{eyebrow}</p>
-          <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
+          <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
         </div>
         <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
       </div>

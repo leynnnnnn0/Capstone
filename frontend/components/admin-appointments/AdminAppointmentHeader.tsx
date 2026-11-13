@@ -74,12 +74,8 @@ export default function AdminAppointmentHeader({
     <AdminPageHeader
       backHref={backHref}
       backLabel="Back to appointments"
-      eyebrow="Customer scheduling"
       title={appointment.full_name}
       description="Review the customer details, service schedule, assigned staff, and quotation."
-      icon={CalendarDays}
-      recordLabel="Appointment record"
-      recordValue={appointment.appointment_number}
       actions={(
         <>
           <AdminAppointmentStatusBadge status={appointment.status} />

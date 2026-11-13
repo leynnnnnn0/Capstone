@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BriefcaseBusiness, ExternalLink, Pencil } from "lucide-react";
+import { ExternalLink, Pencil } from "lucide-react";
 
 import AdminWorkJobStatusBadge from "@/components/admin-work-jobs/AdminWorkJobStatusBadge";
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
@@ -15,12 +15,8 @@ export default function AdminWorkJobHeader({ workJob }: { workJob: AdminWorkJob 
     <AdminPageHeader
       backHref="/dashboard/work-jobs"
       backLabel="Back to work jobs"
-      eyebrow="Operations scheduling"
       title={workJob.full_name}
       description="Review the job schedule, assigned team, fabrication progress, charges, and payments."
-      icon={BriefcaseBusiness}
-      recordLabel="Work job record"
-      recordValue={workJob.work_job_number}
       actions={(
         <>
           <AdminWorkJobStatusBadge status={workJob.status} />

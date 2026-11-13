@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\WorkJobs;
 
+use App\Enums\WorkJobStatus;
 use App\Http\Controllers\Concerns\AuthorizesAssignedWork;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorkJobs\StoreWorkJobRequest;
@@ -26,11 +27,13 @@ class WorkJobController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $isWorker = $request->user()?->isStaff() && ! $request->user()->isOperationsAdmin();
+
         $allowedSorts = ['work_job_number', 'first_name', 'scheduled_date', 'status'];
         $sortBy = in_array($request->sort_by, $allowedSorts) ? $request->sort_by : 'scheduled_date';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
 
-        $workJobs = WorkJob::query()
+        $query = WorkJob::query()
             ->with([
                 'workers',
                 'appointment',
@@ -43,7 +46,7 @@ class WorkJobController extends Controller
                 'warranty.issuedBy',
                 'rating.customer',
             ])
-            ->when($request->user()?->isStaff() && ! $request->user()->isOperationsAdmin(), function ($query) use ($request) {
+            ->when($isWorker, function ($query) use ($request) {
                 $query->whereHas('workers', fn ($query) => $query->whereKey($request->user()->id));
             })
             ->when(
@@ -66,11 +69,31 @@ class WorkJobController extends Controller
             ->when(
                 $request->date_to,
                 fn ($q) => $q->whereDate('scheduled_date', '<=', $request->date_to)
-            )
+            );
+
+        $workJobs = (clone $query)
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return response()->json(WorkJobResource::collection($workJobs));
+        $collection = WorkJobResource::collection($workJobs);
+
+        $counts = [
+            'active_count' => (clone $query)->whereNotIn('status', [
+                WorkJobStatus::Pending->value,
+                WorkJobStatus::Cancelled->value,
+                WorkJobStatus::Completed->value,
+                WorkJobStatus::NoShow->value,
+            ])->count(),
+            'completed_count' => (clone $query)->where('status', WorkJobStatus::Completed->value)->count(),
+        ];
+
+        if (! $isWorker) {
+            $counts['pending_count'] = (clone $query)->where('status', WorkJobStatus::Pending->value)->count();
+        }
+
+        $collection->additional($counts);
+
+        return $collection->response();
     }
 
     public function store(StoreWorkJobRequest $request): JsonResponse

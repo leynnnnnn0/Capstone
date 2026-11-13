@@ -144,8 +144,7 @@ function DatabaseManager({ onPasswordExpired }: { onPasswordExpired: () => void 
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">System · Data protection</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Database</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Database</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">Create secure snapshots and restore the system from an earlier backup.</p>
           </div>
           <Button

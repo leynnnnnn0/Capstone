@@ -5,10 +5,8 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Banknote,
   BriefcaseBusiness,
   CalendarRange,
-  ChartNoAxesCombined,
   Download,
   FileSpreadsheet,
   FileText,
@@ -61,7 +59,6 @@ import {
 import { downloadSalesReport, fetchSalesReport, type SalesExportFormat } from "@/features/admin-sales/sales-api";
 import {
   compactPeso,
-  formatPercent,
   formatPeso,
   formatReportDate,
 } from "@/features/admin-sales/sales-utils";
@@ -175,10 +172,7 @@ export default function AdminSalesPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Revenue reporting
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Sales report</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Sales report</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             Track paid sales, pending collections, outstanding balances, and top revenue drivers.
           </p>
@@ -196,10 +190,6 @@ export default function AdminSalesPage() {
           <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={!report || exporting !== null} onClick={() => handleExport("pdf")}>
             {exporting === "pdf" ? <Loader2 className="size-3.5 animate-spin" /> : <FileText className="size-3.5" />}
             PDF
-          </Button>
-          <Button type="button" variant="default" size="sm" className="gap-1.5 bg-[#2d425b] text-white hover:bg-[#23364b]" disabled={loading} onClick={() => loadReport()}>
-            {loading ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCcw className="size-3.5" />}
-            Refresh
           </Button>
         </div>
       </section>
@@ -243,13 +233,11 @@ export default function AdminSalesPage() {
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 lg:grid-cols-3 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
         <MetricCard label="Net Sales" value={formatPeso(summary?.net_sales ?? 0)} icon={TrendingUp} description="revenue after refunds" />
         <MetricCard label="Paid Sales" value={formatPeso(summary?.gross_sales ?? 0)} icon={WalletCards} description="settled customer payments" />
         <MetricCard label="Outstanding" value={formatPeso(summary?.outstanding_amount ?? 0)} icon={BriefcaseBusiness} description="remaining work job balance" />
         <MetricCard label="Pending" value={formatPeso(summary?.pending_amount ?? 0)} icon={ReceiptText} description="awaiting settlement" />
-        <MetricCard label="Extra Charges" value={formatPeso(summary?.additional_charges_paid ?? 0)} icon={Banknote} description="paid add-on charges" />
-        <MetricCard label="Collection Rate" value={formatPercent(summary?.collection_rate ?? 0)} icon={ChartNoAxesCombined} description="share of collected revenue" />
       </section>
 
       <SalesSectionHeading
@@ -447,7 +435,7 @@ function MetricCard({
       <div className="flex items-start justify-between gap-2 sm:gap-4">
         <div>
           <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[#8194a7] sm:text-[10px] sm:tracking-[0.16em]">Sales</p>
-          <h2 className="mt-2 text-xs font-medium leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
+          <h2 className="mt-2 text-xs font-bold leading-4 text-[#496078] sm:mt-3 sm:text-sm">{label}</h2>
         </div>
         <Icon className="mt-0.5 size-4 shrink-0 text-[#64879a] sm:size-[18px]" />
       </div>

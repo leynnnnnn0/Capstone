@@ -28,16 +28,16 @@ export default function RoleDashboardPage() {
   const role = primaryRole(user);
 
   if (role === "admin") return <AdminDashboardPage />;
-  if (role === "sub_admin") return <SubAdminDashboard user={user} />;
+  if (role === "sub_admin") return <OwnerDashboard user={user} />;
   if (role === "staff") return <WorkerDashboardPage user={user} />;
 
   return <CustomerFallbackDashboard />;
 }
 
-function SubAdminDashboard({ user }: { user: User | null }) {
+function OwnerDashboard({ user }: { user: User | null }) {
   return (
     <div className="space-y-6">
-      <DashboardHeading eyebrow="Sub Admin Dashboard" title={`Welcome back, ${user?.first_name ?? "there"}`} description="Operational view for appointments, work jobs, calendar, products, and reports." />
+      <DashboardHeading eyebrow="Owner Dashboard" title={`Welcome back, ${user?.first_name ?? "there"}`} description="Operational view for appointments, work jobs, calendar, products, and reports." />
       <div className="grid gap-4 md:grid-cols-3">
         <QuickCard title="Appointments" description="Review, schedule, and update customer appointments." href="/dashboard/appointments" icon={CalendarDays} />
         <QuickCard title="Work Jobs" description="Create jobs from approved appointments and track progress." href="/dashboard/work-jobs" icon={BriefcaseBusiness} />
@@ -46,7 +46,7 @@ function SubAdminDashboard({ user }: { user: User | null }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Access Scope</CardTitle>
-          <CardDescription>Sub admins can operate the business workflow without managing roles or deleting accounts.</CardDescription>
+          <CardDescription>Owners can operate the business workflow without managing roles or deleting accounts.</CardDescription>
         </CardHeader>
       </Card>
     </div>

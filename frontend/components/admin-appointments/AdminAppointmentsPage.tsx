@@ -131,10 +131,7 @@ export default function AdminAppointmentsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Customer scheduling
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Appointments</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Appointments</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             Review customer requests, confirm schedules, and coordinate inspections from one operational view.
           </p>
@@ -148,23 +145,16 @@ export default function AdminAppointmentsPage() {
               </Link>
             </Button>
           )}
-          <div className="hidden items-center gap-3 md:flex">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-              <CalendarDays className="size-4" />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Scheduling</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{total} appointment{total === 1 ? "" : "s"}</p>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
+      <section className={`grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
         <AdminSummaryCard label="Total" value={total} icon={ClipboardList} tone="blue" eyebrow="Appointments" description="all appointment records" />
-        <AdminSummaryCard label="Pending" value={appointments.filter((item) => item.status === "pending").length} icon={CalendarDays} tone="mist" eyebrow="Appointments" description="awaiting confirmation" />
-        <AdminSummaryCard label="Confirmed" value={appointments.filter((item) => item.status === "confirmed").length} icon={UserCheck} tone="light" eyebrow="Appointments" description="scheduled customer visits" />
-        <AdminSummaryCard label="Completed" value={appointments.filter((item) => item.status === "completed").length} icon={ClipboardList} tone="slate" eyebrow="Appointments" description="finished appointments" />
+        {!isWorker && (
+          <AdminSummaryCard label="Pending" value={response?.pending_count ?? 0} icon={CalendarDays} tone="mist" eyebrow="Appointments" description="awaiting confirmation" />
+        )}
+        <AdminSummaryCard label="Active" value={response?.active_count ?? 0} icon={UserCheck} tone="light" eyebrow="Appointments" description="active appointments" />
+        <AdminSummaryCard label="Completed" value={response?.completed_count ?? 0} icon={ClipboardList} tone="slate" eyebrow="Appointments" description="finished appointments" />
       </section>
 
       <section className="space-y-4">

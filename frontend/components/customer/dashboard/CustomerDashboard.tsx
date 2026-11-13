@@ -119,7 +119,7 @@ export default function CustomerDashboard() {
                 <TooltipTrigger asChild>
                   <article className={`rounded-lg border border-[#d5e0ea] bg-white p-4 text-left sm:p-5 ${cornerWaveClass}`}>
                     <div className="flex items-start justify-between gap-2 sm:gap-4">
-                      <h2 className="text-sm font-semibold leading-snug text-[#162d4a]">{stat.label}</h2>
+                      <h2 className="text-sm font-bold leading-snug text-[#162d4a]">{stat.label}</h2>
                       <Icon className="mt-0.5 size-4 shrink-0 text-[#2d425b] sm:size-[18px]" />
                     </div>
                     {loading ? <Skeleton className="mt-2 h-7 w-10 sm:h-8 sm:w-12" /> : <p className="mt-1 text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{stat.value}</p>}

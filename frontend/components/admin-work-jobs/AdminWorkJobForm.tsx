@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BriefcaseBusiness, CalendarDays, FileText, Loader2, Percent, Users } from "lucide-react";
@@ -225,12 +225,6 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
       .finally(() => setLoadingWorkJob(false));
   }, [workJobId]);
 
-  const sourceLabel = useMemo(() => {
-    if (isEditing && workJob) return `Editing ${workJob.work_job_number}`;
-    if (!appointment) return null;
-    return `Prefilled from ${appointment.appointment_number}`;
-  }, [appointment, isEditing, workJob]);
-
   const attachedQuotation = workJob?.quotation ?? appointment?.quotation ?? null;
   const quoteTotal = attachedQuotation?.total ?? 0;
   const downPaymentAmount = data.is_down_payment_required
@@ -293,14 +287,10 @@ export default function AdminWorkJobForm({ workJobId }: { workJobId?: string }) 
       <AdminPageHeader
         backHref={isEditing && workJobId ? `/dashboard/work-jobs/${workJobId}` : "/dashboard/work-jobs"}
         backLabel={isEditing ? "Back to work job" : "Back to work jobs"}
-        eyebrow="Operations scheduling"
         title={isEditing ? "Edit work job" : "Create work job"}
         description={isEditing
           ? "Update the work job details, schedule, staff, and payment terms."
           : "Create the work job, set the production slot, and attach the quotation."}
-        icon={BriefcaseBusiness}
-        recordLabel="Work job record"
-        recordValue={sourceLabel ?? (isEditing ? "Existing work job" : "New work job")}
         actions={(
           <>
             <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => setCalendarOpen(true)}>

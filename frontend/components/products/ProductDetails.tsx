@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Tabs } from "radix-ui";
-import { Box, ExternalLink, ImageIcon, Package, Pencil, Settings2, ShieldCheck } from "lucide-react";
+import { Box, ExternalLink, ImageIcon, Pencil, Settings2, ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { AdminPageHeader } from "@/components/ui/admin-page-header";
@@ -40,12 +40,8 @@ export default function ProductDetails({ product }: { product: Product }) {
       <AdminPageHeader
         backHref={safeReturnTo(returnTo, "/dashboard/products")}
         backLabel="Back to products"
-        eyebrow="Product catalog"
         title={product.name}
         description={`${categories.map((category) => category.name).join(", ") || "Uncategorized"}${product.description ? ` · ${product.description}` : ""}`}
-        icon={Package}
-        recordLabel="Product record"
-        recordValue={`${product.is_active ? "Active" : "Inactive"} · ${formatCurrency(product.price_per_unit)} / ${product.unit}`}
         actions={(
           <Button asChild variant="outline" size="sm">
             <Link href={withReturnTo(`/dashboard/products/${product.id}/edit`, safeReturnTo(returnTo, ""))}>

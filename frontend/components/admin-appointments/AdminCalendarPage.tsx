@@ -46,10 +46,7 @@ export default function AdminCalendarPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Schedule overview
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Calendar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Calendar</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             {isWorker ? "Review your assigned appointments and field schedule." : "Review appointments, field work, and staff schedules in one shared calendar."}
           </p>
@@ -63,15 +60,6 @@ export default function AdminCalendarPage() {
               </Link>
             </Button>
           )}
-          <div className="hidden items-center gap-3 md:flex">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-              <CalendarDays className="size-4" />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Schedule</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{appointments.length + workJobs.length} scheduled record{appointments.length + workJobs.length === 1 ? "" : "s"}</p>
-            </div>
-          </div>
         </div>
       </section>
 

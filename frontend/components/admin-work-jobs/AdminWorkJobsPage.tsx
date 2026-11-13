@@ -44,7 +44,6 @@ import {
   adminWorkJobStatusOptions,
   formatWorkJobSchedule,
 } from "@/features/admin-work-jobs/admin-work-job-utils";
-import { CustomerStatus } from "@/features/customer/status";
 import type { AdminWorkJob, WorkJobCollection } from "@/features/admin-work-jobs/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -127,10 +126,7 @@ export default function AdminWorkJobsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Field operations
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Work jobs</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Work jobs</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             Coordinate installations, monitor job progress, and keep field assignments moving on schedule.
           </p>
@@ -144,23 +140,16 @@ export default function AdminWorkJobsPage() {
               </Link>
             </Button>
           )}
-          <div className="hidden items-center gap-3 md:flex">
-            <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-              <BriefcaseBusiness className="size-4" />
-            </span>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Operations</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{total} work job{total === 1 ? "" : "s"}</p>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
+      <section className={`grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
         <AdminSummaryCard label="Total" value={total} icon={BriefcaseBusiness} tone="blue" eyebrow="Field work" description="all work job records" />
-        <AdminSummaryCard label="Pending" value={workJobs.filter((item) => item.status === CustomerStatus.Pending).length} icon={CalendarDays} tone="mist" eyebrow="Field work" description="awaiting assignment" />
-        <AdminSummaryCard label="In Progress" value={workJobs.filter((item) => item.status === CustomerStatus.InProgress).length} icon={PlayCircle} tone="light" eyebrow="Field work" description="active installation jobs" />
-        <AdminSummaryCard label="Completed" value={workJobs.filter((item) => item.status === CustomerStatus.Completed).length} icon={CheckCircle2} tone="slate" eyebrow="Field work" description="finished work jobs" />
+        {!isWorker && (
+          <AdminSummaryCard label="Pending" value={response?.pending_count ?? 0} icon={CalendarDays} tone="mist" eyebrow="Field work" description="awaiting confirmation" />
+        )}
+        <AdminSummaryCard label="Active" value={response?.active_count ?? 0} icon={PlayCircle} tone="light" eyebrow="Field work" description="active work jobs" />
+        <AdminSummaryCard label="Completed" value={response?.completed_count ?? 0} icon={CheckCircle2} tone="slate" eyebrow="Field work" description="finished work jobs" />
       </section>
 
       <section className="space-y-4">

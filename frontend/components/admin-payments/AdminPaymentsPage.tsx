@@ -6,8 +6,6 @@ import Link from "next/link";
 import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  AlertCircle,
-  Banknote,
   CreditCard,
   Eye,
   Loader2,
@@ -258,7 +256,6 @@ export default function AdminPaymentsPage() {
   const payments = response?.data ?? [];
   const meta = response?.meta;
   const summary = response?.summary;
-  const total = summary?.total_count ?? meta?.total ?? payments.length;
   const statusOptions = optionList(response?.options.statuses, defaultPaymentStatusOptions);
   const methodOptions = optionList(response?.options.methods, defaultPaymentMethodOptions);
   const typeOptions = optionList(response?.options.types, defaultPaymentTypeOptions);
@@ -275,31 +272,17 @@ export default function AdminPaymentsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#64879a]">
-            Administration · Payment operations
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#2d425b] sm:mt-4 sm:text-4xl">Payments</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-4xl">Payments</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#71869c] sm:mt-4 sm:text-base sm:leading-7">
             Review customer payments, settlement status, refunds, and outstanding transactions across work jobs.
           </p>
         </div>
-        <div className="hidden items-center gap-3 self-start md:flex lg:self-auto">
-          <span className="flex size-10 items-center justify-center rounded-lg bg-[#eef4f7] text-[#64879a]">
-            <WalletCards className="size-4" />
-          </span>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8194a7]">Records</p>
-            <p className="mt-0.5 text-sm font-semibold text-[#2d425b]">{total} payment record{total === 1 ? "" : "s"}</p>
-          </div>
-        </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 lg:grid-cols-3 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
         <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" description="settled customer payments" />
         <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" description="completed transactions" />
         <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" description="awaiting settlement" />
-        <AdminSummaryCard label="Failed" value={summary?.failed_count ?? 0} icon={AlertCircle} tone="slate" eyebrow="Collections" description="unsuccessful payments" />
-        <AdminSummaryCard label="Refunded" value={summary?.refunded_count ?? 0} icon={Banknote} tone="mist" eyebrow="Adjustments" description="returned transactions" />
         <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" eyebrow="Adjustments" description="total amount returned" />
       </section>
 
