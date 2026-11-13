@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { AlertTriangle, CalendarDays, Check, Clock3, Factory, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
 
   if (fabrication.status === "not_required") {
     return (
-      <section className={`rounded-lg border bg-card p-5 ${customerRecordWaveClass}`}>
+      <section className={`rounded-lg border bg-card p-5 ${customerRecordSurfaceClass}`}>
         <div className="flex items-start gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
             <Check className="size-4" />
@@ -50,7 +50,7 @@ export default function CustomerFabricationProgressCard({ workJob }: { workJob: 
   const currentIndex = fabricationStageIndex(fabrication.status);
 
   return (
-    <section className={`rounded-lg border bg-card p-5 ${customerRecordWaveClass}`}>
+    <section className={`rounded-lg border bg-card p-5 ${customerRecordSurfaceClass}`}>
       <div>
         <div className="space-y-4">
           <div>

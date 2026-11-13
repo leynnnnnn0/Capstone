@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
@@ -165,7 +165,7 @@ function WorkJobInfoCard({ workJob }: { workJob: CustomerWorkJob }) {
     : "Pending assignment";
 
   return (
-    <div className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
+    <div className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordSurfaceClass}`}>
       <h2 className="mb-5 text-xs font-semibold uppercase tracking-widest text-primary">
         Schedule &amp; Service Details
       </h2>
@@ -196,7 +196,7 @@ function LinkedAppointmentCard({ workJob }: { workJob: CustomerWorkJob }) {
   if (!workJob.appointment) return null;
 
   return (
-    <section className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
+    <section className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordSurfaceClass}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">

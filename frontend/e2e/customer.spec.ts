@@ -12,6 +12,16 @@ test("customer dashboard shows appointment and work-job summaries", async ({ pag
 
   await expect(page.getByText("Welcome back")).toBeVisible();
   await expect(page.getByRole("button", { name: "Notifications" })).toBeVisible();
+  const pendingCard = page.locator("article").filter({
+    has: page.getByRole("heading", { name: "Pending Appointments" }),
+  });
+  await expect(pendingCard).toBeVisible();
+  await expect(pendingCard).toHaveCSS("background-color", "rgb(39, 92, 154)");
+  await expect(page.locator(".customer-portal")).toHaveCSS("background-image", /customer-dashboard-waves\.webp/);
+  for (const surface of [pendingCard, page.locator(".customer-panel-surface").first(), page.locator(".customer-record-surface").first()]) {
+    await expect.poll(() => surface.evaluate((element) => getComputedStyle(element, "::before").backgroundImage))
+      .toContain("customer-dashboard-waves.webp");
+  }
   await expect(page.getByText("Active Appointments")).toBeVisible();
   await expect(page.getByText("APT-000001-20260523")).toBeVisible();
   await expect(page.getByText("WJ-000001-20260523").first()).toBeVisible();

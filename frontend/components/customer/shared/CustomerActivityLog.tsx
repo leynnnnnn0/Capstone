@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { useState } from "react";
 import {
   CalendarClock,
@@ -73,7 +73,7 @@ export default function CustomerActivityLog({
   const hiddenCount = remarks.length - INITIAL_VISIBLE;
 
   return (
-    <div className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
+    <div className={`rounded-xl border bg-card p-5 ${customerRecordSurfaceClass}`}>
       <h2 className="mb-5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
         Activity Log
       </h2>

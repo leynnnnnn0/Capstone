@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, BriefcaseBusiness, CalendarDays, MapPin } from "lucide-react";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import {
   formatCustomerDate,
@@ -17,7 +17,7 @@ export default function AppointmentCard({ appointment }: { appointment: Customer
   return (
     <Link
       href={`/account/appointments/${appointment.id}`}
-      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordWaveClass)}
+      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordSurfaceClass)}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>

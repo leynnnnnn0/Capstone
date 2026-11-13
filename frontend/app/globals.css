@@ -278,8 +278,8 @@
     }
 }
 
-/* Dashboard typography also applies to dialogs and menus rendered in portals. */
-:root:has(.admin-workspace) {
+/* Account colors also reach dialogs and menus rendered in portals. */
+:root:has(.admin-workspace, .customer-portal) {
   --background: #f7faff;
   --foreground: #202936;
   --primary: var(--brand-primary);
@@ -298,7 +298,10 @@
   --sidebar-border: var(--border);
   --staff-highlight: linear-gradient(145deg, #3978bc 0%, #275c9a 60%, #204c84 100%);
   --staff-highlight-border: #2d639f;
+}
 
+/* Staff typography also applies to portaled content. */
+:root:has(.admin-workspace) {
   --text-xs: calc(.75rem + 2px);
   --text-sm: calc(.875rem + 2px);
   --text-base: calc(1rem + 2px);
@@ -393,18 +396,31 @@
   letter-spacing: -0.045em;
 }
 
+.customer-portal h1,
 .admin-workspace [data-slot="admin-page-header"] h1,
 .admin-workspace .staff-overview-title {
   font-size: clamp(1.85rem, 3.3vw, 3.15rem);
   line-height: 1.08;
 }
 
-.admin-workspace [data-slot="button"]:is([data-variant="default"], [data-variant="outline"], [data-variant="secondary"]) {
+:is(.admin-workspace, .customer-portal) [data-slot="button"]:is([data-variant="default"], [data-variant="outline"], [data-variant="secondary"]) {
   border-radius: 999px;
 }
 
 .admin-workspace [data-slot="table-container"] {
   border-radius: 1rem;
+}
+
+.customer-portal .customer-record-surface {
+  border-color: var(--border);
+  border-radius: 1.25rem;
+  box-shadow: none;
+}
+
+@media (min-width: 768px) {
+  :root:has(.customer-portal) body {
+    background: #eaf0f8;
+  }
 }
 
 .staff-summary {
@@ -420,8 +436,9 @@
 }
 
 .staff-summary[data-featured="true"] {
-  border-color: var(--staff-highlight-border);
-  background: var(--staff-highlight);
+  border-color: var(--staff-highlight-border, #2d639f);
+  background-color: #275c9a;
+  background-image: var(--staff-highlight, linear-gradient(145deg, #3978bc, #204c84));
   color: #fff;
 }
 
@@ -466,7 +483,7 @@
   padding: .75rem;
 }
 
-.admin-workspace [data-slot="card"] {
+:is(.admin-workspace, .customer-portal) [data-slot="card"] {
   border-color: var(--border);
   border-radius: 1.25rem;
   box-shadow: none;

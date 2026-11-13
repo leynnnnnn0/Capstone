@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpRight, CalendarClock, MapPin } from "lucide-react";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import CustomerStatusBadge from "@/components/customer/shared/CustomerStatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { formatCustomerSchedule } from "@/features/customer/customer-utils";
@@ -14,7 +14,7 @@ export default function WorkJobCard({ workJob }: { workJob: CustomerWorkJob }) {
   return (
     <Link
       href={`/account/work-jobs/${workJob.id}`}
-      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordWaveClass)}
+      className={cn("group block rounded-xl border bg-card p-5 shadow-sm transition-colors hover:bg-muted/30", customerRecordSurfaceClass)}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>

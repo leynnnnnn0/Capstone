@@ -1,0 +1,39 @@
+.shell {
+  background-image:
+    linear-gradient(
+      to bottom,
+      var(--background) 4rem,
+      color-mix(in srgb, var(--background) 80%, transparent) 16rem,
+      color-mix(in srgb, var(--background) 40%, transparent) 38rem
+    ),
+    url("/images/customer-dashboard-waves.webp");
+  background-position: top center;
+  background-size: cover;
+}
+
+.shell :is(:global(.customer-panel-surface), :global(.customer-record-surface), :global(.staff-summary)) {
+  position: relative;
+  isolation: isolate;
+}
+
+.shell :is(:global(.customer-panel-surface), :global(.customer-record-surface), :global(.staff-summary))::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: url("/images/customer-dashboard-waves.webp") right bottom / cover no-repeat;
+  mask-image: linear-gradient(135deg, transparent 25%, black 95%);
+  opacity: .3;
+  pointer-events: none;
+  content: "";
+}
+
+.shell :is(:global(.customer-record-surface), :global(.staff-summary))::before {
+  inset-inline-start: 48%;
+  mask-image: linear-gradient(to left, black, transparent);
+  opacity: .5;
+}
+
+.shell :global(.staff-summary)[data-featured="true"]::before {
+  opacity: .18;
+}

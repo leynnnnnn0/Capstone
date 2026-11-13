@@ -52,9 +52,9 @@ export default function CustomerNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur md:rounded-t-3xl">
         <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-5 px-4 md:px-6">
-        <Link href="/account" className="flex shrink-0 items-center gap-3">
+        <Link href="/account" className="flex shrink-0 items-center gap-2 rounded-full bg-card px-3 py-1.5">
           <Image
             src="/images/sog-logo.png"
             alt="SOG Glass & Aluminum"
@@ -70,7 +70,7 @@ export default function CustomerNavbar() {
           </span>
         </Link>
 
-        <nav className="ml-6 hidden items-center gap-1 lg:flex">
+        <nav aria-label="Customer navigation" className="hidden items-center gap-1 rounded-full bg-card p-1.5 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.exact
@@ -81,9 +81,10 @@ export default function CustomerNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? (pathname === item.href ? "page" : "location") : undefined}
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  active && "bg-muted font-medium text-foreground",
+                  "flex items-center gap-2 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  active && "bg-primary font-medium text-primary-foreground",
                 )}
               >
                 <Icon className="size-4" />
@@ -94,15 +95,18 @@ export default function CustomerNavbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <NotificationBell />
+          <div className="flex size-11 items-center justify-center rounded-full bg-card">
+            <NotificationBell />
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-md p-1 pr-2 text-left transition-colors hover:bg-muted sm:pr-3"
+                aria-label="Account menu"
+                className="flex h-11 items-center gap-2 rounded-full bg-card p-1 pr-2 text-left transition-colors hover:bg-muted sm:pr-3"
               >
-                <span className="flex size-8 items-center justify-center rounded-md bg-muted text-xs font-medium">
+                <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground">
                   {initials || "CU"}
                 </span>
                 <span className="hidden max-w-36 truncate text-sm font-medium sm:inline">
@@ -148,13 +152,13 @@ export default function CustomerNavbar() {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[length:var(--customer-small-text,0.625rem)] font-medium text-muted-foreground transition-colors",
+                  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-full px-1 py-2 text-[length:var(--customer-small-text,0.625rem)] font-medium text-muted-foreground transition-colors",
                   active && "text-foreground",
                 )}
               >
                 <span className={cn(
-                  "relative flex size-8 items-center justify-center rounded-md transition-colors group-hover:bg-muted",
-                  active && "bg-muted",
+                  "relative flex size-8 items-center justify-center rounded-full transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "group-hover:bg-muted",
                 )}>
                   <Icon className="size-5" />
                 </span>

@@ -1,4 +1,4 @@
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { ArrowRight, Check, Clock3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function CustomerOrderNextStepCard({
   const state = resolveState(appointment, canApproveQuotation);
 
   return (
-    <section className={`@container rounded-xl border bg-card p-5 sm:p-6 ${customerRecordWaveClass}`}>
+    <section className={`@container rounded-xl border bg-card p-5 sm:p-6 ${customerRecordSurfaceClass}`}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-md border text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { useState } from "react";
 import Image from "next/image";
 import { Calculator, CalendarDays, CheckCircle2, Download, FileText, Images, Layers, Maximize2, Package, PenLine } from "lucide-react";
@@ -48,7 +48,7 @@ export default function CustomerQuoteSummary({
 
   if (!quotation || items.length === 0) {
     return (
-      <div className={`rounded-xl border border-dashed bg-card p-6 ${customerRecordWaveClass}`}>
+      <div className={`rounded-xl border border-dashed bg-card p-6 ${customerRecordSurfaceClass}`}>
         <p className="text-sm font-medium text-[#101820]">No quote items yet</p>
         <p className="mt-1 text-sm text-[#667584]">
           Quote details will appear once your selected items are prepared.
@@ -65,7 +65,7 @@ export default function CustomerQuoteSummary({
   canDownload = isSigned;
 
   return (
-    <section id="customer-quotation" className={`@container min-w-0 scroll-mt-24 rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
+    <section id="customer-quotation" className={`@container min-w-0 scroll-mt-24 rounded-xl border bg-card p-4 sm:p-5 ${customerRecordSurfaceClass}`}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">

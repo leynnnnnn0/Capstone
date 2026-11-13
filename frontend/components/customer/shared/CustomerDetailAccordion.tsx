@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -20,7 +20,7 @@ export default function CustomerDetailAccordion({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-5 text-left transition-colors hover:bg-[#f7f9fa] ${customerRecordWaveClass}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-lg border bg-white p-5 text-left transition-colors hover:bg-[#f7f9fa] ${customerRecordSurfaceClass}`}
         aria-expanded="false"
       >
         <span className="text-xs font-semibold uppercase tracking-widest text-[#2d425b]">{title}</span>

@@ -1,4 +1,4 @@
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import {
   CalendarDays,
   Clock,
@@ -24,7 +24,7 @@ export default function AppointmentInfoCard({ appointment }: { appointment: Cust
     : "Pending assignment";
 
   return (
-    <div className={`rounded-xl border bg-card p-5 sm:p-6 ${customerRecordWaveClass}`}>
+    <div className={`rounded-xl border bg-card p-5 sm:p-6 ${customerRecordSurfaceClass}`}>
       <h2 className="mb-5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">
         Visit &amp; Service Details
       </h2>

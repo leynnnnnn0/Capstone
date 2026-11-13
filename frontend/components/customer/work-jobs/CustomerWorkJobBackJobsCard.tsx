@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import Link from "next/link";
 import { GitBranch } from "lucide-react";
 
@@ -16,7 +16,7 @@ export default function CustomerWorkJobBackJobsCard({ workJob }: { workJob: Cust
   if (!hasParent && backJobs.length === 0) return null;
 
   return (
-    <section className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordWaveClass}`}>
+    <section className={`min-w-0 w-full max-w-full rounded-xl border bg-card p-4 sm:p-5 ${customerRecordSurfaceClass}`}>
       <div className="flex items-center gap-2">
         <GitBranch className="size-4 text-primary" />
         <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#608db9]">

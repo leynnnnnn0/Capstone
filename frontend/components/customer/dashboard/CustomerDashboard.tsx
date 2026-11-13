@@ -14,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CustomerCardGridSkeleton } from "@/components/ui/page-skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
+import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 import {
   getCustomerAppointments,
   getCustomerWorkJobs,
@@ -22,12 +22,6 @@ import {
 import { isActiveAppointment, isActiveWorkJob } from "@/features/customer/customer-utils";
 import type { CustomerAppointment, CustomerWorkJob } from "@/features/customer/types";
 import { useRealtimeRefresh } from "@/hooks/use-realtime";
-
-const cornerWaveClass =
-  "relative isolate overflow-hidden shadow-[0_2px_4px_rgba(22,45,74,0.06),0_6px_14px_rgba(22,45,74,0.09)] " +
-  "before:pointer-events-none before:absolute before:right-0 before:bottom-0 before:-z-10 before:h-24 before:w-48 before:max-w-[70%] " +
-  "before:bg-[url('/images/customer-dashboard-waves.webp')] before:bg-cover before:bg-right-bottom before:opacity-45 " +
-  "before:[mask-image:radial-gradient(ellipse_at_bottom_right,black,transparent_72%)]";
 
 export default function CustomerDashboard() {
   const [appointments, setAppointments] = useState<CustomerAppointment[]>([]);
@@ -94,14 +88,14 @@ export default function CustomerDashboard() {
       <section className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="mt-1 max-w-xl text-sm text-[#40546a] dark:text-slate-300">
+            <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
               Manage your inspections and installation progress from one place.
             </p>
           </div>
           <Link
             href="/account/appointments/new"
-            className="group inline-flex h-9 w-fit items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="group inline-flex h-9 w-fit items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             New appointment
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
@@ -110,26 +104,25 @@ export default function CustomerDashboard() {
       </section>
 
       <TooltipProvider>
-        <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <Tooltip key={stat.label}>
-                <TooltipTrigger asChild>
-                  <article className={`rounded-lg border border-[#d5e0ea] bg-white p-4 text-left sm:p-5 ${cornerWaveClass}`}>
-                    <div className="flex items-start justify-between gap-2 sm:gap-4">
-                      <h2 className="text-sm font-bold leading-snug text-[#162d4a]">{stat.label}</h2>
-                      <Icon className="mt-0.5 size-4 shrink-0 text-[#2d425b] sm:size-[18px]" />
-                    </div>
-                    {loading ? <Skeleton className="mt-2 h-7 w-10 sm:h-8 sm:w-12" /> : <p className="mt-1 text-2xl font-semibold tracking-tight text-[#2d425b] sm:text-3xl">{stat.value}</p>}
-                    <p className="mt-1.5 text-xs leading-snug text-[#40546a]">{stat.description}</p>
-                  </article>
-                </TooltipTrigger>
-                <TooltipContent>{stat.tooltip}</TooltipContent>
-              </Tooltip>
-            );
-          })}
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {stats.map((stat, index) => (
+            <Tooltip key={stat.label}>
+              <TooltipTrigger asChild>
+                <AdminSummaryCard
+                  className={
+                  index === 0 ? "col-span-2 sm:col-span-3 lg:col-span-1" :
+                  stat.icon === Wrench ? "col-span-2 sm:col-span-1" : undefined
+                }
+                  label={stat.label}
+                  value={loading ? "—" : stat.value}
+                  icon={stat.icon}
+                  tone={index === 0 ? "blue" : undefined}
+                  description={stat.description}
+                />
+              </TooltipTrigger>
+              <TooltipContent>{stat.tooltip}</TooltipContent>
+            </Tooltip>
+          ))}
         </div>
       </TooltipProvider>
 
@@ -186,7 +179,7 @@ export default function CustomerDashboard() {
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-md border border-dashed border-[#d5e0ea] bg-[#f5f8fb] p-8 text-center text-sm text-[#40546a]">
+    <div className="rounded-xl border border-dashed border-border bg-muted p-8 text-center text-sm text-muted-foreground">
       {label}
     </div>
   );

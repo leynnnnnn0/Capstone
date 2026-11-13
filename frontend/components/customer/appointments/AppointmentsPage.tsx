@@ -44,7 +44,7 @@ export default function AppointmentsPage() {
         title="Your inspection requests."
         description="Create a new request, review confirmed schedules, or manage appointments that still need changes."
         action={
-          <Link href="/account/appointments/new" className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#162d4a] transition-colors hover:bg-[#c8dae8]">
+          <Link href="/account/appointments/new" className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
             New appointment
           </Link>
         }

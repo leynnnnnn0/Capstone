@@ -1,6 +1,6 @@
 "use client";
 
-import { customerRecordWaveClass } from "@/components/customer/shared/customer-surfaces";
+import { customerRecordSurfaceClass } from "@/components/customer/shared/customer-surfaces";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -514,7 +514,7 @@ function LinkedWorkJobCard({
   workJob: NonNullable<CustomerAppointment["work_job"]>;
 }) {
   return (
-    <section className={`rounded-xl border bg-card p-5 ${customerRecordWaveClass}`}>
+    <section className={`rounded-xl border bg-card p-5 ${customerRecordSurfaceClass}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
