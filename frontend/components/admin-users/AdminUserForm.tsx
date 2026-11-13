@@ -54,6 +54,8 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const creatingOwner = !editing && form.role === "sub_admin";
+  const selectedPermissions = creatingOwner ? options.permissions : form.permissions;
 
   const permissionOptions = useMemo(
     () => options.permissions.map((permission) => ({ label: adminPermissionLabel(permission), value: permission })),
@@ -93,7 +95,7 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
   }
 
   async function save() {
-    const parsed = adminUserSchema.safeParse(form);
+    const parsed = adminUserSchema.safeParse({ ...form, permissions: selectedPermissions });
     if (!parsed.success) {
       setConfirmOpen(false);
       setErrors(zodIssuesToFieldErrors(parsed.error.issues) as Record<string, string>);
@@ -204,9 +206,10 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
 
             <Field label="Permission Overrides" error={errors.permissions}>
               <MultiSelect
-                key={`${userId ?? "new"}-${form.permissions.join(".")}`}
+                key={`${userId ?? "new"}-${selectedPermissions.join(".")}`}
                 options={permissionOptions}
-                defaultValue={form.permissions}
+                defaultValue={selectedPermissions}
+                disabled={creatingOwner}
                 onValueChange={(permissions) => setForm({ ...form, permissions })}
                 placeholder="Add direct permissions"
                 maxCount={4}
@@ -214,9 +217,11 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
               />
             </Field>
 
-            <div className="rounded-xl bg-[#f3f7fa] p-3 text-xs leading-5 text-[#657b8f]">
-              Role permissions are inherited automatically. Overrides grant additional access directly to this account.
-            </div>
+            {!creatingOwner && (
+              <div className="rounded-xl bg-[#f3f7fa] p-3 text-xs leading-5 text-[#657b8f]">
+                Role permissions are inherited automatically. Overrides grant additional access directly to this account.
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e7edf1] pt-4 sm:flex-row sm:justify-end">

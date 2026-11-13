@@ -8,6 +8,7 @@ use App\Http\Requests\Users\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -58,17 +59,28 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        $user = User::create([
-            'username' => $data['username'],
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone_number' => $data['phone_number'] ?? null,
-            'password' => Hash::make($data['password']),
-            'role' => $data['role'],
-        ]);
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'username' => $data['username'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'phone_number' => $data['phone_number'] ?? null,
+                'password' => Hash::make($data['password']),
+                'role' => $data['role'],
+            ]);
 
-        $this->syncAccess($user, $data);
+            if ($data['role'] === 'sub_admin') {
+                $data['permissions'] = Permission::query()
+                    ->where('guard_name', Role::findByName('sub_admin')->guard_name)
+                    ->get()
+                    ->all();
+            }
+
+            $this->syncAccess($user, $data);
+
+            return $user;
+        });
 
         return UserResource::make($user->fresh(['roles', 'permissions']));
     }

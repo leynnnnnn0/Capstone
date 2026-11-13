@@ -17,6 +17,7 @@ export function createMeasurementScene(canvas: HTMLCanvasElement): MeasurementSc
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x000000, 0);
   renderer.xr.enabled = true;
+  renderer.xr.setFramebufferScaleFactor(0.8);
 
   const scene = new THREE.Scene();
   scene.background = null;

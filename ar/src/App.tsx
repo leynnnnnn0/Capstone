@@ -134,7 +134,7 @@ export default function App() {
   const currentHitResultRef = useRef<XRHitTestResultWithAnchor | null>(null);
   const currentHitPoseMatrixRef = useRef<THREE.Matrix4 | null>(null);
   const shapePlaneRef = useRef<MeasurementPlane | null>(null);
-  const v2PreviewRef = useRef<{ model: THREE.Group; height: number; width: number } | null>(null);
+  const v2PlacementSizeRef = useRef<{ height: number; width: number } | null>(null);
   const v2WallReadyRef = useRef(false);
   const v2PlacementRequestedRef = useRef(false);
   const confidenceRef = useRef<ReticleConfidence>("none");
@@ -316,51 +316,28 @@ export default function App() {
   const guidance = v2Guidance(confidence, wallEligible, scanSeconds, isPlacing);
   const guidanceVisible = isV2 && isActive && !showArGuide && !catalogOpen &&
     !sessionPanelOpen && !summaryOpen && !exitPromptOpen && !confirmClear;
-  const showV2PreviewRef = useRef(false);
-  showV2PreviewRef.current = guidanceVisible;
+  const v2PlacementAvailableRef = useRef(false);
+  v2PlacementAvailableRef.current = guidanceVisible;
 
   useEffect(() => {
-    const scene = sceneRef.current?.scene;
-    if (!isV2 || !isActive || v2Mode !== "place" || !scene) return;
+    if (!isV2 || !isActive || v2Mode !== "place") return;
 
-    const setPreview = (dimensions: V2PlacedObject["dimensions"]) => {
-      const previous = v2PreviewRef.current?.model;
-      const model = createV2ObjectModel(dimensions, selectedModel);
-      model.visible = false;
-      scene.add(model);
-      v2PreviewRef.current = {
-        model,
+    const setPlacementSize = (dimensions: V2PlacedObject["dimensions"]) => {
+      v2PlacementSizeRef.current = {
         height: dimensions.heightCm / 100,
         width: dimensions.segmentsCm[0] / 100,
       };
-      if (previous) {
-        previous.removeFromParent();
-        disposeObject(previous);
-      }
     };
-    const defaults = defaultV2DimensionsForModel(selectedModel);
-    setPreview(defaults);
 
+    setPlacementSize(defaultV2DimensionsForModel(selectedModel));
     let cancelled = false;
     void loadV2DefaultDimensions(selectedModel).then((dimensions) => {
-      if (cancelled) return;
-      if (
-        dimensions.segmentsCm[0] !== defaults.segmentsCm[0] ||
-        dimensions.heightCm !== defaults.heightCm ||
-        dimensions.depthCm !== defaults.depthCm
-      ) {
-        setPreview(dimensions);
-      }
+      if (!cancelled) setPlacementSize(dimensions);
     });
 
     return () => {
       cancelled = true;
-      const preview = v2PreviewRef.current?.model;
-      v2PreviewRef.current = null;
-      if (preview) {
-        preview.removeFromParent();
-        disposeObject(preview);
-      }
+      v2PlacementSizeRef.current = null;
     };
   }, [isV2, isActive, v2Mode, selectedModel]);
 
@@ -830,7 +807,7 @@ export default function App() {
         flowVersionRef.current === "v3"
           ? "Point where the product should go. Move slowly, wait for green, then tap."
           : flowVersionRef.current === "v2"
-          ? "Aim at the wall to preview your product."
+          ? "Aim at the wall, then tap Place product."
           : "Move slowly until the circle turns green, then tap the first outline point.",
       );
     } catch (error) {
@@ -982,7 +959,7 @@ export default function App() {
     );
   };
 
-  const updateV2Preview = (
+  const updateV2Placement = (
     frame: XRFrame,
     referenceSpace: XRReferenceSpace,
     measurementScene: MeasurementScene,
@@ -990,9 +967,12 @@ export default function App() {
     const hitPlane = currentHitPlaneRef.current;
     const hitPosition = currentHitPositionRef.current;
     const view = frame.getViewerPose(referenceSpace)?.views[0];
-    const visible = !!view && showV2PreviewRef.current && v2ModeRef.current === "place";
-    const sensedDepth = visible && view ? getCenterDepthMeters(frame, view) : null;
-    const hitDepth = visible && view && hitPosition
+    const visible = !!view && v2PlacementAvailableRef.current && v2ModeRef.current === "place";
+    const wallCandidate = hitPlane?.kind === "wall" && confidenceRef.current === "high";
+    const sensedDepth = visible && view && (wallCandidate || v2PlacementRequestedRef.current)
+      ? getCenterDepthMeters(frame, view)
+      : null;
+    const hitDepth = visible && view && wallCandidate && hitPosition
       ? -hitPosition.clone().applyMatrix4(new THREE.Matrix4().fromArray(view.transform.inverse.matrix)).z
       : null;
     const depthAgrees = sensedDepth == null || (hitDepth != null &&
@@ -1006,9 +986,8 @@ export default function App() {
       setWallEligible(!!wall);
     }
 
-    const preview = v2PreviewRef.current;
-    if (preview) preview.model.visible = visible;
-    if (!view || !visible || !preview) {
+    const placementSize = v2PlacementSizeRef.current;
+    if (!view || !visible || !placementSize) {
       if (v2PlacementRequestedRef.current) {
         v2PlacementRequestedRef.current = false;
         anchoredPlacementPendingRef.current = false;
@@ -1017,6 +996,8 @@ export default function App() {
       }
       return;
     }
+
+    if (!v2PlacementRequestedRef.current) return;
 
     let position: THREE.Vector3;
     let axes: V2PlacementAxes;
@@ -1028,8 +1009,8 @@ export default function App() {
       const viewMatrix = new THREE.Matrix4().fromArray(view.transform.matrix);
       const framingDistance = Math.max(
         1,
-        preview.width * view.projectionMatrix[0],
-        preview.height * view.projectionMatrix[5],
+        placementSize.width * view.projectionMatrix[0],
+        placementSize.height * view.projectionMatrix[5],
       );
       const distance = sensedDepth ?? Math.min(8, framingDistance);
       position = new THREE.Vector3(0, 0, -distance).applyMatrix4(viewMatrix);
@@ -1044,22 +1025,16 @@ export default function App() {
         depthDir,
       };
     }
-    // The crosshair marks the model's center; its root sits at the bottom edge.
-    const previewBase = position.clone().addScaledVector(axes.heightDir, -preview.height / 2);
-    setV2RootTransform(preview.model, previewBase, axes);
-
-    if (v2PlacementRequestedRef.current) {
-      v2PlacementRequestedRef.current = false;
-      const session = sessionRef.current;
-      // A surface anchor needs the frame that produced the hit. Without a hit,
-      // keep the estimated position in the session's local space.
-      const hitResult = wall ? currentHitResultRef.current : null;
-      void createPlacedObject(position, axes, hitResult).finally(() => {
-        if (session !== sessionRef.current) return;
-        anchoredPlacementPendingRef.current = false;
-        setIsPlacing(false);
-      });
-    }
+    v2PlacementRequestedRef.current = false;
+    const session = sessionRef.current;
+    // A surface anchor needs the frame that produced the hit. Without a hit,
+    // keep the estimated position in the session's local space.
+    const hitResult = wall ? currentHitResultRef.current : null;
+    void createPlacedObject(position, axes, hitResult).finally(() => {
+      if (session !== sessionRef.current) return;
+      anchoredPlacementPendingRef.current = false;
+      setIsPlacing(false);
+    });
   };
 
   /**
@@ -1075,7 +1050,7 @@ export default function App() {
     if (!measurementScene || !frame || !localSpace || !hitTestSource) return;
 
     const finishFrame = () => {
-      if (flowVersionRef.current === "v2") updateV2Preview(frame, localSpace, measurementScene);
+      if (flowVersionRef.current === "v2") updateV2Placement(frame, localSpace, measurementScene);
       updateV2Anchors(frame, localSpace);
       measurementScene.renderer.render(measurementScene.scene, measurementScene.camera);
     };
@@ -1357,7 +1332,7 @@ export default function App() {
 
     setShopDetailModel(null);
     setCatalogOpen(true);
-    setStatus("Choose the next product to preview.");
+    setStatus("Choose the next product to place.");
   };
 
   /**
@@ -2142,7 +2117,7 @@ export default function App() {
             <div className={`reticle ${guidance.ready ? "high" : "medium"}`} aria-hidden="true"><span className="reticle-center" /></div>
             <section className={`v2-guidance ${guidance.ready ? "is-ready" : "is-scanning"}`} data-xr-ui="true" onPointerDown={markUiInteraction}>
               <div role="status" aria-live="polite" aria-atomic="true">
-                <small>{guidance.ready || isPlacing ? "Place product" : "Preview"} · {activeObjectCount} placed</small>
+                <small>{guidance.ready || isPlacing ? "Place product" : "Aim at the wall"} · {activeObjectCount} placed</small>
                 <strong>{guidance.title}</strong>
                 <p>{guidance.detail}</p>
               </div>
@@ -2204,7 +2179,7 @@ export default function App() {
               }}
             >
               <ScanLine className="size-5" />
-              <span>{isV2 ? isPlacing ? "Placing…" : v2Mode === "edit" ? "Add another" : guidance.ready ? "Place product" : "Place preview" : arPrimaryActionLabel}</span>
+              <span>{isV2 ? isPlacing ? "Placing…" : v2Mode === "edit" ? "Add another" : "Place product" : arPrimaryActionLabel}</span>
             </button>
             <button type="button" onClick={openSummary}>
               <ClipboardList className="size-5" />

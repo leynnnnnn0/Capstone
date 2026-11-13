@@ -6,7 +6,7 @@ test("a stable floor never tells the user the wall is ready", () => {
   const guidance = v2Guidance("high", false, 0, false);
   assert.equal(guidance.ready, false);
   assert.match(guidance.title, /vertical wall/);
-  assert.match(guidance.detail, /Place preview/);
+  assert.match(guidance.detail, /Place product/);
 });
 
 test("slow detection escalates advice and readiness immediately supersedes it", () => {

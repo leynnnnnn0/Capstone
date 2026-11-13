@@ -681,6 +681,8 @@ function ProductImage({
         <img
           src={normalizeCatalogAssetUrl(imageUrl)}
           alt=""
+          loading={large ? "eager" : "lazy"}
+          decoding="async"
           className={cn(
             "h-full w-full object-contain",
             large ? "p-4 drop-shadow-[0_28px_30px_rgba(15,23,42,0.12)]" : "p-3",

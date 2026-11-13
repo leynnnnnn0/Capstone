@@ -2,6 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const catalogProxy = {
+  "^/api/v1/products(?:[/?]|$)": "http://127.0.0.1:8000",
+  "^/api/v1/product-3d-models/[^/]+/file(?:\\?|$)": "http://127.0.0.1:8000",
+  "/storage/": "http://127.0.0.1:8000",
+};
+
 export default defineConfig({
   base: "/ar/",
   plugins: [react(), tailwindcss()],
@@ -27,6 +33,7 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     port: 5173,
+    proxy: catalogProxy,
     allowedHosts: [".ngrok-free.dev"],
     headers: {
       "Permissions-Policy": "xr-spatial-tracking=(self), camera=(self)",
@@ -35,6 +42,7 @@ export default defineConfig({
   preview: {
     host: "0.0.0.0",
     port: 4173,
+    proxy: catalogProxy,
     allowedHosts: [".ngrok-free.dev"],
     headers: {
       "Permissions-Policy": "xr-spatial-tracking=(self), camera=(self)",

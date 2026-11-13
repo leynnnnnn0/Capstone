@@ -254,6 +254,8 @@ function ArCatalogImage({ src, className }: { src: string; className?: string })
     <img
       src={normalizeCatalogAssetUrl(src)}
       alt=""
+      loading="lazy"
+      decoding="async"
       className={className}
       onError={() => setFailed(true)}
     />

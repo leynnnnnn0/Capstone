@@ -142,18 +142,23 @@ export function getModelById(models: ModelDefinition[], id: string) {
 
 export async function fetchProductModelCatalog(): Promise<ProductModelCatalogResult> {
   const apiBase = apiBaseUrl();
-  const response = await fetch(`${apiBase}/api/v1/products?per_page=100`, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  const products: ProductPayload[] = [];
+  let lastPage = 1;
+  for (let page = 1; page <= lastPage; page += 1) {
+    const response = await fetch(`${apiBase}/api/v1/products?has_3d_model=1&is_active=1&per_page=100&page=${page}`, {
+      headers: { Accept: "application/json" },
+    });
 
-  if (!response.ok) {
-    throw new Error(`Unable to load AR products (${response.status}).`);
+    if (!response.ok) {
+      throw new Error(`Unable to load AR products (${response.status}).`);
+    }
+
+    const payload = await response.json();
+    products.push(...normalizeProductResponse(payload));
+    if (isRecord(payload) && isRecord(payload.meta) && typeof payload.meta.last_page === "number") {
+      lastPage = payload.meta.last_page;
+    }
   }
-
-  const payload = await response.json();
-  const products = normalizeProductResponse(payload);
   const models = products
     .filter((product) => product.is_active !== false)
     .map((product) => productToModel(product, apiBase))
@@ -290,7 +295,8 @@ export function normalizeCatalogAssetUrl(url: string, apiBase = apiBaseUrl()) {
     (isLocalHost(parsed.hostname) || parsed.port === "8000")
   ) {
     parsed.protocol = api.protocol;
-    parsed.host = api.host;
+    parsed.hostname = api.hostname;
+    parsed.port = api.port;
   }
 
   return parsed.href;
