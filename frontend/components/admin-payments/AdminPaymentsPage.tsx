@@ -279,7 +279,7 @@ export default function AdminPaymentsPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
         <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" description="settled customer payments" />
         <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" description="completed transactions" />
         <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" description="awaiting settlement" />

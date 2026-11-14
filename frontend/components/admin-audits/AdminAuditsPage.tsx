@@ -77,7 +77,7 @@ export default function AdminAuditsPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+      <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
         <AdminSummaryCard label="Events" value={totalAudits} icon={ShieldCheck} eyebrow="Live workspace" description="all recorded activity" />
         <AdminSummaryCard label="Sign-ins on this page" value={signInEvents} icon={LogIn} eyebrow="Live workspace" description="staff and customer access" />
         <AdminSummaryCard label="Data changes on this page" value={dataChanges} icon={FileClock} eyebrow="Live workspace" description="created, updated, or deleted" />

@@ -10,7 +10,7 @@ export default function AdminDetailTabs({
 }: {
   label: string;
   attentionTab?: string;
-  tabs: { value: string; label: string; content: ReactNode }[];
+  tabs: { value: string; label: string; content: ReactNode; indicatorDescription?: string }[];
 }) {
   const [selectedTab, setSelectedTab] = useState("overview");
   const activeTab = tabs.some(({ value }) => value === selectedTab) ? selectedTab : "overview";
@@ -18,14 +18,17 @@ export default function AdminDetailTabs({
   return (
     <Tabs.Root value={activeTab} onValueChange={setSelectedTab}>
       <Tabs.List aria-label={label} className="flex flex-wrap gap-x-5 border-b">
-        {tabs.map(({ value, label: tabLabel }) => (
+        {tabs.map(({ value, label: tabLabel, indicatorDescription }) => (
           <Tabs.Trigger
             key={value}
             value={value}
-            aria-description={value === attentionTab ? "Action required" : undefined}
+            aria-description={value === attentionTab ? "Action required" : indicatorDescription}
             className="group/tab inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-1 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[state=active]:border-primary data-[state=active]:text-primary"
           >
             {tabLabel}
+            {indicatorDescription && (
+              <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-yellow-500 motion-safe:group-data-[state=inactive]/tab:animate-pulse" />
+            )}
             {value === attentionTab && (
               <span aria-hidden="true" className="relative flex size-2 shrink-0">
                 <span className="absolute inset-0 rounded-full bg-red-500 opacity-70 motion-safe:animate-ping group-data-[state=active]/tab:hidden" />

@@ -314,6 +314,7 @@ export function Product3DModelUploader({
   existingModel,
   modelFile,
   deleteExisting,
+  hideEmptyPreview,
   onChange,
   onRemoveExisting,
   error,
@@ -321,6 +322,7 @@ export function Product3DModelUploader({
   existingModel?: Product3DModel | null;
   modelFile: File | null;
   deleteExisting?: boolean;
+  hideEmptyPreview?: boolean;
   onChange: (file: File | null) => void;
   onRemoveExisting?: () => void;
   error?: string;
@@ -378,17 +380,19 @@ export function Product3DModelUploader({
 
       <FieldError message={localError ?? error} />
 
-      <Product3DModelViewer
-        src={previewUrl}
-        title={
-          modelFile
-            ? "New 3D model preview"
-            : visibleExisting
-              ? "Current 3D model preview"
-              : "3D model preview"
-        }
-        compact
-      />
+      {(previewUrl || !hideEmptyPreview) && (
+        <Product3DModelViewer
+          src={previewUrl}
+          title={
+            modelFile
+              ? "New 3D model preview"
+              : visibleExisting
+                ? "Current 3D model preview"
+                : "3D model preview"
+          }
+          compact
+        />
+      )}
 
       {visibleExisting && (
         <div className="rounded-lg border p-3">

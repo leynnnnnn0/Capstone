@@ -148,7 +148,7 @@ export default function AdminAppointmentsPage() {
         </div>
       </section>
 
-      <section className={`grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
+      <section className={`grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
         <AdminSummaryCard label="Total" value={total} icon={ClipboardList} tone="blue" eyebrow="Appointments" description="all appointment records" />
         {!isWorker && (
           <AdminSummaryCard label="Pending" value={response?.pending_count ?? 0} icon={CalendarDays} tone="mist" eyebrow="Appointments" description="awaiting confirmation" />

@@ -143,7 +143,7 @@ export default function AdminWorkJobsPage() {
         </div>
       </section>
 
-      <section className={`grid grid-cols-2 gap-x-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
+      <section className={`grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
         <AdminSummaryCard label="Total" value={total} icon={BriefcaseBusiness} tone="blue" eyebrow="Field work" description="all work job records" />
         {!isWorker && (
           <AdminSummaryCard label="Pending" value={response?.pending_count ?? 0} icon={CalendarDays} tone="mist" eyebrow="Field work" description="awaiting confirmation" />

@@ -15,7 +15,7 @@ import CustomerLocationCard from "@/components/customer/shared/CustomerLocationC
 import { DetailPageSkeleton } from "@/components/ui/page-skeletons";
 import { fetchAdminAppointment, fetchWorkers } from "@/features/admin-appointments/admin-appointment-api";
 import { hasRole } from "@/features/auth/current-user-api";
-import { CustomerStatus } from "@/features/customer/status";
+import { CustomerStatus, customerTerminalStatuses } from "@/features/customer/status";
 import type { AdminAppointment, AdminWorker } from "@/features/admin-appointments/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { affectsAppointment } from "@/features/notifications/record-changes";
@@ -96,11 +96,15 @@ export default function AdminAppointmentShowPage({ appointmentId }: { appointmen
           ...(!isPending ? [{
             value: "status",
             label: "Status",
+            indicatorDescription: customerTerminalStatuses.includes(appointment.status) ? undefined : "Appointment still open",
             content: <AdminStatusActions appointment={appointment} onUpdated={setAppointment} />,
           }] : []),
           {
             value: "quotation",
             label: "Quotation",
+            indicatorDescription: appointment.status === CustomerStatus.Completed && !appointment.quotation
+              ? "Quotation missing"
+              : undefined,
             content: (
               <AdminQuotationDetails
                 quotation={appointment.quotation}

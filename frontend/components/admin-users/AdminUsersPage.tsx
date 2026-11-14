@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+      <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
         <AdminSummaryCard label="Accounts" value={totalUsers} icon={UsersRound} eyebrow="Live workspace" description="all registered users" />
         <AdminSummaryCard label="Staff on this page" value={staffUsers} icon={ShieldCheck} eyebrow="Live workspace" description="administrative and field staff" />
         <AdminSummaryCard label="Customers on this page" value={customerUsers} icon={UserRound} eyebrow="Live workspace" description="customer portal users" />

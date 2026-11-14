@@ -127,7 +127,7 @@ export default function ProductCreateForm({ categories }: { categories: Category
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <ProductBasicsCard
             value={{
@@ -146,6 +146,12 @@ export default function ProductCreateForm({ categories }: { categories: Category
             groups={data.option_groups}
             errors={errors}
             onChange={(groups) => setField("option_groups", groups)}
+          />
+
+          <ProductWarrantyCard
+            value={data.warranty}
+            errors={errors}
+            onChange={setWarrantyField}
           />
         </div>
 
@@ -179,17 +185,12 @@ export default function ProductCreateForm({ categories }: { categories: Category
             <CardContent>
               <Product3DModelUploader
                 modelFile={data.model_3d}
+                hideEmptyPreview
                 error={errors.model_3d}
                 onChange={(file) => setField("model_3d", file)}
               />
             </CardContent>
           </Card>
-
-          <ProductWarrantyCard
-            value={data.warranty}
-            errors={errors}
-            onChange={setWarrantyField}
-          />
 
           <ProductSummaryCard
             name={data.name}

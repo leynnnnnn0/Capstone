@@ -12,7 +12,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { NavMain } from "./nav-main";
-import { can } from "@/features/auth/current-user-api";
+import { can, hasRole } from "@/features/auth/current-user-api";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   Sidebar,
@@ -94,7 +94,9 @@ const systemNavItems: NavItem[] = [
 export function AppSidebar() {
   const { user } = useCurrentUser();
   const visibleItems = mainNavItems.filter((item) => !item.permission || can(user, item.permission));
-  const visibleSystemItems = systemNavItems.filter((item) => !item.permission || can(user, item.permission));
+  const visibleSystemItems = hasRole(user, "admin")
+    ? systemNavItems.filter((item) => !item.permission || can(user, item.permission))
+    : [];
 
   return (
     <Sidebar

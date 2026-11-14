@@ -164,6 +164,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#162d4a]/70 via-[#162d4a]/45 to-[#162d4a]/95" />
           <Link
             href="/"
+            aria-label="SOG home"
             className="relative inline-flex items-center gap-3 self-start"
           >
             <Image
@@ -194,14 +195,16 @@ export default function LoginPage() {
         <section className="mx-auto flex w-full max-w-xl flex-col justify-center px-5 py-12 sm:px-10 lg:px-14 xl:px-20">
           <div className="rounded-[1.75rem] border border-[#dce4ea] bg-white p-6 shadow-[0_24px_80px_rgba(22,45,74,0.09)] sm:p-8">
             <div className="mb-8 text-center lg:hidden">
-              <Image
-                src="/images/sog-logo.png"
-                alt="SOG Logo"
-                width={1408}
-                height={768}
-                className="mx-auto h-14 w-auto"
-                priority
-              />
+              <Link href="/" aria-label="SOG home" className="inline-block">
+                <Image
+                  src="/images/sog-logo.png"
+                  alt="SOG Logo"
+                  width={1408}
+                  height={768}
+                  className="h-14 w-auto"
+                  priority
+                />
+              </Link>
             </div>
 
             {step === "contact" && (

@@ -66,7 +66,6 @@ class RoleAndPermissionSeeder extends Seeder
             'work-jobs.update',
             'work-jobs.status',
             'calendar.view',
-            'audits.view',
             'reports.view',
         ],
         'staff' => [

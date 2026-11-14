@@ -15,7 +15,7 @@ import {
 import { useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShimmerImage } from "@/components/ui/shimmer-image";
+import { NativeShimmerImage, ShimmerImage } from "@/components/ui/shimmer-image";
 import type { Product } from "@/features/products/types";
 import {
   productCategories,
@@ -505,12 +505,10 @@ export function ProductGridSection({ products, loading, error }: ProductGridProp
                 >
                   <Link href={`/products/${product.id}`} className="relative block aspect-[4/3] overflow-hidden bg-[#eaf2f8]">
                     {image ? (
-                      <ShimmerImage
+                      <NativeShimmerImage
                         src={image}
                         alt={product.name}
-                        fill
-                        sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
-                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
+                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025]"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[#608db9]">

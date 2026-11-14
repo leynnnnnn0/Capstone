@@ -63,7 +63,7 @@ export default function AdminCalendarPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-x-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
+      <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
         <AdminSummaryCard label="Appointments" value={appointments.length} icon={CalendarDays} eyebrow="Live workspace" description="customer scheduling records" />
         <AdminSummaryCard label="Work jobs" value={workJobs.length} icon={BriefcaseBusiness} eyebrow="Live workspace" description="field operation schedules" />
         <AdminSummaryCard label="Pending appointments" value={appointments.filter((appointment) => appointment.status === "pending").length} icon={Clock3} eyebrow="Live workspace" description="awaiting confirmation" />
