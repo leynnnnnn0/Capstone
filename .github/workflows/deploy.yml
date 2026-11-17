@@ -42,6 +42,9 @@ jobs:
 
           cd "$APP_DIR/backend"
           composer install --no-dev --prefer-dist --optimize-autoloader
+          # PDF exports use Puppeteer with the Raspberry Pi's system Chromium.
+          PUPPETEER_SKIP_DOWNLOAD=true npm ci --omit=dev
+          node -e "require.resolve('puppeteer')"
           php artisan optimize:clear
           # Enable this after confirming production migrations are reviewed:
           # php artisan migrate --force
