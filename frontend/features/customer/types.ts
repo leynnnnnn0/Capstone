@@ -286,6 +286,7 @@ export type CustomerAppointment = {
   can_edit: boolean;
   can_reschedule: boolean;
   can_cancel: boolean;
+  customer_change_cutoff_passed?: boolean;
   created_at: string;
   workers: CustomerWorker[];
   quotation: CustomerQuotation | null;

@@ -191,9 +191,10 @@ class AppointmentService
      */
     public function cancel(Appointment $appointment, array $data, User $actor): Appointment
     {
-        $this->ensureCanTransition($appointment, AppointmentStatus::Cancelled);
-
         DB::transaction(function () use ($appointment, $data, $actor) {
+            $appointment = $this->checkCustomerChangeCutoff($appointment, $actor);
+            $this->ensureCanTransition($appointment, AppointmentStatus::Cancelled);
+
             $appointment->update(['status' => AppointmentStatus::Cancelled]);
 
             $appointment->remarks()->create([
@@ -242,9 +243,10 @@ class AppointmentService
      */
     public function reschedule(Appointment $appointment, array $data, User $actor): Appointment
     {
-        $this->ensureCanTransition($appointment, AppointmentStatus::Rescheduled);
-
         DB::transaction(function () use ($appointment, $data, $actor) {
+            $appointment = $this->checkCustomerChangeCutoff($appointment, $actor);
+            $this->ensureCanTransition($appointment, AppointmentStatus::Rescheduled);
+
             $appointment->update([
                 'status' => AppointmentStatus::Rescheduled,
                 'appointment_date' => $data['appointment_date'],
@@ -364,6 +366,23 @@ class AppointmentService
         );
 
         return $appointment->fresh();
+    }
+
+    private function checkCustomerChangeCutoff(Appointment $appointment, User $actor): Appointment
+    {
+        if (! $actor->isCustomer()) {
+            return $appointment;
+        }
+
+        $appointment = Appointment::query()->lockForUpdate()->findOrFail($appointment->id);
+
+        if ($appointment->customerChangeCutoffPassed()) {
+            throw new InvalidStatusTransitionException(
+                'You can cancel or reschedule only before the scheduled date, Philippine time.'
+            );
+        }
+
+        return $appointment;
     }
 
     private function ensureCanTransition(

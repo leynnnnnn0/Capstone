@@ -15,6 +15,8 @@ class AppointmentResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $customerCutoffPassed = $request->user()?->isCustomer() && $this->customerChangeCutoffPassed();
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -39,8 +41,9 @@ class AppointmentResource extends JsonResource
             'status' => $this->status?->value ?? $this->status,
             'status_label' => method_exists($this->status, 'label') ? $this->status->label() : $this->status,
             'can_edit' => $this->status === AppointmentStatus::Pending,
-            'can_reschedule' => $this->status === AppointmentStatus::Confirmed && ! $this->workJob()->exists(),
-            'can_cancel' => ! in_array($this->status, [
+            'customer_change_cutoff_passed' => $customerCutoffPassed,
+            'can_reschedule' => ! $customerCutoffPassed && $this->status === AppointmentStatus::Confirmed && ! $this->workJob()->exists(),
+            'can_cancel' => ! $customerCutoffPassed && ! in_array($this->status, [
                 AppointmentStatus::Cancelled,
                 AppointmentStatus::Completed,
                 AppointmentStatus::NoShow,

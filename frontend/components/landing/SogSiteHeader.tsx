@@ -102,10 +102,10 @@ export default function SogSiteHeader({
     <>
       <header
         className={cn(
-          "z-50 w-full font-poppins",
+          "z-1000 w-full font-poppins",
           sticky
             ? "sticky top-0 bg-white/95 backdrop-blur-xl"
-            : "relative z-30",
+            : "relative z-300",
         )}
       >
         <div className="relative mx-auto flex w-full max-w-[1440px] items-center justify-between px-4 py-4 sm:px-8 lg:px-16">

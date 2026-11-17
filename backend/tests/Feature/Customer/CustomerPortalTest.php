@@ -8,6 +8,7 @@ use App\Models\QuotationItem;
 use App\Models\User;
 use App\Models\WorkJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -120,6 +121,52 @@ it('lets customers reschedule confirmed appointments before work job creation', 
 
     expect($appointment->fresh()->remarks()->where('action', 'rescheduled')->exists())->toBeTrue();
 });
+
+it('enforces the Manila calendar date cutoff for customer appointment changes', function (
+    string $action,
+    string $utcTime,
+    bool $allowed
+) {
+    Mail::fake();
+    $this->travelTo(Carbon::parse($utcTime, 'UTC'));
+
+    $customer = User::factory()->create(['role' => 'customer']);
+    $appointment = Appointment::factory()->create([
+        'user_id' => $customer->id,
+        'status' => AppointmentStatus::Confirmed,
+        'appointment_date' => '2026-11-17',
+        'appointment_time_from' => '09:00',
+        'appointment_time_until' => '11:00',
+    ]);
+    $url = "/api/v1/customer/appointments/{$appointment->id}";
+
+    $this->actingAs($customer)->getJson($url)
+        ->assertOk()
+        ->assertJsonPath('data.can_cancel', $allowed)
+        ->assertJsonPath('data.can_reschedule', $allowed)
+        ->assertJsonPath('data.customer_change_cutoff_passed', ! $allowed);
+
+    $response = $this->patchJson("{$url}/{$action}", [
+        'reason' => 'Change of plans.',
+        'appointment_date' => '2026-11-20',
+        'appointment_time_from' => '13:00',
+        'appointment_time_until' => '15:00',
+    ]);
+
+    if ($allowed) {
+        $response->assertOk()->assertJsonPath('data.status', $action === 'cancel' ? 'cancelled' : 'rescheduled');
+    } else {
+        $response->assertUnprocessable()
+            ->assertJsonPath('message', 'You can cancel or reschedule only before the scheduled date, Philippine time.');
+        expect($appointment->refresh()->status)->toBe(AppointmentStatus::Confirmed)
+            ->and($appointment->appointment_date)->toBe('2026-11-17')
+            ->and($appointment->remarks()->count())->toBe(0);
+    }
+})->with(['cancel', 'reschedule'])->with([
+    'one second before Manila midnight' => ['2026-11-16 15:59:59', true],
+    'at Manila midnight' => ['2026-11-16 16:00:00', false],
+    'after the scheduled date' => ['2026-11-17 16:00:00', false],
+]);
 
 it('lets customers cancel but not delete appointments', function () {
     Mail::fake();

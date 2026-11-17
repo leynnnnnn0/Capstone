@@ -67,11 +67,14 @@ export function formatTrackingTimestamp(value?: string | null) {
   if (!value) return "-";
 
   const normalized = value.includes("T") ? value : value.replace(" ", "T");
-  const date = new Date(normalized);
+  // Tracking API timestamps without an explicit offset are stored in UTC.
+  const withoutOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
+  const date = new Date(withoutOffset.test(normalized) ? `${normalized}Z` : normalized);
 
   if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",

@@ -114,9 +114,15 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
       setReason("");
       setCancelOpen(false);
       toast.success("Appointment Cancelled");
-    } catch {
+    } catch (error) {
       try {
         const latest = await getCustomerAppointment(appointment.id);
+
+        if (latest.data.customer_change_cutoff_passed) {
+          setAppointment(latest.data);
+          setCancelOpen(false);
+          return;
+        }
 
         if (latest.data.status === CustomerStatus.Cancelled) {
           setAppointment({
@@ -132,7 +138,7 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
         // Keep the original cancellation error below.
       }
 
-      setCancelError("We could not cancel this appointment. Please try again.");
+      setCancelError(error instanceof ApiError ? error.message : "We could not cancel this appointment. Please try again.");
     } finally {
       setCancelling(false);
     }
@@ -262,6 +268,12 @@ export default function AppointmentDetailPage({ appointmentId }: { appointmentId
             <CustomerStatusBadge status={appointment.status} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{appointment.full_name}</p>
+          {appointment.customer_change_cutoff_passed &&
+            statusIn(appointment.status, [CustomerStatus.Pending, CustomerStatus.Confirmed, CustomerStatus.Rescheduled]) && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                The deadline to cancel or reschedule was the day before your appointment, Philippine time.
+              </p>
+            )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <CustomerContactLocationSheet

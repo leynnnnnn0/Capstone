@@ -51,6 +51,12 @@ class Appointment extends Model implements AuditableContract
         'status' => AppointmentStatus::class,
     ];
 
+    public function customerChangeCutoffPassed(): bool
+    {
+        return $this->appointment_date !== null
+            && $this->appointment_date <= now('Asia/Manila')->toDateString();
+    }
+
     public function remarks()
     {
         return $this->hasMany(AppointmentRemark::class)->latest();

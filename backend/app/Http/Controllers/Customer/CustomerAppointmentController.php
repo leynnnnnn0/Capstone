@@ -185,14 +185,18 @@ class CustomerAppointmentController extends Controller
     {
         abort_unless($this->recordAccess->canAccessAppointment($request->user(), $appointment), 404);
 
-        $appointment = $this->appointmentService
-            ->cancel($appointment, $request->validated(), $request->user())
-            ->load(self::APPOINTMENT_RELATIONS);
+        try {
+            $appointment = $this->appointmentService
+                ->cancel($appointment, $request->validated(), $request->user())
+                ->load(self::APPOINTMENT_RELATIONS);
 
-        return response()->json([
-            'message' => 'Appointment cancelled.',
-            'data' => new AppointmentResource($appointment),
-        ]);
+            return response()->json([
+                'message' => 'Appointment cancelled.',
+                'data' => new AppointmentResource($appointment),
+            ]);
+        } catch (InvalidStatusTransitionException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 
     public function reschedule(RescheduleCustomerAppointmentRequest $request, Appointment $appointment): JsonResponse
