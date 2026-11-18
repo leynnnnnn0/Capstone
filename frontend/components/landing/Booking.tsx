@@ -154,10 +154,6 @@ export default function Booking() {
         }}
       >
         <motion.div variants={reveal}>
-          <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-[#667584] sm:text-xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#608db9]" />
-            Book an inspection
-          </span>
           <h2 className="mb-6 mt-4 text-[clamp(2.75rem,5.5vw,6rem)] font-medium leading-[0.9] tracking-[-0.06em] text-[#101820]">
             Free on-site
             <br />

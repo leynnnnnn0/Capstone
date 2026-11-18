@@ -33,14 +33,6 @@ export default function PublicPageHero({
           className="relative mx-auto grid max-w-[1440px] gap-7 lg:grid-cols-[1fr_auto] lg:items-end"
         >
           <div>
-            <motion.span
-              variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.55, ease: easeOut }}
-              className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-white/55 sm:text-xs"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-[#c8dae8]" />
-              {eyebrow}
-            </motion.span>
             <motion.h1
               variants={{ hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.8, ease: easeOut }}

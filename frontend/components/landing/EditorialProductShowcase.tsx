@@ -333,27 +333,13 @@ export default function EditorialProductShowcase({
           </div>
 
           <div className="min-w-0 text-center" aria-live="polite">
-            <p className="text-[9px] font-bold uppercase tracking-[0.26em] text-slate-400 sm:text-[10px] sm:tracking-[0.3em]">
-              <span className="sm:hidden">Swipe</span>
-              <span className="hidden sm:inline">
-                Drag · Swipe · Arrow keys
-              </span>
-            </p>
+           
             <Link
               href={activeItem.href}
               className="mt-2 block font-poppins text-2xl font-light leading-tight tracking-[-0.03em] text-slate-950 transition-colors hover:text-primary sm:mt-3 sm:text-3xl lg:text-4xl"
             >
               {activeItem.name}
             </Link>
-            <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 text-xs font-medium text-slate-500 sm:gap-x-2 sm:text-sm">
-              <span>{activeItem.category}</span>
-              <span>·</span>
-              <span>{activeItem.material}</span>
-              <span>·</span>
-              <span className="inline-flex items-center gap-1">
-                {activeItem.capability}
-              </span>
-            </div>
             <div
               className="mt-3 flex flex-wrap justify-center gap-1.5 sm:gap-2"
               aria-label="Choose a product"

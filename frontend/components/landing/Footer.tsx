@@ -43,10 +43,6 @@ export default function Footer() {
         <div className="mx-auto max-w-[1440px]">
           <div className="flex flex-col gap-6 border-b border-white/15 pb-10 sm:flex-row sm:items-end sm:justify-between sm:gap-10 sm:pb-14 lg:pb-20">
             <div>
-              <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-white/55 sm:text-xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#c8dae8]" />
-                Start with certainty
-              </span>
               <h2 className="mt-3 max-w-4xl text-[2.5rem] font-medium leading-[0.9] tracking-[-0.055em] sm:mt-4 sm:text-[clamp(3rem,7vw,7rem)] sm:leading-[0.88] sm:tracking-[-0.06em]">
                 Let&apos;s frame
                 <br />

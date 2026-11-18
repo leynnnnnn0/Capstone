@@ -239,7 +239,6 @@ export function ValueSection() {
             className="grid gap-10 lg:grid-cols-[1.3fr_0.7fr] lg:items-end"
           >
             <div>
-              <Eyebrow>Why SOG</Eyebrow>
               <SectionHeading>
                 From rough opening to finished installation.
               </SectionHeading>
@@ -306,7 +305,6 @@ export function ServicesSection() {
     <section id="services" className="px-2 pt-3 sm:px-3">
       <div className="rounded-[2rem] bg-[#f3f6f8] px-5 py-20 sm:px-10 sm:py-28 lg:px-16 lg:py-32">
         <div className="mx-auto max-w-[1440px]">
-          <Eyebrow>What we make</Eyebrow>
           <SectionHeading>Glass and aluminum for every opening.</SectionHeading>
 
           <div className="mt-14 border-t border-[#dce4ea] sm:mt-20">
@@ -350,7 +348,6 @@ export function ProjectShowcase() {
         <div className="mx-auto max-w-[1440px]">
           <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-end">
             <div>
-              <Eyebrow>Built in detail</Eyebrow>
               <SectionHeading>Precision you can see.</SectionHeading>
             </div>
             <p className="max-w-xl text-base leading-7 text-[#667584] lg:justify-self-end lg:text-lg lg:leading-8">
@@ -402,7 +399,6 @@ export function ProcessAndStatsSection() {
     <section id="process" className="px-2 pt-3 sm:px-3">
       <div className="overflow-hidden rounded-[2rem] bg-[#162d4a] px-5 py-20 text-white sm:px-10 sm:py-28 lg:px-16 lg:py-32">
         <div className="mx-auto max-w-[1440px]">
-          <Eyebrow light>How it works</Eyebrow>
           <SectionHeading light>
             Measured once.
             <br />
@@ -476,7 +472,6 @@ export function ProductGridSection({ products, loading, error }: ProductGridProp
         <div className="mx-auto max-w-[1440px]">
           <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Eyebrow>Our products</Eyebrow>
               <SectionHeading>Built to your exact specs.</SectionHeading>
             </div>
             <Link
@@ -575,7 +570,6 @@ export function FaqSection() {
       <div className="rounded-[2rem] bg-white px-5 py-20 sm:px-10 sm:py-28 lg:px-16 lg:py-32">
         <div className="mx-auto grid max-w-[1440px] gap-14 lg:grid-cols-[0.75fr_1.25fr] lg:gap-24">
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <Eyebrow>Common questions</Eyebrow>
             <SectionHeading>A clearer answer, before you commit.</SectionHeading>
             <p className="mt-7 max-w-md text-sm leading-6 text-[#667584] sm:text-base sm:leading-7">
               {isCatalogMode
