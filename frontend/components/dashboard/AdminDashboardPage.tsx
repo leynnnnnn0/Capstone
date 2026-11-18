@@ -297,48 +297,7 @@ export default function AdminDashboardPage({ firstName }: { firstName?: string }
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Card>
-          <DashboardPanelHeading
-            title="Appointment Status"
-            description="Current operational distribution."
-            icon={ClipboardList}
-          />
-          <CardContent>
-            <div className="staff-chart-panel">
-              <ChartContainer config={statusChartConfig} className="h-[220px] sm:h-[240px] xl:h-[260px]">
-                <PieChart>
-                  <Tooltip content={<ChartTooltipContent />} />
-                  <Pie data={metrics.statusData} dataKey="count" nameKey="status" innerRadius={48} outerRadius={82} paddingAngle={3}>
-                    {metrics.statusData.map((entry, index) => (
-                      <Cell key={entry.status} fill={pieColors[index % pieColors.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ChartContainer>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <DashboardPanelHeading title="Service Mix" description="Demand by requested service type." icon={Package} />
-          <CardContent className="space-y-2">
-            {metrics.serviceMix.map((item) => (
-              <div key={item.service} className="rounded-xl bg-[#f6f9fb] px-3 py-2.5">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="capitalize text-[#617689]">{item.service.replaceAll("_", " ")}</span>
-                  <span className="font-semibold text-foreground">{item.count}</span>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#dfe8ef]">
-                  <div
-                    className="h-full rounded-full bg-[#608db9]"
-                    style={{ width: `${Math.max(10, (item.count / Math.max(...metrics.serviceMix.map((entry) => entry.count), 1)) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+    
     </div>
   );
 }

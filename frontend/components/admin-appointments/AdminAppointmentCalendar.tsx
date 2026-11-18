@@ -163,10 +163,10 @@ export default function AdminAppointmentCalendar({
           <div className="flex items-center gap-2">
             <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
               <ModeButton active={activeMode === "appointments"} onClick={() => setMode("appointments")}>
-                📋 Appointments
+                Appointments
               </ModeButton>
               <ModeButton active={activeMode === "work_jobs"} onClick={() => setMode("work_jobs")}>
-                🧰 Work Jobs
+                Work Jobs
               </ModeButton>
               <ModeButton active={activeMode === "workers"} onClick={() => setMode("workers")}>
                 Staff Schedule

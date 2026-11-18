@@ -22,7 +22,7 @@ export default function AdminSummaryCard({
   ...props
 }: SummaryProps) {
   return (
-    <article {...props} className={className ? `staff-summary ${className}` : "staff-summary"} data-featured={tone === "blue"}>
+    <article {...props} className={className ? `staff-summary ${className}` : "staff-summary hover:cursor-pointer"} data-featured={tone === "blue"}>
       <div className="min-w-0">
         {eyebrow && <p className="staff-summary-description text-xs">{eyebrow}</p>}
         <h2 className="break-words text-sm font-medium leading-tight">{label}</h2>

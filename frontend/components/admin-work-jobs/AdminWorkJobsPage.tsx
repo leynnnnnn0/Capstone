@@ -126,14 +126,21 @@ export default function AdminWorkJobsPage() {
     <div className="space-y-10">
       <section className="flex flex-col gap-5 border-b pb-8 sm:gap-8 sm:pb-10 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Work jobs</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Work jobs
+          </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
-            Coordinate installations, monitor job progress, and keep field assignments moving on schedule.
+            Coordinate installations, monitor job progress, and keep field
+            assignments moving on schedule.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
           {!isWorker && (
-            <Button asChild size="lg" className="gap-2 bg-primary hover:bg-primary/85">
+            <Button
+              asChild
+              size="lg"
+              className="gap-2 bg-primary hover:bg-primary/85"
+            >
               <Link href="/dashboard/work-jobs/create">
                 <BriefcaseBusiness className="size-4" />
                 Create work job
@@ -143,42 +150,111 @@ export default function AdminWorkJobsPage() {
         </div>
       </section>
 
-      <section className={`grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}>
-        <AdminSummaryCard label="Total" value={total} icon={BriefcaseBusiness} tone="blue" eyebrow="Field work" description="all work job records" />
+      <section
+        className={`grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 ${isWorker ? "xl:grid-cols-3" : "xl:grid-cols-4"}`}
+      >
+        <AdminSummaryCard
+          label="Total"
+          value={total}
+          icon={BriefcaseBusiness}
+          tone="blue"
+          eyebrow="Field work"
+          description="all work job records"
+          onClick={(value) => applyFilter({ status: "" })}
+        />
         {!isWorker && (
-          <AdminSummaryCard label="Pending" value={response?.pending_count ?? 0} icon={CalendarDays} tone="mist" eyebrow="Field work" description="awaiting confirmation" />
+          <AdminSummaryCard
+            label="Pending"
+            value={response?.pending_count ?? 0}
+            icon={CalendarDays}
+            tone="mist"
+            eyebrow="Field work"
+            description="awaiting confirmation"
+            onClick={(value) => applyFilter({ status: "pending" })}
+          />
         )}
-        <AdminSummaryCard label="Active" value={response?.active_count ?? 0} icon={PlayCircle} tone="light" eyebrow="Field work" description="active work jobs" />
-        <AdminSummaryCard label="Completed" value={response?.completed_count ?? 0} icon={CheckCircle2} tone="slate" eyebrow="Field work" description="finished work jobs" />
+        <AdminSummaryCard
+          label="Active"
+          value={response?.active_count ?? 0}
+          icon={PlayCircle}
+          tone="light"
+          eyebrow="Field work"
+          description="active work jobs"
+          onClick={(value) => applyFilter({ status: "confirmed" })}
+        />
+        <AdminSummaryCard
+          label="Completed"
+          value={response?.completed_count ?? 0}
+          icon={CheckCircle2}
+          tone="slate"
+          eyebrow="Field work"
+          description="finished work jobs"
+          onClick={(value) => applyFilter({ status: "completed" })}
+        />
       </section>
 
       <section className="space-y-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Operations</p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Work job records</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Operations
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+              Work job records
+            </h2>
           </div>
           <div className="flex min-w-0 items-center gap-2 lg:w-[38rem]">
-          <AdminTableSearch value={search} onChange={setSearch} placeholder="Search by name, phone, work job #..." />
-          <div className="flex shrink-0 gap-2">
-            <Button type="button" variant="default" size="sm" onClick={() => setFiltersOpen((value) => !value)} className="size-11 shrink-0 gap-1.5 rounded-lg bg-primary p-0 text-white hover:bg-primary/85 sm:h-11 sm:w-auto sm:px-4" aria-label="Toggle filters">
-              <SlidersHorizontal className="size-3.5" />
-              <span className="hidden sm:inline">Filter</span>
-            </Button>
-            {activeFilters && (
-              <Button type="button" variant="ghost" size="sm" onClick={resetFilters} className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4" aria-label="Reset filters">
-                <RotateCcw className="size-3.5" />
-                <span className="hidden sm:inline">Reset</span>
+            <AdminTableSearch
+              value={search}
+              onChange={setSearch}
+              placeholder="Search by name, phone, work job #..."
+            />
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() => setFiltersOpen((value) => !value)}
+                className="size-11 shrink-0 gap-1.5 rounded-lg bg-primary p-0 text-white hover:bg-primary/85 sm:h-11 sm:w-auto sm:px-4"
+                aria-label="Toggle filters"
+              >
+                <SlidersHorizontal className="size-3.5" />
+                <span className="hidden sm:inline">Filter</span>
               </Button>
-            )}
+              {activeFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="size-11 shrink-0 gap-1.5 rounded-xl p-0 sm:h-11 sm:w-auto sm:px-4"
+                  aria-label="Reset filters"
+                >
+                  <RotateCcw className="size-3.5" />
+                  <span className="hidden sm:inline">Reset</span>
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
         </div>
         {filtersOpen && (
           <div className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-3">
-            <FilterSelect label="Status" value={filters.status} options={adminWorkJobStatusOptions} onChange={(value) => applyFilter({ status: value })} />
-            <FilterDate label="Date From" value={filters.date_from} onChange={(value) => applyFilter({ date_from: value })} />
-            <FilterDate label="Date To" value={filters.date_to} onChange={(value) => applyFilter({ date_to: value })} />
+            <FilterSelect
+              label="Status"
+              value={filters.status}
+              options={adminWorkJobStatusOptions}
+              onChange={(value) => applyFilter({ status: value })}
+            />
+            <FilterDate
+              label="Date From"
+              value={filters.date_from}
+              onChange={(value) => applyFilter({ date_from: value })}
+            />
+            <FilterDate
+              label="Date To"
+              value={filters.date_to}
+              onChange={(value) => applyFilter({ date_to: value })}
+            />
           </div>
         )}
       </section>
@@ -186,10 +262,15 @@ export default function AdminWorkJobsPage() {
       <div className="space-y-2 md:hidden">
         {loading ? (
           Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="h-32 animate-pulse rounded-lg border bg-muted/30" />
+            <div
+              key={index}
+              className="h-32 animate-pulse rounded-lg border bg-muted/30"
+            />
           ))
         ) : workJobs.length > 0 ? (
-          workJobs.map((workJob) => <WorkJobCard key={workJob.id} workJob={workJob} />)
+          workJobs.map((workJob) => (
+            <WorkJobCard key={workJob.id} workJob={workJob} />
+          ))
         ) : (
           <div className="rounded-lg border border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
             No work jobs found.
@@ -214,10 +295,17 @@ export default function AdminWorkJobsPage() {
             {loading ? (
               <TableSkeletonRows columns={7} />
             ) : workJobs.length > 0 ? (
-              workJobs.map((workJob) => <WorkJobRow key={workJob.id} workJob={workJob} />)
+              workJobs.map((workJob) => (
+                <WorkJobRow key={workJob.id} workJob={workJob} />
+              ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">No work jobs found.</TableCell>
+                <TableCell
+                  colSpan={7}
+                  className="py-8 text-center text-muted-foreground"
+                >
+                  No work jobs found.
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -230,10 +318,24 @@ export default function AdminWorkJobsPage() {
             Page {meta.current_page} of {meta.last_page}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={meta.current_page <= 1} onClick={() => applyFilter({ page: String(meta.current_page - 1) })}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={meta.current_page <= 1}
+              onClick={() =>
+                applyFilter({ page: String(meta.current_page - 1) })
+              }
+            >
               Previous
             </Button>
-            <Button variant="outline" size="sm" disabled={meta.current_page >= meta.last_page} onClick={() => applyFilter({ page: String(meta.current_page + 1) })}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={meta.current_page >= meta.last_page}
+              onClick={() =>
+                applyFilter({ page: String(meta.current_page + 1) })
+              }
+            >
               Next
             </Button>
           </div>

@@ -143,10 +143,6 @@ function StaffLoginForm() {
             </Link>
 
             <div className="mt-auto max-w-lg text-white">
-              <div className="mb-5 flex size-11 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md">
-                <ShieldCheck className="size-5" />
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#b9cfe0]">Secure operations workspace</p>
               <h2 className="mt-4 text-4xl font-semibold leading-[1.06] tracking-[-0.045em] xl:text-5xl">
                 Built for precise work,
                 <br />from quote to installation.
@@ -154,18 +150,7 @@ function StaffLoginForm() {
               <p className="mt-5 max-w-md text-sm leading-6 text-white/65">
                 Manage customers, schedules, field teams, quotations, and payments from one focused command center.
               </p>
-              <div className="mt-8 grid grid-cols-3 gap-3 border-t border-white/15 pt-6 text-xs text-white/65">
-                {[
-                  "Protected access",
-                  "Live operations",
-                  "Audit ready",
-                ].map((item) => (
-                  <span key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="size-3.5 text-[#b9cfe0]" />
-                    {item}
-                  </span>
-                ))}
-              </div>
+             
             </div>
           </div>
         </div>
@@ -185,7 +170,6 @@ function StaffLoginForm() {
           </div>
 
           <div className="my-auto mx-auto w-full max-w-[390px] py-10 sm:py-14">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#608db9]">Staff portal</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] text-[#0f1d2d] sm:text-4xl">
               {challengeId ? "Verify your identity" : "Welcome back."}
             </h1>
@@ -272,9 +256,6 @@ function StaffLoginForm() {
             </div>
           </div>
 
-          <p className="text-center text-[10px] uppercase tracking-[0.16em] text-[#9aa8b4] lg:text-right">
-            Authorized personnel only · Secure access
-          </p>
         </div>
       </section>
     </main>

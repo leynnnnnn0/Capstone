@@ -178,9 +178,6 @@ export default function LoginPage() {
           </Link>
 
           <div className="relative max-w-2xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#c8dae8]">
-              Customer Portal
-            </p>
             <h1 className="mt-5 text-[clamp(3.5rem,5vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.06em] text-white">
               Track every inspection, quote, and installation in one place.
             </h1>
@@ -210,9 +207,6 @@ export default function LoginPage() {
             {step === "contact" && (
               <>
                 <div className="mb-7">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#608db9]">
-                    Customer Login
-                  </p>
                   <h2 className="mt-3 text-3xl font-medium tracking-[-0.04em] text-[#101820]">
                     Get your one-time code
                   </h2>

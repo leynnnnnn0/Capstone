@@ -179,16 +179,6 @@ export default function PublicProductShow() {
               </div>
             )}
 
-            <div className="mb-8 flex flex-wrap gap-2 border-b border-[#dce4ea] pb-7">
-              {["Fabricated In-House", "Warranty Included", "Free Measurement", "7-14 Day Lead Time"].map((label) => (
-                <span
-                  key={label}
-                  className="rounded-full border border-[#dce4ea] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#536372]"
-                >
-                  {label}
-                </span>
-              ))}
-            </div>
 
             {!isCatalogMode && <div className="mb-6 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -199,9 +189,7 @@ export default function PublicProductShow() {
               </Link>
             </div>}
 
-            {!isCatalogMode && <p className="text-center text-[11px] leading-relaxed text-slate-400">
-              Free 3-5 day scheduling · Tool-free consultation · No obligation quote
-            </p>}
+
           </div>
         </div>
           </div>
