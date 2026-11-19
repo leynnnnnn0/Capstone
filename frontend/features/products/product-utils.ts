@@ -247,23 +247,33 @@ export function optionGroupOptions(group: ProductOptionGroup) {
 export function normalizeAssetUrl(url?: string | null) {
   if (!url) return "";
 
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").trim();
+  const apiBase = (
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
+  )
+    .trim()
+    .replace(/\/+$/, "");
 
   if (url.startsWith("/storage/")) {
-    return `${apiBase.replace(/\/$/, "")}${url}`;
+    return `${apiBase}${url}`;
   }
 
   try {
     const parsed = new URL(url);
-    const api = new URL(apiBase);
-    const localBackendHost =
-      parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
     const backendAssetPath =
       parsed.pathname.startsWith("/storage/") ||
       parsed.pathname.startsWith("/api/v1/product-3d-models/");
 
-    if (localBackendHost && backendAssetPath) {
-      return `${api.origin}${parsed.pathname}${parsed.search}`;
+    if (backendAssetPath) {
+      const assetPath = `${parsed.pathname}${parsed.search}`;
+
+      // The development/ngrok setup uses same-origin Next.js rewrites for
+      // /storage and /api. Keeping these URLs relative prevents a phone from
+      // receiving localhost URLs and avoids tying assets to one tunnel domain.
+      if (!apiBase || apiBase.startsWith("/")) {
+        return `${apiBase}${assetPath}`;
+      }
+
+      return `${new URL(apiBase).origin}${assetPath}`;
     }
   } catch {
     return url;

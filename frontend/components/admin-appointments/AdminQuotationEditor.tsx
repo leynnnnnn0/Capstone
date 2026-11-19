@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Calculator, FileText, Package, Plus, RotateCcw, StickyNote } from "lucide-react";
 
 import AdminQuotationLineItemRow from "@/components/admin-appointments/AdminQuotationLineItemRow";
@@ -45,6 +45,8 @@ export default function AdminQuotationEditor({
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
+  const appointmentRef = useRef(appointment);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [sheetContent, setSheetContent] = useState<HTMLDivElement | null>(null);
   const [items, setItems] = useState<AdminLineItem[]>([]);
@@ -56,11 +58,24 @@ export default function AdminQuotationEditor({
   const grandTotal = useMemo(() => items.reduce((sum, item) => sum + Number(item.total_amount || 0), 0), [items]);
 
   useEffect(() => {
+    appointmentRef.current = appointment;
+  }, [appointment]);
+
+  useEffect(() => {
     if (!open) return;
+
+    let cancelled = false;
+    setLoading(true);
 
     fetchAllProducts({ is_active: "1" })
       .then((activeProducts) => {
-        const quotedProducts = appointment.quotation?.items
+        if (cancelled) return;
+
+        // Read the latest saved quotation when the sheet opens, but don't
+        // reinitialize the user's draft when a background refresh replaces
+        // the appointment object while the sheet is already open.
+        const currentAppointment = appointmentRef.current;
+        const quotedProducts = currentAppointment.quotation?.items
           .map((item) => item.product)
           .filter((product): product is Product => Boolean(product)) ?? [];
         const availableProducts = [...activeProducts];
@@ -73,16 +88,25 @@ export default function AdminQuotationEditor({
 
         setProducts(availableProducts);
         setItems(
-          appointment.quotation?.items.length
-            ? customerItemsToLineItems(appointment.quotation.items, availableProducts)
+          currentAppointment.quotation?.items.length
+            ? customerItemsToLineItems(currentAppointment.quotation.items, availableProducts)
             : [makeAdminLineItem()],
         );
-        setNotes(appointment.quotation?.notes ?? "");
-        setExpiresAt(appointment.quotation?.expires_at ?? "");
+        setNotes(currentAppointment.quotation?.notes ?? "");
+        setExpiresAt(currentAppointment.quotation?.expires_at ?? "");
         setErrors({});
       })
-      .finally(() => setLoading(false));
-  }, [appointment, open]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Reinitialize only when opening the sheet or switching appointments.
+    // `appointment` itself changes during realtime refreshes and must not
+    // reset the in-progress form.
+  }, [appointment.id, open]);
 
   function updateItem(id: string, updates: Partial<AdminLineItem>) {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...updates } : item)));
