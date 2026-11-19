@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Save, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowLeft, RefreshCw, Save, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import NameInput from "@/components/form/NameInput";
@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { FormPageSkeleton } from "@/components/ui/page-skeletons";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -32,12 +31,7 @@ import {
 } from "@/features/admin-users/admin-user-api";
 import { adminUserSchema } from "@/features/admin-users/admin-user-schema";
 import type { AdminUserForm as AdminUserFormValues, StaffRole, UserOptions } from "@/features/admin-users/types";
-import {
-  adminPermissionLabel,
-  adminUserRoleLabels,
-  adminUserToForm,
-  emptyAdminUserForm,
-} from "@/features/admin-users/admin-user-utils";
+import { adminUserRoleLabels, adminUserToForm, emptyAdminUserForm } from "@/features/admin-users/admin-user-utils";
 import { generateSecurePassword, zodIssuesToFieldErrors } from "@/features/forms/validation";
 import { ApiError } from "@/lib/api";
 
@@ -48,20 +42,12 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
     ...emptyAdminUserForm,
     password: editing ? "" : generateSecurePassword(),
   }));
-  const [options, setOptions] = useState<UserOptions>({ roles: [], permissions: [] });
+  const [options, setOptions] = useState<UserOptions>({ roles: [] });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const creatingOwner = !editing && form.role === "owner";
-  const selectedPermissions = creatingOwner ? options.permissions : form.permissions;
-
-  const permissionOptions = useMemo(
-    () => options.permissions.map((permission) => ({ label: adminPermissionLabel(permission), value: permission })),
-    [options.permissions],
-  );
-
   useEffect(() => {
     const request = userId
       ? Promise.all([fetchUserOptions(), fetchAdminUser(userId)])
@@ -95,7 +81,7 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
   }
 
   async function save() {
-    const parsed = adminUserSchema.safeParse({ ...form, permissions: selectedPermissions });
+    const parsed = adminUserSchema.safeParse(form);
     if (!parsed.success) {
       setConfirmOpen(false);
       setErrors(zodIssuesToFieldErrors(parsed.error.issues) as Record<string, string>);
@@ -145,12 +131,12 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
             {editing ? "Edit user" : "Create user"}
           </h1>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            {editing ? "Update account details, role, and direct permission overrides." : "Create an account and define its role and access in one place."}
+            {editing ? "Update the account details and role." : "Create a user account and assign a role."}
           </p>
         </div>
       </section>
 
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.7fr)]">
+      <form onSubmit={submit} className="grid gap-5">
         <section className="rounded-lg border bg-white p-4 sm:p-6">
           <div className="mb-5 flex items-center gap-2 border-b pb-4">
             <UserRound className="size-4 text-muted-foreground" />
@@ -175,7 +161,15 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
             <Field label="Phone" error={errors.phone_number}>
               <PhoneNumberInput value={form.phone_number} onValueChange={(value) => setForm({ ...form, phone_number: value })} />
             </Field>
-            <Field label={editing ? "Password (optional)" : "Password"} error={errors.password}>
+            <Field label="Role" error={errors.role}>
+              <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value as StaffRole })}>
+                <SelectTrigger className="h-11 w-full rounded-xl"><SelectValue placeholder="Select role" /></SelectTrigger>
+                <SelectContent>
+                  {options.roles.map((role) => <SelectItem key={role} value={role}>{adminUserRoleLabels[role] ?? role}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label={editing ? "Password (optional)" : "Password"} error={errors.password} className="md:col-span-2">
               <div className="flex gap-2">
                 <Input type="text" className="h-11 min-w-0 rounded-xl font-mono" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder={editing ? "Keep current password" : "Generated secure password"} />
                 <Button type="button" variant="outline" className="size-11 shrink-0 rounded-xl p-0 sm:w-auto sm:px-3" onClick={() => setForm({ ...form, password: generateSecurePassword() })} aria-label="Generate secure password">
@@ -185,43 +179,6 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
               </div>
               <p className="text-xs text-muted-foreground">Use uppercase, lowercase, number, and symbol.</p>
             </Field>
-          </div>
-        </section>
-
-        <section className="rounded-lg border bg-white p-4 sm:p-6">
-          <div className="mb-5 flex items-center gap-2 border-b pb-4">
-            <ShieldCheck className="size-4 text-muted-foreground" />
-            <h2 className="text-base font-semibold">Role and permissions</h2>
-          </div>
-
-          <div className="space-y-5">
-            <Field label="Role" error={errors.role}>
-              <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value as StaffRole })}>
-                <SelectTrigger className="h-11 w-full rounded-xl"><SelectValue placeholder="Select role" /></SelectTrigger>
-                <SelectContent>
-                  {options.roles.map((role) => <SelectItem key={role} value={role}>{adminUserRoleLabels[role] ?? role}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field label="Permission Overrides" error={errors.permissions}>
-              <MultiSelect
-                key={`${userId ?? "new"}-${selectedPermissions.join(".")}`}
-                options={permissionOptions}
-                defaultValue={selectedPermissions}
-                disabled={creatingOwner}
-                onValueChange={(permissions) => setForm({ ...form, permissions })}
-                placeholder="Add direct permissions"
-                maxCount={4}
-                animation={0}
-              />
-            </Field>
-
-            {!creatingOwner && (
-              <div className="rounded-xl bg-[#f3f7fa] p-3 text-xs leading-5 text-[#657b8f]">
-                Role permissions are inherited automatically. Overrides grant additional access directly to this account.
-              </div>
-            )}
           </div>
 
           <div className="mt-6 flex flex-col-reverse gap-2 border-t border-[#e7edf1] pt-4 sm:flex-row sm:justify-end">
@@ -241,7 +198,7 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>{editing ? "Save user changes?" : "Create this user?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              {editing ? "This will update the account, role, and permission overrides." : "This will create a new account with the selected role and permissions."}
+              {editing ? "This will update the account details and role." : "This will create a new account with the selected role."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -256,9 +213,9 @@ export default function AdminUserForm({ userId }: { userId?: string }) {
   );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+function Field({ label, error, children, className }: { label: string; error?: string; children: ReactNode; className?: string }) {
   return (
-    <div className="space-y-1.5">
+    <div className={`space-y-1.5 ${className ?? ""}`}>
       <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
       {children}
       {error && <p className="text-xs text-destructive">{error}</p>}

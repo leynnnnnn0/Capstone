@@ -49,7 +49,7 @@ import AdminSummaryCard from "@/components/admin/AdminSummaryCard";
 
 export default function AdminUsersPage() {
   const [response, setResponse] = useState<UserCollection | null>(null);
-  const [options, setOptions] = useState<UserOptions>({ roles: [], permissions: [] });
+  const [options, setOptions] = useState<UserOptions>({ roles: [] });
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
   const [emailStatus, setEmailStatus] = useState("all");
@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
         <div className="max-w-3xl">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-4xl">Users</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-7">
-            Manage staff and customer accounts, review assigned roles and permissions, and update access when responsibilities change.
+            Manage staff and customer accounts by assigning the right role.
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-start gap-5 lg:items-end">
@@ -153,9 +153,9 @@ export default function AdminUsersPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:grid-cols-3 sm:gap-x-7 sm:pb-10 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1">
-        <AdminSummaryCard label="Accounts" value={totalUsers} icon={UsersRound} eyebrow="Live workspace" description="all registered users" />
-        <AdminSummaryCard label="Staff on this page" value={staffUsers} icon={ShieldCheck} eyebrow="Live workspace" description="administrative and field staff" />
-        <AdminSummaryCard label="Customers on this page" value={customerUsers} icon={UserRound} eyebrow="Live workspace" description="customer portal users" />
+        <AdminSummaryCard label="Accounts" value={totalUsers} icon={UsersRound} description="all registered users" />
+        <AdminSummaryCard label="Staff on this page" value={staffUsers} icon={ShieldCheck} description="administrative and field staff" />
+        <AdminSummaryCard label="Customers on this page" value={customerUsers} icon={UserRound} description="customer portal users" />
       </section>
 
       <section className="space-y-4">
@@ -222,13 +222,12 @@ export default function AdminUsersPage() {
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Permissions</TableHead>
               <TableHead className="w-28 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableSkeletonRows columns={4} />
+              <TableSkeletonRows columns={3} />
             ) : users.length ? users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
@@ -237,9 +236,6 @@ export default function AdminUsersPage() {
                 </TableCell>
                 <TableCell>
                   <UserRoleBadge role={user.role} />
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {user.permissions.length} permission{user.permissions.length === 1 ? "" : "s"}
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
@@ -351,10 +347,7 @@ function UserCard({
         </div>
         <UserRoleBadge role={user.role} />
       </div>
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#e8edf1] pt-3">
-        <p className="text-xs text-muted-foreground">
-          {user.permissions.length} permission{user.permissions.length === 1 ? "" : "s"}
-        </p>
+      <div className="mt-4 flex justify-end gap-3 border-t border-[#e8edf1] pt-3">
         <div className="flex gap-1">
           <Button asChild variant="ghost" size="icon-sm">
             <Link href={`/dashboard/users/${user.id}/edit`} aria-label={`Edit ${user.full_name}`}>

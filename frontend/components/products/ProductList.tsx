@@ -165,8 +165,8 @@ export default function ProductList() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10">
-        <AdminSummaryCard label="Products" value={totalProducts} icon={Package} eyebrow="Live workspace" description="all catalog entries" />
-        <AdminSummaryCard label="Active" value={activeProducts} icon={CircleCheck} eyebrow="Live workspace" description="available to customers" />
+        <AdminSummaryCard label="Products" value={totalProducts} icon={Package} description="all catalog entries" />
+        <AdminSummaryCard label="Active" value={activeProducts} icon={CircleCheck} description="available to customers" />
       </section>
 
       <section className="space-y-4">

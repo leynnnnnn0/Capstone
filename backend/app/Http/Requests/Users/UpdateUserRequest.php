@@ -25,8 +25,6 @@ class UpdateUserRequest extends FormRequest
             'phone_number' => ['nullable', 'string', 'max:50'],
             'password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised()],
             'role' => ['required', Rule::in(['admin', 'owner', 'staff', 'customer'])],
-            'permissions' => ['array'],
-            'permissions.*' => ['string', 'exists:permissions,name'],
         ];
     }
 }

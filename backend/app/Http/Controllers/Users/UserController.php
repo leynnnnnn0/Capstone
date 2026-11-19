@@ -10,8 +10,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Guard;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
@@ -71,13 +69,6 @@ class UserController extends Controller
                 'role' => $data['role'],
             ]);
 
-            if ($data['role'] === 'owner') {
-                $data['permissions'] = Permission::query()
-                    ->where('guard_name', Guard::getDefaultName($user))
-                    ->get()
-                    ->all();
-            }
-
             $this->syncAccess($user, $data);
 
             return $user;
@@ -132,14 +123,16 @@ class UserController extends Controller
         abort_unless(auth()->user()?->can('roles.view'), 403);
 
         return response()->json([
-            'roles' => Role::query()->orderBy('name')->pluck('name'),
-            'permissions' => Permission::query()->orderBy('name')->pluck('name'),
+            'roles' => Role::query()
+                ->whereIn('name', ['admin', 'owner', 'staff', 'customer'])
+                ->orderBy('name')
+                ->pluck('name'),
         ]);
     }
 
     private function syncAccess(User $user, array $data): void
     {
         $user->syncRoles([$data['role']]);
-        $user->syncPermissions($data['permissions'] ?? []);
+        $user->syncPermissions([]);
     }
 }

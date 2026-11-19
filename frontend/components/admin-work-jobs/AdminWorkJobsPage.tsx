@@ -158,7 +158,6 @@ export default function AdminWorkJobsPage() {
           value={total}
           icon={BriefcaseBusiness}
           tone="blue"
-          eyebrow="Field work"
           description="all work job records"
           onClick={(value) => applyFilter({ status: "" })}
         />
@@ -168,7 +167,6 @@ export default function AdminWorkJobsPage() {
             value={response?.pending_count ?? 0}
             icon={CalendarDays}
             tone="mist"
-            eyebrow="Field work"
             description="awaiting confirmation"
             onClick={(value) => applyFilter({ status: "pending" })}
           />
@@ -178,16 +176,14 @@ export default function AdminWorkJobsPage() {
           value={response?.active_count ?? 0}
           icon={PlayCircle}
           tone="light"
-          eyebrow="Field work"
           description="active work jobs"
-          onClick={(value) => applyFilter({ status: "confirmed" })}
+          onClick={(value) => applyFilter({ status: "active" })}
         />
         <AdminSummaryCard
           label="Completed"
           value={response?.completed_count ?? 0}
           icon={CheckCircle2}
           tone="slate"
-          eyebrow="Field work"
           description="finished work jobs"
           onClick={(value) => applyFilter({ status: "completed" })}
         />

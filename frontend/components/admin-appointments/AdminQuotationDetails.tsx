@@ -42,6 +42,7 @@ import {
   updateQuotationItemStatus,
 } from "@/features/admin-appointments/admin-appointment-api";
 import { fmtPeso } from "@/features/admin-appointments/admin-quotation-line-utils";
+import { formatDimensionAsCentimeters } from "@/features/quotes/quote-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 import { productCover } from "@/features/products/product-utils";
 
@@ -339,7 +340,7 @@ function QuotationItemCard({
             <p className="text-sm leading-tight font-semibold">{item.name}</p>
             {item.description && <p className="mt-0.5 text-xs text-muted-foreground">{item.description}</p>}
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {(item.width || item.height) && <Badge variant="outline" className="text-[10px]">{item.width} x {item.height} cm</Badge>}
+              {(item.width || item.height) && <Badge variant="outline" className="text-[10px]">{formatDimensionAsCentimeters(item.width)} x {formatDimensionAsCentimeters(item.height)} cm</Badge>}
               {item.thickness && <Badge variant="outline" className="text-[10px]">Depth {item.thickness} mm</Badge>}
               <Badge variant="outline" className="text-[10px]">{item.pieces} pc{item.pieces !== 1 ? "s" : ""}</Badge>
             </div>

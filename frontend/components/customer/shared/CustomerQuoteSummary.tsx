@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatPeso } from "@/features/customer/customer-utils";
+import { formatDimensionAsCentimeters } from "@/features/quotes/quote-utils";
 import type { CustomerAppointment, CustomerQuotation, CustomerQuotationItem, CustomerQuotationItemImage } from "@/features/customer/types";
 import type { Product, ProductImage, ResourceCollection } from "@/features/products/types";
 
@@ -256,7 +257,7 @@ function ReadonlyQuoteItem({
             <div className="mt-2 flex flex-wrap gap-2">
               {item.width && item.height && (
                 <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] text-slate-700">
-                  {item.width} x {item.height} cm
+                  {formatDimensionAsCentimeters(item.width)} x {formatDimensionAsCentimeters(item.height)} cm
                 </span>
               )}
               {item.thickness && (

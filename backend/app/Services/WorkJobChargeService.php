@@ -14,7 +14,9 @@ class WorkJobChargeService
 {
     public function create(WorkJob $workJob, array $data, User $actor): WorkJob
     {
-        $status = WorkJobChargeStatus::from($data['status'] ?? WorkJobChargeStatus::Approved->value);
+        $status = $actor->isOperationsAdmin()
+            ? WorkJobChargeStatus::Approved
+            : WorkJobChargeStatus::PendingApproval;
         $type = WorkJobChargeType::from($data['type'] ?? WorkJobChargeType::ServiceFee->value);
 
         DB::transaction(function () use ($workJob, $data, $actor, $status, $type) {
@@ -27,7 +29,7 @@ class WorkJobChargeService
                 'status' => $status,
                 'amount' => round((float) $data['amount'], 2),
                 'currency' => config('paypal.currency', 'PHP'),
-                'requires_customer_approval' => (bool) ($data['requires_customer_approval'] ?? true),
+                'requires_customer_approval' => true,
                 'approved_at' => $status === WorkJobChargeStatus::Approved ? now() : null,
             ]);
 
@@ -65,9 +67,7 @@ class WorkJobChargeService
                 'type' => $type,
                 'status' => $status,
                 'amount' => array_key_exists('amount', $data) ? round((float) $data['amount'], 2) : $charge->amount,
-                'requires_customer_approval' => array_key_exists('requires_customer_approval', $data)
-                    ? (bool) $data['requires_customer_approval']
-                    : $charge->requires_customer_approval,
+                'requires_customer_approval' => true,
                 'approved_at' => $isApproved ? ($wasApproved ? $charge->approved_at : now()) : null,
             ]);
 

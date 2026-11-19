@@ -35,10 +35,10 @@ class RealtimeNotificationService
             'href' => "/dashboard/appointments/{$appointment->id}",
         ];
 
-        $staff = $this->staffUsers('appointments.view');
+        $staff = $this->staffRecipients($appointment->workers, 'appointments.view', $actor);
         $customer = $this->customerUser($appointment);
 
-        if ($this->shouldNotifyStaff($actor)) {
+        if ($staff->isNotEmpty()) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
         }
 
@@ -75,10 +75,10 @@ class RealtimeNotificationService
             'href' => "/dashboard/work-jobs/{$workJob->id}",
         ];
 
-        $staff = $this->staffUsers('work-jobs.view');
+        $staff = $this->staffRecipients($workJob->workers, 'work-jobs.view', $actor);
         $customer = $this->customerUserForWorkJob($workJob);
 
-        if ($this->shouldNotifyStaff($actor)) {
+        if ($staff->isNotEmpty()) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
         }
 
@@ -118,10 +118,10 @@ class RealtimeNotificationService
             'href' => $appointment ? "/dashboard/appointments/{$appointment->id}" : '/dashboard/appointments',
         ];
 
-        $staff = $this->staffUsers('quotations.view');
+        $staff = $this->staffRecipients($appointment?->workers ?? collect(), 'quotations.view', $actor);
         $customer = $this->customerUser($appointment);
 
-        if ($this->shouldNotifyStaff($actor)) {
+        if ($staff->isNotEmpty()) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
         }
 
@@ -158,10 +158,10 @@ class RealtimeNotificationService
             'href' => "/dashboard/work-jobs/{$workJob->id}",
         ];
 
-        $staff = $this->staffUsers('work-jobs.view');
+        $staff = $this->staffRecipients($workJob->workers, 'work-jobs.view', $actor);
         $customer = $this->customerUserForWorkJob($workJob);
 
-        if ($this->shouldNotifyStaff($actor)) {
+        if ($staff->isNotEmpty()) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
         }
 
@@ -200,10 +200,10 @@ class RealtimeNotificationService
             'href' => "/dashboard/work-jobs/{$workJob->id}",
         ];
 
-        $staff = $this->staffUsers('payments.view');
+        $staff = $this->staffRecipients($workJob->workers, 'payments.view', $actor);
         $customer = $this->customerUserForWorkJob($workJob);
 
-        if ($this->shouldNotifyStaff($actor)) {
+        if ($staff->isNotEmpty()) {
             $this->notify($this->withoutActor($staff, $actor), $payload);
         }
 
@@ -247,18 +247,28 @@ class RealtimeNotificationService
             });
     }
 
-    private function staffUsers(?string $permission = null): Collection
+    private function staffRecipients(Collection $assignedWorkers, string $permission, ?User $actor): Collection
     {
-        return User::query()->whereHas('roles', fn ($query) => $query->whereIn('name', [
-            'admin',
-            'owner',
-            'staff',
-        ]))->get();
-    }
+        if ($actor?->isStaff() && ! $actor->isOperationsAdmin()) {
+            return collect();
+        }
 
-    private function shouldNotifyStaff(?User $actor): bool
-    {
-        return $actor === null || $actor->isCustomer();
+        $workers = $assignedWorkers
+            ->filter(fn (User $user) => $user->isStaff() && $user->can($permission));
+
+        if ($actor?->isOperationsAdmin()) {
+            return $workers->unique('id')->values();
+        }
+
+        $adminsAndOwners = User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['admin', 'owner']))
+            ->get()
+            ->filter(fn (User $user) => $user->can($permission));
+
+        return $adminsAndOwners
+            ->merge($workers)
+            ->unique('id')
+            ->values();
     }
 
     private function shouldNotifyCustomer(?User $actor): bool

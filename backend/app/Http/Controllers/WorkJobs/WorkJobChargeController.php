@@ -22,7 +22,7 @@ class WorkJobChargeController extends Controller
 
     public function store(Request $request, WorkJob $workJob): JsonResponse
     {
-        $this->abortIfWorker($request, 'Staff cannot add work job charges.');
+        $this->abortIfWorkerNotAssignedToWorkJob($request, $workJob);
 
         $workJob = $this->charges->create($workJob, $this->validated($request), $request->user());
 

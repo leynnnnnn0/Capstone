@@ -69,9 +69,6 @@ import type {
   SalesFilters,
   SalesPaymentRow,
   SalesReport,
-  SalesTopCustomer,
-  SalesTopProduct,
-  SalesTopWorkJob,
 } from "@/features/admin-sales/types";
 import { workJobStatusStyle } from "@/features/admin-work-jobs/admin-work-job-utils";
 import type { AdminWorkJobStatus } from "@/features/admin-work-jobs/types";
@@ -400,12 +397,6 @@ export default function AdminSalesPage() {
         </Card>
       </div>
 
-      <TopLists
-        customers={report?.tables.top_customers ?? []}
-        workJobs={report?.tables.top_work_jobs ?? []}
-        products={report?.charts.top_products ?? []}
-        loading={loading}
-      />
     </div>
   );
 }
@@ -622,102 +613,6 @@ function RecentPaymentCard({ payment }: { payment: SalesPaymentRow }) {
         )}
       </AdminMobileRecordDetail>
     </AdminMobileRecord>
-  );
-}
-
-function TopLists({
-  customers,
-  workJobs,
-  products,
-  loading,
-}: {
-  customers: SalesTopCustomer[];
-  workJobs: SalesTopWorkJob[];
-  products: SalesTopProduct[];
-  loading: boolean;
-}) {
-  return (
-    <Card>
-      <SalesPanelHeading eyebrow="Top performers" title="Revenue Leaders" description="Customers, work jobs, and products driving sales." icon={TrendingUp} />
-      <CardContent className="grid gap-4">
-        <TopListSection
-          title="Top Customers"
-          loading={loading}
-          rows={customers.map((customer) => ({
-            key: customer.name,
-            label: customer.name,
-            sublabel: `${customer.payments} payment${customer.payments === 1 ? "" : "s"}${customer.contact ? ` · ${customer.contact}` : ""}`,
-            value: formatPeso(customer.total_paid),
-          }))}
-        />
-        <TopListSection
-          title="Top Work Jobs"
-          loading={loading}
-          rows={workJobs.map((workJob) => ({
-            key: workJob.work_job_number,
-            label: workJob.work_job_number,
-            href: workJob.id ? `/dashboard/work-jobs/${workJob.id}` : undefined,
-            sublabel: `${workJob.customer ?? "Unknown customer"}${workJob.schedule ? ` · ${workJob.schedule}` : ""}`,
-            value: formatPeso(workJob.total_paid),
-          }))}
-        />
-        <TopListSection
-          title="Top Products"
-          loading={loading}
-          rows={products.map((product) => ({
-            key: product.name,
-            label: product.name,
-            sublabel: `${product.pieces} pc${product.pieces === 1 ? "" : "s"} · ${product.line_count} line item${product.line_count === 1 ? "" : "s"}`,
-            value: formatPeso(product.revenue),
-          }))}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-function TopListSection({
-  title,
-  rows,
-  loading,
-}: {
-  title: string;
-  rows: Array<{ key: string; label: string; sublabel: string; value: string; href?: string }>;
-  loading: boolean;
-}) {
-  return (
-    <div>
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">{title}</p>
-      <div className="space-y-2">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-3 w-40" />
-              </div>
-              <Skeleton className="h-4 w-20" />
-            </div>
-          ))
-        ) : rows.length > 0 ? (
-          rows.slice(0, 4).map((row) => (
-            <div key={row.key} className="flex items-start justify-between gap-3 rounded-xl border border-[#e3eaf0] bg-[#f6f9fb] px-3 py-2.5 transition-colors hover:bg-[#edf3f7]">
-              <div className="min-w-0">
-                {row.href ? (
-                  <Link href={row.href} className="font-medium text-primary hover:underline">{row.label}</Link>
-                ) : (
-                  <p className="font-medium">{row.label}</p>
-                )}
-                <p className="line-clamp-1 text-xs text-muted-foreground">{row.sublabel}</p>
-              </div>
-              <p className="shrink-0 font-medium">{row.value}</p>
-            </div>
-          ))
-        ) : (
-          <div className="rounded-lg border border-dashed py-4 text-center text-sm text-muted-foreground">No data yet.</div>
-        )}
-      </div>
-    </div>
   );
 }
 

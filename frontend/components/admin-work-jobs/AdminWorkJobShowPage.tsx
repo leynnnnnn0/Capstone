@@ -112,7 +112,11 @@ export default function AdminWorkJobShowPage({ workJobId }: { workJobId: string 
             label: "Billing",
             content: (
               <>
-                <AdminWorkJobChargesCard workJob={workJob} onUpdated={setWorkJob} />
+                <AdminWorkJobChargesCard
+                  workJob={workJob}
+                  onUpdated={setWorkJob}
+                  canApproveCharges={hasRole(user, "admin") || hasRole(user, "owner")}
+                />
                 <AdminWorkJobPaymentsCard workJob={workJob} onUpdated={setWorkJob} />
               </>
             ),

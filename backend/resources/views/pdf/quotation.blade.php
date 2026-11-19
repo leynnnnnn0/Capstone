@@ -182,7 +182,7 @@
                     @endforeach
                     @if($item->width && $item->height)
                         <div style="color:#aaa; font-size:9px; margin-top:3px;">
-                            {{ $item->width }} × {{ $item->height }} cm
+                            {{ number_format($item->width * 100, 1) }} × {{ number_format($item->height * 100, 1) }} cm
                             @if($item->thickness) &nbsp;·&nbsp; Depth {{ $item->thickness }} mm @endif
                             @if($item->pieces > 1) &nbsp;·&nbsp; {{ $item->pieces }} pcs @endif
                         </div>

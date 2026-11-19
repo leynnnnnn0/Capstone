@@ -20,5 +20,4 @@ export const adminUserSchema = z.object({
   phone_number: optionalPhilippineMobileSchema(),
   password: optionalStrongPasswordSchema(),
   role: z.enum(["admin", "owner", "staff", "customer"]),
-  permissions: z.array(z.string()),
 });

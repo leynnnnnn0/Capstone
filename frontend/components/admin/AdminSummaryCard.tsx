@@ -5,7 +5,6 @@ type SummaryProps = ComponentProps<"article"> & {
   value: number | string;
   icon: ComponentType<{ className?: string }>;
   tone?: "blue" | "mist" | "light" | "slate";
-  eyebrow?: string;
   description?: string;
 };
 
@@ -16,7 +15,6 @@ export default function AdminSummaryCard({
   value,
   icon: Icon,
   tone,
-  eyebrow,
   description,
   className,
   ...props
@@ -24,7 +22,6 @@ export default function AdminSummaryCard({
   return (
     <article {...props} className={className ? `staff-summary ${className}` : "staff-summary hover:cursor-pointer"} data-featured={tone === "blue"}>
       <div className="min-w-0">
-        {eyebrow && <p className="staff-summary-description text-xs">{eyebrow}</p>}
         <h2 className="break-words text-sm font-medium leading-tight">{label}</h2>
       </div>
       <div className="staff-summary-value mt-auto flex min-w-0 items-center justify-between gap-2">

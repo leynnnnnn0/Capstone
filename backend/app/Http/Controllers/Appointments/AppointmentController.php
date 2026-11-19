@@ -57,7 +57,18 @@ class AppointmentController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
-            ->when($request->filled('status') && $request->status !== 'all', fn ($query) => $query->where('status', $request->status))
+            ->when($request->filled('status') && $request->status !== 'all', function ($query) use ($request) {
+                if ($request->status === 'active') {
+                    return $query->whereNotIn('status', [
+                        AppointmentStatus::Pending->value,
+                        AppointmentStatus::Cancelled->value,
+                        AppointmentStatus::Completed->value,
+                        AppointmentStatus::NoShow->value,
+                    ]);
+                }
+
+                return $query->where('status', $request->status);
+            })
             ->when($request->filled('service_type') && $request->service_type !== 'all', fn ($query) => $query->where('service_type', $request->service_type))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('preferred_date', '>=', $request->date_from))
             ->when($request->filled('date_to'), fn ($query) => $query->whereDate('preferred_date', '<=', $request->date_to));

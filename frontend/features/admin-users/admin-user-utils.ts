@@ -8,7 +8,6 @@ export const emptyAdminUserForm: AdminUserForm = {
   phone_number: "",
   password: "",
   role: "staff",
-  permissions: [],
 };
 
 export const adminUserRoleLabels: Record<StaffRole, string> = {
@@ -34,14 +33,5 @@ export function adminUserToForm(user: AdminUser): AdminUserForm {
     phone_number: user.phone_number ?? "",
     password: "",
     role: user.role,
-    permissions: user.permissions ?? [],
   };
-}
-
-export function adminPermissionLabel(permission: string) {
-  return permission
-    .split(".")
-    .map((part) => part.replaceAll("-", " "))
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" / ");
 }

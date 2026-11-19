@@ -4,6 +4,7 @@ import type { AdminBackJobReason, AdminWorkJob, AdminWorkJobForm, AdminWorkJobSt
 
 export const adminWorkJobStatusOptions = [
   { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
   ...customerStatusOptions,
 ];
 

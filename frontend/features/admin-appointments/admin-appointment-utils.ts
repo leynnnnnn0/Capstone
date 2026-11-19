@@ -26,6 +26,7 @@ export const adminServiceOptions = [
 
 export const adminStatusOptions = [
   { value: "all", label: "All Statuses" },
+  { value: "active", label: "Active" },
   ...customerStatusOptions,
 ];
 

@@ -12,7 +12,6 @@ export type AdminUser = {
   phone_number: string | null;
   role: StaffRole;
   roles: StaffRole[];
-  permissions: string[];
   created_at: string;
   updated_at: string;
 };
@@ -25,12 +24,10 @@ export type AdminUserForm = {
   phone_number: string;
   password: string;
   role: StaffRole;
-  permissions: string[];
 };
 
 export type UserOptions = {
   roles: StaffRole[];
-  permissions: string[];
 };
 
 export type UserCollection = PaginatedResponse<AdminUser>;

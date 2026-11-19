@@ -66,8 +66,12 @@ export function computeMeasuredQuantity(unit: Product["unit"], width: number, he
   return 1;
 }
 
-export function dimensionUnitLabel(unit?: DimensionUnit) {
-  return unit === "cm" ? "cm" : "m";
+export function formatDimensionAsCentimeters(
+  value: string | number | null | undefined,
+  unit?: DimensionUnit,
+) {
+  const centimeters = parseNumber(value) * (unit === "cm" ? 1 : 100);
+  return new Intl.NumberFormat("en-PH", { maximumFractionDigits: 2 }).format(centimeters);
 }
 
 export function dimensionValueInMeters(
@@ -79,13 +83,14 @@ export function dimensionValueInMeters(
 }
 
 export function quoteDimensionLabel(item: QuoteDraft | QuoteCartItem) {
-  const unit = dimensionUnitLabel(item.dimension_unit);
-
   if (!item.width) return "Custom measurement";
 
+  const width = formatDimensionAsCentimeters(item.width, item.dimension_unit);
+  const height = formatDimensionAsCentimeters(item.height, item.dimension_unit);
+
   return item.product.unit !== "meter" && item.height
-    ? `${item.width}${unit} x ${item.height}${unit}`
-    : `${item.width}${unit}`;
+    ? `${width} cm x ${height} cm`
+    : `${width} cm`;
 }
 
 export function createQuoteDraft(product: Product, variantId?: number | null): QuoteDraft {
@@ -197,12 +202,14 @@ export function arMeasurementNote(item: QuoteCartItem) {
   if (item.source !== "ar") return "";
 
   const segments = item.measurement_segments?.filter((segment) => segment > 0) ?? [];
-  const unit = dimensionUnitLabel(item.dimension_unit);
-  const height = parseNumber(item.height);
+  const unit = "cm";
+  const height = formatDimensionAsCentimeters(item.height, item.dimension_unit);
   const segmentText = segments.length
-    ? `Segments: ${segments.map((segment) => `${segment}${unit}`).join(" + ")}.`
+    ? `Segments: ${segments
+        .map((segment) => `${formatDimensionAsCentimeters(segment, item.dimension_unit)}${unit}`)
+        .join(" + ")}.`
     : "";
-  const heightText = height > 0 ? `Height: ${height}${unit}.` : "";
+  const heightText = Number(height) > 0 ? `Height: ${height}${unit}.` : "";
 
   return ["AR measurement estimate.", segmentText, heightText].filter(Boolean).join(" ");
 }

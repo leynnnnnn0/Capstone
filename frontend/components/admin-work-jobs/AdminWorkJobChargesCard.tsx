@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -66,9 +65,7 @@ type ChargeForm = {
   title: string;
   description: string;
   type: CustomerWorkJobChargeType;
-  status: CustomerWorkJobChargeStatus;
   amount: string;
-  requires_customer_approval: boolean;
 };
 
 type ChargeFormErrors = Partial<Record<keyof ChargeForm | "form", string>>;
@@ -83,33 +80,27 @@ const chargeTypes: Array<{ value: CustomerWorkJobChargeType; label: string }> = 
   { value: "other", label: "Other" },
 ];
 
-const chargeStatuses: Array<{ value: CustomerWorkJobChargeStatus; label: string }> = [
-  { value: "approved", label: "Approved" },
-  { value: "pending_approval", label: "Pending Approval" },
-  { value: "waived", label: "Waived" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
 const chargeSchema = z.object({
   title: z.string().trim().min(2, "Charge title is required.").max(120, "Charge title is too long."),
   description: z.string().trim().max(1000, "Description is too long.").optional(),
   type: z.enum(["service_fee", "extra_material", "extra_labor", "delivery", "adjustment", "discount", "other"]),
-  status: z.enum(["approved", "pending_approval", "waived", "cancelled"]),
   amount: positiveNumberStringSchema("Amount", { max: 9999999 }),
-  requires_customer_approval: z.boolean(),
 });
 
 export default function AdminWorkJobChargesCard({
   workJob,
   onUpdated,
+  canApproveCharges,
 }: {
   workJob: AdminWorkJob;
   onUpdated: (workJob: AdminWorkJob) => void;
+  canApproveCharges: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [editingCharge, setEditingCharge] = useState<CustomerWorkJobCharge | null>(null);
   const [form, setForm] = useState<ChargeForm>(() => defaultForm());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [chargeToApprove, setChargeToApprove] = useState<CustomerWorkJobCharge | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<ChargeFormErrors>({});
@@ -155,6 +146,24 @@ export default function AdminWorkJobChargesCard({
   }
 
   async function saveCharge() {
+    if (chargeToApprove) {
+      setSaving(true);
+      try {
+        const response = await updateWorkJobCharge(workJob.id, chargeToApprove.id, { status: "approved" });
+        onUpdated(response.data);
+        toast.success("Charge approved successfully.");
+        setChargeToApprove(null);
+        setConfirmOpen(false);
+      } catch (error) {
+        const message = errorMessage(error);
+        toast.error(message);
+        setConfirmOpen(false);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const parsed = chargeSchema.safeParse(form);
 
     if (!parsed.success) {
@@ -167,9 +176,8 @@ export default function AdminWorkJobChargesCard({
       title: parsed.data.title,
       description: parsed.data.description || undefined,
       type: parsed.data.type,
-      status: parsed.data.status,
       amount: Number(parsed.data.amount),
-      requires_customer_approval: parsed.data.requires_customer_approval,
+      requires_customer_approval: true,
     };
 
     setSaving(true);
@@ -233,10 +241,7 @@ export default function AdminWorkJobChargesCard({
                       {charge.status_label}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-muted-foreground">
-                    {charge.type_label}
-                    {charge.requires_customer_approval ? " · customer-visible" : " · internal adjustment"}
-                  </p>
+                  <p className="mt-1 text-muted-foreground">{charge.type_label} · customer-visible</p>
                   {charge.description && (
                     <p className="mt-2 rounded-md bg-background px-2 py-1 text-muted-foreground">{charge.description}</p>
                   )}
@@ -251,9 +256,26 @@ export default function AdminWorkJobChargesCard({
                     {charge.type === "discount" ? "-" : ""}
                     {formatPeso(charge.amount)}
                   </p>
-                  <Button type="button" variant="ghost" size="icon-sm" onClick={() => openEditDialog(charge)}>
-                    <Pencil className="size-4" />
-                  </Button>
+                  {canApproveCharges && (
+                    <>
+                      {charge.status === "pending_approval" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setChargeToApprove(charge);
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          Approve
+                        </Button>
+                      )}
+                      <Button type="button" variant="ghost" size="icon-sm" onClick={() => openEditDialog(charge)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -282,7 +304,9 @@ export default function AdminWorkJobChargesCard({
               {editingCharge ? "Edit charge" : "Add charge"}
             </DialogTitle>
             <DialogDescription>
-              Approved charges affect the customer balance immediately. Pending charges stay visible but are not payable yet.
+              {canApproveCharges
+                ? "Charges you add will appear on the customer's bill and update the total amount due."
+                : "Charges you add will appear as pending until approved, then update the customer's bill."}
             </DialogDescription>
           </DialogHeader>
 
@@ -308,48 +332,25 @@ export default function AdminWorkJobChargesCard({
               <FieldError message={errors.title} />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label>Type</Label>
-                <Select
-                  value={form.type}
-                  onValueChange={(value) =>
-                    setForm((current) => ({ ...current, type: value as CustomerWorkJobChargeType }))
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chargeTypes.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label>Status</Label>
-                <Select
-                  value={form.status}
-                  onValueChange={(value) =>
-                    setForm((current) => ({ ...current, status: value as CustomerWorkJobChargeStatus }))
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chargeStatuses.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-1.5">
+              <Label>Type</Label>
+              <Select
+                value={form.type}
+                onValueChange={(value) =>
+                  setForm((current) => ({ ...current, type: value as CustomerWorkJobChargeType }))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {chargeTypes.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid gap-1.5">
@@ -365,22 +366,6 @@ export default function AdminWorkJobChargesCard({
               />
               <FieldError message={errors.amount} />
             </div>
-
-            <label className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3 text-sm">
-              <Checkbox
-                className="mt-0.5"
-                checked={form.requires_customer_approval}
-                onCheckedChange={(checked) =>
-                  setForm((current) => ({ ...current, requires_customer_approval: checked === true }))
-                }
-              />
-              <span>
-                <span className="block font-medium text-foreground">Show this charge to the customer</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Keep this on for payable fees. Turn it off only for internal bookkeeping adjustments.
-                </span>
-              </span>
-            </label>
 
             <div className="grid gap-1.5">
               <Label htmlFor="charge-description">Description</Label>
@@ -418,10 +403,14 @@ export default function AdminWorkJobChargesCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {editingCharge ? "Save charge changes?" : "Add this charge?"}
+              {chargeToApprove ? "Approve this charge?" : editingCharge ? "Save charge changes?" : "Add this charge?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will update the work job balance and may change what the customer can pay.
+              {chargeToApprove
+                ? "Approving this charge will add it to the customer balance."
+                : !canApproveCharges && !editingCharge
+                  ? "This charge will stay pending until an admin or owner approves it."
+                : "This will update the work job balance and may change what the customer can pay."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -453,9 +442,7 @@ function defaultForm(): ChargeForm {
     title: "",
     description: "",
     type: "service_fee",
-    status: "approved",
     amount: "",
-    requires_customer_approval: true,
   };
 }
 
@@ -464,9 +451,7 @@ function formFromCharge(charge: CustomerWorkJobCharge): ChargeForm {
     title: charge.title,
     description: charge.description ?? "",
     type: charge.type,
-    status: charge.status,
     amount: String(charge.amount),
-    requires_customer_approval: charge.requires_customer_approval,
   };
 }
 

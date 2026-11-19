@@ -6,6 +6,7 @@ import { ImageIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatDimensionAsCentimeters } from "@/features/quotes/quote-utils";
 import type { CustomerQuotation, CustomerQuotationItem } from "@/features/customer/types";
 import type { Product, ProductImage, ResourceCollection } from "@/features/products/types";
 
@@ -68,7 +69,7 @@ function QuoteImageItem({ item }: { item: CustomerQuotationItem }) {
           <div className="min-w-0">
             <p className="line-clamp-1 text-sm font-medium text-slate-950">{item.name}</p>
             <p className="mt-1 text-xs text-slate-500">
-              {[item.width && item.height ? `${item.width} x ${item.height} cm` : null, `${item.pieces} pc`]
+              {[item.width && item.height ? `${formatDimensionAsCentimeters(item.width)} x ${formatDimensionAsCentimeters(item.height)} cm` : null, `${item.pieces} pc`]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

@@ -69,7 +69,7 @@ export default function CustomerWorkJobPaymentCard({
       ? `${summary.down_payment_percentage}% down payment is required before installation continues.`
       : "Pay the balance online, or coordinate cash payment with SOG.";
   const visibleCharges = (workJob.charges ?? []).filter(
-    (charge) => charge.requires_customer_approval && charge.status !== "cancelled" && charge.status !== "waived",
+    (charge) => charge.status !== "cancelled" && charge.status !== "waived",
   );
   const hasAdjustments = Boolean(
     paymentNotRequired ||

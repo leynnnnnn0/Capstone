@@ -163,7 +163,6 @@ export default function AdminAppointmentsPage() {
           value={total}
           icon={ClipboardList}
           tone="blue"
-          eyebrow="Appointments"
           description="all appointment records"
           onClick={(value) => applyFilter({ status: "" })}
         />
@@ -173,7 +172,6 @@ export default function AdminAppointmentsPage() {
             value={response?.pending_count ?? 0}
             icon={CalendarDays}
             tone="mist"
-            eyebrow="Appointments"
             description="awaiting confirmation"
             onClick={(value) => applyFilter({ status: "pending" })}
           />
@@ -183,16 +181,14 @@ export default function AdminAppointmentsPage() {
           value={response?.active_count ?? 0}
           icon={UserCheck}
           tone="light"
-          eyebrow="Appointments"
           description="active appointments"
-          onClick={(value) => applyFilter({ status: "confirmed" })}
+          onClick={(value) => applyFilter({ status: "active" })}
         />
         <AdminSummaryCard
           label="Completed"
           value={response?.completed_count ?? 0}
           icon={ClipboardList}
           tone="slate"
-          eyebrow="Appointments"
           description="finished appointments"
           onClick={(value) => applyFilter({ status: "completed" })}
         />

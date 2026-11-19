@@ -60,7 +60,18 @@ class WorkJobController extends Controller
             )
             ->when(
                 $request->status && $request->status !== 'all',
-                fn ($q) => $q->where('status', $request->status)
+                function ($q) use ($request) {
+                    if ($request->status === 'active') {
+                        return $q->whereNotIn('status', [
+                            WorkJobStatus::Pending->value,
+                            WorkJobStatus::Cancelled->value,
+                            WorkJobStatus::Completed->value,
+                            WorkJobStatus::NoShow->value,
+                        ]);
+                    }
+
+                    return $q->where('status', $request->status);
+                }
             )
             ->when(
                 $request->date_from,

@@ -154,7 +154,7 @@ export function ArProductDrawerDetail({
           <h3>{model.label}</h3>
         </div>
         {model.defaultWidthCm && model.defaultHeightCm && (
-          <strong>{model.defaultWidthCm}x{model.defaultHeightCm}</strong>
+          <strong>{model.defaultWidthCm}x{model.defaultHeightCm} cm</strong>
         )}
       </div>
       <p className="ar-product-description">{model.description}</p>
@@ -180,7 +180,7 @@ export function ArProductDrawerDetail({
                   <span>
                     <strong>{variant.label}</strong>
                     <small>
-                      {[variant.widthCm, variant.heightCm].filter(Boolean).join("x")}
+                      {[variant.widthCm, variant.heightCm].filter(Boolean).join("x")} cm
                     </small>
                   </span>
                   <ChevronsRight className="size-5" />

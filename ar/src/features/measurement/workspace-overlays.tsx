@@ -253,7 +253,7 @@ export function PlacementEditor({
           <strong>{modelLabel}</strong>
         </div>
         <span>
-          {object.dimensions.segmentsCm[0]}x{object.dimensions.heightCm}
+          {object.dimensions.segmentsCm[0]}x{object.dimensions.heightCm} cm
         </span>
       </div>
       {guided && (

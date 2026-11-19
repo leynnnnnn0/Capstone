@@ -280,10 +280,10 @@ export default function AdminPaymentsPage() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 border-b pb-8 sm:gap-x-7 sm:pb-10 xl:grid-cols-4">
-        <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" eyebrow="Financial performance" description="settled customer payments" />
-        <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" eyebrow="Collections" description="completed transactions" />
-        <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" eyebrow="Collections" description="awaiting settlement" />
-        <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" eyebrow="Adjustments" description="total amount returned" />
+        <AdminSummaryCard label="Total Paid" value={formatPeso(summary?.total_paid ?? 0)} icon={WalletCards} tone="blue" description="settled customer payments" />
+        <AdminSummaryCard label="Paid" value={summary?.paid_count ?? 0} icon={CreditCard} tone="mist" description="completed transactions" />
+        <AdminSummaryCard label="Pending" value={summary?.pending_count ?? 0} icon={ReceiptText} tone="light" description="awaiting settlement" />
+        <AdminSummaryCard label="Refunded Amount" value={formatPeso(summary?.refunded_amount ?? 0)} icon={RotateCcw} tone="light" description="total amount returned" />
       </section>
 
       <section className="space-y-4">
